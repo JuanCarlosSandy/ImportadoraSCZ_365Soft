@@ -1,0 +1,199 @@
+.swal2-icon {
+  width: 80px !important;
+  height: 80px !important;
+  font-size: 1.275em !important;
+}
+/* Ajustar el contenedor general del calendario */
+.p-datepicker {
+  min-width: 220px !important;
+  max-width: 240px !important;
+  font-size: 0.8rem !important;
+  padding: 0.25rem !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+/* Reducir paddings de la cabecera */
+.p-datepicker .p-datepicker-header {
+  padding: 0.3rem !important;
+}
+
+/* Ajustar el título (mes y año) */
+.p-datepicker .p-datepicker-title {
+  font-size: 0.8rem !important;
+  gap: 0.25rem !important;
+}
+
+.p-datepicker .p-datepicker-title .p-datepicker-month,
+.p-datepicker .p-datepicker-title .p-datepicker-year {
+  font-size: 0.8rem !important;
+}
+
+/* Ajustar tamaño de botones de navegación */
+.p-datepicker-prev,
+.p-datepicker-next {
+  width: 1.2rem !important;
+  height: 1.2rem !important;
+  font-size: 0.75rem !important;
+}
+
+/* Tamaño de celdas (días y encabezados) */
+.p-datepicker .p-datepicker-calendar td,
+.p-datepicker .p-datepicker-calendar th {
+  padding: 0.2rem !important;
+  text-align: center;
+}
+
+.p-datepicker .p-datepicker-calendar td span {
+  font-size: 0.7rem !important; /* MÁS PEQUEÑO el número */
+  width: 1.5rem !important;     /* MÁS angosto */
+  height: 1.5rem !important;    /* MÁS bajo */
+  line-height: 1.5rem !important;
+  border-radius: 50% !important;
+}
+
+/* Estilo para el día de hoy */
+.p-datepicker .p-datepicker-calendar td.p-datepicker-today > span {
+  border: 1px solid #2196F3 !important;
+}
+
+/* Estilo para el día seleccionado */
+.p-datepicker .p-datepicker-calendar td.p-highlight > span {
+  background: #2196F3 !important;
+  color: white !important;
+}
+
+/* Evitar que el calendario se desborde en modales u otros contenedores */
+.p-datepicker {
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+/*Panel*/
+.ingreso-panel {
+  margin-bottom: 1rem;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+.panel-icon {
+  color: #000000;
+  font-size: 1.2rem;
+}
+.panel-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+.swal2-confirm-lineanew {
+  background-color: #22c55e !important;
+  border-color: #22c55e !important;
+  color: #fff !important;
+}
+.swal2-cancel-lineanew {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+.btn-mini {
+  padding: 0.2rem 0.3rem !important;
+  font-size: 0.65rem !important;
+  width: auto !important;
+  min-width: unset !important;
+}
+.btn-mini .pi {
+  font-size: 0.75rem !important; /* ajusta a tu gusto */
+}
+.tag-mini {
+  font-size: 0.7rem !important; /* texto más pequeño */
+  font-weight: 600;
+  padding: 0.15rem 0.4rem !important; /* menos alto */
+  border-radius: 6px !important;
+  line-height: 1;
+  text-transform: uppercase; /* opcional: da uniformidad */
+  letter-spacing: 0.3px;
+}
+
+.tag-opcional {
+  font-size: 0.60rem !important;   /* Texto más pequeño */
+  padding: 2px 4px !important;     /* Menos espacio interno */
+  border-radius: 3px !important;   /* Bordes más compactos */
+  transform: scale(0.8);           /* Ajuste extra */
+}
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+.input-error {
+  border: 1px solid #ff8a8a !important; /* rojo clarito */
+  background-color: #ffecec !important; /* fondo rosita muy suave */
+}
+
+/* PrimeVue envuelve el input del dropdown, así que también aquí */
+.p-dropdown.input-error {
+  border: 1px solid #ff8a8a !important;
+  background-color: #ffecec !important;
+}
+
+/* Contenedor del InputNumber */
+.p-inputnumber.input-error {
+  border: 1px solid #ff8a8a !important;
+  background-color: #ffecec !important;
+  border-radius: 4px;
+}
+
+/* Input interno del InputNumber */
+.p-inputnumber.input-error .p-inputtext {
+  border: 1px solid #ff8a8a !important;
+  background-color: #ffecec !important;
+}
+
+/* Contenedor del AutoComplete */
+.p-autocomplete.input-error {
+  border: 1px solid #ff8a8a !important;
+  background-color: #ffecec !important;
+  border-radius: 4px;
+}
+
+/* Input interno del AutoComplete */
+.p-autocomplete.input-error .p-inputtext {
+  border: 1px solid #ff8a8a !important;
+  background-color: #ffecec !important;
+}
+
+/*Datos no reigstrados*/
+.no-registrado {
+  color: #9e9e9e; /* gris suave */
+  font-style: italic;
+}
+.no-registrado .pi {
+  margin-right: 4px;
+  color: #9e9e9e;
+}
+
+.btn-negro {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.btn-negro:hover {
+  background-color: #222222 !important;
+  border-color: #222222 !important;
+}
+
+.btn-negro:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.4) !important;
+}

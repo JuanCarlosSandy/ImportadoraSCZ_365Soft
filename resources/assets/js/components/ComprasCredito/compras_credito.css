@@ -1,0 +1,57 @@
+/* Panel */
+.panel-header {
+    display: flex;
+    align-items: center;
+}
+
+.panel-icon {
+    font-size: 2rem;
+    padding-left: 10px;
+}
+
+.panel-icon {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+/* Dialog Cuotas */
+>>> .div-lista-cuota .p-dialog-header {
+    padding: 1rem 1rem 1rem 1.5rem;
+    background: #33b378;
+    color: #ffffff;
+}
+
+>>> .div-lista-cuota .p-dialog-content {
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+/* Dialog Pagar */
+>>> .div-pagar-cuota .p-dialog-header {
+    padding: 1rem 1rem 1rem 1.5rem;
+    background: #33b378;
+    color: #ffffff;
+}
+
+>>> .div-pagar-cuota .p-dialog-content {
+    padding: 0.5rem 0.5rem 0 0.5rem;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+>>> .div-pagar-cuota .p-dialog-footer {
+}
+
+>>> .p-md-4 {
+    padding: 0 0.75rem 0 0.75rem !important;
+}
+
+/* dropdown */
+>>> .p-dropdown-panel .p-dropdown-items {
+    padding: 0.5rem 0;
+}
+
+>>> .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+    padding: 0.5rem 1.23rem;
+}
