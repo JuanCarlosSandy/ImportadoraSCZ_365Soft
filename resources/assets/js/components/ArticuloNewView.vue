@@ -232,6 +232,12 @@
               </div>
             </div>
 
+            <div class="p-col-12" style="margin-top: 20px; margin-bottom: 10px;">
+                <h5 style="font-weight: bold; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">
+                    <i class="pi pi-tags"></i> Precios de Venta
+                </h5>
+            </div>
+
             <div v-for="(precio, index) in precios" :key="precio.id" class="p-grid p-ai-start p-mb-3 mobile-responsive">
               <div class="p-col-12">
                 <label class="required-field">{{ precio.nombre_precio }}:</label>
@@ -239,7 +245,6 @@
 
               <div class="p-col-12">
                 <div class="p-grid">
-                  <!-- Campo Precio (6 columnas) -->
                   <div class="p-col-12 p-md-6">
                     <div class="p-inputgroup" style="width: 100%;">
                       <InputNumber v-model.number="precio.valor" placeholder="Precio" mode="decimal" locale="es-ES"
@@ -250,19 +255,30 @@
                     </div>
                   </div>
 
-                  <!-- Campo Porcentaje (6 columnas) -->
                   <div class="p-col-12 p-md-6">
                     <div class="p-inputgroup" style="width: 100%;">
-                      <InputNumber v-model.number="precio.porcentaje" mode="decimal" :min="0" :max="100"
-                        :useGrouping="false" :allowEmpty="true" :minFractionDigits="2" :maxFractionDigits="2"
-                        class="p-inputtext-sm w-full input-number-full" @input="onPorcentajeChange(precio)"
-                        @keyup="onPorcentajeChange(precio)" disabled />
+                      
+                      <InputNumber 
+                        v-model.number="precio.porcentaje" 
+                        mode="decimal" 
+                        :min="0" 
+                        :max="1000"
+                        :useGrouping="false" 
+                        :allowEmpty="true" 
+                        :minFractionDigits="2" 
+                        :maxFractionDigits="2"
+                        placeholder="0.00"
+                        class="p-inputtext-sm w-full input-number-full" 
+                        @focus="onPorcentajeFocus(precio)"
+                        @input="onPorcentajeInput(precio)"
+                        @keydown.native="convertirPuntoComa" 
+                      />
+                      
                       <span class="p-inputgroup-addon addon-precio">%</span>
                     </div>
                   </div>
                 </div>
 
-                <!-- ⚠️ Mensaje de error (debajo de ambos campos) -->
                 <div v-if="precio.errorVenta" class="p-error-precio"
                   style="display: block; margin-top: 4px; font-size: 0.85rem;">
                   ⚠️ El precio de venta es menor al costo de compra.
@@ -591,10 +607,10 @@ export default {
       medidaSeleccionado: [],
       almacenSeleccionado: "Almacen Principal",
       precios: [
-        { id: 1, nombre_precio: 'Precio 1', valor: 0, porcentaje: 0, errorVenta: false },
-        { id: 2, nombre_precio: 'Precio 2', valor: 0, porcentaje: 0, errorVenta: false },
-        { id: 3, nombre_precio: 'Precio 3', valor: 0, porcentaje: 0, errorVenta: false },
-        { id: 4, nombre_precio: 'Precio 4', valor: 0, porcentaje: 0, errorVenta: false },
+        { id: 1, nombre_precio: 'por Unidad',  valor: 0, porcentaje: 0, errorVenta: false }, 
+        { id: 2, nombre_precio: 'por Docena',  valor: 0, porcentaje: 0, errorVenta: false }, 
+        { id: 3, nombre_precio: 'por Paquete', valor: 0, porcentaje: 0, errorVenta: false }, 
+        { id: 4, nombre_precio: 'Especial',    valor: 0, porcentaje: 0, errorVenta: false }, 
       ],
       precio_uno: null,
       precio_dos: null,
@@ -968,19 +984,20 @@ export default {
     async cargarPreciosGlobales() {
       try {
         const response = await axios.get("/configuracion/porcentajes");
-        const precios = response.data;
+        const preciosConfig = response.data;
 
-        const venta1 = precios.find((p) => p.nombre_precio === "VENTA 1");
-        const venta2 = precios.find((p) => p.nombre_precio === "VENTA 2");
+        const venta1 = preciosConfig.find((p) => p.nombre_precio === "VENTA 1");
+        const venta2 = preciosConfig.find((p) => p.nombre_precio === "VENTA 2");
+        const venta3 = preciosConfig.find((p) => p.nombre_precio === "VENTA 3"); 
 
-        // Retornamos los porcentajes
         return {
           venta1: venta1 ? venta1.porcentage : 0,
           venta2: venta2 ? venta2.porcentage : 0,
+          venta3: venta3 ? venta3.porcentage : 0,
         };
       } catch (error) {
         console.error("❌ Error al cargar precios globales:", error);
-        return { venta1: 0, venta2: 0 };
+        return { venta1: 0, venta2: 0, venta3: 0 };
       }
     },
 
@@ -996,54 +1013,57 @@ export default {
       const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
       const venta = Number(precioVenta);
 
-      // ⚠️ Si venta <= costo → 0%
-      if (isNaN(venta) || venta <= costo || costo <= 0) return 0;
+      if (costo <= 0 || isNaN(venta) || venta <= costo) return 0;
 
       const porcentaje = ((venta - costo) / costo) * 100;
       return parseFloat(porcentaje.toFixed(2));
     },
 
-    onPorcentajeChange(precio) {
-      let porc = Number(precio.porcentaje);
-      if (isNaN(porc) || porc < 0) porc = 0;
-
-      const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
-      const nuevoPrecio = parseFloat((costo + (costo * porc / 100)).toFixed(2));
-
-      // ✅ permitir precio igual al costo
-      if (!isNaN(nuevoPrecio) && nuevoPrecio >= costo) {
-        precio.valor = nuevoPrecio;
-        precio.errorVenta = false;
-        this.sincronizarPrecios(precio);
-      } else {
-        precio.valor = costo;
-        precio.porcentaje = 0;
-        precio.errorVenta = nuevoPrecio < costo; // ⚠️ solo marcar si es menor
+    onPorcentajeFocus(precio, event) {
+      if (!precio.porcentaje || precio.porcentaje === 0) {
+         precio.porcentaje = null;
+      } 
+      else {
+         if (event && event.target) {
+            event.target.select();
+         }
       }
+    },
+
+    onPorcentajeInput(precio) {
+       precio.valor = this.calcularPrecio(precio.porcentaje);
+       const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
+       precio.errorVenta = precio.valor < costo;
+       this.sincronizarPrecios(precio);
     },
 
     onPrecioChange(precio) {
-      const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
-      const venta = Number(precio.valor);
-
-      // ✅ permitir igual
-      if (venta >= costo) {
-        precio.porcentaje = this.calcularPorcentaje(venta);
-        precio.errorVenta = false;
-        this.sincronizarPrecios(precio);
-      } else {
-        precio.porcentaje = 0;
-        precio.errorVenta = true;
-        precio.valor = venta < 0 ? 0 : venta;
-      }
+       const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
+       precio.porcentaje = this.calcularPorcentaje(precio.valor);
+       precio.errorVenta = precio.valor < costo;
+       this.sincronizarPrecios(precio);
     },
 
     sincronizarPrecios(precio) {
+      const valorNumerico = Number(precio.valor);
+
       switch (precio.id) {
-        case 1: this.precio_uno = precio.valor; break;
-        case 2: this.precio_dos = precio.valor; break;
-        case 3: this.precio_tres = precio.valor; break;
-        case 4: this.precio_cuatro = precio.valor; break;
+        case 1:
+          this.precio_uno = valorNumerico;
+          this.datosFormulario.precio_uno = valorNumerico; 
+          break;
+        case 2:
+          this.precio_dos = valorNumerico;
+          this.datosFormulario.precio_dos = valorNumerico;
+          break;
+        case 3:
+          this.precio_tres = valorNumerico;
+          this.datosFormulario.precio_tres = valorNumerico;
+          break;
+        case 4:
+          this.precio_cuatro = valorNumerico;
+          this.datosFormulario.precio_cuatro = valorNumerico;
+          break;
       }
     },
 
@@ -1053,33 +1073,49 @@ export default {
       const costo = parseFloat(this.datosFormulario.precio_costo_unid || 0);
       if (costo <= 0) return;
 
-      const venta1 = this.precios.find(p => p.id === 1);
-      const venta2 = this.precios.find(p => p.id === 2);
+      const venta1 = this.precios.find(p => p.id === 1); // Unidad
+      const venta2 = this.precios.find(p => p.id === 2); // Docena
+      const venta3 = this.precios.find(p => p.id === 3); // Paquete 
 
-      // 🧩 Si existen porcentajes y el valor está vacío → calcular valor
+      // --- 1. RECALCULAR COSTOS ---
+
+      // Unidad
       if (venta1 && venta1.porcentaje > 0 && (!venta1.valor || venta1.valor === 0)) {
         venta1.valor = parseFloat((costo + (costo * venta1.porcentaje / 100)).toFixed(2));
       }
-
+      // Docena
       if (venta2 && venta2.porcentaje > 0 && (!venta2.valor || venta2.valor === 0)) {
         venta2.valor = parseFloat((costo + (costo * venta2.porcentaje / 100)).toFixed(2));
       }
+      // Paquete 
+      if (venta3 && venta3.porcentaje > 0 && (!venta3.valor || venta3.valor === 0)) {
+        venta3.valor = parseFloat((costo + (costo * venta3.porcentaje / 100)).toFixed(2));
+      }
 
-      // 🧮 Si existe valor y costo, recalculamos porcentaje y controlamos negativos
+      // --- 2. RECALCULAR PORCENTAJES ---
+
+      // Unidad
       if (venta1 && venta1.valor > 0) {
         let porc1 = ((venta1.valor - costo) / costo) * 100;
         venta1.porcentaje = parseFloat((porc1 < 0 ? 0 : porc1).toFixed(2));
-        // ⚠️ Si el precio de venta es menor que el costo, mostramos error
         venta1.errorVenta = venta1.valor < costo;
       }
 
+      // Docena
       if (venta2 && venta2.valor > 0) {
         let porc2 = ((venta2.valor - costo) / costo) * 100;
         venta2.porcentaje = parseFloat((porc2 < 0 ? 0 : porc2).toFixed(2));
         venta2.errorVenta = venta2.valor < costo;
       }
 
-      console.log("✅ Costo:", costo, "| VENTA 1:", venta1, "| VENTA 2:", venta2);
+      // Paquete 
+      if (venta3 && venta3.valor > 0) {
+        let porc3 = ((venta3.valor - costo) / costo) * 100;
+        venta3.porcentaje = parseFloat((porc3 < 0 ? 0 : porc3).toFixed(2));
+        venta3.errorVenta = venta3.valor < costo;
+      }
+
+      console.log("✅ Costo:", costo, "| UNIDAD:", venta1.valor, "| DOCENA:", venta2.valor, "| PAQUETE:", venta3.valor);
     },
     mostrarDetalles(articulo) {
       this.articuloSeleccionado = articulo;
@@ -1259,25 +1295,27 @@ export default {
       }
     },
     asignarCamposPrecios() {
-      this.datosFormulario.precio_costo_unid = this.convertDolar(
-        this.datosFormulario.precio_costo_unid
-      );
-      this.datosFormulario.precio_costo_paq = this.convertDolar(
-        this.datosFormulario.precio_costo_paq
-      );
-      this.datosFormulario.precio_venta = this.convertDolar(
-        this.datosFormulario.precio_venta
-      );
+      const precioUnitario = this.precios.find(p => p.id === 1);
+      const precioDocena   = this.precios.find(p => p.id === 2);
+      const precioPaquete  = this.precios.find(p => p.id === 3);
+      const precioEspecial = this.precios.find(p => p.id === 4);
 
-      this.datosFormulario.precio_uno = this.convertDolar(this.precio_uno);
-      this.datosFormulario.precio_dos = this.convertDolar(this.precio_dos);
-      this.datosFormulario.precio_tres = this.convertDolar(this.precio_tres);
-      this.datosFormulario.precio_cuatro = this.convertDolar(
-        this.precio_cuatro
-      );
-      this.datosFormulario.costo_compra = this.convertDolar(
-        this.datosFormulario.costo_compra
-      );
+      this.datosFormulario.precio_uno = this.convertDolar(precioUnitario ? precioUnitario.valor : 0);
+      this.datosFormulario.precio_dos = this.convertDolar(precioDocena ? precioDocena.valor : 0);
+      
+      this.datosFormulario.precio_tres = this.convertDolar(precioPaquete ? precioPaquete.valor : 0);
+      
+      this.datosFormulario.precio_cuatro = this.convertDolar(precioEspecial ? precioEspecial.valor : 0);
+      this.datosFormulario.precio_costo_unid = this.convertDolar(this.datosFormulario.precio_costo_unid);
+      
+      if(!this.datosFormulario.precio_costo_paq || this.datosFormulario.precio_costo_paq == 0) {
+           this.datosFormulario.precio_costo_paq = this.datosFormulario.precio_costo_unid * this.datosFormulario.unidad_envase;
+      } else {
+           this.datosFormulario.precio_costo_paq = this.convertDolar(this.datosFormulario.precio_costo_paq);
+      }
+
+      this.datosFormulario.precio_venta = this.datosFormulario.precio_uno; // Normalmente el precio venta base es el precio 1
+      this.datosFormulario.costo_compra = this.convertDolar(this.datosFormulario.costo_compra);
     },
     asignarCamposInventario() {
       this.datosFormularioInventario.AlmacenSeleccionado = this.almacenSeleccionado.id;
@@ -1290,7 +1328,7 @@ export default {
     asignarCampos() {
       this.datosFormulario.idcategoria = this.lineaSeleccionado.id;
       this.datosFormulario.idproveedor = this.proveedorSeleccionado.id;
-      this.datosFormulario.idmedida = this.medidaSeleccionado.id;
+      this.datosFormulario.idmedida = this.medidaSeleccionado ? this.medidaSeleccionado.id : 1;
 
       if (this.fechaVencimientoSeleccion == false) {
         this.datosFormulario.fechaVencimientoSeleccion = "0";
@@ -1797,7 +1835,7 @@ export default {
       this.descuento = 0;
       this.fecha_venc_descuento = null;
     },
-    abrirModal(modelo, accion, data = []) {
+    async abrirModal(modelo, accion, data = []) {
       switch (modelo) {
         case "articulo": {
           switch (accion) {
@@ -1811,26 +1849,31 @@ export default {
                 this.tipoAccion = 1;
                 this.fotografia = "";
 
-                // 🔹 Cargar precios desde la tabla global
                 const preciosGlobales = await this.cargarPreciosGlobales();
 
-                // 🔹 Inicializar precios con los valores traídos
                 this.precios = [
-                  {
-                    id: 1,
-                    nombre_precio: "VENTA 1",
-                    valor: 0,
-                    porcentaje: preciosGlobales.venta1,
-                    errorVenta: false,
-                  },
-                  {
-                    id: 2,
-                    nombre_precio: "VENTA 2",
-                    valor: 0,
-                    porcentaje: preciosGlobales.venta2,
-                    errorVenta: false,
-                  },
-                ];
+  {
+    id: 1,
+    nombre_precio: "por Unidad",
+    valor: 0,
+    porcentaje: parseFloat(preciosGlobales.venta1) || 0, // 👈 Forzamos a Numero
+    errorVenta: false,
+  },
+  {
+    id: 2,
+    nombre_precio: "por Docena",
+    valor: 0,
+    porcentaje: parseFloat(preciosGlobales.venta2) || 0, // 👈 Forzamos a Numero
+    errorVenta: false,
+  },
+  {
+    id: 3,
+    nombre_precio: "por Paquete",
+    valor: 0,
+    porcentaje: parseFloat(preciosGlobales.venta3) || 0, // 👈 Forzamos a Numero
+    errorVenta: false,
+  },
+];
 
                 this.datosFormulario = {
                   nombre: "",
@@ -1877,16 +1920,12 @@ export default {
                   this.tituloModal = "Actualizar Artículo";
                   this.tipoAccion = 2;
 
-                  // 👇 Aquí usamos los valores ACTUALIZADOS desde la BD
                   this.datosFormulario = {
                     nombre: articulo.nombre,
                     descripcion: articulo.descripcion,
                     nombre_generico: articulo.nombre_generico,
                     unidad_envase: articulo.unidad_envase,
-                    descuento:
-                      articulo.descuento !== undefined && articulo.descuento !== null
-                        ? articulo.descuento
-                        : 0,
+                    descuento: articulo.descuento || 0,
                     fecha_venc_descuento: articulo.fecha_venc_descuento
                       ? articulo.fecha_venc_descuento.split("T")[0]
                       : null,
@@ -1894,12 +1933,12 @@ export default {
                     precio_costo_unid: this.calcularPrecioValorMoneda(articulo.precio_costo_unid),
                     precio_costo_paq: this.calcularPrecioValorMoneda(articulo.precio_costo_paq),
                     precio_venta: this.calcularPrecioValorMoneda(articulo.precio_venta),
-                    precio_uno: 0,
+                    precio_uno: 0, 
                     precio_dos: 0,
-                    precio_tres: 0,
+                    precio_tres: 0, 
                     precio_cuatro: 0,
                     stock:
-                      this.tipo_stock == "paquetes"
+                      this.tipo_stock == "paquetes" && articulo.unidad_envase > 0
                         ? articulo.stock / articulo.unidad_envase
                         : articulo.stock,
                     costo_compra: this.calcularPrecioValorMoneda(articulo.costo_compra),
@@ -1915,7 +1954,11 @@ export default {
                     id: articulo.id,
                   };
 
-                  // el resto de tu código original aquí ⬇
+                  this.precio_uno = Number(this.calcularPrecioValorMoneda(articulo.precio_uno)) || 0;
+                  this.precio_dos = Number(this.calcularPrecioValorMoneda(articulo.precio_dos)) || 0;
+                  this.precio_tres = Number(this.calcularPrecioValorMoneda(articulo.precio_tres)) || 0;
+                  this.precio_cuatro = Number(this.calcularPrecioValorMoneda(articulo.precio_cuatro)) || 0;
+
                   this.errores = {};
                   this.idmedida = articulo.idmedida;
                   this.fotografia = articulo.fotografia;
@@ -1923,81 +1966,50 @@ export default {
                     ? "img/articulo/" + articulo.fotografia
                     : null;
 
-                  this.industriaSeleccionado = {
-                    nombre: articulo.nombre_industria,
-                    id: articulo.idindustria,
-                  };
-                  this.lineaSeleccionado = {
-                    nombre: articulo.nombre_categoria,
-                    id: articulo.idcategoria,
-                  };
-                  this.marcaSeleccionado = {
-                    nombre: articulo.nombre_marca,
-                    id: articulo.idmarca,
-                  };
-                  this.proveedorSeleccionado = {
-                    nombre: articulo.nombre_proveedor,
-                    id: articulo.idproveedor,
-                  };
-                  this.grupoSeleccionado = {
-                    nombre_grupo: articulo.nombre_grupo,
-                    id: articulo.idgrupo,
-                  };
-                  this.medidaSeleccionado = {
-                    descripcion_medida: articulo.descripcion_medida,
-                    id: articulo.idmedida,
-                  };
+                  // Asignación de objetos seleccionados (Selects)
+                  this.industriaSeleccionado = { nombre: articulo.nombre_industria, id: articulo.idindustria };
+                  this.lineaSeleccionado = { nombre: articulo.nombre_categoria, id: articulo.idcategoria };
+                  this.marcaSeleccionado = { nombre: articulo.nombre_marca, id: articulo.idmarca };
+                  this.proveedorSeleccionado = { nombre: articulo.nombre_proveedor, id: articulo.idproveedor };
+                  this.grupoSeleccionado = { nombre_grupo: articulo.nombre_grupo, id: articulo.idgrupo };
+                  this.medidaSeleccionado = { descripcion_medida: articulo.descripcion_medida, id: articulo.idmedida };
 
-                  this.precios = [];
-
-                  this.precio_uno = Number(this.calcularPrecioValorMoneda(articulo.precio_uno)) || 0;
-                  this.precio_dos = Number(this.calcularPrecioValorMoneda(articulo.precio_dos)) || 0;
-                  this.precio_tres = Number(this.calcularPrecioValorMoneda(articulo.precio_tres)) || 0;
-                  this.precio_cuatro =
-                    Number(this.calcularPrecioValorMoneda(articulo.precio_cuatro)) || 0;
-
-                  this.$nextTick(() => {
-                    this.precios = [
-                      {
-                        id: 1,
-                        nombre_precio: "VENTA 1",
-                        valor: this.precio_uno,
-                        porcentaje: this.calcularPorcentaje(this.precio_uno),
-                        errorVenta: false,
-                      },
-                      {
-                        id: 2,
-                        nombre_precio: "VENTA 2",
-                        valor: this.precio_dos,
-                        porcentaje: this.calcularPorcentaje(this.precio_dos),
-                        errorVenta: false,
-                      },
-                    ];
-
-                    if (this.precio_tres > 0) {
-                      this.precios.push({
-                        id: 3,
-                        nombre_precio: "VENTA 3",
-                        valor: this.precio_tres,
-                        porcentaje: this.calcularPorcentaje(this.precio_tres),
-                        errorVenta: false,
-                      });
+                  this.precios = [
+                    {
+                      id: 1,
+                      nombre_precio: "por Unidad",
+                      valor: this.precio_uno,
+                      porcentaje: this.calcularPorcentaje(this.precio_uno),
+                      errorVenta: false,
+                    },
+                    {
+                      id: 2,
+                      nombre_precio: "por Docena",
+                      valor: this.precio_dos,
+                      porcentaje: this.calcularPorcentaje(this.precio_dos),
+                      errorVenta: false,
+                    },
+                    {
+                      id: 3,
+                      nombre_precio: "por Paquete",
+                      valor: this.precio_tres,
+                      porcentaje: this.calcularPorcentaje(this.precio_tres),
+                      errorVenta: false,
                     }
+                  ];
 
-                    if (this.precio_cuatro > 0) {
-                      this.precios.push({
-                        id: 4,
-                        nombre_precio: "VENTA 4",
-                        valor: this.precio_cuatro,
-                        porcentaje: this.calcularPorcentaje(this.precio_cuatro),
-                        errorVenta: false,
-                      });
-                    }
+                  if (this.precio_cuatro > 0) {
+                    this.precios.push({
+                      id: 4,
+                      nombre_precio: "Especial",
+                      valor: this.precio_cuatro,
+                      porcentaje: this.calcularPorcentaje(this.precio_cuatro),
+                      errorVenta: false,
+                    });
+                  }
 
-                    this.$forceUpdate();
-                  });
-
-                  this.fechaVencimientoSeleccion = articulo.vencimiento === 1 ? true : false;
+                  this.$forceUpdate();
+                  this.fechaVencimientoSeleccion = articulo.vencimiento === 1;
                 });
               });
 
@@ -2007,7 +2019,6 @@ export default {
               this.modal = 1;
               this.tituloModal = "Registrar Industria";
               this.nombre = "";
-              //this.descripcion = '';
               this.tipoAccion = 3;
               break;
             }
@@ -2015,28 +2026,13 @@ export default {
         }
       }
     },
-    calcularPrecio(precio, index) {
-      if (
-        isNaN(this.datosFormulario.precio_costo_unid) ||
-        isNaN(parseFloat(precio.porcentage))
-      ) {
-        return;
-      }
-      const margen_ganancia =
-        parseFloat(this.datosFormulario.precio_costo_unid) *
-        (parseFloat(precio.porcentage) / 100);
-      const precio_publico =
-        parseFloat(this.datosFormulario.precio_costo_unid) + margen_ganancia;
-      console.log("precio publico", typeof precio_publico);
-      if (index === 0) {
-        this.precio_uno = Number(parseFloat(precio_publico).toFixed(2));
-      } else if (index === 1) {
-        this.precio_dos = Number(parseFloat(precio_publico).toFixed(2));
-      } else if (index === 2) {
-        this.precio_tres = Number(parseFloat(precio_publico).toFixed(2));
-      } else if (index === 3) {
-        this.precio_cuatro = Number(parseFloat(precio_publico).toFixed(2));
-      }
+    calcularPrecio(porcentaje) {
+      const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
+      const porc = Number(porcentaje);
+      if (isNaN(porc) || porc < 0) return costo;
+
+      const precioVenta = costo + (costo * porc / 100);
+      return parseFloat(precioVenta.toFixed(2));
     },
   },
 

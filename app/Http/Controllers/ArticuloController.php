@@ -606,123 +606,124 @@ class ArticuloController extends Controller
 
     public function store(Request $request)
     {
-        if (!$request->ajax())
-            return redirect('/');
+        if (!$request->ajax()) return redirect('/');
 
-        // Validar si ya existe un artículo con el mismo código
         $articuloExistente = Articulo::where('codigo', $request->codigo)->first();
         if ($articuloExistente) {
             return response()->json([
                 'error' => true,
-                'message' => 'Ya existe un medicamento con el mismo codigo: ' . $articuloExistente->nombre
+                'message' => 'Ya existe un medicamento con el mismo código: ' . $articuloExistente->nombre
             ], 409);
         }
 
         $articulo = new Articulo();
         $articulo->idcategoria = $request->idcategoria;
         $articulo->vencimiento = $request->fechaVencimientoSeleccion;
-        $articulo->idmedida = 1;
+        
+        $articulo->idmedida = $request->idmedida ? $request->idmedida : 1; 
+        
         $articulo->codigo = $request->codigo;
         $articulo->nombre = $request->nombre;
         $articulo->nombre_generico = $request->nombre;
         $articulo->unidad_envase = $request->unidad_envase;
-        $articulo->precio_venta = $request->precio_uno;
+        
+        $articulo->precio_venta = $request->precio_uno; 
         $articulo->precio_uno = $request->precio_uno;
         $articulo->precio_dos = $request->precio_dos;
-        $articulo->precio_tres = 0.00;
-        $articulo->precio_cuatro = 0.00;
+        
+        $articulo->precio_tres = $request->precio_tres; 
+        $articulo->precio_cuatro = $request->precio_cuatro;
+
         $articulo->costo_compra = $request->costo_compra;
         $articulo->stock = $request->stock;
         $articulo->idproveedor = $request->idproveedor;
+        
         $articulo->precio_costo_unid = $request->precio_costo_unid;
-        $articulo->precio_costo_paq = $request->precio_costo_unid;
+        $articulo->precio_costo_paq = $request->precio_costo_paq; 
+
         $articulo->descripcion = $request->descripcion;
         $articulo->codigo_alfanumerico = $request->codigo_alfanumerico;
         $articulo->descripcion_fabrica = $request->descripcion_fabrica;
         $articulo->condicion = '1';
-        $nombreimagen = '';
+
+        // Imagen
         if ($request->hasFile('fotografia')) {
-            if ($request->hasFile('fotografia')) {
-                $imagen = $request->file("fotografia");
-                $nombreimagen = Str::slug($request->nombre) . "." . $imagen->guessExtension();
-                $ruta = public_path("img/articulo/");
-                if (!File::isDirectory($ruta)) {
-                    File::makeDirectory($ruta, 0755, true);
-                }
-                copy($imagen->getRealPath(), $ruta . $nombreimagen);
-                $articulo->fotografia = $nombreimagen;
+            $imagen = $request->file("fotografia");
+            $nombreimagen = Str::slug($request->nombre) . "." . $imagen->guessExtension();
+            
+            $ruta = public_path("img/articulo/");
+            if (!File::isDirectory($ruta)) {
+                File::makeDirectory($ruta, 0755, true);
             }
+            
+            copy($imagen->getRealPath(), $ruta . $nombreimagen);
+            $articulo->fotografia = $nombreimagen;
         }
+
         $articulo->save();
+
         return ['idArticulo' => $articulo->id];
     }
     public function update(Request $request)
     {
-        if (!$request->ajax())
-            return redirect('/');
+        if (!$request->ajax()) return redirect('/');
 
         try {
             DB::beginTransaction();
 
             $articulo = Articulo::findOrFail($request->id);
 
-            // 1. Guardar copia de los precios actuales (antes de sobrescribir)
             $originalPrices = $articulo->only([
-                'precio_venta',
-                'precio_uno',
-                'precio_dos',
-                'precio_tres',
-                'precio_cuatro',
-                'precio_costo_paq',
-                'precio_costo_unid',
-                'costo_compra',
+                'precio_venta', 'precio_uno', 'precio_dos', 
+                'precio_tres', 'precio_cuatro', 
+                'precio_costo_paq', 'precio_costo_unid', 'costo_compra'
             ]);
 
-            // 2. Asignar todos los campos como lo haces normalmente
             $articulo->idcategoria = $request->idcategoria;
             $articulo->codigo = $request->codigo;
             $articulo->nombre = $request->nombre;
+            $articulo->unidad_envase = $request->unidad_envase;
 
             $articulo->precio_venta = $request->precio_venta;
-            $articulo->precio_costo_paq = $request->precio_costo_unid;
-            $articulo->precio_costo_unid = $request->precio_costo_unid;
-
             $articulo->precio_uno = $request->precio_uno;
             $articulo->precio_dos = $request->precio_dos;
-            $articulo->precio_tres = $request->precio_tres;
+            
+            $articulo->precio_tres = $request->precio_tres; 
             $articulo->precio_cuatro = $request->precio_cuatro;
 
+            $articulo->precio_costo_unid = $request->precio_costo_unid;
+            $articulo->precio_costo_paq = $request->precio_costo_paq; 
             $articulo->costo_compra = $request->costo_compra;
 
             $articulo->stock = $request->stock;
             $articulo->descripcion = $request->descripcion;
             $articulo->vencimiento = $request->fechaVencimientoSeleccion;
-            $articulo->unidad_envase = $request->unidad_envase;
+            
             $articulo->idproveedor = $request->idproveedor;
-            $articulo->idmedida = 1;
+            $articulo->idmedida = $request->idmedida ? $request->idmedida : $articulo->idmedida; 
+            
             $articulo->codigo_alfanumerico = $request->codigo_alfanumerico;
             $articulo->descripcion_fabrica = $request->descripcion_fabrica;
 
-            // Imagen
             if ($request->hasFile('fotografia')) {
-                if ($articulo->fotografia != '' && Storage::exists('public/img/articulo/' . $articulo->fotografia)) {
-                    Storage::delete('public/img/articulo/' . $articulo->fotografia);
+                if ($articulo->fotografia != '') {
+                     $rutaAnterior = public_path("img/articulo/" . $articulo->fotografia);
+                     if(file_exists($rutaAnterior)) { @unlink($rutaAnterior); }
                 }
 
                 $imagen = $request->file("fotografia");
                 $nombreimagen = Str::slug($request->nombre) . "." . $imagen->guessExtension();
-                $imagen->storeAs('public/img/articulo', $nombreimagen);
-                copy($imagen->getRealPath(), public_path("img/articulo/") . $nombreimagen);
-
+                $ruta = public_path("img/articulo/");
+                
+                if (!File::isDirectory($ruta)) File::makeDirectory($ruta, 0755, true);
+                
+                copy($imagen->getRealPath(), $ruta . $nombreimagen);
                 $articulo->fotografia = $nombreimagen;
             }
 
-            // 3. Comparar los valores originales vs. los nuevos
             $precioCambio = false;
             foreach ($originalPrices as $key => $originalValue) {
                 $nuevoValor = $articulo->$key;
-
-                // Para campos float, usar round para evitar problemas de formato
                 if (round(floatval($originalValue), 2) !== round(floatval($nuevoValor), 2)) {
                     $precioCambio = true;
                     break;
@@ -735,9 +736,12 @@ class ArticuloController extends Controller
 
             $articulo->save();
             DB::commit();
-        } catch (Exception $e) {
+            
+            return response()->json(['status' => 'success']);
+
+        } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al actualizar artículo: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
