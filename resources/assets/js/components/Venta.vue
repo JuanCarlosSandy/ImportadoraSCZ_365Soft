@@ -37,15 +37,17 @@
           </button>-->
           </div>
           <div class="d-flex align-items-center gap-1">
+            <!-- 
             <button :class="['btn', 'btn-sm', filtroVentasActivo === 'contado' ? 'btn-primary' : 'btn-outline-primary']"
               @click="filtroVentasActivo = 'contado'; listarVenta(1, buscar, criterio, 1)">
               CONTADO
             </button>
-
+            
             <button :class="['btn', 'btn-sm', filtroVentasActivo === 'credito' ? 'btn-primary' : 'btn-outline-primary']"
               @click="filtroVentasActivo = 'credito'; listarVenta(1, buscar, criterio, 2)">
               CRÉDITO
-            </button>
+            </button> -->
+            
 
             <!--<button :class="['btn', 'btn-sm', filtroVentasActivo === 'factura' ? 'btn-primary' : 'btn-outline-primary']"
             style="margin-left: 8px; min-width: 70px; font-size: 0.85em; padding: 2px 10px;"
@@ -153,14 +155,15 @@
             <Column field="fecha_hora" header="Fecha y Hora" class="d-none d-md-table-cell"></Column>
             <Column field="usuario" header="Vendedor"></Column>
             <Column field="nombre_sucursal" header="Sucursal"></Column>
-            <Column header="Tipo Venta" field="idtipo_venta" class="d-none d-md-table-cell">
+            <!--<Column header="Tipo Venta" field="idtipo_venta" class="d-none d-md-table-cell">
               <template #body="slotProps">
                 <span class="badge"
                   :class="Number(slotProps.data.idtipo_venta) === 1 ? 'badge-contado' : 'badge-credito'">
                   {{ Number(slotProps.data.idtipo_venta) === 1 ? 'Contado' : 'Crédito' }}
                 </span>
               </template>
-            </Column>
+            </Column>-->
+            
           </DataTable>
           <!--<Paginator :rows="10" :totalRecords="pagination.total" :first="(pagination.current_page - 1) * 10"
             @page="onPageChange" />-->
@@ -197,24 +200,34 @@
             <DataTable :value="arrayDetalle" class="p-datatable-sm p-datatable-gridlines">
               <Column field="cantidad" header="Cant Vendida">
                 <template #body="slotProps">
-                  <span :style="{
-                    backgroundColor: slotProps.data.modo_venta === 'caja' ? '#0d6efd' : '#198754',
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontWeight: 'bold'
-                  }">
+                  <span
+                    :style="{
+                      backgroundColor:
+                        slotProps.data.modo_venta === 'caja'
+                          ? '#0d6efd'
+                          : slotProps.data.modo_venta === 'docena'
+                          ? '#6f42c1'
+                          : '#198754',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontWeight: 'bold'
+                    }"
+                  >
                     {{
                       slotProps.data.cantidad + ' ' +
                       (
                         slotProps.data.modo_venta === 'caja'
                           ? (slotProps.data.cantidad == 1 ? 'caja' : 'cajas')
+                          : slotProps.data.modo_venta === 'docena'
+                          ? (slotProps.data.cantidad == 1 ? 'docena' : 'docenas')
                           : (slotProps.data.cantidad == 1 ? 'unidad' : 'unidades')
                       )
                     }}
                   </span>
                 </template>
               </Column>
+
               <Column field="codigo" header="Codigo"></Column>
               <Column field="articulo" header="Producto"></Column>
               <Column field="unidad_envase" header="Cant x Caja">
@@ -718,17 +731,17 @@
               <div v-if="tipoAccion2 !== 2" class="p-col-12 p-md-6 d-flex flex-column justify-content-start">
                 <div class="d-flex justify-content-center mb-3">
                   <div class="btn-selector">
-                    <button class="btn-selector-btn" :class="{ active: tipoVenta === 'contado' }"
+                    <!--<button class="btn-selector-btn" :class="{ active: tipoVenta === 'contado' }"
                       @click="tipoVenta = 'contado'">
                       <i class="fa fa-money-bill mr-2"></i>
                       Contado
-                    </button>
-
-                    <button class="btn-selector-btn" :class="{ active: tipoVenta === 'credito' }"
+                    </button>-->
+                    
+                    <!--<button class="btn-selector-btn" :class="{ active: tipoVenta === 'credito' }"
                       @click="tipoVenta = 'credito'">
                       <i class="fa fa-file-invoice mr-2"></i>
                       Crédito
-                    </button>
+                    </button>-->
                   </div>
                 </div>
                 <div v-if="tipoVenta === 'contado'">
@@ -1171,9 +1184,13 @@
                   " />
 
                 <!-- Botón cambiar modo venta -->
-                <Button :label="slotProps.data.modoVenta === 'caja' ? 'Caja' : 'Unidad'"
-                  class="p-button-info p-button-sm btn-mini" style="margin-left: 5px"
-                  @click="cambiarModoVenta(slotProps.data)" />
+                <Button
+                  :label="getLabelModoVenta(slotProps.data.modoVenta)"
+                  class="p-button-info p-button-sm btn-mini"
+                  style="margin-left: 5px"
+                  @click="cambiarModoVenta(slotProps.data)"
+                />
+
               </template>
             </Column>
             <Column field="codigo_producto" header="Codigo" style="width: 30%" />
@@ -1181,14 +1198,17 @@
             <Column field="stock" header="Stock Actual" style="width: 15%">
               <template #body="slotProps">
                 <div
-                  style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
+                  style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;"
+                >
                   <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
 
                   <span v-else>
                     {{
                       slotProps.data.modoVenta === 'caja'
                         ? slotProps.data.stock_cajas + ' Cajas'
-                        : slotProps.data.stock + ' Unidades'
+                        : slotProps.data.modoVenta === 'docena'
+                          ? (slotProps.data.stock / 12).toFixed(2) + ' Docenas'
+                          : slotProps.data.stock + ' Unidades'
                     }}
                   </span>
                 </div>
@@ -1242,7 +1262,9 @@
                       (
                         slotProps.data.modoVenta === 'caja'
                           ? slotProps.data.precioseleccionado * slotProps.data.cantidad * slotProps.data.unidad_envase
-                          : slotProps.data.precioseleccionado * slotProps.data.cantidad
+                          : slotProps.data.modoVenta === 'docena'
+                            ? slotProps.data.precioseleccionado * slotProps.data.cantidad * 12
+                            : slotProps.data.precioseleccionado * slotProps.data.cantidad
                       )
                       * (1 - (parseFloat(slotProps.data.descuento || 0) / 100))
                     )
@@ -1751,7 +1773,7 @@ export default {
       nombreClienteEditable: true,
       telefonoClienteEditable: true,
       editarCuotas: false,
-      modoVenta: "caja", // inicia vendiendo en cajas
+      modoVenta: "unidad", // inicia vendiendo en cajas
       bancoMap: {
         "banco nacional de bolivia": "BNB",
         "banco mercantil santa cruz": "BME",
@@ -1825,7 +1847,7 @@ export default {
         { name: "FACTURA", code: "FACTURA" },
       ],
       opcionPago: "efectivo",
-      tipoVenta: "credito",
+      tipoVenta: "contado",
       tipocompro: "Recibo",
 
       mostrarSpinner: false,
@@ -2090,6 +2112,8 @@ export default {
 
         if (detalle.modoVenta === "caja") {
           subtotal = detalle.precioseleccionado * detalle.cantidad * detalle.unidad_envase;
+        } else if (detalle.modoVenta === "docena") {
+          subtotal = detalle.precioseleccionado * detalle.cantidad * 12;
         } else {
           // unidad
           subtotal = detalle.precioseleccionado * detalle.cantidad;
@@ -2136,6 +2160,25 @@ export default {
   },
 
   methods: {
+    asignarPrecioPorModo(detalle) {
+    if (detalle.modoVenta === 'caja') {
+      detalle.precioseleccionado = detalle.precio_tres;
+    } else if (detalle.modoVenta === 'docena') {
+      detalle.precioseleccionado = detalle.precio_dos;
+    } else {
+      detalle.precioseleccionado = detalle.precio_uno;
+    }
+  },
+    getLabelModoVenta(modo) {
+      switch (modo) {
+        case 'caja':
+          return 'Caja';
+        case 'docena':
+          return 'Docena';
+        default:
+          return 'Unidad';
+      }
+    },
     getEstadoText(estado, idtipo_venta, tipo_comprobante, saldo_restante = null) {
       // Si es crédito y el saldo restante es negativo, mostrar como Saldo a Favor
       if (idtipo_venta == 2 && parseFloat(saldo_restante) < 0) {
@@ -2615,8 +2658,16 @@ export default {
     },
 
     cambiarModoVenta(detalle) {
-      detalle.modoVenta = detalle.modoVenta === "caja" ? "unidad" : "caja";
+      if (detalle.modoVenta === 'unidad') {
+        detalle.modoVenta = 'docena';
+      } else if (detalle.modoVenta === 'docena') {
+        detalle.modoVenta = 'caja';
+      } else {
+        detalle.modoVenta = 'unidad';
+      }
+      this.asignarPrecioPorModo(detalle);
     },
+
     seleccionarDescuento() {
       this.tipoPagoCuota = 'descuento';
 
@@ -3476,6 +3527,7 @@ export default {
 
       this.arraySeleccionado = articulo;
       this.mostrarDesplegable = false;
+      
 
       this.agregarDetalle();
 
@@ -3672,8 +3724,11 @@ export default {
           precio_uno: this.arraySeleccionado.precio_uno,
           precio_dos: this.arraySeleccionado.precio_dos,
           usando_precio: 'uno',
+          modoVenta: 'unidad',
         };
+        this.asignarPrecioPorModo(nuevoDetalle);
         this.arrayDetalle.push(nuevoDetalle);
+        
       }
 
       const productoExistente = this.arrayProductos.find((p) => p.codigoProducto === this.arraySeleccionado.codigo);
@@ -3708,7 +3763,7 @@ export default {
       this.unidadPaquete = 1;
       this.descuentoProducto = 0;
       this.arraySeleccionado = null;
-
+      
       this.$toast.add({
         severity: "success",
         summary: "Producto agregado",

@@ -623,6 +623,8 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
                                 THEN detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad
+                            WHEN detalle_ventas.modo_venta = 'docena'
+                                THEN detalle_ventas.precio * 12 * detalle_ventas.cantidad
                             ELSE 
                                 detalle_ventas.precio * detalle_ventas.cantidad
                         END
@@ -634,6 +636,9 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
                                 THEN (detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100)
+                            WHEN detalle_ventas.modo_venta = 'docena'
+                                THEN (detalle_ventas.precio * 12 * detalle_ventas.cantidad) 
+                                    * (detalle_ventas.descuento / 100)
                             ELSE 
                                 (detalle_ventas.precio * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100)
                         END
@@ -646,6 +651,10 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
                             WHEN detalle_ventas.modo_venta = 'caja' 
                                 THEN (detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad) 
                                     - ((detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100))
+                            WHEN detalle_ventas.modo_venta = 'docena'
+                                THEN (detalle_ventas.precio * 12 * detalle_ventas.cantidad)
+                                    - ((detalle_ventas.precio * 12 * detalle_ventas.cantidad)
+                                        * (detalle_ventas.descuento / 100))
                             ELSE 
                                 (detalle_ventas.precio * detalle_ventas.cantidad) 
                                     - ((detalle_ventas.precio * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100))
@@ -1337,10 +1346,15 @@ public function indexFiltrar(Request $request)
 
     private function actualizarInventario($idAlmacen, $detalle)
 {
-    // 🔹 Determinar cuántas unidades reales descontar
-    $cantidadReal = $detalle['modoVenta'] === 'caja'
-        ? $detalle['cantidad'] * $detalle['unidad_envase']
-        : $detalle['cantidad'];
+    // 🔹 Determinar cuántas unidades reales descontar según el modo de venta
+    if ($detalle['modoVenta'] === 'caja') {
+        $cantidadReal = $detalle['cantidad'] * $detalle['unidad_envase'];
+    } elseif ($detalle['modoVenta'] === 'docena') {
+        $cantidadReal = $detalle['cantidad'] * 12;
+    } else {
+        // unidad
+        $cantidadReal = $detalle['cantidad'];
+    }
 
     $cantidadRestante = $cantidadReal;
     $fechaActual = now();
@@ -1378,7 +1392,17 @@ public function indexFiltrar(Request $request)
             $inventario = Inventario::where('idalmacen', $idAlmacen)
                 ->where('idarticulo', $detalle['idarticulo'])
                 ->firstOrFail();
-            $inventario->saldo_stock += $detalle['cantidad'];
+            
+            // Calcular cantidad real según modo de venta
+            if ($detalle['modoVenta'] === 'caja') {
+                $cantidadReal = $detalle['cantidad'] * $detalle['unidad_envase'];
+            } elseif ($detalle['modoVenta'] === 'docena') {
+                $cantidadReal = $detalle['cantidad'] * 12;
+            } else {
+                $cantidadReal = $detalle['cantidad'];
+            }
+            
+            $inventario->saldo_stock += $cantidadReal;
             $inventario->save();
         }
     }
@@ -1444,7 +1468,17 @@ public function indexFiltrar(Request $request)
                     ->where('inventarios.idalmacen', $idAlmacen)
                     ->where('articulos.id', $det['idarticulo'])
                     ->firstOrFail();
-                $disminuirStock->saldo_stock += $det['cantidad'];
+                
+                // Calcular cantidad real según modo de venta
+                if ($det['modoVenta'] === 'caja') {
+                    $cantidadReal = $det['cantidad'] * $det['unidad_envase'];
+                } elseif ($det['modoVenta'] === 'docena') {
+                    $cantidadReal = $det['cantidad'] * 12;
+                } else {
+                    $cantidadReal = $det['cantidad'];
+                }
+                
+                $disminuirStock->saldo_stock += $cantidadReal;
                 $disminuirStock->save();
             }
 
@@ -1559,6 +1593,10 @@ public function indexFiltrar(Request $request)
                     $unidadesDevueltas = $detalle->cantidad * $unidadesPorCaja;
                     $inventario->saldo_stock += $unidadesDevueltas;
 
+                } elseif (strtolower($detalle->modo_venta) === 'docena') {
+                    // DOCENA - 12 unidades
+                    $unidadesDevueltas = $detalle->cantidad * 12;
+                    $inventario->saldo_stock += $unidadesDevueltas;
                 } else {
                     // UNIDAD
                     $inventario->saldo_stock += $detalle->cantidad;

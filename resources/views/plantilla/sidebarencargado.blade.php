@@ -47,12 +47,14 @@
                      <li @click="menu=0" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-shopping-cart"></i> Vender</a>
                     </li>
+                    <!--
                     <li @click="menu=75" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-credit-card"></i> Deudores/Acreedores</a>
                     </li>
                     <li @click="menu=74" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Reporte Deudores</a>
                     </li>
+-->
                     <li @click="menu=6" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-users" style="font-size: 16px;"></i> Mis Clientes</a>
                     </li>
