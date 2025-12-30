@@ -475,6 +475,10 @@
     <comprascredito></comprascredito>
 </template>
 
+<template v-if="menu==74">
+    <reportedia></reportedia>
+</template>
+
 <template v-if="menu==27">
     <medidasnewview></medidasnewview>
 </template>

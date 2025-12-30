@@ -85,6 +85,14 @@
                             <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i>Sinc. Unidad Medida</a>
                         </li>
                     </ul>-->
+            <li class="nav-item nav-dropdown">
+                <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-line-chart"></i> REPORTE VENTAS</a>
+                <ul class="nav-dropdown-items">
+                    <li @click="menu=74" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Ventas del día</a>
+                    </li>
+                </ul>
+            </li>
     </nav>
    
 </div>

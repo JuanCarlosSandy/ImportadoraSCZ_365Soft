@@ -313,6 +313,8 @@ Vue.component("ajusteinventarios", require("./components/AjusteInventario.vue"))
 Vue.component("reportedeudores", require("./components/ReporteDeudores.vue"));
 Vue.component("cobros", require("./components/Cobros.vue"));
 
+Vue.component("reportedia", require("./components/ReporteDelDia.vue"));
+
 
 Vue.use(BootstrapVue);
 Vue.use(Toasted);

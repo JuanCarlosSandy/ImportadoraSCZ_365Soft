@@ -287,13 +287,25 @@ class UserController extends Controller
     public function getUsuarioAutenticado(Request $request)
     {
         $usuario = Auth::user();
-        $sucursal = Sucursales::find($usuario->idsucursal); // Cambia Sucursal por Sucursales
+        $sucursal = Sucursales::find($usuario->idsucursal);
+
         if (!$sucursal) {
             return response()->json(['error' => 'Sucursal no encontrada'], 404);
         }
+
+        // AHORA SÍ, devolvemos los datos del usuario + los de la sucursal
         return response()->json([
+            // --- Datos del Usuario (ESTO ES LO QUE FALTABA) ---
+            'id' => $usuario->id,
+            'nombre' => $usuario->nombre, // Asegúrate que en tu BD la columna sea 'nombre' (o usa 'name')
+            'usuario' => $usuario->usuario, // Opcional, por si usas este campo
+
+            // --- Datos de la Sucursal ---
             'idsucursal' => $sucursal->id,
             'sucursal_nombre' => $sucursal->nombre
         ]);
     }
+
+
+    
 }

@@ -2986,178 +2986,223 @@ public function indexFiltrar(Request $request)
     }
 
     public function imprimirResivoCarta($id)
-    {
-        try {
-            $venta = Venta::with('detalles.producto')->find($id);
-            if (!$venta) {
-                return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
+{
+    try {
+        $venta = Venta::with('detalles.producto')->find($id);
+        if (!$venta) {
+            return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
+        }
+
+        $persona = Persona::find($venta->idcliente);
+        if (!$persona) {
+            return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
+        }
+
+        $empresa = Empresa::first();
+        if (!$empresa) {
+            return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
+        }
+
+        if ($venta->detalles->isNotEmpty()) {
+            $pdf = new FPDF('P', 'mm', [139.7, 215.9]); 
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(true, 15);
+            $pdf->AddPage();
+
+            // ================= CONFIGURACIÓN PÁGINA =================
+            $pageWidth = $pdf->GetPageWidth();
+            $margin = 10;
+            $usableWidth = $pageWidth - ($margin * 2);
+
+            // ================= HEADER =================
+            $pdf->SetDrawColor(0, 0, 0);
+            $pdf->SetLineWidth(0.8);
+            $pdf->Line($margin, 8, $pageWidth - $margin, 8);
+
+            $logoPath = public_path('img/logoPrincipal.png');
+            $logoWidth = 20; 
+
+            if (file_exists($logoPath)) {
+                $pdf->Image($logoPath, $margin, 10, $logoWidth);
             }
 
-            $persona = Persona::find($venta->idcliente);
-            if (!$persona) {
-                return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
-            }
+            $pdf->SetXY($margin, 12); 
+            $pdf->SetFont('Arial', 'B', 12);
+            $pdf->Cell($usableWidth, 5, 'NOTA DE VENTA', 0, 1, 'C');
 
-            $empresa = Empresa::first();
-            if (!$empresa) {
-                return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
-            }
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
+            $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
+            $pdf->Cell($usableWidth, 4, utf8_decode('DIRECCIÓN: ' . $empresa->direccion), 0, 1, 'C');
 
-            if ($venta->detalles->isNotEmpty()) {
-                $pdf = new FPDF('P', 'mm', [139.7, 215.9]); // MEDIA CARTA
-                $pdf->SetMargins(8, 8, 8);
-                $pdf->SetAutoPageBreak(true, 10);
-                $pdf->AddPage();
+            // ================= FECHAS =================
+            $fecha = date('d/m/Y', strtotime($venta->created_at));
+            $hora  = date('H:i:s', strtotime($venta->created_at));
 
+            $posY_Fila = 32; 
+            $pdf->SetY($posY_Fila);
 
-// ================= MEDIDAS =================
-$pageWidth = $pdf->GetPageWidth();
-$margin = 10;
-$usableWidth = $pageWidth - ($margin * 2);
+            $pdf->SetDrawColor(150, 150, 150);
+            $pdf->SetLineWidth(0.3);
+            $pdf->Line($margin, $posY_Fila, $pageWidth - $margin, $posY_Fila); 
+            $pdf->Line($margin, $posY_Fila + 7, $pageWidth - $margin, $posY_Fila + 7);
 
-// ================= LOGO (IZQUIERDA) =================
-$logoPath = public_path('img/logoPrincipal.png');
-$logoWidth = 20;
+            $anchoCol = $usableWidth / 3;
 
-if (file_exists($logoPath)) {
-    $pdf->Image($logoPath, $margin, 10, $logoWidth);
-}
+            // FECHA
+            $pdf->SetXY($margin, $posY_Fila + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(12, 4, 'FECHA:', 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell($anchoCol - 12, 4, $fecha, 0, 0, 'L');
 
-// ================= TITULO + INFO (CENTRO) =================
-$pdf->SetXY($margin, 12);
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell($usableWidth, 6, 'NOTA DE VENTA', 0, 1, 'C');
+            // HORA
+            $pdf->SetXY($margin + $anchoCol, $posY_Fila + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(12, 4, 'HORA:', 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell($anchoCol - 12, 4, $hora, 0, 0, 'L');
 
-$pdf->SetFont('Arial', '', 8);
-$pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
-$pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
-$pdf->Cell($usableWidth, 4, utf8_decode('DIRECION: ' . $empresa->direccion), 0, 1, 'C');
+            // NUMERO
+            $pdf->SetXY($margin + ($anchoCol * 2), $posY_Fila + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(20, 4, utf8_decode('N° COMPR:'), 0, 0, 'L'); 
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell($anchoCol - 20, 4, $venta->num_comprobante, 0, 1, 'R');
 
-$pdf->Cell($usableWidth, 4, utf8_decode('N° COMPROBANTE: ' . $venta->num_comprobante), 0, 1, 'C');
+            // ================= DATOS DEL CLIENTE (AJUSTADO) =================
+            $posY_Cliente = 44; 
+            $pdf->SetY($posY_Cliente); 
+            
+            $pdf->SetFillColor(245, 245, 245);
+            $pdf->SetDrawColor(100, 100, 100);
+            $pdf->SetLineWidth(0.3);
+            
+            // CAMBIO 1: Cambié el 16 por 11 (Esta es la altura del cuadro gris)
+            $pdf->Rect($margin, $posY_Cliente, $usableWidth, 11, 'FD'); 
+            
+            // --- LÍNEA 1: CLIENTE ---
+            $pdf->SetXY($margin + 2, $posY_Cliente + 1.5); // Margen interno superior
+            
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(18, 4, 'CLIENTE:', 0, 0, 'L'); // Bajé altura de celda a 4
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell(0, 4, utf8_decode(strtoupper($persona->nombre)), 0, 1, 'L');
+            
+            // --- LÍNEA 2: TELÉFONO ---
+            // CAMBIO 2: Ajusté la posición Y manualmente para que quede pegadito
+            // (posY_Cliente + 1.5 + 4 de la línea anterior = + 5.5)
+            $pdf->SetXY($margin + 2, $posY_Cliente + 5.5); 
+            
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(22, 4, utf8_decode('TELÉFONO:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $telefono = (!empty($persona->telefono)) ? $persona->telefono : 'S/N';
+            $pdf->Cell(0, 4, $telefono, 0, 1, 'L');
 
-// ================= FECHA / HORA (DERECHA) =================
-$fecha = date('d/m/Y', strtotime($venta->created_at));
-$hora  = date('H:i:s', strtotime($venta->created_at));
+            // Salto de línea para separarse de la tabla de productos
+            $pdf->Ln(4);
 
-$rightX = $pageWidth - $margin - 32;
+            // ================= CABECERA TABLA =================
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(230, 230, 230); 
+            $pdf->SetDrawColor(100, 100, 100);
 
-$pdf->SetXY($rightX, 12);
-$pdf->SetFont('Arial', 'B', 8);
-$pdf->Cell(18, 4, 'FECHA:', 0, 0);
-$pdf->SetFont('Arial', '', 8);
-$pdf->Cell(30, 4, $fecha, 0, 1);
+            $pdf->Cell(12, 7, 'Cant', 1, 0, 'C', true);
+            $pdf->Cell(55, 7, utf8_decode('Descripción'), 1, 0, 'C', true);
+            $pdf->Cell(15, 7, 'U/Caja', 1, 0, 'C', true);
+            $pdf->Cell(18, 7, 'P.Unit', 1, 0, 'C', true);
+            $pdf->Cell(20, 7, 'Subtotal', 1, 1, 'C', true);
 
-$pdf->SetXY($rightX, 18);
-$pdf->SetFont('Arial', 'B', 8);
-$pdf->Cell(18, 4, 'HORA:', 0, 0);
-$pdf->SetFont('Arial', '', 8);
-$pdf->Cell(30, 4, $hora, 0, 1);
+            // ================= DETALLES =================
+            $pdf->SetFont('Arial', '', 7.5);
+            $pdf->SetDrawColor(180, 180, 180);
+            
+            $total = 0;
+            $fill = false; 
 
-// ================= ESPACIO DESPUÉS DEL ENCABEZADO =================
-$pdf->Ln(15);
+            foreach ($venta->detalles as $detalle) {
+                $modo = strtolower($detalle->modo_venta ?? 'unidad');
 
-                // CLIENTE
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(17, 6, 'CLIENTE:', 0, 0, 'L');
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(60, 6, strtoupper($persona->nombre), 0, 0, 'L');
+                // --- INICIO LÓGICA DOCENA/CAJA ---
+                if ($modo === 'caja') {
+                    $factorCantidad = $detalle->producto->unidad_envase;
+                    $abreviacion = 'CJS';
+                    $cantXCajaVisual = $factorCantidad; // Mostramos ej: 6
+                } elseif ($modo === 'docena') {
+                    $factorCantidad = 12;
+                    $abreviacion = 'DOC';
+                    $cantXCajaVisual = 12; // Mostramos 12
+                } else {
+                    $factorCantidad = 1;
+                    $abreviacion = 'UND';
+                    $cantXCajaVisual = '-';
+                }
+                
+                // Cálculo matemático
+                $subtotal = $detalle->cantidad * $factorCantidad * $detalle->precio;
+                $total += $subtotal;
+                // --- FIN LÓGICA ---
 
-                // DOCUMENTO
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(22, 6, 'DOCUMENTO:', 0, 0, 'L');
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(35, 6, strtoupper($persona->num_documento), 0, 0, 'L');
+                $cantidadTexto = $detalle->cantidad . ' ' . $abreviacion;
 
-                // TELEFONO
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(22, 6, 'TELEFONO:', 0, 0, 'L');
-                $pdf->SetFont('Arial', '', 8);
-                $telefono = (!empty($persona->telefono)) ? $persona->telefono : '0';
-                $pdf->Cell(0, 6, strtoupper($telefono), 0, 1, 'L');
-
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->SetFillColor(230, 230, 230);
-
-                $pdf->Cell(12, 7, 'Cant', 1, 0, 'C', true);
-                $pdf->Cell(55, 7, 'Producto', 1, 0, 'C', true);
-                $pdf->Cell(15, 7, 'Caja', 1, 0, 'C', true);
-                $pdf->Cell(18, 7, 'P.Unit', 1, 0, 'C', true);
-                $pdf->Cell(20, 7, 'Subt.', 1, 1, 'C', true);
-
-
-                $pdf->SetFont('Arial', '', 7);
-                $total = 0;
-                $pdf->SetFont('Arial', '', 8);
-
-                foreach ($venta->detalles as $detalle) {
-
-                    $subtotal = ($detalle->modo_venta === 'caja')
-                        ? $detalle->cantidad * $detalle->producto->unidad_envase * $detalle->precio
-                        : $detalle->cantidad * $detalle->precio;
-                    $total += $subtotal;
-
-                    $abreviacion = $detalle->modo_venta === 'caja' ? 'CJS' : 'UND';
-                    $cantidadTexto = strtoupper($detalle->cantidad . ' ' . $abreviacion);
-
-                    $productoTexto = strtoupper(
-                    $detalle->producto->codigo . ' - ' . $detalle->producto->nombre
-                );
-
-                $productoTexto = $this->cortarTexto(
-                    $pdf,
-                    utf8_decode($productoTexto),
-                    52
-                );
-
-                    $cantXCaja = ($detalle->modo_venta === 'caja')
-                        ? $detalle->producto->unidad_envase
-                        : '-';
-
-                    $pdf->Cell(12, 6, $cantidadTexto, 1, 0, 'C');
-                    $pdf->Cell(55, 6, utf8_decode($productoTexto), 1, 0);
-                    $pdf->Cell(15, 6, $cantXCaja, 1, 0, 'C');
-                    $pdf->Cell(18, 6, number_format($detalle->precio, 2), 1, 0, 'R');
-                    $pdf->Cell(20, 6, number_format($subtotal, 2), 1, 1, 'R');
+                $productoTexto = strtoupper($detalle->producto->codigo . ' - ' . $detalle->producto->nombre);
+                
+                // Asegúrate de tener el método cortarTexto o usa mb_strimwidth
+                if(method_exists($this, 'cortarTexto')){
+                    $productoTexto = $this->cortarTexto($pdf, utf8_decode($productoTexto), 52);
+                } else {
+                    $productoTexto = mb_strimwidth(utf8_decode($productoTexto), 0, 35, '...');
                 }
 
-                $pdf->SetFont('Arial', 'B', 9);
-                $pdf->Cell(90, 7, utf8_decode('TOTAL'), 1, 0, 'R');
-                $pdf->Cell(30, 7, utf8_decode(strtoupper(number_format($total, 2))), 1, 1, 'R');
+                if ($fill) {
+                    $pdf->SetFillColor(250, 250, 250);
+                } else {
+                    $pdf->SetFillColor(255, 255, 255);
+                }
 
-                $formatter = new NumberFormatter("es", NumberFormatter::SPELLOUT);
-                $totalTexto = strtoupper($formatter->format($total)) . ' BOLIVIANOS';
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(0, 5, 'SON: ' . $totalTexto, 0, 1);
-
-                $pdf->Ln(5);
-                $pdf->SetFont('Arial', 'B', 8);
-        
-                // Firma
-                /*$pdf->SetFont('Arial', '', 10);
-                $anchoFirma = $pdf->GetPageWidth() / 2 - 20;
-                $pdf->Cell($anchoFirma, 6, '_________________________', 0, 0, 'C');
-                $pdf->Cell($anchoFirma, 6, '_________________________', 0, 1, 'C');
-                $pdf->Cell($anchoFirma, 6, 'FIRMA DEL CLIENTE', 0, 0, 'C');
-                $pdf->Cell($anchoFirma, 6, 'FIRMA AUTORIZADA', 0, 1, 'C');
-                $pdf->Ln(10);*/
-
-                // Nota de agradecimiento
-                $pdf->SetFont('Arial', 'I', 10);
-                $pdf->Cell(0, 7, utf8_decode('¡GRACIAS POR SU COMPRA!'), 0, 1, 'C');
-
-                $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
-                $pdfPath = public_path('docs/recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf');
-                $pdf->Output($pdfPath, 'F');
-
-                return response()->download($pdfPath);
-            } else {
-                return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 500);
+                $pdf->Cell(12, 6, $cantidadTexto, 1, 0, 'C', true); 
+                $pdf->Cell(55, 6, $productoTexto, 1, 0, 'L', true);
+                $pdf->Cell(15, 6, $cantXCajaVisual, 1, 0, 'C', true); // Muestra 12, NroEnvase o -
+                $pdf->Cell(18, 6, number_format($detalle->precio, 2), 1, 0, 'R', true);
+                $pdf->Cell(20, 6, number_format($subtotal, 2), 1, 1, 'R', true);
+                
+                $fill = !$fill;
             }
-        } catch (\Exception $e) {
-            \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
-            return response()->json(['error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA'], 500);
+
+            // ================= TOTALES =================
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->SetDrawColor(100, 100, 100);
+
+            $pdf->Cell(100, 7, utf8_decode('TOTAL A PAGAR'), 1, 0, 'R', true);
+            $pdf->Cell(20, 7, number_format($total, 2), 1, 1, 'R', true);
+
+            // Conversión a literal
+            $formatter = new NumberFormatter("es", NumberFormatter::SPELLOUT);
+            $totalTexto = strtoupper($formatter->format($total)) . ' ' . ($total == 1 ? 'BOLIVIANO' : 'BOLIVIANOS');
+            
+            $pdf->Ln(2);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(0, 5, 'SON: ' . $totalTexto, 0, 1, 'L');
+
+            $pdf->Ln(8);
+            $pdf->SetFont('Arial', 'I', 10);
+            $pdf->Cell(0, 7, utf8_decode('¡GRACIAS POR SU COMPRA!'), 0, 1, 'C');
+
+            $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
+            $pdfPath = public_path('docs/recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf');
+            $pdf->Output($pdfPath, 'F');
+
+            return response()->download($pdfPath);
+        } else {
+            return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 500);
         }
+    } catch (\Exception $e) {
+        \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
+        return response()->json(['error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA'], 500);
     }
+}
 
     public function imprimirRemisionRollo($id)
     {
@@ -3296,169 +3341,239 @@ $pdf->Ln(15);
     }
 
     public function imprimirRemisionCarta($id)
-    {
-        try {
-            $venta = Venta::with('detalles.producto')->find($id);
-            if (!$venta) {
-                return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
-            }
-
-            $persona = Persona::find($venta->idcliente);
-            if (!$persona) {
-                return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
-            }
-
-            $empresa = Empresa::first();
-            if (!$empresa) {
-                return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
-            }
-
-            if ($venta->detalles->isNotEmpty()) {
-                $pdf = new FPDF('P', 'mm', [139.7, 215.9]); // MEDIA CARTA
-                $pdf->SetMargins(8, 8, 8);
-                $pdf->SetAutoPageBreak(true, 10);
-                $pdf->AddPage();
-
-
-                // ================= MEDIDAS =================
-                $pageWidth = $pdf->GetPageWidth();
-                $margin = 10;
-                $usableWidth = $pageWidth - ($margin * 2);
-
-                // ================= LOGO (IZQUIERDA) =================
-                $logoPath = public_path('img/logoPrincipal.png');
-                $logoWidth = 20;
-
-                if (file_exists($logoPath)) {
-                    $pdf->Image($logoPath, $margin, 10, $logoWidth);
-                }
-
-                // ================= TITULO + INFO (CENTRO) =================
-                $pdf->SetXY($margin, 12);
-                $pdf->SetFont('Arial', 'B', 12);
-                $pdf->Cell($usableWidth, 6, 'NOTA DE REMISION', 0, 1, 'C');
-
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
-                $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
-                $pdf->Cell($usableWidth, 4, utf8_decode('DIRECION: ' . $empresa->direccion), 0, 1, 'C');
-
-                $pdf->Cell($usableWidth, 4, utf8_decode('N° COMPROBANTE: ' . $venta->num_comprobante), 0, 1, 'C');
-
-                // ================= FECHA / HORA (DERECHA) =================
-                $fecha = date('d/m/Y', strtotime($venta->created_at));
-                $hora  = date('H:i:s', strtotime($venta->created_at));
-
-                $rightX = $pageWidth - $margin - 30;
-
-                $pdf->SetXY($rightX, 12);
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(18, 4, 'FECHA:', 0, 0);
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(30, 4, $fecha, 0, 1);
-
-                $pdf->SetXY($rightX, 18);
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(18, 4, 'HORA:', 0, 0);
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(30, 4, $hora, 0, 1);
-
-                // ================= ESPACIO DESPUÉS DEL ENCABEZADO =================
-                $pdf->Ln(15);
-                // CLIENTE
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(17, 6, 'CLIENTE:', 0, 0, 'L');
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(60, 6, strtoupper($persona->nombre), 0, 0, 'L');
-
-                // DOCUMENTO
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(22, 6, 'DOCUMENTO:', 0, 0, 'L');
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(35, 6, strtoupper($persona->num_documento), 0, 0, 'L');
-
-                // TELEFONO
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(22, 6, 'TELEFONO:', 0, 0, 'L');
-                $pdf->SetFont('Arial', '', 8);
-                $telefono = (!empty($persona->telefono)) ? $persona->telefono : '0';
-                $pdf->Cell(0, 6, strtoupper($telefono), 0, 1, 'L');
-
-                // Tabla de productos
-               // Tabla de productos
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->SetFillColor(230, 230, 230);
-
-                $pdf->Cell(15, 7, 'Cant', 1, 0, 'C', true);
-                $pdf->Cell(85, 7, 'Producto', 1, 0, 'C', true);
-                $pdf->Cell(15, 7, 'Cnt X Caja', 1, 1, 'C', true);
-
-
-                $pdf->SetFont('Arial', '', 9);
-                $total = 0;
-                $totalCajas = 0;
-                $totalUnidades = 0;
-
-                $pdf->SetFont('Arial', '', 7);
-
-                foreach ($venta->detalles as $detalle) {
-
-                    $abreviacion = $detalle->modo_venta === 'caja' ? 'CJS' : 'UND';
-                    $cantidadTexto = strtoupper($detalle->cantidad . ' ' . $abreviacion);
-
-                    $productoTexto = strtoupper(
-                        $detalle->producto->codigo . ' - ' . $detalle->producto->nombre
-                    );
-
-                    if ($detalle->modo_venta === 'caja') {
-                        $cantXCaja = $detalle->producto->unidad_envase;
-                        $totalCajas += $detalle->cantidad;
-                    } else {
-                        $cantXCaja = '-';
-                        $totalUnidades += $detalle->cantidad;
-                    }
-                    $pdf->Cell(15, 6, utf8_decode($cantidadTexto), 1, 0, 'C');
-                    $nombre = strtoupper($detalle->producto->nombre);
-                    $codigo = strtoupper($detalle->producto->codigo);
-                    $pdf->SetFont('Arial', 'B', 8);
-                    $pdf->Cell(20, 6, utf8_decode($codigo), 1, 0);  // Código en negrita
-                    $pdf->SetFont('Arial', '', 8);
-                    $pdf->Cell(65, 6, utf8_decode($nombre), 1, 0);  // Nombre
-                    $pdf->Cell(15, 6, utf8_decode(strtoupper($cantXCaja)), 1, 1, 'C');
-                    
-                }
-
-
-                // ------------------------
-                // FILAS DE TOTALES
-                // ------------------------
-               $pdf->Ln(2);
-                $pdf->SetFont('Arial', 'B', 8);
-
-                // Mover el cursor a la derecha, alineado con la tabla
-                $pdf->SetX(40); // mismo margen izquierdo de la tabla
-
-                $pdf->Cell(82, 5, "TOTAL CJS: $totalCajas", 0, 1, 'R');
-                $pdf->SetX(40);
-                $pdf->Cell(82, 5, "TOTAL UNIDADES SUELTAS: $totalUnidades", 0, 1, 'R');
-
-
-                $pdf->Ln(5);
-                $pdf->SetFont('Arial', 'B', 8);
-
-                $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
-                $pdfPath = public_path('docs/recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf');
-                $pdf->Output($pdfPath, 'F');
-
-                return response()->download($pdfPath);
-            } else {
-                return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 500);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
-            return response()->json(['error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA'], 500);
+{
+    try {
+        $venta = Venta::with('detalles.producto')->find($id);
+        if (!$venta) {
+            return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
         }
+
+        $persona = Persona::find($venta->idcliente);
+        if (!$persona) {
+            return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
+        }
+
+        $empresa = Empresa::first();
+        if (!$empresa) {
+            return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
+        }
+
+        if ($venta->detalles->isNotEmpty()) {
+            $pdf = new FPDF('P', 'mm', [139.7, 215.9]); // MEDIA CARTA
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(true, 15);
+            $pdf->AddPage();
+
+            // ================= MEDIDAS =================
+            $pageWidth = $pdf->GetPageWidth();
+            $margin = 10;
+            $usableWidth = $pageWidth - ($margin * 2);
+
+            // ================= LÍNEA SUPERIOR DECORATIVA =================
+            $pdf->SetDrawColor(0, 0, 0);
+            $pdf->SetLineWidth(0.8);
+            $pdf->Line($margin, 8, $pageWidth - $margin, 8);
+
+            // ================= LOGO =================
+            $logoPath = public_path('img/logoPrincipal.png');
+            $logoWidth = 20;
+            if (file_exists($logoPath)) {
+                $pdf->Image($logoPath, $margin, 10, $logoWidth);
+            }
+
+            // ================= DATOS EMPRESA =================
+            $pdf->SetXY($margin, 12);
+            $pdf->SetFont('Arial', 'B', 12);
+            $pdf->Cell($usableWidth, 5, utf8_decode('NOTA DE REMISIÓN'), 0, 1, 'C');
+
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
+            $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
+            $pdf->Cell($usableWidth, 4, utf8_decode('DIRECCIÓN: ' . $empresa->direccion), 0, 1, 'C');
+
+            // ================= FECHA, HORA Y N° =================
+            $fecha = date('d/m/Y', strtotime($venta->created_at));
+            $hora  = date('H:i:s', strtotime($venta->created_at));
+
+            $posY_Fila = 32; 
+            $pdf->SetY($posY_Fila);
+
+            $pdf->SetDrawColor(150, 150, 150);
+            $pdf->SetLineWidth(0.3);
+            $pdf->Line($margin, $posY_Fila, $pageWidth - $margin, $posY_Fila); 
+            $pdf->Line($margin, $posY_Fila + 7, $pageWidth - $margin, $posY_Fila + 7);
+
+            $anchoCol = $usableWidth / 3;
+
+            // 1. FECHA
+            $pdf->SetXY($margin, $posY_Fila + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(12, 4, 'FECHA:', 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell($anchoCol - 12, 4, $fecha, 0, 0, 'L');
+
+            // 2. HORA
+            $pdf->SetXY($margin + $anchoCol, $posY_Fila + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(12, 4, 'HORA:', 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell($anchoCol - 12, 4, $hora, 0, 0, 'L');
+
+            // 3. NÚMERO
+            $pdf->SetXY($margin + ($anchoCol * 2), $posY_Fila + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(20, 4, utf8_decode('N° COMPR:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->Cell($anchoCol - 20, 4, $venta->num_comprobante, 0, 1, 'R');
+
+            // ================= DATOS DEL CLIENTE =================
+            $posY_Cliente = 44;
+            $pdf->SetY($posY_Cliente); 
+            
+            $pdf->SetFillColor(245, 245, 245);
+            $pdf->SetDrawColor(100, 100, 100);
+            $pdf->SetLineWidth(0.3);
+            $pdf->Rect($margin, $posY_Cliente, $usableWidth, 12, 'FD');
+            
+            $pdf->SetXY($margin + 2, $posY_Cliente + 1.5);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(16, 4, 'CLIENTE:', 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell(0, 4, utf8_decode(strtoupper($persona->nombre)), 0, 1, 'L');
+
+            $pdf->SetX($margin + 2);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(16, 4, utf8_decode('TELÉFONO:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell(0, 4, (!empty($persona->telefono)) ? $persona->telefono : 'S/N', 0, 1, 'L');
+
+            $pdf->Ln(6); 
+
+            // ================= TABLA DE PRODUCTOS =================
+            $w_cant = 15;
+            $w_cod  = 20;
+            $w_nom  = $usableWidth - ($w_cant + $w_cod + 15);
+            $w_caja = 15;
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->SetDrawColor(100, 100, 100);
+
+            $pdf->Cell($w_cant, 7, 'Cant', 1, 0, 'C', true);
+            $pdf->Cell($w_cod, 7, utf8_decode('Cód'), 1, 0, 'C', true);
+            $pdf->Cell($w_nom, 7, 'Producto', 1, 0, 'C', true);
+            $pdf->Cell($w_caja, 7, 'U/Caja', 1, 1, 'C', true);
+
+            // ================= CONTENIDO =================
+            $pdf->SetFont('Arial', '', 7.5);
+            $pdf->SetDrawColor(180, 180, 180);
+            
+            $totalCajas = 0;
+            $totalDocenas = 0; // <--- NUEVO CONTADOR
+            $totalUnidades = 0;
+            $fill = false;
+
+            foreach ($venta->detalles as $detalle) {
+                $modo = strtolower($detalle->modo_venta ?? 'unidad'); // Normalizamos
+                
+                // --- INICIO DE LÓGICA MODIFICADA ---
+                if ($modo === 'caja') {
+                    $cantXCaja = $detalle->producto->unidad_envase; // Cantidad del envase
+                    $totalCajas += $detalle->cantidad;
+                    $abreviacion = 'CJS';
+                } elseif ($modo === 'docena') {
+                    $cantXCaja = 12; // La docena siempre son 12
+                    $totalDocenas += $detalle->cantidad;
+                    $abreviacion = 'DOC';
+                } else {
+                    $cantXCaja = '-';
+                    $totalUnidades += $detalle->cantidad;
+                    $abreviacion = 'UND';
+                }
+                // --- FIN DE LÓGICA MODIFICADA ---
+
+                $cantidadTexto = strtoupper($detalle->cantidad . ' ' . $abreviacion);
+                
+                $codigo = strtoupper($detalle->producto->codigo);
+                $nombre = strtoupper($detalle->producto->nombre);
+                
+                // Nota: Asegúrate de tener la función cortarTexto en tu clase o trait
+                if(method_exists($this, 'cortarTexto')){
+                     $nombre = $this->cortarTexto($pdf, utf8_decode($nombre), $w_nom - 2);
+                } else {
+                     $nombre = mb_strimwidth(utf8_decode($nombre), 0, 35, '...');
+                }
+
+                if ($fill) {
+                    $pdf->SetFillColor(250, 250, 250);
+                } else {
+                    $pdf->SetFillColor(255, 255, 255);
+                }
+
+                $pdf->Cell($w_cant, 6, $cantidadTexto, 1, 0, 'C', $fill);
+                
+                $pdf->SetFont('Arial', 'B', 7.5);
+                $pdf->Cell($w_cod, 6, utf8_decode($codigo), 1, 0, 'C', $fill);
+                
+                $pdf->SetFont('Arial', '', 7.5);
+                $pdf->Cell($w_nom, 6, utf8_decode($nombre), 1, 0, 'L', $fill);
+                $pdf->Cell($w_caja, 6, $cantXCaja, 1, 1, 'C', $fill);
+
+                $fill = !$fill;
+            }
+
+            // ================= TOTALES (RESUMEN) =================
+            $pdf->Ln(2);
+            
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(240, 240, 240);
+            $pdf->SetDrawColor(100, 100, 100);
+            
+            $anchoTotales = 80; 
+            $xStart = $pageWidth - $margin - $anchoTotales;
+            
+            // 1. Cajas
+            if ($totalCajas > 0) {
+                $pdf->SetX($xStart);
+                $pdf->Cell($anchoTotales, 6, "TOTAL CAJAS: " . $totalCajas, 1, 1, 'R', true);
+            }
+            
+            // 2. Docenas (Nuevo)
+            if ($totalDocenas > 0) {
+                $pdf->SetX($xStart);
+                $pdf->Cell($anchoTotales, 6, "TOTAL DOCENAS: " . $totalDocenas, 1, 1, 'R', true);
+            }
+            
+            // 3. Unidades
+            if ($totalUnidades > 0) {
+                $pdf->SetX($xStart);
+                $pdf->Cell($anchoTotales, 6, "TOTAL UNIDADES SUELTAS: " . $totalUnidades, 1, 1, 'R', true);
+            }
+
+            // ================= PIE DE PÁGINA =================
+            $pdf->Ln(5);
+            $pdf->SetDrawColor(100, 100, 100);
+            $pdf->Line($margin, $pdf->GetY(), $pageWidth - $margin, $pdf->GetY());
+            
+            $pdf->Ln(2);
+            $pdf->SetFont('Arial', 'I', 7);
+            $pdf->SetTextColor(80, 80, 80);
+            $pdf->Cell(0, 4, utf8_decode('Documento de Remisión - Control Interno'), 0, 1, 'C');
+
+            $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
+            $pdfPath = public_path('docs/remision_carta_' . $nombreLimpio . '_' . $id . '.pdf');
+            $pdf->Output($pdfPath, 'F');
+
+            return response()->download($pdfPath);
+
+        } else {
+            return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 500);
+        }
+    } catch (\Exception $e) {
+        \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
+        return response()->json(['error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA'], 500);
     }
+}
 
     public function selectRoles(Request $request)
     {
