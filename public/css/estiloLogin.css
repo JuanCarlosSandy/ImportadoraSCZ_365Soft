@@ -1,264 +1,331 @@
+/* ======================= */
+/* ESTILO LOGIN - NETFLIX STYLE */
+/* ======================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden; /* evita scroll */
+  overflow: hidden;
+  font-family: 'Roboto', sans-serif;
 }
-@import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
 
-
-.login-frase {
-  font-family: 'Pacifico', cursive;
-  font-size: 24px;
-  text-align: center;
-  background: linear-gradient(90deg, #000000, #000000);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin: 20px 0 30px;
-  line-height: 1.4;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-}
+/* ======================= */
+/* CONTENEDOR PRINCIPAL */
+/* ======================= */
 .content {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; /* ocupa el 100% de la altura exacta de la pantalla */
-  width: 100vw;  /* ocupa el 100% del ancho exacto */
-  background: url('../img/BackLoginFarma.jpg') no-repeat center center;
+  height: 100vh;
+  width: 100vw;
+  background: url('../img/fondologinback.jpg') no-repeat center center;
   background-size: cover;
+  position: relative;
 }
 
+/* Overlay oscuro sobre el fondo */
 .content::before {
   content: "";
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.4); /* oscurece la foto */
-  backdrop-filter: blur(3px);  /* difumina el fondo */
-  -webkit-backdrop-filter: blur(8px);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
   z-index: 1;
 }
 
-.container-login {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: stretch;
-  width: 85vw;
-  height: 85vh;
-  max-width: 90vw;
-  max-height: 90vh;
-  padding: 0; /* quitamos padding general para que no afecte columnas */
-  background: url('../img/BackLoginFarma.jpg') no-repeat center center;
-  background-size: cover;
-  border-radius: 20px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.3), 0 5px 20px rgba(0,0,0,0.2);
-  z-index: 10;
-  overflow: hidden;
+/* ======================= */
+/* LOGO EN ESQUINA INFERIOR DERECHA */
+/* ======================= */
+.logo-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
 }
-
 
 .login-logo {
-  display: block;
-  margin: 0 auto; /* centrado con espacio abajo */
-  max-width: 250px;  /* tamaño máximo de la imagen */
-  height: auto;      /* mantiene proporción */
+  max-width: 120px;
+  height: auto;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
 }
 
-/* Parte izquierda (formulario) */
-.left {
-  flex: 3; /* más ancho */ /* más ancho que la derecha */
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-
-  color: #ffffff;
-  font-family: 'Bangers', cursive;
-}
-.right {
-  flex: 1;
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  /* solo difuminado del fondo */
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-
-  border-radius: 0 20px 20px 0; /* redondeo solo lado derecho */
+.login-logo:hover {
+  transform: scale(1.05);
 }
 
-
-.container-title h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-}
-
-.container-title p {
-  font-size: 14px;
-  color: #777;
-}
-
-/* Inputs */
-.container-input {
-  margin-bottom: 20px;
-  margin-right: 10px;
-}
-
-.input-texto-arriba {
+/* ======================= */
+/* CAJA DEL FORMULARIO */
+/* ======================= */
+.login-box {
+  position: relative;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 60px 68px 40px;
+  border-radius: 4px;
   width: 100%;
-  padding: 10px 0;               /* espacio arriba y abajo */
-  border: none;                  /* sin borde general */
-  border-bottom: 2px solid #fff; /* línea inferior blanca */
-  background: transparent;       /* fondo transparente */
-  color: #000000;                   /* texto blanco */
+  max-width: 450px;
+  min-height: 500px;
+}
+
+/* ======================= */
+/* TÍTULO */
+/* ======================= */
+.login-title {
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+/* ======================= */
+/* INPUTS */
+/* ======================= */
+.container-input {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.input-field {
+  width: 100%;
+  padding: 16px 20px;
+  background: #333333;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
   font-size: 16px;
   outline: none;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
-.input-texto-arriba::placeholder {
-  color: rgba(0, 0, 0, 0.7); /* placeholder semitransparente */
-  font-size: 16px;
+.input-field::placeholder {
+  color: #8c8c8c;
 }
 
-.input-texto-arriba:focus {
-  border-bottom: 2px solid #0C3C60; /* cambia color al enfocar */
+.input-field:focus {
+  background: #454545;
+  outline: 2px solid #ffffff;
 }
 
-/* Botón */
-.container-input button {
-  width: 100%;
-  padding: 14px;
-  background: #020a0f;
-  color: white;
+/* ======================= */
+/* CONTENEDOR DE CONTRASEÑA CON OJITO */
+/* ======================= */
+.password-container {
+  position: relative;
+}
+
+.password-container .input-field {
+  padding-right: 50px;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 16px;
+  right: 15px;
+  background: none;
   border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 600;
+  color: #8c8c8c;
   cursor: pointer;
-  transition: 0.3s;
+  font-size: 18px;
+  padding: 5px;
+  transition: color 0.2s ease;
+  z-index: 2;
 }
 
-.container-input button:hover {
-  background: #282828;
+.toggle-password:hover {
+  color: #ffffff;
 }
 
-/* Mensajes de error */
-.invalid-feedback {
-  color: #e74c3c;
+.password-container .message {
+  position: relative;
+}
+
+/* ======================= */
+/* BOTÓN INICIAR SESIÓN */
+/* ======================= */
+.btn-container {
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+.btn-ingresar {
+  width: 100%;
+  padding: 16px;
+  background: #e50914;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-transform: none;
+}
+
+.btn-ingresar:hover {
+  background: #f40612;
+}
+
+.btn-ingresar:active {
+  background: #bf0811;
+}
+
+/* ======================= */
+/* NOMBRE DE LA TIENDA */
+/* ======================= */
+.store-name {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 30px;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ======================= */
+/* FRASE MOTIVADORA */
+/* ======================= */
+.motivational-phrase {
+  color: #b3b3b3;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+/* ======================= */
+/* AVISO DE CREDENCIALES */
+/* ======================= */
+.credentials-notice {
+  color: #737373;
   font-size: 13px;
-  margin-top: 5px;
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #333333;
+}
+
+.credentials-notice i {
+  margin-right: 6px;
+  color: #e50914;
+}
+
+/* ======================= */
+/* MENSAJES DE ERROR */
+/* ======================= */
+.invalid-feedback {
+  color: #e87c03;
+  font-size: 13px;
+  margin-top: 6px;
   display: block;
 }
 
-.portada {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.message {
+  min-height: 20px;
 }
-
-.welcome-title {
-  font-family: 'Bangers', cursive;
-  font-size: 55px;           /* más grande que antes */
-  font-weight: 700;
-  margin-bottom: 5px;       /* más espacio debajo del título */
-  text-align: center;
-  letter-spacing: 15px;       /* separa las letras */
-  text-shadow: 2px 2px 5px rgba(0,0,0,0.5); /* resalta sobre el fondo */
-}
-
-.welcome-text {
-  font-size: 24px;            /* un poco más grande */
-  line-height: 1.6;
-  letter-spacing: 1px;        /* ligera separación entre letras */
-  text-shadow: 1px 1px 3px  rgba(0,0,0,0.4);
-}
-
-.right .container-input {
-  width: 120%;  /* centrado y adaptable al ancho de la columna */
-  margin: 0 auto 20px auto;
-}
-
-/* Los inputs y el botón ocupan todo el ancho de su contenedor */
-.right .input-texto-arriba,
-.right .container-input button {
-  width: 100%;
-  box-sizing: border-box; /* asegura que padding no afecte el ancho */
-}
-
 
 /* ======================= */
-/* --- RESPONSIVE --- */
+/* RESPONSIVE - TABLET */
 /* ======================= */
-/* 🔹 Responsive */
 @media (max-width: 768px) {
-  .container-login {
-    flex-direction: column;
-    width: 95vw;
-    height: auto;
-    max-height: none;
-    border-radius: 10px;
-    justify-content: center;
-    align-items: center;
+  .login-box {
+    padding: 40px 30px 30px;
+    margin: 20px;
+    max-width: 400px;
+    min-height: auto;
   }
 
-  .left, .right {
-    flex: none;
-    width: 100%;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;  
-    align-items: center;      
-    text-align: center;
+  .login-title {
+    font-size: 28px;
+    margin-bottom: 24px;
   }
 
-  .right {
-    border-top: 2px solid rgba(255,255,255,0.2);
-    border-radius: 0 0 10px 10px;
+  .logo-container {
+    bottom: 15px;
+    right: 15px;
   }
 
   .login-logo {
-    max-width: 160px;
-    margin-bottom: 15px;
+    max-width: 90px;
   }
 
-  .right .container-input {
-    width: 90%;
-    max-width: 320px;
-  }
-
-  .welcome-title {
-    font-size: 38px;
-    letter-spacing: 8px;
-  }
-
-  .welcome-text {
+  .store-name {
     font-size: 18px;
   }
 }
 
+/* ======================= */
+/* RESPONSIVE - MÓVIL */
+/* ======================= */
 @media (max-width: 480px) {
-  .welcome-title {
-    font-size: 26px;
-    letter-spacing: 3px;
+  .login-box {
+    padding: 30px 20px 25px;
+    margin: 15px;
+    border-radius: 4px;
   }
 
-  .welcome-text {
-    font-size: 14px;
+  .login-title {
+    font-size: 24px;
+    margin-bottom: 20px;
   }
 
-  .container-input button {
-    font-size: 14px;
-    padding: 12px;
+  .input-field {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .btn-ingresar {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .logo-container {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .login-logo {
+    max-width: 70px;
+  }
+
+  .store-name {
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  .motivational-phrase {
+    font-size: 13px;
+  }
+
+  .credentials-notice {
+    font-size: 11px;
+  }
+}
+
+/* ======================= */
+/* RESPONSIVE - PANTALLAS GRANDES */
+/* ======================= */
+@media (min-width: 1200px) {
+  .login-logo {
+    max-width: 150px;
+  }
+
+  .logo-container {
+    bottom: 30px;
+    right: 30px;
   }
 }
