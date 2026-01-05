@@ -679,15 +679,19 @@
                     <!-- DIRECCIÓN -->
                     <div class="p-mb-3">
                       <label class="label-input">
-                        Ubicación <span class="text-required">*</span>
+                        <i class="pi pi-map-marker optional-icon"></i> Ubicación <span class="optional-tag"> Opcional</span>
                       </label>
 
-                      <div class="input-con-desplegable">
+                      <div class="input-con-desplegable p-input-icon-left" style="width: 100%;">
+                        
+                        
+
                         <InputText
                           v-model="direccionCliente"
-                          class="input-full"
                           :disabled="!direccionClienteEditable"
+                          class="input-full"
                           :class="{ 'p-invalid': errores.direccion }"
+                          placeholder="Ej: Av. Heroinas esq. Ayacucho"
                           @input="buscarDireccion"
                           @keydown.down="moverSeleccionDireccion('abajo')"
                           @keydown.up="moverSeleccionDireccion('arriba')"
@@ -4345,14 +4349,11 @@ export default {
     // =============================
     // ➕ CREAR CLIENTE
     // =============================
-    if (!this.direccionCliente || this.direccionCliente.trim() === '') {
-      throw new Error('Debe ingresar la dirección del cliente');
-    }
     const nuevoClienteResponse = await axios.post("/cliente/registrar", {
       nombre: this.nombreCliente,
       num_documento: this.documento,
       tipo_documento: this.tipo_documento,
-      direccion: this.direccionCliente,
+      direccion: this.direccionCliente ? this.direccionCliente : null, 
       telefono: this.telefonoCliente || null,
       email: this.emailCliente || null
     });
