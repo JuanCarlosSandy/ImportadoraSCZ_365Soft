@@ -451,7 +451,7 @@ export default {
   },
   data() {
     return {
-      modo_ajuste: 'caja', // por defecto unidades
+      modo_ajuste: 'unidad',
       mostrarLabel: true,
       buscar: "",
       isLoading: false,
@@ -1344,7 +1344,7 @@ export default {
           stock_formateado: producto.stock_formateado,
 
           // Modo de ajuste (nuevo)
-          modo_ajuste: 'caja',
+          modo_ajuste: 'unidad',
 
           stock_restante: producto.stock_total_unidades,
           stock_real: null
