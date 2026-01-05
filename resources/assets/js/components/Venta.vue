@@ -3685,6 +3685,9 @@ export default {
     },
 
     agregarDetalle() {
+      const envase = this.arraySeleccionado.unidad_envase > 0 ? this.arraySeleccionado.unidad_envase : 1;
+      const stockEnCajasCalculado = Math.floor(this.arraySeleccionado.saldo_stock / envase);
+
       const cantidad = this.cantidad * this.unidadPaquete;
 
       if (this.saldosNegativos === 0 && this.arraySeleccionado.saldo_stock < cantidad) {
@@ -3713,26 +3716,28 @@ export default {
           idarticulo: this.arraySeleccionado.id,
           articulo: this.arraySeleccionado.nombre,
           medida: this.arraySeleccionado.medida,
-          unidad_envase: this.arraySeleccionado.unidad_envase,
+          unidad_envase: envase, 
           cantidad: cantidad,
-          cantidad_paquetes: this.arraySeleccionado.unidad_envase,
+          cantidad_paquetes: envase,
           precio: precioUnitario,
           descuento: this.arraySeleccionado.descuento,
           stock: this.arraySeleccionado.saldo_stock,
-          stock_cajas: this.arraySeleccionado.saldo_stock_cajas, // NUEVO
-          modoVenta: "caja", // 🔹 inicia vendiendo en cajas
+          stock_cajas: stockEnCajasCalculado,         
           precioseleccionado: precioUnitario,
           total: total,
           descripcion_fabrica: this.arraySeleccionado.descripcion_fabrica,
           codigo_producto: this.arraySeleccionado.codigo,
-          precio_uno: this.arraySeleccionado.precio_uno,
-          precio_dos: this.arraySeleccionado.precio_dos,
+          precio_uno: parseFloat(this.arraySeleccionado.precio_uno || 0),
+          precio_dos: parseFloat(this.arraySeleccionado.precio_dos || 0),
+          precio_tres: parseFloat(this.arraySeleccionado.precio_tres || 0), 
+          
           usando_precio: 'uno',
-          modoVenta: 'unidad',
+          modoVenta: 'unidad', 
         };
-        this.asignarPrecioPorModo(nuevoDetalle);
-        this.arrayDetalle.push(nuevoDetalle);
+
+        this.asignarPrecioPorModo(nuevoDetalle); 
         
+        this.arrayDetalle.push(nuevoDetalle);
       }
 
       const productoExistente = this.arrayProductos.find((p) => p.codigoProducto === this.arraySeleccionado.codigo);
@@ -3751,7 +3756,6 @@ export default {
           cantidad: cantidad,
           unidadMedida: this.arraySeleccionado.codigoClasificador,
           precioUnitario: precioUnitario.toFixed(2),
-          // 🔹 Usar el descuento del producto seleccionado
           descuento: this.arraySeleccionado.descuento,
           montoDescuento: descuento,
           subTotal: total,
@@ -3762,11 +3766,10 @@ export default {
       }
 
       this.precioBloqueado = true;
-      this.arraySeleccionado = [];
+      this.arraySeleccionado = null; 
       this.cantidad = 1;
       this.unidadPaquete = 1;
       this.descuentoProducto = 0;
-      this.arraySeleccionado = null;
       
       this.$toast.add({
         severity: "success",
@@ -3777,23 +3780,29 @@ export default {
     },
 
     agregarDetalleModal(data) {
-      if (data.saldo_stock == 0) {
+      if (data.saldo_stock <= 0 && data.descripcion_fabrica != '1') {
         Swal.fire({
           icon: "warning",
           title: "Sin stock",
-          text: "No hay stock de este ítem en el almacén.",
+          text: "No hay stock disponible de este ítem.",
         });
         return;
       }
 
       this.desdeModal = true;
-      this.codigo = data.codigo;
+      this.codigo = data.codigo;     
+      this.arraySeleccionado = {
+          ...data, 
+          precio_uno: data.precio_uno,
+          precio_dos: data.precio_dos || 0,   
+          precio_tres: data.precio_tres || 0, 
+          saldo_stock: data.saldo_stock
+      };
       this.precioseleccionado = data.precio_uno;
 
       const descuentoVigente = this.obtenerDescuentoVigente(data);
-      data.descuento = descuentoVigente;
+      this.arraySeleccionado.descuento = descuentoVigente;
 
-      this.arraySeleccionado = data;
       this.mostrarDesplegable = false;
       this.agregarDetalle();
     },
@@ -5470,7 +5479,7 @@ export default {
     async verificarAutorizacionDescuento() {
       try {
         const response = await axios.get("/verificar-descuento");
-        this.puedeDescontar = response.tta.puedeDescontar; // true o false
+        this.puedeDescontar = response.data.puedeDescontar; 
       } catch (error) {
         console.error("Error al verificar autorización de descuento:", error);
       }
