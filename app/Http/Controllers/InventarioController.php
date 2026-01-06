@@ -87,11 +87,18 @@ class InventarioController extends Controller
 
             foreach ($inventarios as $inventario) {
 
-                // Verificar si el idarticulo existe en la tabla articulos
                 $articulo = Articulo::find($inventario['idarticulo']);
-                Log::info("llego2");
 
                 if ($articulo) {
+
+                    $esPaquete = isset($inventario['es_paquete']) ? $inventario['es_paquete'] : false;
+                    $cantidadIngresada = isset($inventario['cantidad']) ? $inventario['cantidad'] : 0;
+
+                    if ($esPaquete) {
+                        $cantidadReal = $cantidadIngresada * $articulo->unidad_envase;
+                    } else {
+                        $cantidadReal = $cantidadIngresada;
+                    }
 
                     // 👉 Calcular cantidad multiplicada por unidad_envase
                     $cantidadReal = isset($inventario['cantidad'])
