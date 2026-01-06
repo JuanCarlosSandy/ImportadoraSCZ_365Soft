@@ -146,6 +146,13 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get('/credito/cuotas/{idcredito}', 'VentaController@obtenerCuotasid');
 
         Route::get("/venta/pdf/{id}", "VentaController@pdf")->name("venta_pdf");
+
+
+
+        Route::get('/descargar-reporte-general-pdf', "ReportesVentas@descargarReporteGeneralPDF");
+        Route::get('/descargar-ventas-detalladas-pdf', "ReportesVentas@descargarVentasDetalladasPDF");
+        Route::get('/descargar-ventas-general-excel', 'ReportesVentas@exportarVentasGeneralExcel');
+        Route::get('/descargar-ventas-detalladas-excel', 'ReportesVentas@exportarVentasDetalladasExcel');
     });
 
     Route::group(["middleware" => ["Administrador"]], function () {
