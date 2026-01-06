@@ -147,9 +147,13 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
     // ✅ AQUÍ SE EXCLUYEN
     ->whereNull('proveedores.id')
     ->whereNull('u2.id')
+// ->where(function ($q) {
+//     $q->where('ventas.estado', '<>', 0)
+//       ->orWhereNull('ventas.id');
+// })
 ->where(function ($q) {
-    $q->where('ventas.estado', '<>', 0)
-      ->orWhereNull('ventas.id');
+    $q->whereNotNull('ventas.id') // Si hay venta, la muestra (sea estado 1 o 0)
+      ->orWhereNull('ventas.id'); // Si no hay venta (null), también (por tu estructura actual)
 })
     ->orderBy('ventas.fecha_hora', 'desc');
 

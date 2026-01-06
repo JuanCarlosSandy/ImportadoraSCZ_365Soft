@@ -155,6 +155,23 @@
             <Column field="fecha_hora" header="Fecha y Hora" class="d-none d-md-table-cell"></Column>
             <Column field="usuario" header="Vendedor"></Column>
             <Column field="nombre_sucursal" header="Sucursal"></Column>
+            <Column field="estado" header="Estado">
+              <template #body="slotProps">
+                <span v-if="slotProps.data.estado == 1" 
+                      style="background-color: #198754; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                  Registrado
+                </span>
+
+                <span v-else-if="slotProps.data.estado == 0" 
+                      style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                  Anulado
+                </span>
+
+                <span v-else style="color: gray;">
+                  -
+                </span>
+              </template>
+            </Column>
             <!--<Column header="Tipo Venta" field="idtipo_venta" class="d-none d-md-table-cell">
               <template #body="slotProps">
                 <span class="badge"
@@ -1235,8 +1252,8 @@
                     @input="actualizarDetalle(slotProps.index)" class="form-control form-control-sm input-precio-unidad"
                     :disabled="permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1'" />
 
-                  <Button icon="pi pi-sync" class="p-button-sm p-button-secondary btn-precio-toggle"
-                    title="Cambiar precio" @click="togglePrecio(slotProps.index)" />
+                  <!-- <Button icon="pi pi-sync" class="p-button-sm p-button-secondary btn-precio-toggle"
+                    title="Cambiar precio" @click="togglePrecio(slotProps.index)" /> -->
                 </div>
               </template>
             </Column>
