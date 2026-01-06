@@ -614,7 +614,11 @@ class ArticuloController extends Controller
         $articulo->idcategoria = $request->idcategoria;
         $articulo->vencimiento = $request->fechaVencimientoSeleccion;
         
-        $articulo->idmedida = $request->idmedida ? $request->idmedida : 1; 
+        if ($request->idmedida && $request->idmedida !== 'undefined') {
+            $articulo->idmedida = $request->idmedida;
+        } else {
+            $articulo->idmedida = 1;
+        } 
         
         $articulo->codigo = $request->codigo;
         $articulo->nombre = $request->nombre;
@@ -883,11 +887,9 @@ class ArticuloController extends Controller
 
     public function indexAjusteInven(Request $request)
     {
-        if (!$request->ajax()) {
-            return redirect('/');
-        }
+        if (!$request->ajax()) return redirect('/');
 
-        $buscar = trim($request->buscar); 
+        $buscar = trim($request->buscar);
         $idAlmacen = $request->idAlmacen;
         $idProveedor = $request->idProveedor;
 
@@ -895,7 +897,7 @@ class ArticuloController extends Controller
             ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
             ->join('personas', 'proveedores.id', '=', 'personas.id')
             ->join('medidas', 'articulos.idmedida', '=', 'medidas.id')
-            ->join('inventarios', function ($join) use ($idAlmacen) {
+            ->leftJoin('inventarios', function ($join) use ($idAlmacen) {
                 $join->on('articulos.id', '=', 'inventarios.idarticulo')
                     ->where('inventarios.idalmacen', '=', $idAlmacen);
             })
@@ -907,38 +909,28 @@ class ArticuloController extends Controller
                 'articulos.codigo',
                 'articulos.nombre',
                 'articulos.unidad_envase',
-                'articulos.precio_list_unid',
                 'articulos.precio_costo_unid',
                 'articulos.precio_costo_paq',
+                'articulos.fotografia',
+                'articulos.condicion',
                 'categorias.nombre as nombre_categoria',
                 'medidas.descripcion_medida',
-                'articulos.precio_uno',
-                'articulos.precio_dos',
-                'articulos.precio_venta',
-                'articulos.stock',
                 'personas.nombre as nombre_proveedor',
-                'articulos.condicion',
-                'articulos.fotografia',
-// Total unidades
-DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as stock_total_unidades'),
 
-// Cajas completas
-DB::raw('FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)) as stock_total_cajas'),
+                DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as stock_total_unidades'),
+                
+                DB::raw('FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)) as stock_total_cajas'),
+                
+                DB::raw('(IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase) as stock_total_unidades_sueltas'),
 
-// Unidades sueltas
-DB::raw('(IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase) as stock_total_unidades_sueltas'),
-
-// Texto formateado "X cajas y Y unidades"
-DB::raw("
-    CONCAT(
-        FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)),
-        ' cajas y ',
-        (IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase),
-        ' unidades'
-    ) as stock_formateado
-"),            )
+                DB::raw("CONCAT(
+                    FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)),
+                    ' cajas y ',
+                    (IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase),
+                    ' unidades'
+                ) as stock_formateado")
+            )
             ->where('articulos.condicion', '=', 1)
-            ->where('inventarios.saldo_stock', '>', 0)
             ->groupBy(
                 'articulos.id',
                 'articulos.idcategoria',
@@ -947,35 +939,25 @@ DB::raw("
                 'articulos.codigo',
                 'articulos.nombre',
                 'articulos.unidad_envase',
-                'articulos.precio_list_unid',
                 'articulos.precio_costo_unid',
                 'articulos.precio_costo_paq',
+                'articulos.fotografia',
+                'articulos.condicion',
                 'categorias.nombre',
                 'medidas.descripcion_medida',
-                'articulos.precio_uno',
-                'articulos.precio_dos',
-                'articulos.precio_venta',
-                'articulos.stock',
-                'personas.nombre',
-                'articulos.condicion',
-                'articulos.fotografia'
+                'personas.nombre'
             );
 
         if ($idProveedor) {
             $query->where('articulos.idproveedor', $idProveedor);
         }
-
-        // Filtrar por texto de búsqueda solo si no está vacío
         if (!empty($buscar)) {
             $palabrasBuscar = array_filter(explode(" ", $buscar));
             $query->where(function ($query) use ($palabrasBuscar, $buscar) {
                 foreach ($palabrasBuscar as $palabra) {
                     $query->where('articulos.nombre', 'like', '%' . $palabra . '%');
                 }
-                $query->orWhere('articulos.codigo', 'like', '%' . $buscar . '%')
-                    ->orWhere('articulos.codigo_alfanumerico', 'like', '%' . $buscar . '%')
-                    ->orWhere('categorias.nombre', 'like', '%' . $buscar . '%')
-                    ->orWhere('personas.nombre', 'like', '%' . $buscar . '%');
+                $query->orWhere('articulos.codigo', 'like', '%' . $buscar . '%');
             });
         }
 
@@ -983,12 +965,13 @@ DB::raw("
 
         foreach ($articulos as $articulo) {
             $lotes = \DB::table('inventarios')
-                ->select('fecha_vencimiento', 'saldo_stock')
+                ->select('id', 'fecha_vencimiento', 'saldo_stock') 
                 ->where('idarticulo', $articulo->id)
                 ->where('idalmacen', $idAlmacen)
                 ->where('saldo_stock', '>', 0)
                 ->orderBy('fecha_vencimiento', 'asc')
                 ->get();
+                
             $articulo->lotes = $lotes;
         }
 
