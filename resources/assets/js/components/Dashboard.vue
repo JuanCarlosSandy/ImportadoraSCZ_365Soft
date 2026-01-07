@@ -113,19 +113,21 @@ import axios from "axios";
 
 export default {
   data() {
+    // Calcular fechas por defecto del mes actual
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDayOfMonth = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      0
-    );
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const formattedStartDate = this.formatDate(firstDayOfMonth);
-    const formattedEndDate = this.formatDate(lastDayOfMonth);
+    // Formatear fechas directamente aquí
+    const formatDateLocal = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
 
     return {
-      idrol: null, // <-- aquí guardaremos el rol del usuario
+      idrol: null,
       isLoading: false,
       monedaPrincipal: [],
       tipoPeriodo: "Mes",
@@ -138,8 +140,8 @@ export default {
       charVenta: null,
       ventas: [],
 
-      fechaInicio: formattedStartDate,
-      fechaFin: formattedEndDate,
+      fechaInicio: formatDateLocal(firstDayOfMonth),
+      fechaFin: formatDateLocal(lastDayOfMonth),
     };
   },
   watch: {
@@ -165,6 +167,32 @@ export default {
   },
 
   methods: {
+    // Método para validar y asegurar fechas válidas
+    validarFechas() {
+      const today = new Date();
+      
+      // Si fechaInicio es nula, vacía o inválida
+      if (!this.fechaInicio || this.fechaInicio === '' || isNaN(new Date(this.fechaInicio).getTime())) {
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        this.fechaInicio = this.formatDate(firstDayOfMonth);
+        console.log('📅 fechaInicio asignada por defecto:', this.fechaInicio);
+      }
+      
+      // Si fechaFin es nula, vacía o inválida
+      if (!this.fechaFin || this.fechaFin === '' || isNaN(new Date(this.fechaFin).getTime())) {
+        this.fechaFin = this.formatDate(today);
+        console.log('📅 fechaFin asignada por defecto:', this.fechaFin);
+      }
+      
+      // Validar que fechaInicio no sea mayor que fechaFin
+      if (new Date(this.fechaInicio) > new Date(this.fechaFin)) {
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        this.fechaInicio = this.formatDate(firstDayOfMonth);
+        this.fechaFin = this.formatDate(today);
+        console.log('📅 Fechas corregidas: inicio no puede ser mayor que fin');
+      }
+    },
+
     async datosConfiguracion() {
       try {
         this.isLoading = true; // Activar loading
@@ -217,10 +245,16 @@ export default {
           .toISOString()
           .split("T")[0];
       }
+      // Validar fechas después de asignarlas
+      this.validarFechas();
     },
     async fetchData() {
       try {
         this.isLoading = true; // Activar loading
+        
+        // Validar fechas antes de hacer la petición
+        this.validarFechas();
+        
         const response = await axios.get("/dashboard", {
           params: {
             fecha_inicio: this.fechaInicio,
@@ -367,6 +401,11 @@ export default {
   async mounted() {
     try {
       this.isLoading = true; // Activar loading
+      
+      // Validar fechas al iniciar el dashboard
+      this.validarFechas();
+      console.log('📊 Dashboard iniciado con fechas:', this.fechaInicio, '-', this.fechaFin);
+      
       await Promise.all([this.datosConfiguracion(), this.fetchData()]);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
