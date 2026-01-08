@@ -620,7 +620,7 @@ class ArticuloController extends Controller
         $articulo->idcategoria = $request->idcategoria;
         $articulo->vencimiento = $request->fechaVencimientoSeleccion;
         
-        $articulo->idmedida = $request->idmedida ? $request->idmedida : 1; 
+        $articulo->idmedida = 1; 
         
         $articulo->codigo = $request->codigo;
         $articulo->nombre = $request->nombre;
