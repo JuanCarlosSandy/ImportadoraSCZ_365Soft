@@ -5,7 +5,7 @@
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <i class="pi pi-bars panel-icon"></i>
-                <h4 class="panel-title" style="margin: 0;">REPORTE DE INVENTARIO</h4>
+                <h4 class="panel-title" style="margin: 0;">KARDEX FISICO DE INVENTARIO</h4>
             </div>
             
             <div style="display: flex; gap: 0.5rem;">
@@ -2545,12 +2545,12 @@ export default {
       // medidaseleccionadaVacio: false,
     },
     abrirModal(modelo, accion, data = []) {
-      this.sucursalseleccionada = false;
-      this.articuloseleccionada = false;
-      this.lineaseleccionada = false;
-      this.marcaseleccionada = false;
-      this.fechaInicio = "";
-      this.fechaFin = "";
+      //this.sucursalseleccionada = false;
+      //this.articuloseleccionada = false;
+      //this.lineaseleccionada = false;
+      ///this.marcaseleccionada = false;
+      //this.fechaInicio = "";
+      //this.fechaFin = "";
       switch (modelo) {
         case "articulo": {
           switch (accion) {

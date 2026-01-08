@@ -122,7 +122,7 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-line-chart"></i> REPORTE INVENTARIO</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=58" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Resumen de Inventario</a>
+                        <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Kardex Fisico de Inventario</a>
                     </li>
                 </ul>
             </li>

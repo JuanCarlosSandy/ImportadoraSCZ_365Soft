@@ -175,7 +175,7 @@
                   </label>
 
                   <InputText id="nombreProducto" v-model="datosFormulario.descripcion_fabrica"
-                    placeholder="Ej. Doc (Docenas)" class="form-control p-inputtext-sm input-full"
+                    placeholder="Ej. Unid (Unidades)" class="form-control p-inputtext-sm input-full"
                     :class="{ 'input-error': errores.descripcion_fabrica }"
                     @input="validarCampo('descripcion_fabrica')"autocomplete="off" />
                 </div>
@@ -234,7 +234,7 @@
 
             <div class="p-col-12" style="margin-top: 20px; margin-bottom: 10px;">
                 <h5 style="font-weight: bold; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">
-                    <i class="pi pi-tags"></i> Precios de Venta
+                    <i class="pi pi-tags"></i> Precios de Venta Unitarios
                 </h5>
             </div>
 
@@ -612,7 +612,7 @@ export default {
         { id: 1, nombre_precio: 'por Unidad',  valor: null, porcentaje: null, errorVenta: false }, 
         { id: 2, nombre_precio: 'por Docena',  valor: null, porcentaje: null, errorVenta: false }, 
         { id: 3, nombre_precio: 'por Paquete', valor: null, porcentaje: null, errorVenta: false }, 
-        { id: 4, nombre_precio: 'Especial',    valor: null, porcentaje: null, errorVenta: false }, 
+        //{ id: 4, nombre_precio: 'Especial',    valor: null, porcentaje: null, errorVenta: false }, 
       ],
       precio_uno: null,
       precio_dos: null,
