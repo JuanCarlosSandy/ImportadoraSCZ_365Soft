@@ -439,12 +439,10 @@ export default {
         
         var url = "/resumen-ventas-documento?";
         
-        
         url += "sucursal=" + this.sucursalseleccionada.id;
         url += "&ejecutivoCuentas=" + this.ejecutivoseleccionado.id; 
         url += "&estadoVenta=" + this.criterioEstado;
         url += "&moneda=" + this.monedaPrincipal[0];
-        
         
         url += "&fechaInicio=" + this.fechaSeleccionada + "&fechaFin=" + this.fechaSeleccionada;
 
@@ -456,8 +454,14 @@ export default {
                 var respuesta = response.data;
                 me.totalVentas = respuesta.total_BS;
                 me.arrayReporte = respuesta.ventas;
-                me.ejecutivoseleccionado.nombre = respuesta.ventas[0].usuario 
-                console.log("Vendedor detectado:", this.ejecutivoseleccionado.nombre);
+
+                // VALIDAR QUE HAYA VENTAS ANTES DE ACCEDER A LA POSICIÓN [0]
+                if(respuesta.ventas && respuesta.ventas.length > 0) {
+                     me.ejecutivoseleccionado.nombre = respuesta.ventas[0].usuario;
+                }
+                
+                // 🔴 ERROR ESTABA AQUÍ: usabas 'this' en lugar de 'me'
+                console.log("Vendedor detectado:", me.ejecutivoseleccionado.nombre); // ✅ CORREGIDO
                 
                 me.arrayReporte.sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
             })
@@ -574,7 +578,7 @@ export default {
     },
 
     async descargarArchivo(url, nombre) {
-        window.open(axios.defaults.baseURL + url, '_blank');
+        window.open(url, '_blank');
         
         
     },

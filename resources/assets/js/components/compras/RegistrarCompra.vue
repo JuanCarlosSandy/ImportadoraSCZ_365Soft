@@ -101,51 +101,82 @@
           </div>
           <div class="p-col-12">
             <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-sm">
-              <Column header="Acciones" style="width: 100px">
-                <template #body="slotProps">
-                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
-                    style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
-                    @click="eliminarDetalle(slotProps.index)" />
-                </template>
-              </Column>
-              <Column field="codigo" header="Codigo" />
-              <Column field="articulo" header="Producto" />
-              <Column field="unidad_x_paquete" header="Cant x Caja" />
-              <Column header="Costo Compra">
-                <template #body="slotProps">
-                  <InputNumber :value="slotProps.data.precio" :min="0" :step="0.01" locale="es-ES"
-                    :minFractionDigits="2" :maxFractionDigits="2" class="w-full" @keydown.native="convertirPuntoComa"
-                    @input="evitarReformateo($event, (e) => onPrecioUnitarioInput(e, slotProps.data))" />
-                </template>
-              </Column>
-              <Column header="Precio de Venta">
-                <template #body="slotProps">
-                  <InputText v-model="slotProps.data.precio_uno" placeholder="0.00"
-                    class="p-inputtext-sm inputnumber-compact"
-                    :class="{ 'input-error': slotProps.data.errorPrecioVenta }" :min="0" :step="0.01" locale="es-ES"
-                    :minFractionDigits="2" :maxFractionDigits="2"
-                    @input="validarInput(slotProps.data.precio_uno, 'precio_uno', slotProps.data)"
-                    @blur="onPrecioUnoInput(slotProps.data.precio_uno, slotProps.data)" />
-                </template>
-              </Column>
-              <Column header="Cajas a Comprar">
-                <template #body="slotProps">
-                  <InputNumber v-model="slotProps.data.cantidad" class="w-full" />
-                </template>
-              </Column>
-              <Column header="Subtotal">
-                <template #body="slotProps">
-                  {{
-                    (
-                      slotProps.data.precio *
-                      slotProps.data.cantidad *
-                      slotProps.data.unidad_x_paquete *
-                      parseFloat(monedaCompra[0])
-                    ).toFixed(2)
-                  }}
-                  {{ monedaCompra[1] }}
-                </template>
-              </Column>
+
+                <Column header="Acciones" style="width: 50px">
+                    <template #body="slotProps">
+                      <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
+                      style="padding: 0.3rem 0.4rem; width: auto;"
+                      @click="eliminarDetalle(slotProps.index)" />
+                    </template>
+                </Column>
+
+                <Column field="articulo" header="Producto" />
+                
+                <Column header="Modo Compra" 
+                        headerStyle="justify-content: flex-start"
+                        bodyClass="text-center">
+                    <template #body="slotProps">
+                      <div style="display: flex; flex-direction: column; align-items: center;">
+                        <InputSwitch v-model="slotProps.data.es_paquete" />
+                        <small :style="{color: slotProps.data.es_paquete ? '#2196F3' : '#689F38', fontWeight: 'bold', marginTop: '5px'}">
+                            {{ slotProps.data.es_paquete ? 'POR CAJA' : 'POR UNIDAD' }}
+                        </small>
+                      </div>
+                    </template>
+                </Column>
+
+                <Column field="unidad_x_paquete" header="Unid. x Caja" 
+                headerStyle="justify-content: flex-start"
+                bodyClass="text-center">
+                </Column>
+
+                <Column header="Costo" 
+                headerStyle="justify-content: flex-start">
+                  <template #body="slotProps">
+                    <div style="display: flex; flex-direction: column;">
+                      <InputNumber v-if="slotProps.data.es_paquete"
+                        v-model="slotProps.data.precio_paquete" 
+                        :style="{width: '120px'}"
+                        :min="0" :step="0.01" locale="es-ES"
+                        :minFractionDigits="2" :maxFractionDigits="2" 
+                        class="p-inputtext-sm text-center"
+                        @input="sincronizarPrecios(slotProps.data, 'paquete')" 
+                      />
+                      <InputNumber v-else
+                        v-model="slotProps.data.precio" 
+                        :style="{width: '120px'}"
+                        :min="0" :step="0.01" locale="es-ES"
+                        :minFractionDigits="2" :maxFractionDigits="2" 
+                        class="p-inputtext-sm text-center"
+                        @input="sincronizarPrecios(slotProps.data, 'unidad')" 
+                      />
+                      <small :style="{color: slotProps.data.es_paquete ? '#2196F3' : '#689F38', fontWeight: 'bold', marginTop: '5px', marginLeft: '60px'}">
+                        {{ slotProps.data.es_paquete ? 'Costo Caja' : 'Costo Unit.' }}
+                      </small>
+                    </div>
+                  </template>
+                </Column>
+
+                <Column header="Cantidad">
+                    <template #body="slotProps">
+                        <InputNumber v-model="slotProps.data.cantidad" class="inputnumber-compact" :min="1" :style="{width: '160px'}" />
+                        <div class="text-center mt-1">
+                            <span class="badge" :class="slotProps.data.es_paquete ? 'bg-primary' : 'bg-success'" :style="{ marginRight: '50px'}">
+                                {{ slotProps.data.es_paquete ? 'Cajas' : 'Unidades' }}
+                            </span>
+                        </div>
+                    </template>
+                </Column>
+
+                <Column header="Subtotal" 
+                        headerStyle="justify-content: flex-end">
+                    <template #body="slotProps">
+                        <span style="font-weight: bold; font-size: 1.1em;">
+                            {{ calcularSubtotalItem(slotProps.data) }} {{ monedaCompra[1] }}
+                        </span>
+                    </template>
+                </Column>
+
             </DataTable>
             <div class="p-d-flex p-jc-end p-mt-2">
               <b>Total Neto:</b>
@@ -192,6 +223,7 @@ import debounce from "lodash/debounce";
 import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
 import Tooltip from 'primevue/tooltip';
+import InputSwitch from "primevue/inputswitch";
 
 export default {
   components: {
@@ -206,6 +238,7 @@ export default {
     Swal,
     ToastService,
     Toast,
+    InputSwitch
   }, directives: {
     'tooltip': Tooltip
   },
@@ -298,6 +331,7 @@ export default {
       articulo: "",
       precio: 0,
       cantidad: 1,
+      es_paquete: false
     };
   },
   watch: {
@@ -350,14 +384,15 @@ export default {
       this.fechavencimiento = "2099-12-31";
       return this.fechavencimiento;
     },
-    calcularTotal: function () {
-      var resultado = 0.0;
-      for (var i = 0; i < this.arrayDetalle.length; i++) {
-        resultado =
-          resultado +
-          this.arrayDetalle[i].precio * this.arrayDetalle[i].cantidad * this.arrayDetalle[i].unidad_x_paquete;
-      }
-      return resultado;
+
+    calcularTotal() {
+        let resultado = 0.0;
+        if (this.arrayDetalle) {
+            for (let item of this.arrayDetalle) {
+              resultado += this.calcularSubtotalItem(item, true);
+            }
+        }
+        return resultado;
     },
   },
   async mounted() {
@@ -717,6 +752,32 @@ export default {
       }
     },
 
+    sincronizarPrecios(item, origen) {
+        let unidades = parseFloat(item.unidad_x_paquete) || 1;
+        
+        if (origen === 'paquete') {
+            let nuevoPrecioUnit = parseFloat(item.precio_paquete) / unidades;
+            item.precio = nuevoPrecioUnit;
+        } else {
+            let nuevoPrecioPaq = parseFloat(item.precio) * unidades;
+            item.precio_paquete = nuevoPrecioPaq;
+        }
+    },
+  
+    calcularSubtotalItem(item, raw = false) {
+        let precioBase = 0;
+        if (item.es_paquete) {
+            precioBase = parseFloat(item.precio_paquete) || 0; 
+        } else {
+            precioBase = parseFloat(item.precio) || 0;
+        }
+
+        let cantidad = parseInt(item.cantidad) || 0;
+        let subtotal = precioBase * cantidad;
+
+        return raw ? subtotal : subtotal.toFixed(2);
+    },
+
     listarArticulo(buscar, criterio) {
       let me = this;
       var url =
@@ -1071,16 +1132,18 @@ export default {
         } else {
           if (me.tipoUnidadSeleccionada == "Paquetes") {
             me.arrayDetalle.push({
-              idarticulo: me.arrayArticuloSeleccionado.id,
-              idalmacen: me.AlmacenSeleccionado,
-              codigo: me.arrayArticuloSeleccionado.codigo,
-              articulo: me.arrayArticuloSeleccionado.nombre,
-              precio: me.arrayArticuloSeleccionado.precio_costo_unid,
-              precio_paquete: me.arrayArticuloSeleccionado.precio_costo_paq,
-              unidad_x_paquete: me.arrayArticuloSeleccionado.unidad_envase,
-              fecha_vencimiento: me.fechavencimiento,
-              cantidad:
-                me.cantidad * me.arrayArticuloSeleccionado.unidad_envase,
+              idarticulo: producto.id,
+              articulo: producto.nombre,
+              codigo: producto.codigo,
+              // Precios
+              precio: parseFloat(producto.precio_costo_unid), 
+              precio_paquete: parseFloat(producto.precio_costo_paq), 
+              unidad_x_paquete: parseInt(producto.unidad_envase),
+              
+              fecha_vencimiento: me.fechavencimiento || me.fechaPorDefecto,
+              cantidad: 1, 
+
+              es_paquete: false, 
             });
           } else {
             me.arrayDetalle.push({
@@ -1123,17 +1186,18 @@ export default {
         return;
       }
       me.arrayDetalle.push({
-        idarticulo: producto.id,
-        idalmacen: me.AlmacenSeleccionado,
-        codigo: producto.codigo,
-        articulo: producto.nombre,
-        precio: producto.precio_costo_unid,
-        precio_paquete: producto.precio_costo_paq,
-        unidad_x_paquete: producto.unidad_envase,
-        fecha_vencimiento: me.fechaPorDefecto,
-        cantidad: 1,
-        precio_uno: producto.precio_uno ? parseFloat(producto.precio_uno).toFixed(2) : "0,00",
-        errorPrecioVenta: false,
+          idarticulo: producto.id,
+          articulo: producto.nombre,
+          codigo: producto.codigo,
+          //Precios
+          precio: parseFloat(producto.precio_costo_unid), 
+          precio_paquete: parseFloat(producto.precio_costo_paq), 
+          unidad_x_paquete: parseInt(producto.unidad_envase),
+          
+          fecha_vencimiento: me.fechavencimiento || me.fechaPorDefecto,
+          cantidad: 1, 
+
+          es_paquete: false, 
       });
       console.log('arrayDetalle:', me.arrayDetalle);
       console.log('producto:', producto);

@@ -146,63 +146,65 @@ class AjusteInventarioController extends Controller
             'almacen_id' => 'required|integer',
             'motivo_id' => 'required|integer',
             'productos' => 'required|array|min:1',
-            'productos.*.tipo_movimiento' => 'required|in:entrada,salida', 
-            'productos.*.cantidad' => 'required|numeric|min:0.01', 
+            'productos.*.tipo_movimiento' => 'required|in:entrada,salida',
+            'productos.*.cantidad' => 'required|numeric|min:0.01',
         ]);
 
         DB::beginTransaction();
-        
+
         try {
-            $ajustesCreados = [];
-
             foreach ($request->productos as $productoData) {
-                $stockActual = Inventario::where('idarticulo', $productoData['producto_id'])
+                
+                $inventario = Inventario::where('idarticulo', $productoData['producto_id'])
                     ->where('idalmacen', $request->almacen_id)
-                    ->sum('saldo_stock'); 
+                    ->first();
 
-                // Validación de consistencia SOLO PARA SALIDAS
-                if ($productoData['tipo_movimiento'] === 'salida' && $productoData['cantidad'] > $stockActual) {
-                    throw new \Exception("No hay suficiente stock para dar de baja ({$productoData['cantidad']}) del producto ID: {$productoData['producto_id']}. Stock actual: {$stockActual}"); // [cite: 15]
+                $stockActual = $inventario ? $inventario->saldo_stock : 0;
+
+                if ($productoData['tipo_movimiento'] === 'salida') {
+                    if ($productoData['cantidad'] > $stockActual) {
+                        throw new \Exception("No hay suficiente stock para dar de baja ({$productoData['cantidad']}) del producto ID: {$productoData['producto_id']}. Stock actual: {$stockActual}");
+                    }
                 }
 
-                // Crear registro de ajuste
                 $ajuste = new AjusteInvetario();
                 $ajuste->cantidad = $productoData['cantidad'];
                 $ajuste->idtipobajas = $request->motivo_id;
                 $ajuste->producto = $productoData['producto_id'];
                 $ajuste->almacen = $request->almacen_id;
-                $ajuste->tipo_movimiento = $productoData['tipo_movimiento']; 
+                $ajuste->tipo_movimiento = $productoData['tipo_movimiento'];
                 $ajuste->save();
-
-                // Actualizar Inventario
-                $inventario = Inventario::where('idarticulo', $ajuste->producto)
-                                ->where('idalmacen', $ajuste->almacen)
-                                ->first();
 
                 if ($inventario) {
                     if ($ajuste->tipo_movimiento === 'entrada') {
-                        $inventario->increment('saldo_stock', $ajuste->cantidad); // AUMENTA
+                        $inventario->saldo_stock += $ajuste->cantidad;
                     } else {
-                        $inventario->decrement('saldo_stock', $ajuste->cantidad); // DISMINUYE
+                        $inventario->saldo_stock -= $ajuste->cantidad;
                     }
+                    $inventario->save();
+
                 } else {
                     if ($ajuste->tipo_movimiento === 'entrada') {
                         $nuevoInv = new Inventario();
                         $nuevoInv->idarticulo = $ajuste->producto;
                         $nuevoInv->idalmacen = $ajuste->almacen;
                         $nuevoInv->saldo_stock = $ajuste->cantidad;
-                        $nuevoInv->save(); 
+                        $nuevoInv->cantidad = $ajuste->cantidad; 
+                        
+                        $nuevoInv->fecha_vencimiento = '2099-12-31'; 
+
+                        $nuevoInv->save();
+                    } else {
+                        throw new \Exception("No existe inventario del producto para realizar la salida.");
                     }
                 }
-
-                $ajustesCreados[] = $ajuste->id;
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Ajuste procesado (Entradas/Salidas) correctamente"
+                'message' => "Ajuste procesado correctamente"
             ]);
 
         } catch (\Exception $e) {
@@ -214,35 +216,28 @@ class AjusteInventarioController extends Controller
     private function actualizarInventario($idAlmacen, $detalle)
     {
         $cantidadRestante = $detalle['cantidad'];
-        $fechaActual = now();
 
-        // Obtener los inventarios ordenados por fecha de vencimiento más reciente (de mayor a menor)
         $inventarios = Inventario::where('idalmacen', $idAlmacen)
             ->where('idarticulo', $detalle['idarticulo'])
-            ->orderBy('fecha_vencimiento') // Ordenamos de la fecha más reciente a la más antigua
+            ->where('saldo_stock', '>', 0) 
+            ->orderBy('fecha_vencimiento', 'asc') 
             ->get();
 
         foreach ($inventarios as $inventario) {
-            if ($cantidadRestante <= 0) {
-                break; // Si ya no queda cantidad por reducir, salimos del bucle
-            }
+            if ($cantidadRestante <= 0) break;
 
             if ($inventario->saldo_stock >= $cantidadRestante) {
-                // Si el inventario tiene suficiente stock, disminuimos la cantidad restante
                 $inventario->saldo_stock -= $cantidadRestante;
-                $cantidadRestante = 0; // Ya no queda cantidad restante
+                $cantidadRestante = 0;
             } else {
-                // Si el inventario no tiene suficiente stock, reducimos todo lo que pueda
                 $cantidadRestante -= $inventario->saldo_stock;
-                $inventario->saldo_stock = 0; // Ponemos el saldo a 0
+                $inventario->saldo_stock = 0;
             }
-            // Guardar los cambios en el inventario
             $inventario->save();
         }
 
-        // Si aún queda cantidad restante, se podría manejar un mensaje o algo similar, dependiendo del caso
         if ($cantidadRestante > 0) {
-            // Acción en caso de que no se haya podido restar todo el stock (por ejemplo, lanzar una excepción o loguear un mensaje)
+            throw new \Exception("Inconsistencia: El stock físico no coincidió con el cálculo previo.");
         }
     }
 

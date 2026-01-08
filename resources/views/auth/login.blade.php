@@ -2,71 +2,60 @@
 
 @section('login')
 
-
 <div class="content" id="app">
-  <div class="container-login">
-    <!-- Columna izquierda -->
-    <div class="left">
-      <img src="{{ asset('img/logoPrincipal.png') }}" alt="Logo" class="login-logo">
-      <h2 class="welcome-title">¡Bienvenido!</h2>
-      
-      <p class="welcome-text">
-        IMPORTACIONES SEMO <br>
-        Los mejores vasos!!
-      </p>
-    </div>
+  <!-- Logo en la esquina inferior derecha -->
+  <div class="logo-container">
+    <img src="{{ asset('img/logojugueteria.jpg') }}" alt="Logo" class="login-logo">
+  </div>
 
-    <!-- Columna derecha -->
-    <div class="right">
+  <!-- Formulario central -->
+  <div class="login-box">
+    <h1 class="login-title">Iniciar sesión</h1>
+    
+    <form class="formulario" method="POST" action="{{ route('login')}}">
+      {{ csrf_field() }}
       
-      <p class="login-frase">
-        Iniciar sesión <br>
-      </p>
-      <form class="formulario" method="POST" action="{{ route('login')}}">
-        {{ csrf_field() }}
-        <div class="container-input">
-          <input type="text" value="{{old('usuario')}}" name="usuario" id="usuario" class="input-texto-arriba" placeholder="Usuario">
-          <div class="message">
-            {!!$errors->first('usuario','<span class="invalid-feedback">El campo Usuario es obligatorio.</span>')!!}
-          </div>
+      <!-- Input Usuario -->
+      <div class="container-input">
+        <input type="text" value="{{old('usuario')}}" name="usuario" id="usuario" class="input-field" placeholder="Usuario" autocomplete="off">
+        <div class="message">
+          {!!$errors->first('usuario','<span class="invalid-feedback">El campo Usuario es obligatorio.</span>')!!}
         </div>
-        <div class="container-input">
-          <input type="password" name="password" id="password" class="input-texto-arriba" placeholder="Contraseña">
-          <div class="message">
-            {!!$errors->first('password','<span class="invalid-feedback">El campo Contraseña es obligatorio</span>')!!}
-          </div>
+      </div>
+      
+      <!-- Input Contraseña con ojito -->
+      <div class="container-input password-container">
+        <input type="password" name="password" id="password" class="input-field" placeholder="Contraseña">
+        <button type="button" id="togglePassword" class="toggle-password">
+          <i class="fa-solid fa-eye" id="eyeIcon"></i>
+        </button>
+        <div class="message">
+          {!!$errors->first('password','<span class="invalid-feedback">El campo Contraseña es obligatorio</span>')!!}
         </div>
-        <div class="container-input">
-          <button type="submit" class="btn-ingresar">Iniciar sesión</button>
-        </div>
-      </form>
+      </div>
+      
+      <!-- Botón Iniciar sesión -->
+      <div class="container-input btn-container">
+        <button type="submit" class="btn-ingresar">Iniciar sesión</button>
+      </div>
+    </form>
+    
+    <!-- Nombre de la tienda -->
+    <div class="store-name">KID TOYS</div>
+    
+    <!-- Frase motivadora -->
+    <div class="motivational-phrase">¡Los mejores juguetes para tu hogar!</div>
+    
+    <!-- Aviso de credenciales -->
+    <div class="credentials-notice">
+      <i class="fa-solid fa-circle-info"></i>
+      Si olvidó sus credenciales, comuníquese con el administrador
     </div>
   </div>
-<script>
-  // Escuchamos el evento input en los campos de input
-  const inputs = document.querySelectorAll('.input-texto-arriba');
-
-  inputs.forEach(input => {
-    input.addEventListener('focus', () => {
-      // Agregamos la clase 'texto-arriba' cuando el campo tiene el foco
-      input.classList.add('texto-arriba');
-    });
-
-    input.addEventListener('blur', () => {
-      // Removemos la clase 'texto-arriba' solo si el campo está vacío
-      if (input.value) {
-        input.classList.remove('texto-arriba');
-      }
-    });
-
-    // Verificamos si el campo ya tiene un valor inicial al cargar la página
-    if (input.value) {
-      input.classList.add('texto-arriba');
-    }
-  });
-</script>
+</div>
 
 <script>
+  // Funcionalidad del ojito para mostrar/ocultar contraseña
   const togglePassword = document.getElementById('togglePassword');
   const passwordInput = document.getElementById('password');
   const eyeIcon = document.getElementById('eyeIcon');

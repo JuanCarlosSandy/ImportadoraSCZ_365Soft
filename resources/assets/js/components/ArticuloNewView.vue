@@ -94,7 +94,7 @@
                     <span class="required-icon">*</span>
                     Nombre del Producto
                   </label>
-                  <InputText id="nombreProducto" v-model="datosFormulario.nombre" placeholder="Ej. Vaso Wiskero4 pts"
+                  <InputText id="nombreProducto" v-model="datosFormulario.nombre" placeholder="Ej. Pelota de Futbol"
                     class="form-control p-inputtext-sm input-full" :class="{ 'input-error': errores.nombre }"
                     @input="validarCampo('nombre')" autocomplete="off"/>
                 </div>
@@ -134,7 +134,7 @@
                     <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
                   </label>
                   <Textarea id="descripcion" v-model="datosFormulario.descripcion"
-                    placeholder="Ej. 4 docenas de vasos wiskeros" rows="3" class="form-control p-inputtext-sm" />
+                    placeholder="Ej. 1 docena de Pelotas de Futbol" rows="3" class="form-control p-inputtext-sm" />
                 </div>
               </div>
             </div>
@@ -285,7 +285,7 @@
                 </div>
               </div>
             </div>
-            <div class="tag-extra">
+            <div v-show="tipoAccion == 1" class="tag-extra">
               <i class="pi pi-cog"></i> Parámetros extras
             </div>
             <div v-show="tipoAccion == 1" class="form-group row align-items-center">
@@ -322,6 +322,7 @@
                 <label for="descuento">Descuento (%)</label>
                 <InputNumber id="descuento" ref="descuentoInput" v-model.number="datosFormulario.descuento"
                   mode="decimal" :min="0" :max="100" :minFractionDigits="2" :maxFractionDigits="2" suffix="%"
+                  :allowEmpty="true" :useGrouping="false" placeholder="Ingrese descuento (%)"
                   class="w-100" @input="validarDescuento" />
               </div>
 
@@ -545,6 +546,7 @@ export default {
       articuloSeleccionado: null,
       idrol: null,
       isLoading: false,
+      intentoEnviar: false,
       criterio: "nombre",
       buscar: "",
       arrayArticulo: [], // Datos del artículo
@@ -554,19 +556,19 @@ export default {
       fechaVencimientoAlmacen: '2099-12-31',
       unidadStock: null,
       datosFormulario: {
-        descuento: 0,
+        descuento: null,
         fecha_venc_descuento: null,
         nombre: "",
         descripcion: "",
         nombre_generico: "",
         unidad_envase: 0,
-        precio_costo_unid: 0,
-        precio_costo_paq: 0,
-        precio_venta: 0,
-        precio_uno: 0,
-        precio_dos: 0,
-        precio_tres: 0,
-        precio_cuatro: 0,
+        precio_costo_unid: null,
+        precio_costo_paq: null,
+        precio_venta: null,
+        precio_uno: null,
+        precio_dos: null,
+        precio_tres: null,
+        precio_cuatro: null,
         stock: 0,
         costo_compra: 0,
         codigo: "",
@@ -607,10 +609,10 @@ export default {
       medidaSeleccionado: [],
       almacenSeleccionado: "Almacen Principal",
       precios: [
-        { id: 1, nombre_precio: 'por Unidad',  valor: 0, porcentaje: 0, errorVenta: false }, 
-        { id: 2, nombre_precio: 'por Docena',  valor: 0, porcentaje: 0, errorVenta: false }, 
-        { id: 3, nombre_precio: 'por Paquete', valor: 0, porcentaje: 0, errorVenta: false }, 
-        { id: 4, nombre_precio: 'Especial',    valor: 0, porcentaje: 0, errorVenta: false }, 
+        { id: 1, nombre_precio: 'por Unidad',  valor: null, porcentaje: null, errorVenta: false }, 
+        { id: 2, nombre_precio: 'por Docena',  valor: null, porcentaje: null, errorVenta: false }, 
+        { id: 3, nombre_precio: 'por Paquete', valor: null, porcentaje: null, errorVenta: false }, 
+        { id: 4, nombre_precio: 'Especial',    valor: null, porcentaje: null, errorVenta: false }, 
       ],
       precio_uno: null,
       precio_dos: null,
@@ -807,6 +809,8 @@ export default {
       this.validarCampo("precio_costo_paq");
     },
     precioError(precio) {
+      // Solo mostrar error si se intentó enviar el formulario
+      if (!this.intentoEnviar) return false;
       return (
         precio.valor === null ||
         precio.valor === undefined ||
@@ -1263,18 +1267,9 @@ export default {
       }
     },
     listarPrecio() {
-      let me = this;
-      var url = "/precios";
-      axios
-        .get(url)
-        .then(function (response) {
-          var respuesta = response.data;
-          me.precios = respuesta.precio.data;
-          //me.precioCount = me.arrayBuscador.length;
-        })
-        .catch(function (error) {
-          console.log(error);
-        });
+      // Los nombres de precios están definidos en data() y no se sobrescriben
+      // Esta función ya no es necesaria para cargar nombres desde el backend
+      // Los porcentajes se cargan en cargarPreciosGlobales() cuando se abre el modal
     },
     async buscarArticulo() {
       try {
@@ -1365,6 +1360,7 @@ export default {
     async enviarFormulario() {
       try {
         this.isLoading = true; // Activar loading
+        this.intentoEnviar = true; // Marcar que se intentó enviar
         this.asignarCampos();
         this.asignarCamposPrecios();
 
@@ -1374,6 +1370,7 @@ export default {
 
         let validacionExitosa = true;
         let validacionInventarioExitosa = true;
+        let listaErrores = [];
 
         try {
           await esquemaArticulos.validate(this.datosFormulario, {
@@ -1384,6 +1381,7 @@ export default {
           const erroresValidacion = {};
           error.inner.forEach((e) => {
             erroresValidacion[e.path] = e.message;
+            listaErrores.push(e.message);
           });
           this.errores = erroresValidacion;
         }
@@ -1398,14 +1396,38 @@ export default {
             const erroresValidacionInventario = {};
             error.inner.forEach((e) => {
               erroresValidacionInventario[e.path] = e.message;
+              listaErrores.push(e.message);
             });
             this.erroresinventario = erroresValidacionInventario;
           }
         }
 
+        // Mostrar Swal si hay errores de validación
+        if (!validacionExitosa || (this.agregarStock && !validacionInventarioExitosa)) {
+          const mensajeHtml = `
+            <div style="text-align: left; max-height: 300px; overflow-y: auto;">
+              <p style="margin-bottom: 10px; font-weight: 500;">Por favor complete los siguientes campos:</p>
+              <ul style="padding-left: 20px; margin: 0;">
+                ${listaErrores.map(err => `<li style="margin-bottom: 5px; color: #dc3545;">${err}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+          
+          Swal.fire({
+            icon: 'warning',
+            title: 'Campos incompletos',
+            html: mensajeHtml,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#3085d6',
+          });
+          
+          this.isLoading = false;
+          return;
+        }
+
         if (this.tipoAccion == 2) {
           await this.actualizarArticulo(this.datosFormulario);
-        } else if (validacionExitosa || validacionInventarioExitosa) {
+        } else if (validacionExitosa && (this.agregarStock ? validacionInventarioExitosa : true)) {
           if (this.tipo_stock == "paquetes") {
             this.datosFormulario.stock =
               this.datosFormulario.unidad_envase * this.datosFormulario.stock;
@@ -1834,6 +1856,7 @@ export default {
       this.precio_cuatro = "";
       this.descuento = 0;
       this.fecha_venc_descuento = null;
+      this.intentoEnviar = false;
     },
     async abrirModal(modelo, accion, data = []) {
       switch (modelo) {
@@ -1855,24 +1878,25 @@ export default {
   {
     id: 1,
     nombre_precio: "por Unidad",
-    valor: 0,
-    porcentaje: parseFloat(preciosGlobales.venta1) || 0, // 👈 Forzamos a Numero
+    valor: null,
+    porcentaje: parseFloat(preciosGlobales.venta1) || null,
     errorVenta: false,
   },
   {
     id: 2,
     nombre_precio: "por Docena",
-    valor: 0,
-    porcentaje: parseFloat(preciosGlobales.venta2) || 0, // 👈 Forzamos a Numero
+    valor: null,
+    porcentaje: parseFloat(preciosGlobales.venta2) || null,
     errorVenta: false,
   },
   {
     id: 3,
     nombre_precio: "por Paquete",
-    valor: 0,
-    porcentaje: parseFloat(preciosGlobales.venta3) || 0, // 👈 Forzamos a Numero
+    valor: null,
+    porcentaje: parseFloat(preciosGlobales.venta3) || null,
     errorVenta: false,
   },
+
 ];
 
                 this.datosFormulario = {
@@ -1925,7 +1949,7 @@ export default {
                     descripcion: articulo.descripcion,
                     nombre_generico: articulo.nombre_generico,
                     unidad_envase: articulo.unidad_envase,
-                    descuento: articulo.descuento || 0,
+                    descuento: articulo.descuento > 0 ? articulo.descuento : null,
                     fecha_venc_descuento: articulo.fecha_venc_descuento
                       ? articulo.fecha_venc_descuento.split("T")[0]
                       : null,

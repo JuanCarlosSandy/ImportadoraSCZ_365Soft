@@ -19,6 +19,7 @@
   --color-top-bar: #fff;
 }
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @media print {
   *,
   *::before,
@@ -3346,7 +3347,7 @@ tbody.collapse.show {
   content: "";
   background: no-repeat center center;
   background-size: 100% 100%;
-  color: #000000;
+  color: #ffffff;
 }
 
 @media (max-width: 575px) {
@@ -3678,7 +3679,7 @@ tbody.collapse.show {
 .navbar-dark .navbar-nav .nav-link.active,
 .navbar-dark .navbar-nav .navbar .active.dropdown-toggle,
 .navbar .navbar-dark .navbar-nav .active.dropdown-toggle {
-  color: #000000;
+  color: #6C757D;
 }
 
 .navbar-dark .navbar-toggler {
@@ -10210,8 +10211,8 @@ base-chart.chart {
   padding: 0;
   margin: 0;
   
-  background-color: #184b94;
-  /*background-color: #ffffff;*/
+  /*background-color: #184b94;*/
+  background-color: #ffffff;
   border-bottom: 1px solid #c2cfd6;
 }
 .app-header.navbar .navbar-brand {
@@ -10301,7 +10302,7 @@ base-chart.chart {
 .navbar-nav .nav-link,
 .navbar-nav .navbar .dropdown-toggle,
 .navbar .navbar-nav .dropdown-toggle {
-  color: #000000;
+  color: #6C757D;
 }
 .navbar-nav .nav-link:focus,
 .navbar-nav .navbar .dropdown-toggle:focus,
@@ -10309,7 +10310,7 @@ base-chart.chart {
 .navbar-nav .nav-link:hover,
 .navbar-nav .navbar .dropdown-toggle:hover,
 .navbar .navbar-nav .dropdown-toggle:hover {
-  color: #000000;
+  color: #6C757D;
 }
 
 .navbar-nav .open > .nav-link,
@@ -10348,7 +10349,7 @@ base-chart.chart {
 .navbar-nav .nav-link.active:hover,
 .navbar-nav .navbar .active.dropdown-toggle:hover,
 .navbar .navbar-nav .active.dropdown-toggle:hover {
-  color: #000000;
+  color: #6C757D;
 }
 
 .navbar-divider {
@@ -12786,6 +12787,11 @@ hr.transparent {
 
 /* Barra superior delgada */
 .topbar {
+  position: fixed; /* 🔹 elemento fijo en la pantalla */
+  top: 0;
+  left: 0;
+  width: 100%; /* ocupa todo el ancho */
+  z-index: 1100;
   /*background: linear-gradient(
     90deg,
     #000000 0%,
@@ -12804,7 +12810,7 @@ hr.transparent {
 );
         
   color: #ffffff;
-  font-size: 13px;
+  font-size: 9px;
   padding: 2px 40px;
   display: flex;
   justify-content: space-between;
@@ -12835,7 +12841,7 @@ hr.transparent {
 }
 
 .app-header .nav-link .d-md-down-none {
-    color: #f2f0f5; /* blanco */
+    color: #4a4a4a; /* blanco */
     transition: color 0.3s ease; /* opcional: transición suave */
 }
 
@@ -12856,7 +12862,7 @@ hr.transparent {
   background-image: none; /* quitamos el ícono por defecto */
   width: 20px;
   height: 2px;
-  background-color: #ffffff; /* blanco computadora*/
+  background-color: #4a4a4a; /* blanco computadora*/
   display: block;
   position: relative;
   transition: background-color 0.3s ease;

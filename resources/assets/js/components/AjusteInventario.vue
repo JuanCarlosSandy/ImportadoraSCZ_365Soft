@@ -451,7 +451,7 @@ export default {
   },
   data() {
     return {
-      modo_ajuste: 'caja', // por defecto unidades
+      modo_ajuste: 'unidad',
       mostrarLabel: true,
       buscar: "",
       isLoading: false,
@@ -743,92 +743,65 @@ export default {
     },
 
     async enviarFormulario() {
-      console.log('Productos seleccionados antes de enviar:', this.productosSeleccionados);
-
-      const productosConStockReal = this.productosSeleccionados.filter(producto => {
-        return producto.stock_real !== null && producto.stock_real !== undefined && producto.stock_real !== ''; 
-      });
-
-      if (productosConStockReal.length === 0) {
-        this.toastError("Debe ingresar el stock real para al menos un producto");
-        return;
-      }
-
-      const productosInvalidos = this.productosSeleccionados.filter(p => {
-        if (!p.es_aumento && p.cantidad_ajuste > p.stock_actual) {
-            return true; 
+        if (!this.motivoseleccionado || !this.motivoseleccionado.id) {
+            this.toastError("Seleccione un motivo.");
+            return;
         }
-        return false;
-      });
 
-      if (productosInvalidos.length > 0) {
-        this.toastError("Error: Estás intentando dar de baja más stock del disponible.");
-        return;
-      }
-
-      if (!this.motivoseleccionado || !this.motivoseleccionado.id) {
-        this.toastError("Debe seleccionar un motivo de baja");
-        return;
-      }
-
-      try {
-        this.isLoading = true;
-
-        const ajustesData = {
-          almacen_id: this.idAlmacenSeleccionado,
-          motivo_id: this.motivoseleccionado.id,
-          productos: this.productosSeleccionados.map(producto => {
-            const esEntrada = (producto.es_aumento === true); 
-
-            return {
-              producto_id: producto.id,
-              cantidad: producto.cantidad_ajuste, 
-              tipo_movimiento: esEntrada ? 'entrada' : 'salida', 
-              
-              stock_anterior: producto.stock_actual,
-              stock_real: producto.stock_real,
-              fecha_vencimiento: producto.fecha_vencimiento_seleccionada ? producto.fecha_vencimiento_seleccionada.fecha_vencimiento : null
-            };
-          }).filter(p => p.cantidad > 0) 
-        };
-
-        console.log('Datos que se envían al backend (JSON Final):', ajustesData);
-
-        await this.registrarAjusteMultiple(ajustesData);
-
-        this.$toast.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'El ajuste de inventario se realizó correctamente.',
-          life: 1500
+        const productosAProcesar = this.productosSeleccionados.filter(p => {
+            const cantidad = parseFloat(p.cantidad_ajuste) || 0;
+            return cantidad > 0;
         });
 
-        this.productosSeleccionados = [];
-        this.motivoseleccionado = { nombre: '' };
-        this.proveedorSeleccionado = { nombre: '' };
-        this.buscarA = '';
-
-        setTimeout(() => {
-          this.vistaActual = 'tabla';
-        }, 1500);
-
-      } catch (error) {
-        console.error("Error al registrar el ajuste múltiple: ", error);
-        let mensajeError = 'Error al registrar el ajuste.';
-        
-        if (error.response) {
-          if (error.response.status === 422) {
-            console.log('Errores de validación:', error.response.data.errors);
-            mensajeError = 'Error de validación: Revise los datos.';
-          } else {
-            mensajeError = `Error ${error.response.status}: ${error.response.data.message}`;
-          }
+        if (productosAProcesar.length === 0) {
+            this.toastError("No hay diferencias de stock para registrar.");
+            return;
         }
-        
-        this.$toast.add({ severity: 'error', summary: 'Error', detail: mensajeError, life: 5000 });
-      } finally {
-        this.isLoading = false;
-      }
+
+        const productosInvalidos = productosAProcesar.filter(p => {
+            if (p.es_aumento) return false;
+            return p.cantidad_ajuste > p.stock_actual_unidades;
+        });
+
+        if (productosInvalidos.length > 0) {
+            this.toastError(`Error: El producto "${productosInvalidos[0].nombre}" no tiene suficiente stock.`);
+            return;
+        }
+
+        try {
+            this.isLoading = true;
+
+            const ajustesData = {
+                almacen_id: this.idAlmacenSeleccionado,
+                motivo_id: this.motivoseleccionado.id,
+                productos: productosAProcesar.map(p => {
+                    return {
+                        producto_id: p.id,
+                        cantidad: parseFloat(p.cantidad_ajuste),
+                        tipo_movimiento: p.es_aumento ? 'entrada' : 'salida',
+                    };
+                })
+            };
+
+            await this.registrarAjusteMultiple(ajustesData);
+
+            this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Inventario ajustado correctamente.', life: 2000 });
+            
+            setTimeout(() => {
+                this.vistaActual = 'tabla';
+                this.productosSeleccionados = [];
+            }, 1500);
+
+        } catch (error) {
+            console.error("Error:", error);
+            let msg = "Error al procesar.";
+            if (error.response && error.response.data && error.response.data.message) {
+                msg = error.response.data.message;
+            }
+            this.$toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 5000 });
+        } finally {
+            this.isLoading = false;
+        }
     },
 
     guardarYVolver() {
@@ -1102,17 +1075,25 @@ export default {
     },
 
     puedeEnviarFormulario() {
-      if (!this.idAlmacenSeleccionado) return false;
-      if (!this.motivoseleccionado.id) return false;
-      if (this.productosSeleccionados.length === 0) return false;
+        if (!this.idAlmacenSeleccionado) return false;
+        if (!this.motivoseleccionado || !this.motivoseleccionado.id) return false;
+        if (this.productosSeleccionados.length === 0) return false;
 
-      // Al menos un producto debe tener cantidad > 0
-      const tieneProductosConCantidad = this.productosSeleccionados.some(producto => {
-        const cantidad = parseInt(producto.cantidad_ajuste) || 0;
-        return cantidad > 0;
-      });
+        const hayCambios = this.productosSeleccionados.some(p => {
+            const cantidad = parseFloat(p.cantidad_ajuste) || 0;
+            return cantidad > 0;
+        });
 
-      return tieneProductosConCantidad;
+        if (!hayCambios) return false;
+
+        const hayErroresStock = this.productosSeleccionados.some(p => {
+            const cantidad = parseFloat(p.cantidad_ajuste) || 0;
+            const stockActual = parseFloat(p.stock_actual) || 0; 
+            if (!p.es_aumento && cantidad > p.stock_actual_unidades) return true; 
+            return false;
+        });
+
+        return !hayErroresStock;
     },
 
     validarFormularioMultiple() {
@@ -1321,41 +1302,34 @@ export default {
     },
 
     seleccionarProducto(producto) {
-      // Obtener la fecha de vencimiento más cercana (si existe)
-      const fechaVencimientoMasCercana =
-        producto.fechas_vencimiento && producto.fechas_vencimiento.length > 0
-          ? producto.fechas_vencimiento[0]
-          : null;
+        const productoExistente = this.productosSeleccionados.find(p => p.id === producto.id);
 
-      // Verificar si el producto ya está seleccionado
-      const productoExistente = this.productosSeleccionados.find(p => p.id === producto.id);
+        if (!productoExistente) {
+            
+            let stockTotal = parseFloat(producto.stock_total_unidades) || 0;
+            let stockCajas = parseFloat(producto.stock_total_cajas) || 0;
+            let stockSueltas = parseFloat(producto.stock_total_unidades_sueltas) || 0;
+            
+            this.productosSeleccionados.push({
+                ...producto,
+                cantidad_ajuste: 0,
+                
+                stock_actual_unidades: stockTotal,
+                stock_actual_cajas: stockCajas,
+                stock_actual_unidades_sueltas: stockSueltas,
+                
+                modo_ajuste: 'unidad',
+                es_paquete: false, 
+                es_aumento: true,  
 
-      if (!productoExistente) {
+                stock_real: stockTotal,
+                stock_restante: stockTotal
+            });
 
-        this.productosSeleccionados.push({
-          ...producto,
-          fecha_vencimiento_seleccionada: fechaVencimientoMasCercana,
-          cantidad_ajuste: 0,
-
-          // STOKS
-          stock_actual_unidades: producto.stock_total_unidades,
-          stock_actual_cajas: producto.stock_total_cajas,
-          stock_actual_unidades_sueltas: producto.stock_total_unidades_sueltas,
-          stock_formateado: producto.stock_formateado,
-
-          // Modo de ajuste (nuevo)
-          modo_ajuste: 'caja',
-
-          stock_restante: producto.stock_total_unidades,
-          stock_real: null
-        });
-
-        this.$toast.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Producto agregado'
-        });
-      }
+            this.$toast.add({ severity: 'success', summary: 'Agregado', detail: 'Producto listo para ajustar', life: 1000 });
+        } else {
+            this.$toast.add({ severity: 'warn', summary: 'Atención', detail: 'El producto ya está en la lista' });
+        }
     },
 
 

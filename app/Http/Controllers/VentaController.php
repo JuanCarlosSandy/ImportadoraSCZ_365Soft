@@ -147,9 +147,13 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
     // ✅ AQUÍ SE EXCLUYEN
     ->whereNull('proveedores.id')
     ->whereNull('u2.id')
+// ->where(function ($q) {
+//     $q->where('ventas.estado', '<>', 0)
+//       ->orWhereNull('ventas.id');
+// })
 ->where(function ($q) {
-    $q->where('ventas.estado', '<>', 0)
-      ->orWhereNull('ventas.id');
+    $q->whereNotNull('ventas.id') // Si hay venta, la muestra (sea estado 1 o 0)
+      ->orWhereNull('ventas.id'); // Si no hay venta (null), también (por tu estructura actual)
 })
     ->orderBy('ventas.fecha_hora', 'desc');
 
@@ -2803,7 +2807,7 @@ public function indexFiltrar(Request $request)
         return response()->json(['url' => url('docs/facturaRollo.pdf')]);
     }
 
-    public function imprimirResivoRollo($id)
+      public function imprimirResivoRollo($id)
     {
         try {
             $venta = Venta::with('detalles.producto')->find($id);
@@ -2884,8 +2888,8 @@ public function indexFiltrar(Request $request)
 
                 $pdf->Cell(0, 2, '', 'T', 1);
                 $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(12, 5, 'Cant', 0, 0, 'L');
-                $pdf->Cell(43, 5, 'Producto', 0, 0, 'L');
+                $pdf->Cell(15, 5, 'Cant', 0, 0, 'L');
+                $pdf->Cell(40, 5, 'Producto', 0, 0, 'L');
                 $pdf->Cell(15, 5, 'Subtotal', 0, 1, 'R');
                 $pdf->SetFont('Arial', '', 8);
 
@@ -2895,36 +2899,46 @@ public function indexFiltrar(Request $request)
 
                     if ($detalle->modo_venta === 'caja') {
                         $subtotal = $detalle->cantidad * $detalle->producto->unidad_envase * $detalle->precio;
+                    } elseif ($detalle->modo_venta === 'docena') {
+                        
+                        $subtotal = $detalle->cantidad * 12 * $detalle->precio;
                     } else {
+                        
                         $subtotal = $detalle->cantidad * $detalle->precio;
                     }
 
                     $total += $subtotal;
 
-                    // ---------------------------
-                    // LÍNEA 1: Cjs | Producto + Código
-                    // ---------------------------
-
-                    // Cantidad
+                    
                     $pdf->SetFont('Arial', 'B', 8);
-                    // Cantidad con abreviación (CJS o UND)
-                    $abreviacion = $detalle->modo_venta === 'caja' ? 'CJS' : 'UND';
-                    $cantidadTexto = $detalle->cantidad . ' ' . $abreviacion;
+
+                    $modo = strtolower($detalle->modo_venta);
+                    $etiqueta = 'Unidad'; 
+
+                    if ($modo === 'caja') {
+                        $etiqueta = 'Caja';
+                    } elseif ($modo === 'docena') {
+                        $etiqueta = 'Doc';
+                    }
+
+                    $cantidadTexto = $detalle->cantidad . ' ' . $etiqueta;
 
                     $pdf->SetFont('Arial', 'B', 8);
-                    $pdf->Cell(12, 5, $cantidadTexto, 0, 0, 'L');
+                    // Usamos ancho 15 (igual que en el encabezado)
+                    $pdf->Cell(15, 5, $cantidadTexto, 0, 0, 'L'); 
 
                     // Preparar nombre y código
-                    $nombre = strtoupper(substr($detalle->producto->nombre, 0, 30));
+                    $nombre = strtoupper(substr($detalle->producto->nombre, 0, 28)); // 28 chars para que quepa en 40mm
                     $codigo = strtoupper($detalle->producto->codigo);
 
                     // Guardar posición de inicio
                     $x = $pdf->GetX();
                     $y = $pdf->GetY();
 
-                    // Imprimir SOLO NOMBRE en la celda de 43
+                    // Imprimir SOLO NOMBRE en la celda de 40 (igual que en el encabezado)
                     $pdf->SetFont('Arial', '', 8);
-                    $pdf->Cell(43, 5, utf8_decode($nombre), 0, 0, 'L');
+                    $pdf->Cell(40, 5, utf8_decode($nombre), 0, 0, 'L');
+
 
                     // Calcular posición exacta donde termina el nombre
                     $pdf->SetXY($x + $pdf->GetStringWidth($nombre . ' '), $y);
@@ -3281,8 +3295,8 @@ public function indexFiltrar(Request $request)
                 $pdf->Ln(5);
                 $pdf->Cell(0, 2, '', 'T', 1);
                 $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(12, 5, 'Cant', 0, 0, 'L');
-                $pdf->Cell(43, 5, 'Producto', 0, 1, 'L');
+                $pdf->Cell(15, 5, 'Cant', 0, 0, 'L');
+                $pdf->Cell(40, 5, 'Producto', 0, 1, 'L');
                 $pdf->SetFont('Arial', '', 8);
 
                 $total = 0;
@@ -3290,30 +3304,39 @@ public function indexFiltrar(Request $request)
                 foreach ($venta->detalles as $detalle) {
 
                     // ---------------------------
-                    // LÍNEA 1: Cjs | Producto + Código
+                    // LÍNEA 1: Cantidad + Unidad | Producto + Código
                     // ---------------------------
 
-                    // Cantidad
-                    $pdf->SetFont('Arial', 'B', 8);
-                    // Cantidad con abreviación
-                    $abreviacion = $detalle->modo_venta === 'caja' ? 'CJS' : 'UND';
-                    $cantidadTexto = $detalle->cantidad . ' ' . $abreviacion;
+                    // 1. Definir la etiqueta correcta (Unidad, Doc, Caja)
+                    $modo = strtolower($detalle->modo_venta);
+                    $etiqueta = 'Unidad'; // Valor por defecto
+
+                    if ($modo === 'caja') {
+                        $etiqueta = 'Caja';
+                    } elseif ($modo === 'docena') {
+                        $etiqueta = 'Doc';
+                    }
+
+                    // Concatenamos: "3 Doc" o "5 Unidad"
+                    $cantidadTexto = $detalle->cantidad . ' ' . $etiqueta;
 
                     $pdf->SetFont('Arial', 'B', 8);
-                    $pdf->Cell(12, 5, utf8_decode($cantidadTexto), 0, 0, 'L'); 
+                    // Usamos ancho 15
+                    $pdf->Cell(15, 5, utf8_decode($cantidadTexto), 0, 0, 'L'); 
+
                     // Preparar nombre y código
-                    $nombre = strtoupper(substr($detalle->producto->nombre, 0, 30));
+                    $nombre = strtoupper(substr($detalle->producto->nombre, 0, 28)); // Ajustado a 28 caracteres
                     $codigo = strtoupper($detalle->producto->codigo);
 
-                    // Guardar posición de inicio
+                    // Guardar posición
                     $x = $pdf->GetX();
                     $y = $pdf->GetY();
 
-                    // Imprimir nombre en celda de 43
+                    // Imprimir nombre en celda de 40
                     $pdf->SetFont('Arial', '', 8);
-                    $pdf->Cell(43, 5, utf8_decode($nombre), 0, 0, 'L');
+                    $pdf->Cell(40, 5, utf8_decode($nombre), 0, 0, 'L');
 
-                    // Posicionar para escribir el código al lado
+                    // Posicionar para escribir el código al final del nombre
                     $pdf->SetXY($x + $pdf->GetStringWidth($nombre . ' '), $y);
 
                     // Código en negrita

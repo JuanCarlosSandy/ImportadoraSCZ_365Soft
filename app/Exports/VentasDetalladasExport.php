@@ -38,8 +38,37 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
         if (!empty($this->filters['sucursal']) && $this->filters['sucursal'] !== 'undefined') {
              $query->whereHas('usuario', function ($q) { $q->where('idsucursal', $this->filters['sucursal']); });
         }
-        // ... (resto de filtros igual que antes) ...
-        // Asegúrate de incluir aquí el resto de tus filtros (fecha, estado, etc.)
+        
+        
+        if (!empty($this->filters['tipoReporte'])) {
+        
+        // REPORTE POR DÍA
+            if ($this->filters['tipoReporte'] === 'dia' && !empty($this->filters['fechaSeleccionada'])) {
+                $fecha = $this->filters['fechaSeleccionada'];
+                $query->whereBetween('fecha_hora', [
+                    $fecha . ' 00:00:00',
+                    $fecha . ' 23:59:59'
+                ]);
+            } 
+            // REPORTE POR MES
+            elseif ($this->filters['tipoReporte'] === 'mes' && !empty($this->filters['mesSeleccionado'])) {
+                $mes = $this->filters['mesSeleccionado'];
+                $query->whereBetween('fecha_hora', [
+                    $mes . '-01 00:00:00',
+                    date('Y-m-t', strtotime($mes . '-01')) . ' 23:59:59'
+                ]);
+            }
+        }
+
+    // 3. Filtro ESTADO
+        if (!empty($this->filters['estadoVenta']) && $this->filters['estadoVenta'] !== 'Todos' && $this->filters['estadoVenta'] !== 'undefined') {
+            $query->where('estado', $this->filters['estadoVenta']);
+        }
+
+        // 4. Filtro CLIENTE
+        if (!empty($this->filters['idcliente']) && $this->filters['idcliente'] !== 'undefined') {
+            $query->where('idcliente', $this->filters['idcliente']);
+        }
 
         $ventas = $query->orderBy('fecha_hora', 'asc')->get();
         $rows = new Collection();

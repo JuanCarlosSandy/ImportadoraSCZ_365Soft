@@ -536,8 +536,44 @@ $pdf->Ln(6);
             'sucursales.nombre as sucursal_nombre'
         );
 
-    // ... (BLOQUE DE FILTROS SE MANTIENE IGUAL - OMITIDO PARA AHORRAR ESPACIO) ...
-    // Aquí van tus if($request->filled(...)) tal como los tenías
+    $filtros = [];
+
+    // Filtro Sucursal
+    if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
+        $query->where('users.idsucursal', $request->sucursal);
+        $sucursal = Sucursales::find($request->sucursal);
+        $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
+    }
+
+    // Filtro FECHA (Este es el que hace que funcione por día)
+    if ($request->filled('tipoReporte')) {
+        if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
+            $query->whereBetween('ventas.fecha_hora', [
+                $request->fechaSeleccionada . ' 00:00:00',
+                $request->fechaSeleccionada . ' 23:59:59'
+            ]);
+            $filtros[] = 'Fecha: ' . $request->fechaSeleccionada;
+        } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
+            $mes = $request->mesSeleccionado;
+            $query->whereBetween('ventas.fecha_hora', [
+                $mes . '-01 00:00:00',
+                date('Y-m-t', strtotime($mes . '-01')) . ' 23:59:59'
+            ]);
+            $filtros[] = 'Mes: ' . date('F Y', strtotime($mes . '-01'));
+        }
+    }
+
+    // Filtro Estado
+    if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
+        $query->where('ventas.estado', $request->estadoVenta);
+        $filtros[] = 'Estado: ' . $request->estadoVenta;
+    }
+
+    // Filtro Cliente
+    if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
+        $query->where('ventas.idcliente', $request->idcliente);
+        $filtros[] = 'Cliente ID: ' . $request->idcliente;
+    }
 
     $ventas = $query->orderBy('ventas.fecha_hora', 'desc')->get();
 

@@ -149,39 +149,50 @@ export const esquemaOfertas = yup.object().shape({
 export const esquemaArticulos = yup.object().shape({
   nombre: yup
     .string()
-    .required("El nombre es obligatorio")
+    .required("El Nombre del Producto es obligatorio")
     .max(80, "El nombre no puede tener más de 80 caracteres"),
-  nombre_generico: yup.string().required("El nombre generico es obligatorio"),
+  codigo: yup.string().required("El Código del Producto es obligatorio"),
+  codigo_alfanumerico: yup.string().nullable(),
+  descripcion_fabrica: yup.string().required("La Medida del Producto es obligatoria"),
   unidad_envase: yup
     .number()
-    .required("La cantidad de unidades por paquete es obligatoria"),
-
+    .required("Las Unidades x Caja son obligatorias")
+    .typeError("Debe ingresar un número válido")
+    .min(1, "Las Unidades x Caja deben ser mayor a 0"),
   precio_costo_unid: yup
     .number()
-    .required("La cantidad del costo por unidad es obligatoria")
+    .required("El Costo de Compra es obligatorio")
     .typeError("Debe ingresar un número válido")
-    .min(
-      0.01,
-      "El cantidad del costo por unidad no puede ser menor o igual a 0"
-    ),
-  precio_uno: yup.number().typeError("Debe ingresar un número válido"),
-  precio_dos: yup.number().typeError("Debe ingresar un número válido"),
-  precio_tres: yup.number().typeError("Debe ingresar un número válido"),
-  precio_cuatro: yup.number().typeError("Debe ingresar un número válido"),
+    .min(0.01, "El Costo de Compra debe ser mayor a 0"),
   stock: yup
     .number()
-    .required("El stock es obligatorio")
+    .required("El Stock Mínimo es obligatorio")
     .typeError("Debe ingresar un número válido")
-    .min(0.01, "El stock minimo no puede ser menor o igual a 0"),
-  codigo: yup.string().required("El código es obligatorio"),
-  codigo_alfanumerico: yup.string(),
-  descripcion_fabrica: yup.string().required("La medida del producto es obligatoria"),
-  idcategoria: yup.number().required("El campo Línea es obligatorio"),
-  idmarca: yup.number().required("El campo Marca es obligatorio"),
-  idindustria: yup.number().required("El campo Industria es obligatorio"),
-  idgrupo: yup.number().required("El campo Grupo o Familia es obligatorio"),
-  idproveedor: yup.number().required("El campo Proveedor es obligatorio"),
-  idmedida: yup.number().required("El campo Medida es obligatorio"),
+    .min(1, "El Stock Mínimo debe ser mayor a 0"),
+  idcategoria: yup
+    .number()
+    .required("Debe seleccionar una Categoría")
+    .typeError("Debe seleccionar una Categoría"),
+  idproveedor: yup
+    .number()
+    .required("Debe seleccionar un Proveedor")
+    .typeError("Debe seleccionar un Proveedor"),
+  precio_uno: yup
+    .number()
+    .required("El Precio por Unidad es obligatorio")
+    .typeError("Debe ingresar un número válido")
+    .min(0.01, "El Precio por Unidad debe ser mayor a 0"),
+  precio_dos: yup
+    .number()
+    .required("El Precio por Docena es obligatorio")
+    .typeError("Debe ingresar un número válido")
+    .min(0.01, "El Precio por Docena debe ser mayor a 0"),
+  precio_tres: yup
+    .number()
+    .required("El Precio por Paquete es obligatorio")
+    .typeError("Debe ingresar un número válido")
+    .min(0.01, "El Precio por Paquete debe ser mayor a 0"),
+  precio_cuatro: yup.number().nullable().typeError("Debe ingresar un número válido"),
   
 });
 export const esquemaInventario = yup.object().shape({
