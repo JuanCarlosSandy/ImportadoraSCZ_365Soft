@@ -100,7 +100,16 @@
         </div>
 
         <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm">
-          <Column field="cantidad" header="Cjs" />
+          <Column header="Cant.">
+            <template #body="slotProps">
+              <span 
+                class="tipo-compra-badge"
+                :class="slotProps.data.tipo_compra === 'Unidad' ? 'tipo-unidad' : 'tipo-caja'"
+              >
+                {{ slotProps.data.cantidad }} {{ slotProps.data.tipo_compra === 'Unidad' ? (slotProps.data.cantidad > 1 ? 'Unidades' : 'Unidad') : (slotProps.data.cantidad > 1 ? 'Cajas' : 'Caja') }}
+              </span>
+            </template>
+          </Column>
           <Column field="codigo" header="Codigo" />
           <Column field="articulo" header="Producto" />
           <Column field="unidad_x_paquete" header="Cant x Caja" />
@@ -116,10 +125,10 @@
             <template #body="slotProps">
               {{
                 (
-                  slotProps.data.precio *
-                  slotProps.data.cantidad *
-                  slotProps.data.unidad_x_paquete *
-                  parseFloat(monedaCompra[0])
+                  (slotProps.data.tipo_compra === 'Unidad'
+                    ? slotProps.data.precio * slotProps.data.cantidad
+                    : slotProps.data.precio * slotProps.data.cantidad * slotProps.data.unidad_x_paquete)
+                  * parseFloat(monedaCompra[0])
                 ).toFixed(2)
               }}
               {{ monedaCompra[1] }}
@@ -129,7 +138,7 @@
             <div class="flex justify-content-end">
               <div class="font-bold">
                 Total Neto:
-                {{ (total * parseFloat(monedaCompra[0])).toFixed(2) }}
+                {{ (totalCalculado * parseFloat(monedaCompra[0])).toFixed(2) }}
                 {{ monedaCompra[1] }}
               </div>
             </div>
@@ -271,6 +280,18 @@ export default {
         from++;
       }
       return pagesArray;
+    },
+    totalCalculado: function () {
+      if (!this.arrayDetalle || this.arrayDetalle.length === 0) {
+        return 0;
+      }
+      return this.arrayDetalle.reduce((acc, item) => {
+        if (item.tipo_compra === 'Unidad') {
+          return acc + (parseFloat(item.precio) * parseInt(item.cantidad));
+        } else {
+          return acc + (parseFloat(item.precio) * parseInt(item.cantidad) * parseInt(item.unidad_x_paquete));
+        }
+      }, 0);
     },
   },
   methods: {
@@ -1404,6 +1425,26 @@ export default {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Estilos para badges de tipo de compra */
+.tipo-compra-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tipo-unidad {
+  background-color: #2196F3;
+  color: #ffffff;
+}
+
+.tipo-caja {
+  background-color: #FF9800;
+  color: #ffffff;
 }
 </style>
 

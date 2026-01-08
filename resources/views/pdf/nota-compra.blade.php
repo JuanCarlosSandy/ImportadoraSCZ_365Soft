@@ -130,22 +130,35 @@
 <table>
     <thead>
         <tr>
-            <th style="width:10%">Cjs</th>
-            <th style="width:40%">Artículo</th>
+            <th style="width:15%">Cant.</th>
+            <th style="width:35%">Artículo</th>
             <th style="width:10%">Cant x Caja</th>
             <th style="width:20%">Precio Unitario</th>
-            <th style="width:25%">Subtotal</th>
+            <th style="width:20%">Subtotal</th>
         </tr>
     </thead>
 
     <tbody>
+        @php $totalCalculado = 0; @endphp
         @foreach($detalles as $d)
+        @php
+            if($d->tipo_compra === 'Unidad') {
+                $subtotal = $d->cantidad * $d->precio;
+                $tipoTexto = $d->cantidad > 1 ? 'Unidades' : 'Unidad';
+            } else {
+                $subtotal = $d->cantidad * $d->precio * $d->unidad_x_paquete;
+                $tipoTexto = $d->cantidad > 1 ? 'Cajas' : 'Caja';
+            }
+            $totalCalculado += $subtotal;
+        @endphp
         <tr>
-            <td style="text-align:center;">{{ $d->cantidad }}</td>
+            <td style="text-align:center;">
+                {{ $d->cantidad }} {{ $tipoTexto }}
+            </td>
             <td>{{ $d->articulo }} ({{ $d->codigo }})</td>
             <td style="text-align:center;">{{ $d->unidad_x_paquete }}</td>
             <td style="text-align:right;">{{ number_format($d->precio, 2) }}</td>
-            <td style="text-align:right;">{{ number_format($d->cantidad * $d->precio * $d->unidad_x_paquete, 2) }}</td>
+            <td style="text-align:right;">{{ number_format($subtotal, 2) }}</td>
         </tr>
         @endforeach
     </tbody>
@@ -153,7 +166,7 @@
 
 <!-- ================= TOTAL ================= -->
 <h3 style="text-align:right; margin-top:10px; font-size:12px;">
-    TOTAL: <strong>Bs. {{ number_format($ingreso->total, 2) }}</strong>
+    TOTAL: <strong>Bs. {{ number_format($totalCalculado, 2) }}</strong>
 </h3>
 
 </body>

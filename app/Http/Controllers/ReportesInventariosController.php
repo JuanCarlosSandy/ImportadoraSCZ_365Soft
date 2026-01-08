@@ -328,10 +328,11 @@ class ReportesInventariosController extends Controller
 
         // 3. AJUSTES (ESTE YA ESTABA BIEN)
         $ajustes = DB::table('ajuste_invetarios')
+        ->leftJoin('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
             ->select(
                 'ajuste_invetarios.created_at as fecha_hora',
                 'ajuste_invetarios.cantidad',
-                'ajuste_invetarios.idtipobajas as motivo', 
+                DB::raw("COALESCE(tipo_bajas.nombre, 'Sin motivo') as motivo"), 
                 DB::raw("'Baja/Ajuste' as tipo_ajuste"),
                 DB::raw("'Sistema' as responsable") 
             )
@@ -666,7 +667,7 @@ class ReportesInventariosController extends Controller
         if (count($ajustes) > 0) {
             $pdf->SetFont('Arial', 'B', 9);
             $pdf->Cell(35, 6, 'FECHA', 1);
-            $pdf->Cell(130, 6, 'MOTIVO / ID BAJA', 1);
+            $pdf->Cell(130, 6, 'MOTIVO', 1);
             $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
 
             $pdf->SetFont('Arial', '', 8);

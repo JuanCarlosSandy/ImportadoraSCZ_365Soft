@@ -58,7 +58,9 @@ class IngresoController extends Controller
             ->select(
                 "detalle_ingresos.cantidad",
                 "detalle_ingresos.precio",
-                "articulos.nombre as articulo"
+                "detalle_ingresos.tipo_compra",
+                "articulos.nombre as articulo",
+                "articulos.unidad_envase as unidad_x_paquete"
             )
             ->where("detalle_ingresos.idingreso", "=", $idIngreso)
             ->orderBy("detalle_ingresos.id", "desc")
@@ -239,7 +241,8 @@ class IngresoController extends Controller
                 "detalle_ingresos.cantidad",
                 "detalle_ingresos.precio",
                 "articulos.nombre as articulo",
-                "articulos.unidad_envase as unidad_x_paquete"
+                "articulos.unidad_envase as unidad_x_paquete",
+                DB::raw("COALESCE(detalle_ingresos.tipo_compra, 'Caja') as tipo_compra")
             )
             ->where("detalle_ingresos.idingreso", "=", $id)
             ->orderBy("detalle_ingresos.id", "desc")
@@ -417,20 +420,28 @@ class IngresoController extends Controller
             // =====================
             foreach ($request->data as $det) {
 
+                // 🔹 Determinar tipo de compra (Unidad o Caja)
+                $tipoCompra = isset($det['es_paquete']) && $det['es_paquete'] ? 'Caja' : 'Unidad';
+
                 // 🔹 Guardar detalle ingreso
                 DetalleIngreso::create([
                     'idingreso' => $ingreso->id,
                     'idarticulo' => $det['idarticulo'],
                     'cantidad' => $det['cantidad'],
                     'precio' => $det['precio'],
-                    'descuento' => 0
+                    'descuento' => 0,
+                    'tipo_compra' => $tipoCompra
                 ]);
 
                 // 🔹 Artículo
                 $articulo = Articulo::findOrFail($det['idarticulo']);
 
-                // 🔹 Cantidad real (cajas → unidades)
-                $cantidadReal = $det['cantidad'] * $articulo->unidad_envase;
+                // 🔹 Cantidad real según tipo de compra
+                // Si es por Caja: cantidad * unidad_envase
+                // Si es por Unidad: cantidad directa
+                $cantidadReal = $tipoCompra === 'Caja' 
+                    ? $det['cantidad'] * $articulo->unidad_envase 
+                    : $det['cantidad'];
 
                 // 🔹 Buscar inventario existente
                 $inventario = Inventario::where('idarticulo', $det['idarticulo'])
@@ -569,6 +580,7 @@ class IngresoController extends Controller
                 ->select(
                     "detalle_ingresos.cantidad",
                     "detalle_ingresos.precio",
+                    "detalle_ingresos.tipo_compra",
                     "articulos.nombre as articulo",
                     "articulos.unidad_envase as unidad_x_paquete",
                     "articulos.codigo"

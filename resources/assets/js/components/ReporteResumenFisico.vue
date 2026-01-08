@@ -170,6 +170,7 @@
                     <input
                       class="form-control"
                       type="text"
+                      :class="{ 'is-invalid': erroresFiltros.sucursal }"
                       placeholder="Seleccione una sucursal"
                       disabled
                       v-model="sucursalseleccionada.nombre"
@@ -184,6 +185,7 @@
                       </button>
                     </div>
                   </div>
+                  <small v-if="erroresFiltros.sucursal" class="text-danger">{{ erroresFiltros.sucursal }}</small>
                 </div>
 
                 <div class="col-12 col-md-4 mb-3">
@@ -240,9 +242,12 @@
                   >
                   <input
                     class="form-control"
+                    :class="{ 'is-invalid': erroresFiltros.fechaInicio }"
                     type="date"
                     v-model="fechaInicio"
+                    @change="erroresFiltros.fechaInicio = ''"
                   />
+                  <small v-if="erroresFiltros.fechaInicio" class="text-danger">{{ erroresFiltros.fechaInicio }}</small>
                 </div>
 
                 <div class="col-12 col-md-6 mb-3">
@@ -250,7 +255,14 @@
                     >Fecha Fin
                     <span class="text-danger">OBLIGATORIO</span></label
                   >
-                  <input class="form-control" type="date" v-model="fechaFin" />
+                  <input 
+                    class="form-control" 
+                    :class="{ 'is-invalid': erroresFiltros.fechaFin }"
+                    type="date" 
+                    v-model="fechaFin"
+                    @change="erroresFiltros.fechaFin = ''" 
+                  />
+                  <small v-if="erroresFiltros.fechaFin" class="text-danger">{{ erroresFiltros.fechaFin }}</small>
                 </div>
               </div>
             </div>
@@ -264,11 +276,8 @@
                 Cerrar
               </button>
               <button
-                type="submit"
-                @click="
-                  listaReporte();
-                  cerrarModal();
-                "
+                type="button"
+                @click="aplicarFiltrosReporte()"
                 class="btn btn-primary"
               >
                 Visualizar Reporte
@@ -1263,6 +1272,11 @@ export default {
           ingresos: [],
           ajustes: []
       },
+      erroresFiltros: {
+        sucursal: '',
+        fechaInicio: '',
+        fechaFin: ''
+      },
     };
   },
   components: {
@@ -1754,6 +1768,7 @@ export default {
       } else if (this.tituloModal2 == "Sucursal") {
         if (selected.condicion == 1) {
           this.sucursalseleccionada = selected;
+          this.erroresFiltros.sucursal = '';
           this.validarCampo("idSucursal");
         } else if (selected.condicion == 0) {
           this.advertenciaInactiva("Sucursal");
@@ -2030,38 +2045,45 @@ export default {
         });
     },
 
+    aplicarFiltrosReporte() {
+      let me = this;
+      let esValido = true;
+
+      // Limpiar errores anteriores
+      me.erroresFiltros = {
+        sucursal: '',
+        fechaInicio: '',
+        fechaFin: ''
+      };
+
+      if (!me.sucursalseleccionada || !me.sucursalseleccionada.id) {
+        me.erroresFiltros.sucursal = 'Debe seleccionar una sucursal.';
+        esValido = false;
+      }
+
+      if (!me.fechaInicio) {
+        me.erroresFiltros.fechaInicio = 'Debe seleccionar una fecha de inicio.';
+        esValido = false;
+      }
+
+      // Validar fecha fin
+      if (!me.fechaFin) {
+        me.erroresFiltros.fechaFin = 'Debe seleccionar una fecha de fin.';
+        esValido = false;
+      }
+
+      // Si no es válido, NO cerrar el modal
+      if (!esValido) {
+        return;
+      }
+
+      // Si todo está correcto, cerrar modal y ejecutar reporte
+      me.cerrarModal();
+      me.listaReporte();
+    },
     listaReporte() {
       let me = this;
       me.isLoading = true;
-
-      if (!me.sucursalseleccionada || !me.sucursalseleccionada.id) {
-        swal({
-          title: "Sucursal no seleccionada",
-          text: "Debe seleccionar una sucursal para generar el reporte.",
-          type: "warning",
-          confirmButtonColor: "#3085d6",
-          confirmButtonText: "Aceptar",
-          confirmButtonClass: "btn btn-danger",
-          buttonsStyling: false,
-        });
-        me.isLoading = false;
-        return; // No continúa si no hay sucursal
-      }
-
-      if (!me.fechaInicio || !me.fechaFin) {
-        swal({
-          title: "Fechas no seleccionadas",
-          text:
-            "Debe seleccionar una fecha de inicio y una fecha de fin para generar el reporte.",
-          type: "warning",
-          confirmButtonColor: "#3085d6",
-          confirmButtonText: "Aceptar",
-          confirmButtonClass: "btn btn-danger",
-          buttonsStyling: false,
-        });
-        me.isLoading = false;
-        return; // No continúa si no hay fechas
-      }
       const params = new URLSearchParams();
       params.append("sucursal", me.sucursalseleccionada.id);
       params.append("articulo", me.articuloseleccionada.id);
@@ -2084,10 +2106,11 @@ export default {
           console.log("ERRORES", error);
         });
     },
+    
 
     verDetalleMovimiento(data) {
         let me = this;
-
+      
         me.modal2 = 0; 
 
         me.modalDetalleMovimientos = 1;

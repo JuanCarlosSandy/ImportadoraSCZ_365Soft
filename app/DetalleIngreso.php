@@ -12,7 +12,8 @@ class DetalleIngreso extends Model
         'idarticulo',
         'cantidad',
         'precio',
-        'descuento'
+        'descuento',
+        'tipo_compra'
     ];
     public $timestamps = false;
 

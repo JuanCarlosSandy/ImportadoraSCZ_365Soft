@@ -320,7 +320,7 @@
             <div class="form-group row align-items-center">
               <div class="col-12 col-md-6">
                 <label for="descuento">Descuento (%)</label>
-                <InputNumber id="descuento" ref="descuentoInput" v-model.number="datosFormulario.descuento"
+                <InputNumber id="descuento" ref="descuentoInput" v-model="datosFormulario.descuento"
                   mode="decimal" :min="0" :max="100" :minFractionDigits="2" :maxFractionDigits="2" suffix="%"
                   :allowEmpty="true" :useGrouping="false" placeholder="Ingrese descuento (%)"
                   class="w-100" @input="validarDescuento" />
@@ -1353,9 +1353,18 @@ export default {
       }
     },
     validarDescuento() {
-      this.datosFormulario.descuento = Number(this.datosFormulario.descuento);
-      if (this.datosFormulario.descuento < 0) this.datosFormulario.descuento = 0;
-      else if (this.datosFormulario.descuento > 100) this.datosFormulario.descuento = 100;
+      if (this.datosFormulario.descuento === null || this.datosFormulario.descuento === '' || this.datosFormulario.descuento === undefined) {
+        this.datosFormulario.descuento = null;
+        return;
+      }
+      const valor = Number(this.datosFormulario.descuento);
+      if (isNaN(valor) || valor === 0) {
+        this.datosFormulario.descuento = null;
+      } else if (valor < 0) {
+        this.datosFormulario.descuento = 0;
+      } else if (valor > 100) {
+        this.datosFormulario.descuento = 100;
+      }
     },
     async enviarFormulario() {
       try {

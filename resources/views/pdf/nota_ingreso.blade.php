@@ -30,21 +30,42 @@
         <thead>
             <tr>
                 <th>Artículo</th>
-                <th>Cantidad</th>
+                <th>Cant.</th>
                 <th>Precio Unitario</th>
                 <th>Subtotal</th>
             </tr>
         </thead>
         <tbody>
+            @php $totalCalculado = 0; @endphp
             @foreach($detalles as $detalle)
+            @php
+                $tipoCompra = $detalle->tipo_compra ?? 'Caja';
+                $unidadPaquete = $detalle->unidad_x_paquete ?? 1;
+                if($tipoCompra === 'Unidad') {
+                    $subtotal = $detalle->cantidad * $detalle->precio;
+                    $tipoTexto = $detalle->cantidad > 1 ? 'Unidades' : 'Unidad';
+                } else {
+                    $subtotal = $detalle->cantidad * $detalle->precio * $unidadPaquete;
+                    $tipoTexto = $detalle->cantidad > 1 ? 'Cajas' : 'Caja';
+                }
+                $totalCalculado += $subtotal;
+            @endphp
             <tr>
                 <td>{{ $detalle->articulo }}</td>
-                <td>{{ $detalle->cantidad }}</td>
+                <td style="text-align:center;">
+                    {{ $detalle->cantidad }} {{ $tipoTexto }}
+                </td>
                 <td>{{ number_format($detalle->precio, 2) }}</td>
-                <td>{{ number_format($detalle->cantidad * $detalle->precio, 2) }}</td>
+                <td>{{ number_format($subtotal, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" align="right"><strong>Total:</strong></td>
+                <td>{{ number_format($totalCalculado, 2) }}</td>
+            </tr>
+        </tfoot>
         <tfoot>
             <tr>
                 <td colspan="3" align="right"><strong>Total:</strong></td>
