@@ -564,9 +564,13 @@ class ReportesInventariosController extends Controller
             $pdf->Cell($w[6], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
         }
 
+        // Generar nombre de archivo con fecha actual del sistema
+        $fechaGeneracion = date('Y-m-d');
+        $nombreArchivo = 'KardexFisico_' . $fechaGeneracion . '.pdf';
+
         return response($pdf->Output('S'))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="reporte_general.pdf"');
+            ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
     }
 
     public function exportarPDFDetallado(Request $request)
@@ -681,9 +685,17 @@ class ReportesInventariosController extends Controller
             $pdf->Cell(0, 8, 'No hay ajustes en este periodo.', 1, 1, 'C');
         }
 
+        // Construir nombre de archivo: NombreDelProducto_FechaInicio_a_FechaFin.pdf
+        // Limpiar nombre del producto: reemplazar espacios por guiones bajos y eliminar caracteres especiales
+        $nombreProductoLimpio = preg_replace('/[^A-Za-z0-9\-_]/', '_', $articulo->nombre);
+        $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio); // Evitar múltiples guiones bajos consecutivos
+        $nombreProductoLimpio = trim($nombreProductoLimpio, '_'); // Eliminar guiones bajos al inicio y final
+        
+        $nombreArchivo = $nombreProductoLimpio . '_' . $request->fechaInicio . '_a_' . $request->fechaFin . '.pdf';
+
         return response($pdf->Output('S'))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="detalle_'.$articulo->nombre.'.pdf"');
+            ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
     }
 }
 
