@@ -85,6 +85,9 @@ class VentasGeneralExport implements FromQuery, WithHeadings, WithMapping, WithC
         if (!empty($this->filters['idcliente']) && $this->filters['idcliente'] !== 'undefined') {
             $query->where('ventas.idcliente', $this->filters['idcliente']);
         }
+        if (!empty($this->filters['idusuario']) && $this->filters['idusuario'] !== 'undefined') {
+            $query->where('ventas.idusuario', $this->filters['idusuario']);
+        }
 
         return $query->orderBy('ventas.fecha_hora', 'asc');
     }

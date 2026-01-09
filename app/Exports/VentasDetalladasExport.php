@@ -70,6 +70,10 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
             $query->where('idcliente', $this->filters['idcliente']);
         }
 
+        if (!empty($this->filters['idusuario']) && $this->filters['idusuario'] !== 'undefined') {
+            $query->where('idusuario', $this->filters['idusuario']);
+        }
+
         $ventas = $query->orderBy('fecha_hora', 'asc')->get();
         $rows = new Collection();
 
