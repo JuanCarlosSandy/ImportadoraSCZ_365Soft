@@ -569,11 +569,11 @@ export default {
         url += "&tipoReporte=dia"; 
         url += "&fechaSeleccionada=" + this.fechaSeleccionada;
         url += "&estadoVenta=" + this.criterioEstado;
-        
-        
-        url += "&ejecutivoCuentas=" + this.ejecutivoseleccionado.id; 
+        url += "&idusuario=" + this.ejecutivoseleccionado.id;
+        console.log("id usuario para descarga:", this.ejecutivoseleccionado.id);
         
         url += "&moneda=" + this.monedaPrincipal[0];
+        console.log("URL de descarga construida:", url);
         return url;
     },
 
