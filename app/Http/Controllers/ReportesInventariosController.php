@@ -207,6 +207,23 @@ class ReportesInventariosController extends Controller
                 ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
                 ->sum('detalle_traspasos.cantidad_traspaso');
 
+            $ajusteEntrada = DB::table('ajuste_invetarios')
+                ->where('producto', $producto->id)
+                ->where('almacen', $producto->id_almacen)
+                ->where('idtipobajas', '!=', 2) 
+                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+                ->where('tipo_movimiento', 'entrada') 
+                ->sum('cantidad');
+
+          
+            $ajusteSalida = DB::table('ajuste_invetarios')
+                ->where('producto', $producto->id)
+                ->where('almacen', $producto->id_almacen)
+                ->where('idtipobajas', '!=', 2) 
+                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+                ->where('tipo_movimiento', 'salida') // <--- CORRECCIÓN AQUÍ (Verifica si en tu BD es 'Salida' o 'salida')
+                ->sum('cantidad');
+
             $ajuste = DB::table('ajuste_invetarios')
                 ->where('producto', $producto->id)
                 ->where('almacen', $producto->id_almacen)
@@ -260,6 +277,10 @@ class ReportesInventariosController extends Controller
                 'total_traspasos_entrada' => $traspasosEntrada,
                 'total_traspasos_salida' => $traspasosSalida,
                 'total_ajuste' => $ajuste,
+                'ajuste_entrada' => $ajusteEntrada, 
+                'ajuste_salida' => $ajusteSalida,
+                'ajuste_entrada_detalle' => $ajusteEntrada, 
+                'ajuste_salida_detalle' => $ajusteSalida * -1,
                 'total_ajuste_texto' => $ajusteTexto,
                 'saldo_stock_actual' => $saldo_stock,
                 'saldo_stock_actual_texto' => $saldoTexto,
@@ -332,9 +353,16 @@ class ReportesInventariosController extends Controller
             ->select(
                 'ajuste_invetarios.created_at as fecha_hora',
                 'ajuste_invetarios.cantidad',
+                'ajuste_invetarios.tipo_movimiento',
                 DB::raw("COALESCE(tipo_bajas.nombre, 'Sin motivo') as motivo"), 
                 DB::raw("'Baja/Ajuste' as tipo_ajuste"),
-                DB::raw("'Sistema' as responsable") 
+                DB::raw("'Sistema' as responsable"),
+                DB::raw("
+                    CASE 
+                        WHEN ajuste_invetarios.tipo_movimiento = 'entrada' THEN ajuste_invetarios.cantidad
+                        WHEN ajuste_invetarios.tipo_movimiento = 'salida' THEN ajuste_invetarios.cantidad * -1
+                    END as cantidad
+                ")
             )
             ->where('ajuste_invetarios.producto', $idArticulo)
             ->where('ajuste_invetarios.almacen', $idAlmacen)
@@ -531,7 +559,7 @@ class ReportesInventariosController extends Controller
         // *** CORRECCIÓN 2: Ajuste de Anchos ***
         // Total suma: 270mm (Entra perfecto en A4 Horizontal que mide 297mm)
         // [Codigo, Producto, Categoria, Ventas, Compras, Ajustes, Stock]
-        $w = [25, 85, 40, 30, 30, 30, 30]; 
+        $w = [25, 70, 30, 25, 30, 33, 33, 30]; 
         
         // Cabecera de la tabla
         $pdf->Cell($w[0], 10, 'CODIGO', 1, 0, 'C', true);
@@ -539,8 +567,9 @@ class ReportesInventariosController extends Controller
         $pdf->Cell($w[2], 10, 'CATEGORIA', 1, 0, 'C', true);
         $pdf->Cell($w[3], 10, 'VENTAS', 1, 0, 'C', true);
         $pdf->Cell($w[4], 10, 'COMPRAS', 1, 0, 'C', true);
-        $pdf->Cell($w[5], 10, 'AJUSTES', 1, 0, 'C', true);
-        $pdf->Cell($w[6], 10, 'STOCK', 1, 1, 'C', true);
+        $pdf->Cell($w[5], 10, 'A. ENTRADA', 1, 0, 'C', true);
+        $pdf->Cell($w[6], 10, 'A. SALIDA', 1, 0, 'C', true);
+        $pdf->Cell($w[7], 10, 'STOCK', 1, 1, 'C', true);
 
         $pdf->SetFont('Arial', '', 8);
 
@@ -560,8 +589,9 @@ class ReportesInventariosController extends Controller
             // Cantidades alineadas a la derecha ('R')
             $pdf->Cell($w[3], 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
             $pdf->Cell($w[4], 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
-            $pdf->Cell($w[5], 8, utf8_decode($item['total_ajuste_texto']), 1, 0, 'R');
-            $pdf->Cell($w[6], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
+            $pdf->Cell($w[5], 8, utf8_decode($item['ajuste_entrada']), 1, 0, 'R');
+            $pdf->Cell($w[6], 8, utf8_decode($item['ajuste_salida']), 1, 0, 'R');
+            $pdf->Cell($w[7], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
         }
 
         // Generar nombre de archivo con fecha actual del sistema

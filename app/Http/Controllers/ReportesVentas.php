@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\DetalleVenta;
 use App\Moneda;
 use App\Venta;
+use App\User;
 use App\Sucursales;
 use App\Exports\VentasGeneralExport;
 use App\Exports\VentasDetalladasExport;
@@ -391,6 +392,13 @@ class ReportesVentas extends Controller
         $filtros[] = 'Cliente ID: ' . $request->idcliente;
     }
 
+    
+    if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
+        $query->where('ventas.idusuario', $request->idusuario);
+        $vendedorObj = User::find($request->idusuario); 
+        $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
+    }
+
     $ventas = $query->orderBy('ventas.fecha_hora', 'asc')->get();
 
     // ---------------- PDF ----------------
@@ -573,6 +581,12 @@ $pdf->Ln(6);
     if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
         $query->where('ventas.idcliente', $request->idcliente);
         $filtros[] = 'Cliente ID: ' . $request->idcliente;
+    }
+
+    if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
+        $query->where('ventas.idusuario', $request->idusuario);
+        $vendedorObj = User::find($request->idusuario); 
+        $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
     }
 
     $ventas = $query->orderBy('ventas.fecha_hora', 'desc')->get();
@@ -760,7 +774,8 @@ $pdf->Ln(6);
             'fechaSeleccionada',
             'mesSeleccionado',
             'estadoVenta',
-            'idcliente'
+            'idcliente',
+            'idusuario'
         ]);
         $filename = 'ventas_general_' . date('Ymd_His') . '.xlsx';
         return Excel::download(new VentasGeneralExport($filters), $filename);
@@ -774,7 +789,8 @@ $pdf->Ln(6);
             'fechaSeleccionada',
             'mesSeleccionado',
             'estadoVenta',
-            'idcliente'
+            'idcliente',
+            'idusuario'
         ]);
         $filename = 'ventas_detalladas_' . date('Ymd_His') . '.xlsx';
         return Excel::download(new VentasDetalladasExport($filters), $filename);
