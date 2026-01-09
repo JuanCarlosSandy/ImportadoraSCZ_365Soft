@@ -128,7 +128,33 @@
               field="total_traspasos_salida"
               header="TOTAL TRASPASO SALIDA"
             />
-            <Column field="total_ajuste_texto" header="TOTAL AJUSTE" />
+            <Column header="AJUSTE ENTRADA" style="text-align: center">
+                <template #body="slotProps">
+                  <span 
+                    v-if="slotProps.data.ajuste_entrada > 0" 
+                    style="color: green; font-weight: bold;"
+                  >
+                    +{{ slotProps.data.ajuste_entrada }}
+                  </span>
+                  <span v-else style="color: inherit;">
+                    0
+                  </span>
+                </template>
+              </Column>
+
+              <Column header="AJUSTE SALIDA" style="text-align: center">
+                <template #body="slotProps">
+                  <span 
+                    v-if="slotProps.data.ajuste_salida > 0" 
+                    style="color: red; font-weight: bold;"
+                  >
+                    -{{ slotProps.data.ajuste_salida }}
+                  </span>
+                  <span v-else style="color: inherit;">
+                    0
+                  </span>
+                </template>
+              </Column>
             <Column field="saldo_stock_actual_texto" header="STOCK ACTUAL" />
           </DataTable>
         </div>
@@ -1000,7 +1026,21 @@
                       <Column field="motivo" header="Motivo"></Column>
                       <Column field="responsable" header="Registrado Por"></Column>
                       <Column field="tipo_ajuste" header="Tipo"></Column>
-                      <Column field="cantidad" header="Cantidad"></Column>                          
+                      <Column header="Entrada">
+                        <template #body="slotProps">
+                          <span style="color: green; font-weight: bold;">
+                            {{ slotProps.data.cantidad > 0 ? slotProps.data.cantidad : 0 }}
+                          </span>
+                        </template>
+                      </Column>
+
+                                  <Column header="Salida">
+                        <template #body="slotProps">
+                          <span style="color: red; font-weight: bold;">
+                            {{ slotProps.data.cantidad < 0 ? Math.abs(slotProps.data.cantidad) : 0 }}
+                          </span>
+                        </template>
+                      </Column>                          
                   </DataTable>
                   <div v-if="detalleMovimientos.ajustes.length === 0" class="text-center p-3">No hay ajustes en este periodo.</div>
                 </div>
@@ -2134,6 +2174,7 @@ export default {
             .get("/reporte-detalle-movimientos?" + params.toString())
             .then(function(response) {
                 me.detalleMovimientos = response.data;
+                console.log("Detalle de movimientos cargado:", me.detalleMovimientos);
             })
             .catch(function(error) {
                 console.error("Error cargando detalles", error);
