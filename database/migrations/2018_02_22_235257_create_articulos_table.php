@@ -17,13 +17,13 @@ class CreateArticulosTable extends Migration
             $table->increments('id');
             $table->integer('idcategoria')->unsigned(); //Linea
             $table->integer('idgrupo')->nullable()->unsigned(); //aumente 14 junio
-            $table->integer('idproveedor')->unsigned(); //aumente 5 juio
+            $table->integer('idproveedor')->nullable()->unsigned(); //aumente 5 juio
 
             $table->integer('idmedida')->unsigned(); //new
 
             $table->string('codigo', 255)->unique();
             $table->string('nombre', 255); //Nombre comercial
-            $table->string('nombre_generico', 255); //aumente 5_julio
+            $table->string('nombre_generico', 255)->nullable(); //aumente 5_julio
             $table->integer('unidad_envase'); //aumente
             $table->decimal('precio_list_unid', 15, 4)->nullable(); //aumente
             $table->decimal('precio_costo_unid', 15, 4); //aumente
@@ -51,6 +51,8 @@ class CreateArticulosTable extends Migration
             $table->string('codigo_alfanumerico', 50)->nullable();// aumente el 23-01-2024
             $table->string('descripcion_fabrica', 50)->nullable();// aumente el 23-01-2024
             $table->integer('vencimiento')->nullable();
+                        $table->string('tipo_producto', 50)->nullable();
+
         });
     }
 

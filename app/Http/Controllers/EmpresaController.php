@@ -8,7 +8,7 @@ use Exception;
 use App\Empresa;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
-
+use Intervention\Image\Facades\Image;
 class EmpresaController extends Controller
 {
 
@@ -83,10 +83,10 @@ class EmpresaController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
-    {
-        if (!$request->ajax()) return redirect('/'); 
+{
+    if (!$request->ajax()) return redirect('/');
 
-       $empresa = Empresa::findOrFail($request->id);
+    $empresa = Empresa::findOrFail($request->id);
 
     $empresa->nombre = $request->nombre;
     $empresa->direccion = $request->direccion;
@@ -96,24 +96,24 @@ class EmpresaController extends Controller
 
     // Manejo del logo
     if ($request->hasFile('logo')) {
-        $logo = $request->file('logo');
 
-        // Ruta donde se guardará el archivo
         $rutaDestino = public_path('img/logoPrincipal.png');
 
-        // Borrar el anterior si existe
+        // Eliminar logo anterior si existe
         if (File::exists($rutaDestino)) {
             File::delete($rutaDestino);
         }
 
-        // Guardar el nuevo con el nombre log.jpg
-        $logo->move(public_path('img'), 'logoPrincipal.png');
+        // Convertir a PNG
+        Image::make($request->file('logo'))
+            ->encode('png', 90) // calidad 0–100
+            ->save($rutaDestino);
     }
 
     $empresa->save();
 
     return response()->json(['success' => true]);
-    }
+}
 
     /**
      * Remove the specified resource from storage.

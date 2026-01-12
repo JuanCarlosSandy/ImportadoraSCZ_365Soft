@@ -1,15 +1,12 @@
 <template>
   <main class="main">
-    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
-      appendTo="body" :baseZIndex="99999"></Toast>
     <Dialog
-      header="Categoria"
+      header="CATEGORÍA DEL COMBO/OFERTA"
       :visible.sync="modal1"
       :modal="true"
-      :containerStyle="dialogContainerStyle"
+      :containerStyle="{ width: '700px' }"
       :closable="false"
       :closeOnEscape="false"
-      class="responsive-dialog"
     >
       <div class="toolbar-container">
         <div class="toolbar">
@@ -55,7 +52,6 @@
           </template>
         </Column>
         <Column field="nombre" header="Nombre" />
-        
       </DataTable>
       <template #footer>
         <Button
@@ -66,72 +62,70 @@
         />
       </template>
     </Dialog>
-    <Dialog 
-      :visible.sync="modal" 
-      modal 
-      :header="tituloModal" 
-      @hide="cerrarModal"  
-      :containerStyle="formDialogContainerStyle" 
-      :closable="false" 
+    <Dialog
+      :visible.sync="modal"
+      modal
+      :header="tituloModal"
+      @hide="cerrarModal"
+      :containerStyle="{ width: '700px' }"
+      :closable="false"
       :closeOnEscape="false"
-      class="responsive-dialog form-dialog"
+            class="responsive-dialog form-dialog"
     >
-      <div class="p-fluid p-formgrid p-grid form-compact">
-        <div class="p-field p-col-12">
+      <template #footer>
+        <Button
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-sm p-button-danger btn-sm"
+          @click="cerrarModal()"
+        />
+        <Button
+          v-if="tipoAccion === 1"
+          label="Guardar"
+          icon="pi pi-check"
+          class="p-button-sm p-button-success btn-sm"
+          @click="registrarCategoria()"
+        />
+        <Button
+          v-if="tipoAccion === 2"
+          label="Actualizar"
+          icon="pi pi-check"
+          class="p-button-sm p-button-warning btn-sm"
+          @click="actualizarCategoria()"
+        />
+      </template>
+      <div class="p-fluid ">
+        <div class="p-field input-container">
           <label for="nombre" class="required-field">
             <span class="required-icon">*</span>
             Nombre de Categoría
           </label>
-          <InputText 
+          <InputText
             id="nombre"
-            class="input-full" 
-            v-model="nombre" 
-            required 
-            autofocus 
-            :class="{'input-error': nombreError}" 
-            @input="validarNombreEnTiempoReal" 
+                        class="input-full" 
+            v-model="nombre"
+            required
+            autofocus
+            :class="{ 'input-error': nombreError }"
+            @input="validarNombreEnTiempoReal"
           />
-          <small class="p-error error-message" v-if="nombreError">
-            <strong>{{ nombreError }}</strong>
-          </small>
+          <small class="p-error error-message" v-if="nombreError"
+            ><strong>{{ nombreError }}</strong></small
+          >
         </div>
-        
-        <div class="p-field p-col-12">
+        <div class="p-field input-container">
            <label for="documentType" class="optional-field">
               <i class="pi pi-info-circle optional-icon"></i>
               Descripcion
               <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
             </label>
-          <InputText 
-            id="descripcion" 
-            class="input-full"
-            v-model="descripcion" 
+          <InputText
+            id="descripcion"
+                        class="input-full"
+            v-model="descripcion"
           />
         </div>
       </div>
-      
-      <template #footer>
-        <Button 
-          label="Cancelar" 
-          icon="pi pi-times" 
-          class="p-button-sm p-button-danger btn-sm" 
-          @click="cerrarModal()" 
-        />
-        <Button 
-          v-if="tipoAccion === 1" 
-          label="Guardar" 
-          icon="pi pi-check" 
-          class="p-button-sm p-button-success btn-sm" 
-          @click="registrarCategoria()" 
-        />
-        <Button 
-          v-if="tipoAccion === 2" 
-          label="Actualizar" 
-          icon="pi pi-check" 
-          class="p-button-sm p-button-warning btn-sm" 
-          @click="actualizarCategoria()" 
-        />
-      </template>
     </Dialog>
   </main>
 </template>
@@ -142,12 +136,9 @@ import Column from "primevue/column";
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
-import InputNumber from 'primevue/inputnumber';
-import ToastService from 'primevue/toastservice';
-import Toast from 'primevue/toast';
-import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
-
+import InputNumber from "primevue/inputnumber";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 export default {
   props: {
     visible: {
@@ -162,72 +153,46 @@ export default {
     Dialog,
     InputText,
     InputNumber,
-    ToastService,
-    Toast
   },
   data() {
     return {
       modal1: this.visible,
       modal: false,
-      buscar: '',
-      arrayCategoria:[],
-      nombre: '',
-      descripcion: '',
+      buscar: "",
+      arrayCategoria: [],
+      nombre: "",
+      descripcion: "",
       codigoProductoSin: 0,
-      codigoProductoSinError: '',
-      nombreError: '',
-      descripcionError: '',
-      tituloModal: '',
-      tipoAccion: '',
+      codigoProductoSinError: "",
+      nombreError: "",
+      descripcionError: "",
+      tituloModal: "",
+      tipoAccion: "",
       lineaSeleccionado: null,
     };
   },
-  computed: {
-    dialogContainerStyle() {
-      if (window.innerWidth <= 480) {
-        return { width: '95vw', maxWidth: '95vw', margin: '0 auto' };
-      } else if (window.innerWidth <= 768) {
-        return { width: '90vw', maxWidth: '90vw', margin: '0 auto' };
-      } else if (window.innerWidth <= 1024) {
-        return { width: '80vw', maxWidth: '800px', margin: '0 auto' };
-      } else {
-        return { width: '700px', maxWidth: '90vw', margin: '0 auto' };
-      }
-    },
-    formDialogContainerStyle() {
-      if (window.innerWidth <= 480) {
-        return { width: '95vw', maxWidth: '95vw', margin: '0 auto' };
-      } else if (window.innerWidth <= 768) {
-        return { width: '90vw', maxWidth: '90vw', margin: '0 auto' };
-      } else if (window.innerWidth <= 1024) {
-        return { width: '85vw', maxWidth: '900px', margin: '0 auto' };
-      } else {
-        return { width: '600px', maxWidth: '90vw', margin: '0 auto' };
-      }
-    }
-  },
   methods: {
     closeDialog() {
-      this.$emit('close');
+      this.$emit("close");
     },
     buscarLinea() {
       this.listarCategoria(1, this.buscar, this.criterio);
     },
-    seleccionarLinea(data){
-      console.log("data ", data.condicion)
+    seleccionarLinea(data) {
+      console.log("data ", data.condicion);
       if (data.condicion == 0) {
         swal({
-          title: 'Linea Inactiva',
-          text: 'No puede seleccionar esta opción porque está inactiva.',
-          type: 'warning',
-          confirmButtonColor: '#3085d6',
-          confirmButtonText: 'Aceptar',
-          confirmButtonClass: 'btn btn-success',
+          title: "Linea Inactiva",
+          text: "No puede seleccionar esta opción porque está inactiva.",
+          type: "warning",
+          confirmButtonColor: "#3085d6",
+          confirmButtonText: "Aceptar",
+          confirmButtonClass: "btn btn-success",
           buttonsStyling: false,
-        })
+        });
       } else {
         this.lineaSeleccionado = data;
-        this.$emit('linea-seleccionado', this.lineaSeleccionado);
+        this.$emit("linea-seleccionado", this.lineaSeleccionado);
         this.closeDialog();
       }
     },
@@ -235,150 +200,119 @@ export default {
       if (!this.nombre.trim()) {
         this.nombreError = "El nombre de la linea no puede estar vacío.";
       } else {
-        this.nombreError = '';
+        this.nombreError = "";
       }
     },
     validarCodigoEnTiempoReal() {
-      if (this.codigoProductoSin === null || this.codigoProductoSin === undefined || String(this.codigoProductoSin).trim() === '') {
-        this.codigoProductoSinError = 'El código no puede estar vacío.';
+      if (
+        this.codigoProductoSin === null ||
+        this.codigoProductoSin === undefined ||
+        String(this.codigoProductoSin).trim() === ""
+      ) {
+        this.codigoProductoSinError = "El código no puede estar vacío.";
       } else {
-        this.codigoProductoSinError = '';
+        this.codigoProductoSinError = "";
       }
     },
     registrarCategoria() {
       if (this.validarCategoria()) {
-        // Si hay errores de validación, mostrar toast
-        this.$toast.add({
-          severity: "error",
-          summary: "Validación",
-          detail: "Complete los campos obligatorios.",
-          life: 3000,
-        });
         return;
       }
-
       let me = this;
-      axios.post('/categoria/registrar', {
-        nombre: this.nombre,
-        descripcion: this.descripcion,
-        codigoProductoSin: this.codigoProductoSin,
-        'tipo_categoria': "M"
-      })
-      .then(function (response) {
-        me.$toast.add({
-          severity: "success",
-          summary: "Categoría registrada",
-          detail: "La categoría fue registrada correctamente",
-          life: 2500,
+      axios
+        .post("/categoria/servicio/registrar", {
+          nombre: this.nombre,
+          descripcion: this.descripcion,
+          codigoProductoSin: this.codigoProductoSin,
+        })
+        .then(function(response) {
+          me.cerrarModal();
+          me.listarCategoria(1, "", "nombre");
+        })
+        .catch(function(error) {
+          console.log(error);
         });
-
-        me.cerrarModal();
-        me.listarCategoria(1, '', 'nombre');
-      })
-      .catch(function (error) {
-        me.$toast.add({
-          severity: "error",
-          summary: "Error al registrar",
-          detail: "No se pudo registrar la categoría",
-          life: 3000,
-        });
-        console.log(error);
-      });
     },
     actualizarCategoria() {
       if (this.validarCategoria()) {
-        this.$toast.add({
-          severity: "error",
-          summary: "Validación",
-          detail: "Complete los campos obligatorios.",
-          life: 3000,
-        });
         return;
       }
-
       let me = this;
-      axios.put('/categoria/actualizar', {
-        nombre: this.nombre,
-        descripcion: this.descripcion,
-        codigoProductoSin: this.codigoProductoSin,
-        id: this.categoria_id
-      })
-      .then(function (response) {
-
-        me.$toast.add({
-          severity: "success",
-          summary: "Categoría actualizada",
-          detail: "La categoría fue actualizada correctamente",
-          life: 2500,
+      axios
+        .put("/categoria/actualizar", {
+          nombre: this.nombre,
+          descripcion: this.descripcion,
+          codigoProductoSin: this.codigoProductoSin,
+          id: this.categoria_id,
+        })
+        .then(function(response) {
+          me.cerrarModal();
+          me.listarCategoria(1, "", "nombre");
+        })
+        .catch(function(error) {
+          console.log(error);
         });
-
-        me.cerrarModal();
-        me.listarCategoria(1, '', 'nombre');
-      })
-      .catch(function (error) {
-        me.$toast.add({
-          severity: "error",
-          summary: "Error al actualizar",
-          detail: "No se pudo actualizar la categoría",
-          life: 3000,
-        });
-        console.log(error);
-      });
     },
-
     validarCategoria() {
       let hasError = false;
-      this.codigoProductoSinError = '';
-      this.descripcionError ='';
-      this.nombreError = '';
-      if (this.codigoProductoSin === null || this.codigoProductoSin === undefined || String(this.codigoProductoSin).trim() === '') {
-        this.codigoProductoSinError = 'El código no puede estar vacío.';
-        hasError = true;
+      this.codigoProductoSinError = "";
+      this.descripcionError = "";
+      this.nombreError = "";
+      if (
+        this.codigoProductoSin === null ||
+        this.codigoProductoSin === undefined ||
+        String(this.codigoProductoSin).trim() === ""
+      ) {
+        this.codigoProductoSinError = "El código no puede estar vacío.";
       }
       if (!this.nombre.trim()) {
         this.nombreError = "El nombre de la linea no puede estar vacío.";
-        hasError = true;
       }
-      return hasError;
     },
     listarCategoria(page, buscar, criterio) {
       let me = this;
-      var url = '/categorianewview?page=' + page + '&buscar=' + buscar + '&criterio=' + criterio;
-      axios.get(url).then(function (response) {
-        var respuesta = response.data;
-        me.arrayCategoria = respuesta.categorias;
-        me.pagination = respuesta.pagination;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+      var url =
+        "/categoria/servicio/lista?page=" +
+        page +
+        "&buscar=" +
+        buscar +
+        "&criterio=" +
+        criterio;
+      axios
+        .get(url)
+        .then(function(response) {
+          var respuesta = response.data;
+          //consol.log('Linea',respuesta);
+          me.arrayCategoria = respuesta.categorias;
+          me.pagination = respuesta.pagination;
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
     },
     abrirModal(modelo, accion, data = []) {
       switch (modelo) {
-        case "categoria":
-        {
+        case "categoria": {
           switch (accion) {
-            case 'registrar':
-            {
+            case "registrar": {
               this.modal = true;
               this.modal1 = false;
-              this.tituloModal = 'REGISTRAR CATEGORÍA';
-              this.nombre = '';
-              this.descripcion = '';
+              this.tituloModal = "REGISTRAR CATEGORÍA";
+              this.nombre = "";
+              this.descripcion = "";
               this.codigoProductoSin = 0;
               this.tipoAccion = 1;
               break;
             }
-            case 'actualizar':
-            {
+            case "actualizar": {
               this.modal = true;
               this.modal1 = false;
-              this.tituloModal = 'ACTUALIZAR CATEGORÍA';
+              this.tituloModal = "Actualizar categoría";
               this.tipoAccion = 2;
-              this.categoria_id = data['id'];
-              this.nombre = data['nombre'];
-              this.descripcion = data['descripcion'];
-              this.codigoProductoSin = data['codigoProductoSin'];
+              this.categoria_id = data["id"];
+              this.nombre = data["nombre"];
+              this.descripcion = data["descripcion"];
+              this.codigoProductoSin = data["codigoProductoSin"];
               break;
             }
           }
@@ -388,21 +322,20 @@ export default {
     cerrarModal() {
       this.modal = false;
       this.modal1 = true;
-      this.tituloModal = '';
-      this.nombre = '';
-      this.descripcion = '';
-      this.codigoProductoSin = '';
-      this.nombreError= '';
-      this.descripcionError= '';
-      this.codigoProductoSinError = '';
+      this.tituloModal = "";
+      this.nombre = "";
+      this.descripcion = "";
+      this.codigoProductoSin = "";
+      this.nombreError = "";
+      this.descripcionError = "";
+      this.codigoProductoSinError = "";
     },
   },
-  mounted(){
-    this.listarCategoria(1,'','nombre');
-  }
+  mounted() {
+    this.listarCategoria(1, "", "nombre");
+  },
 };
 </script>
-
 <style scoped>
 /* Estilo de tabla con scroll horizontal */
 .tabla-pro {

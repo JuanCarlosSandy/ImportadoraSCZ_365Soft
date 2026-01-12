@@ -18,7 +18,7 @@ use App\Ingreso;
 use App\CreditoVenta;
 use App\CuotasCredito;
 use PDF;
-
+use App\ItemCompuesto;
 use App\Empresa;
 use App\Autorizaciondescuento;
 use App\Caja;
@@ -1300,47 +1300,71 @@ public function indexFiltrar(Request $request)
         $ultimaCaja->save();
     }
 
-
-    private function registrarDetallesVenta($venta, $detalles, $idAlmacen)
+     private function registrarDetallesVenta($venta, $detalles, $idAlmacen)
     {
         $detallesAgrupados = [];
 
         foreach ($detalles as $det) {
             $id = $det['idarticulo'];
+            $numLote = isset($det['num_lote']) ? $det['num_lote'] : null;
+            $key = $id . '_' . $numLote; // clave compuesta
 
-            if (!isset($detallesAgrupados[$id])) {
-                $detallesAgrupados[$id] = [
+            if (!isset($detallesAgrupados[$key])) {
+                $detallesAgrupados[$key] = [
                     'idarticulo' => $id,
                     'cantidad' => $det['cantidad'],
                     'precio' => $det['precioseleccionado'],
                     'descuento' => $det['descuento'],
+                    'num_lote' => $numLote,
                     'modoVenta' => $det['modoVenta'],
                     'unidad_envase' => $det['unidad_envase']
                 ];
             } else {
-                $detallesAgrupados[$id]['cantidad'] += $det['cantidad'];
-                $detallesAgrupados[$id]['descuento'] += $det['descuento'];
+                $detallesAgrupados[$key]['cantidad'] += $det['cantidad'];
+                $detallesAgrupados[$key]['descuento'] += $det['descuento'];
             }
         }
 
-        foreach ($detallesAgrupados as $det) {
+        foreach ($detalles as $det) {
             $detalleVenta = new DetalleVenta();
             $detalleVenta->idventa = $venta->id;
             $detalleVenta->idarticulo = $det['idarticulo'];
             $detalleVenta->cantidad = $det['cantidad'];
-            $detalleVenta->precio = $det['precio'];
-            $detalleVenta->descuento = $det['descuento']; // monto total acumulado
+            $detalleVenta->precio = $det['precioseleccionado'];
+            $detalleVenta->descuento = $det['descuento'];
+            if (isset($det['num_lote'])) {
+                $detalleVenta->num_lote = $det['num_lote'];
+            }
             $detalleVenta->modo_venta = $det['modoVenta'];
             $detalleVenta->save();
 
-            // Actualizar inventario con la estructura necesaria
-            $this->actualizarInventario($idAlmacen, [
-                'idarticulo' => $det['idarticulo'],
-                'cantidad' => $det['cantidad'],
-                'modoVenta' => $det['modoVenta'],
-                'unidad_envase' => $det['unidad_envase']
+            // Verificar si el artículo es compuesto
+            $articulo = Articulo::find($det['idarticulo']);
+            if ($articulo && $articulo->tipo_producto === 'C') {
+                // Buscar los hijos en ItemCompuesto y su cantidad
+                $itemsHijos = ItemCompuesto::where('idarticulo', $articulo->id)->get();
+                foreach ($itemsHijos as $itemHijo) {
+                    // Descontar la cantidad correspondiente del hijo (cantidad vendida * cantidad del hijo)
+                    $this->actualizarInventario($idAlmacen, [
+                        'idarticulo' => $itemHijo->iditem,
+                        'cantidad' => $det['cantidad'] * ($itemHijo->cantidad ?? 1),
+                                            'modoVenta' => $det['modoVenta'],
+                                        'tipo' => $det['tipo'],
+                        // Si manejas lotes, puedes agregar lógica para lotes aquí
+                    ]);
+                }
+                // NO descontar stock del artículo compuesto
+            } else {
+                // Artículo normal: descontar stock como siempre
+                $this->actualizarInventario($idAlmacen, [
+                    'idarticulo' => $det['idarticulo'],
+                    'cantidad' => $det['cantidad'],
+                    'modoVenta' => $det['modoVenta'],
 
-            ]);
+                    'lote_id' => isset($det['lote_id']) ? $det['lote_id'] : null,
+                                    'unidad_envase' => $det['unidad_envase']
+                ]);
+            }
         }
 
         $_SESSION['sidAlmacen'] = $idAlmacen;
@@ -1348,12 +1372,25 @@ public function indexFiltrar(Request $request)
     }
 
 
-    private function actualizarInventario($idAlmacen, $detalle)
+ private function actualizarInventario($idAlmacen, $detalle)
 {
-    // 🔹 Determinar cuántas unidades reales descontar según el modo de venta
-    if ($detalle['modoVenta'] === 'caja') {
-        $cantidadReal = $detalle['cantidad'] * $detalle['unidad_envase'];
-    } elseif ($detalle['modoVenta'] === 'docena') {
+    /*
+        $detalle debe traer:
+        - idarticulo
+        - cantidad
+        - modoVenta (opcional)
+        - unidad_envase (opcional)
+        - lote_id (opcional)
+    */
+
+    // ===============================
+    // 1️⃣ CALCULAR CANTIDAD REAL
+    // ===============================
+    $modoVenta = $detalle['modoVenta'] ?? 'unidad';
+
+    if ($modoVenta === 'caja') {
+        $cantidadReal = $detalle['cantidad'] * ($detalle['unidad_envase'] ?? 1);
+    } elseif ($modoVenta === 'docena') {
         $cantidadReal = $detalle['cantidad'] * 12;
     } else {
         // unidad
@@ -1361,8 +1398,29 @@ public function indexFiltrar(Request $request)
     }
 
     $cantidadRestante = $cantidadReal;
-    $fechaActual = now();
 
+    // ===============================
+    // 2️⃣ DESCONTAR POR LOTE (SI VIENE)
+    // ===============================
+    if (!empty($detalle['lote_id'])) {
+
+        $inventario = Inventario::where('id', $detalle['lote_id'])
+            ->where('idalmacen', $idAlmacen)
+            ->where('idarticulo', $detalle['idarticulo'])
+            ->first();
+
+        if ($inventario) {
+            $descontar = min($inventario->saldo_stock, $cantidadRestante);
+            $inventario->saldo_stock -= $descontar;
+            $inventario->save();
+        }
+
+        return;
+    }
+
+    // ===============================
+    // 3️⃣ FIFO POR FECHA VENCIMIENTO
+    // ===============================
     $inventarios = Inventario::where('idalmacen', $idAlmacen)
         ->where('idarticulo', $detalle['idarticulo'])
         ->orderBy('fecha_vencimiento', 'asc')
@@ -1373,11 +1431,9 @@ public function indexFiltrar(Request $request)
         if ($cantidadRestante <= 0) break;
 
         if ($inventario->saldo_stock >= $cantidadRestante) {
-            // stock suficiente
             $inventario->saldo_stock -= $cantidadRestante;
             $cantidadRestante = 0;
         } else {
-            // consumir todo el lote y seguir con el siguiente
             $cantidadRestante -= $inventario->saldo_stock;
             $inventario->saldo_stock = 0;
         }
@@ -1385,6 +1441,7 @@ public function indexFiltrar(Request $request)
         $inventario->save();
     }
 }
+
 
 
     private function revertirInventario()
@@ -2897,18 +2954,17 @@ public function indexFiltrar(Request $request)
 
                 foreach ($venta->detalles as $detalle) {
 
-                    if ($detalle->modo_venta === 'caja') {
-                        $subtotal = $detalle->cantidad * $detalle->producto->unidad_envase * $detalle->precio;
+                   if ($detalle->modo_venta === 'caja') {
+                        $montoBase = $detalle->cantidad * $detalle->producto->unidad_envase * $detalle->precio;
                     } elseif ($detalle->modo_venta === 'docena') {
-                        
-                        $subtotal = $detalle->cantidad * 12 * $detalle->precio;
+                        $montoBase = $detalle->cantidad * 12 * $detalle->precio;
                     } else {
-                        
-                        $subtotal = $detalle->cantidad * $detalle->precio;
+                        $montoBase = $detalle->cantidad * $detalle->precio;
                     }
-
+                    $porcentajeDescuento = $detalle->descuento ?? 0; // ej: 10
+                    $montoDescuento = $montoBase * ($porcentajeDescuento / 100);
+                    $subtotal = $montoBase - $montoDescuento;
                     $total += $subtotal;
-
                     
                     $pdf->SetFont('Arial', 'B', 8);
 
@@ -2953,17 +3009,23 @@ public function indexFiltrar(Request $request)
                     // ---------------------------
                     // LÍNEA 2: Cant x Precio | Subtotal
                     // ---------------------------
-                    $pdf->SetFont('Arial', '', 8);
+                   $pdf->SetFont('Arial', '', 8);
 
                     if ($detalle->modo_venta === 'caja') {
-                        // ejemplo: "12 x 5.00"
                         $linea2 = $detalle->producto->unidad_envase . ' x ' . number_format($detalle->precio, 2);
+                    } elseif ($detalle->modo_venta === 'docena') {
+                        $linea2 = '12 x ' . number_format($detalle->precio, 2);
                     } else {
-                        // ejemplo: "1 x 5.00"
-                        $linea2 =  $detalle->cantidad . ' x ' . number_format($detalle->precio, 2);
+                        $linea2 = $detalle->cantidad . ' x ' . number_format($detalle->precio, 2);
                     }
-                    $pdf->Cell(50, 5, $linea2, 0, 0, 'L'); // izquierda
-                    $pdf->Cell(20, 5, number_format($subtotal, 2), 0, 1, 'R'); // derecha
+
+                    // Agregar descuento SOLO si existe
+                    if ($porcentajeDescuento > 0) {
+                        $linea2 .= '  -  ' . $porcentajeDescuento . '% (Bs ' . number_format($montoDescuento, 2) . ')';
+                    }
+
+                    $pdf->Cell(50, 5, $linea2, 0, 0, 'L');
+                    $pdf->Cell(20, 5, number_format($subtotal, 2), 0, 1, 'R');
                 }
 
                 $pdf->Cell(0, 2, '', 'T', 1);
@@ -2987,16 +3049,15 @@ public function indexFiltrar(Request $request)
                 return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
             }
         } catch (\Exception $e) {
-    \Log::error('Error al imprimir el recibo en rollo: ' . $e->getMessage());
-    // Devuelve el error real en la respuesta
-    return response()->json([
-        'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN ROLLO',
-        'detalle' => $e->getMessage(),
-        'linea' => $e->getLine(),
-        'archivo' => $e->getFile()
-    ], 500);
-}
-
+            \Log::error('Error al imprimir el recibo en rollo: ' . $e->getMessage());
+            // Devuelve el error real en la respuesta
+            return response()->json([
+                'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN ROLLO',
+                'detalle' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile()
+            ], 500);
+        }
     }
 
     public function imprimirResivoCarta($id)
@@ -3018,7 +3079,7 @@ public function indexFiltrar(Request $request)
         }
 
         if ($venta->detalles->isNotEmpty()) {
-            $pdf = new FPDF('P', 'mm', [139.7, 215.9]); 
+            $pdf = new FPDF('P', 'mm', 'Letter');
             $pdf->SetMargins(10, 10, 10);
             $pdf->SetAutoPageBreak(true, 15);
             $pdf->AddPage();
@@ -3122,10 +3183,11 @@ public function indexFiltrar(Request $request)
             $pdf->SetFillColor(230, 230, 230); 
             $pdf->SetDrawColor(100, 100, 100);
 
-            $pdf->Cell(12, 7, 'Cant', 1, 0, 'C', true);
-            $pdf->Cell(55, 7, utf8_decode('Descripción'), 1, 0, 'C', true);
-            $pdf->Cell(15, 7, 'U/Caja', 1, 0, 'C', true);
-            $pdf->Cell(18, 7, 'P.Unit', 1, 0, 'C', true);
+            $pdf->Cell(21, 7, 'Cant', 1, 0, 'C', true);
+            $pdf->Cell(80, 7, utf8_decode('Descripción'), 1, 0, 'C', true);
+            $pdf->Cell(20, 7, 'U/Cj', 1, 0, 'C', true);
+            $pdf->Cell(20, 7, 'P.Unit', 1, 0, 'C', true);
+            $pdf->Cell(35, 7, 'Desc', 1, 0, 'C', true);
             $pdf->Cell(20, 7, 'Subtotal', 1, 1, 'C', true);
 
             // ================= DETALLES =================
@@ -3154,14 +3216,19 @@ public function indexFiltrar(Request $request)
                 }
                 
                 // Cálculo matemático
-                $subtotal = $detalle->cantidad * $factorCantidad * $detalle->precio;
+                $monto = $detalle->cantidad * $factorCantidad * $detalle->precio;
+
+                $descuentoMonto = $monto * ($detalle->descuento / 100);
+
+                $subtotal = $monto - $descuentoMonto;
                 $total += $subtotal;
                 // --- FIN LÓGICA ---
 
                 $cantidadTexto = $detalle->cantidad . ' ' . $abreviacion;
 
                 $productoTexto = strtoupper($detalle->producto->codigo . ' - ' . $detalle->producto->nombre);
-                
+                $textoDescuento = $detalle->descuento . '% (Bs ' . number_format($descuentoMonto, 2) . ')';
+
                 // Asegúrate de tener el método cortarTexto o usa mb_strimwidth
                 if(method_exists($this, 'cortarTexto')){
                     $productoTexto = $this->cortarTexto($pdf, utf8_decode($productoTexto), 52);
@@ -3175,10 +3242,12 @@ public function indexFiltrar(Request $request)
                     $pdf->SetFillColor(255, 255, 255);
                 }
 
-                $pdf->Cell(12, 6, $cantidadTexto, 1, 0, 'C', true); 
-                $pdf->Cell(55, 6, $productoTexto, 1, 0, 'L', true);
-                $pdf->Cell(15, 6, $cantXCajaVisual, 1, 0, 'C', true); // Muestra 12, NroEnvase o -
-                $pdf->Cell(18, 6, number_format($detalle->precio, 2), 1, 0, 'R', true);
+                $pdf->Cell(21, 6, $cantidadTexto, 1, 0, 'C', true); 
+                $pdf->Cell(80, 6, $productoTexto, 1, 0, 'L', true);
+                $pdf->Cell(20, 6, $cantXCajaVisual, 1, 0, 'C', true);
+                $pdf->Cell(20, 6, number_format($detalle->precio, 2), 1, 0, 'R', true);
+                $pdf->Cell(35, 6, $textoDescuento, 1, 0, 'C', true);
+
                 $pdf->Cell(20, 6, number_format($subtotal, 2), 1, 1, 'R', true);
                 
                 $fill = !$fill;
@@ -3189,8 +3258,8 @@ public function indexFiltrar(Request $request)
             $pdf->SetFillColor(230, 230, 230);
             $pdf->SetDrawColor(100, 100, 100);
 
-            $pdf->Cell(100, 7, utf8_decode('TOTAL A PAGAR'), 1, 0, 'R', true);
-            $pdf->Cell(20, 7, number_format($total, 2), 1, 1, 'R', true);
+            $pdf->Cell(171, 7, utf8_decode('TOTAL A PAGAR'), 1, 0, 'R', true);
+            $pdf->Cell(25, 7, number_format($total, 2), 1, 1, 'R', true);
 
             // Conversión a literal
             $formatter = new NumberFormatter("es", NumberFormatter::SPELLOUT);
@@ -3204,18 +3273,25 @@ public function indexFiltrar(Request $request)
             $pdf->SetFont('Arial', 'I', 10);
             $pdf->Cell(0, 7, utf8_decode('¡GRACIAS POR SU COMPRA!'), 0, 1, 'C');
 
-            $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
-            $pdfPath = public_path('docs/recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf');
-            $pdf->Output($pdfPath, 'F');
+             $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
+        $nombreArchivo = 'recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf';
 
-            return response()->download($pdfPath);
-        } else {
-            return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 500);
-        }
+        return response($pdf->Output('S')) // 'S' genera PDF en memoria
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+
+    } else {
+        return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
+    }
     } catch (\Exception $e) {
         \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
-        return response()->json(['error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA'], 500);
-    }
+
+    return response()->json([
+        'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA',
+        'detalle' => $e->getMessage(),
+        'linea' => $e->getLine(),
+        'archivo' => $e->getFile()
+    ], 500);    }
 }
 
     public function imprimirRemisionRollo($id)
@@ -3583,19 +3659,25 @@ public function indexFiltrar(Request $request)
             $pdf->SetTextColor(80, 80, 80);
             $pdf->Cell(0, 4, utf8_decode('Documento de Remisión - Control Interno'), 0, 1, 'C');
 
-            $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
-            $pdfPath = public_path('docs/remision_carta_' . $nombreLimpio . '_' . $id . '.pdf');
-            $pdf->Output($pdfPath, 'F');
+             $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
+        $nombreArchivo = 'remision_carta_' . $nombreLimpio . '_' . $id . '.pdf';
 
-            return response()->download($pdfPath);
+        // Enviar el PDF directamente al navegador
+        return response($pdf->Output('S')) // 'S' genera PDF en memoria
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
 
-        } else {
-            return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 500);
-        }
+    } else {
+        return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
+    }
     } catch (\Exception $e) {
         \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
-        return response()->json(['error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA'], 500);
-    }
+ return response()->json([
+        'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA',
+        'detalle' => $e->getMessage(),
+        'linea' => $e->getLine(),
+        'archivo' => $e->getFile()
+    ], 500);    }
 }
 
     public function selectRoles(Request $request)

@@ -249,6 +249,9 @@
 <template v-if="menu==74">
     <reportedeudores></reportedeudores>
 </template>
+<template v-if="menu==75">
+    <itemscompuestos></itemscompuestos>
+</template>
 @elseif (Auth::user()->idrol == 2)
 <template v-if="menu==0">
     <venta></venta>
@@ -773,6 +776,9 @@
 </template>
 <template v-if="menu==75">
     <cobros></cobros>
+</template>
+<template v-if="menu==76">
+    <itemscompuestos></itemscompuestos>
 </template>
 
 @else

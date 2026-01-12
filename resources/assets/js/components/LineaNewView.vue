@@ -295,6 +295,7 @@ export default {
           nombre: this.nombre,
           descripcion: this.descripcion,
           codigoProductoSin: this.codigoProductoSin,
+                          tipo_categoria: "M"
         });
 
         me.cerrarModal();

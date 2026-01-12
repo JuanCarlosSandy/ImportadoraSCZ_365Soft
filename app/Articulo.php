@@ -24,7 +24,8 @@ class Articulo extends Model
         'codigo_alfanumerico',
         'descripcion_fabrica',
         'precio_actualizado_en',
-        'vencimiento'
+        'vencimiento',
+        'tipo_producto',
 
     ];
     public function categoria()

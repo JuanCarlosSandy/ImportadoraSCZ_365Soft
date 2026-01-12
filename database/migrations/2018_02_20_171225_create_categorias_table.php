@@ -20,6 +20,7 @@ class CreateCategoriasTable extends Migration
             $table->string('codigoProductoSin')->nullable();
             $table->integer('actividadEconomica')->nullable();
             $table->boolean('condicion')->default(1);
+            $table->string('tipo_categoria')->nullable();
             $table->timestamps();
         });
     }

@@ -9,6 +9,8 @@ use App\Exports\LineaExport;
 use App\Imports\LineaImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon; // Agrega la clase Carbon para manejar fechas
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 
 class CategoriaController extends Controller
@@ -20,56 +22,62 @@ class CategoriaController extends Controller
      */
     public function index(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $buscar = $request->buscar;
         $criterio = $request->criterio;
-        
-        if ($buscar==''){
+
+        if ($buscar == '') {
             $categorias = Categoria::orderBy('id', 'desc')->paginate(10);
+        } else {
+            $categorias = Categoria::where($criterio, 'like', '%' . $buscar . '%')->orderBy('id', 'desc')->paginate(6);
         }
-        else{
-            $categorias = Categoria::where($criterio, 'like', '%'. $buscar . '%')->orderBy('id', 'desc')->paginate(6);
-        }
-        
+
 
         return [
             'pagination' => [
-                'total'        => $categorias->total(),
+                'total' => $categorias->total(),
                 'current_page' => $categorias->currentPage(),
-                'per_page'     => $categorias->perPage(),
-                'last_page'    => $categorias->lastPage(),
-                'from'         => $categorias->firstItem(),
-                'to'           => $categorias->lastItem(),
+                'per_page' => $categorias->perPage(),
+                'last_page' => $categorias->lastPage(),
+                'from' => $categorias->firstItem(),
+                'to' => $categorias->lastItem(),
             ],
             'categorias' => $categorias
         ];
     }
     public function index2(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $buscar = $request->buscar;
         $criterio = $request->criterio;
-        
-        if ($buscar==''){
-            $categorias = Categoria::orderBy('id', 'desc');
+
+        if ($buscar == '') {
+            $categorias = Categoria::where('tipo_categoria', 'M')
+                ->orderBy('id', 'desc');
+            ;
         }
         if (!empty($buscar)) {
-            $categorias = Categoria::where(function ($q) use ($buscar) {
-                $q->where('categorias.nombre', 'like', '%' . $buscar . '%')
-                  ->orWhere('categorias.descripcion', 'like', '%' . $buscar . '%')
-                  ->orWhere('categorias.codigoProductoSin', 'like', '%' . $buscar . '%')
-                  ->orderBy('id', 'desc');
-            });
+            $categorias = Categoria::where('tipo_categoria', 'M')
+                ->where(function ($q) use ($buscar) {
+                    $q->where('categorias.nombre', 'like', '%' . $buscar . '%')
+                        ->orWhere('categorias.descripcion', 'like', '%' . $buscar . '%')
+                        //->orWhere('categorias.codigoProductoSin', 'like', '%' . $buscar . '%')
+                        ->orderBy('id', 'desc');
+                });
         }
         $categorias = $categorias->get();
         return ['categorias' => $categorias];
     }
-    public function selectCategoria(Request $request){
-        if (!$request->ajax()) return redirect('/');
-        $categorias = Categoria::where('condicion','=','1')
-        ->select('id','nombre')->orderBy('nombre', 'asc')->get();
+    public function selectCategoria(Request $request)
+    {
+        if (!$request->ajax())
+            return redirect('/');
+        $categorias = Categoria::where('condicion', '=', '1')
+            ->select('id', 'nombre')->orderBy('nombre', 'asc')->get();
         return ['categorias' => $categorias];
     }
 
@@ -81,18 +89,39 @@ class CategoriaController extends Controller
      */
     public function store(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
-        $categoria = new Categoria();
-        $categoria->nombre = $request->nombre;
-        $categoria->descripcion = $request->descripcion;
-        $categoria->codigoProductoSin = 1003655;
-        $categoria->actividadEconomica = 4772100;
+        Log::info('Datos REGISTRAR CATEGORIA', [
+            'nombre' => $request->nombre,
+            'tipo_categoria' => $request->tipo_categoria,
+        ]);
 
-        $categoria->condicion = '1';
-        //$categoria->condicion = '1';
-        $categoria->save();
+        if (!$request->ajax())
+            return redirect('/');
+
+        // Convertir a mayúsculas y eliminar acentos
+        $nombre = Str::upper(Str::ascii($request->nombre));
+
+        // Buscar si ya existe la categoría
+        $categoria = Categoria::all()->first(function ($item) use ($nombre) {
+            return Str::upper(Str::ascii($item->nombre)) === $nombre;
+        });
+
+        if ($categoria) {
+            // Si existe, devolver su id
+            return response()->json($categoria);
+        } else {
+            // Si no existe, crear nueva categoría
+            $categoria = new Categoria();
+            $categoria->nombre = $nombre;
+            $categoria->descripcion = $request->descripcion ?? null;
+            $categoria->codigoProductoSin = 1003655; // o tu lógica
+            $categoria->actividadEconomica = 4772100; // o tu lógica
+            $categoria->tipo_categoria = $request->tipo_categoria ?? null;
+            $categoria->condicion = '1';
+            $categoria->save();
+
+            return response()->json($categoria);
+        }
     }
-  
 
     /**
      * Update the specified resource in storage.
@@ -103,9 +132,12 @@ class CategoriaController extends Controller
      */
     public function update(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
+        $nombre = Str::upper(Str::ascii($request->nombre));
+
         $categoria = Categoria::findOrFail($request->id);
-        $categoria->nombre = $request->nombre;
+        $categoria->nombre = $nombre;
         $categoria->descripcion = $request->descripcion;
         $categoria->codigoProductoSin = 62253;
         $categoria->actividadEconomica = 477300;
@@ -116,7 +148,8 @@ class CategoriaController extends Controller
 
     public function desactivar(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
         $categoria = Categoria::findOrFail($request->id);
         $categoria->condicion = '0';
         $categoria->save();
@@ -124,13 +157,15 @@ class CategoriaController extends Controller
 
     public function activar(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
         $categoria = Categoria::findOrFail($request->id);
         $categoria->condicion = '1';
         $categoria->save();
     }
     //---importacion--
-    public function importsaveExecelUser(Request $request){
+    public function importsaveExecelUser(Request $request)
+    {
         $path = $request->file('select_users_file')->getRealPath();
         Excel::import(new LineaImport, $path);
     }
@@ -144,5 +179,66 @@ class CategoriaController extends Controller
         return Excel::download(new LineaExport, $nombreArchivo . '.xlsx');
         //return Excel::download(new LineaExport, $nombreArchivo . '.csv');
     }
-    
+
+    public function storeServicio(Request $request)
+    {
+        Log::info('Datos REGISTRAR CATEGORIA', [
+            'nombre' => $request->nombre,
+            'tipo_categoria' => $request->tipo_categoria,
+        ]);
+
+        if (!$request->ajax())
+            return redirect('/');
+
+        // Convertir a mayúsculas y eliminar acentos
+        $nombre = Str::upper(Str::ascii($request->nombre));
+
+        // Buscar si ya existe la categoría
+        $categoria = Categoria::all()->first(function ($item) use ($nombre) {
+            return Str::upper(Str::ascii($item->nombre)) === $nombre;
+        });
+
+        if ($categoria) {
+            // Si existe, devolver su id
+            return response()->json($categoria);
+        } else {
+            // Si no existe, crear nueva categoría
+            $categoria = new Categoria();
+            $categoria->nombre = $nombre;
+            $categoria->descripcion = $request->descripcion ?? null;
+            $categoria->codigoProductoSin = 1003655; // o tu lógica
+            $categoria->actividadEconomica = 4772100; // o tu lógica
+            $categoria->tipo_categoria = 'S';
+            $categoria->condicion = '1';
+            $categoria->save();
+
+            return response()->json($categoria);
+        }
+    }
+
+    public function indexServicio(Request $request)
+    {
+        if (!$request->ajax())
+            return redirect('/');
+
+        $buscar = $request->buscar;
+        $criterio = $request->criterio;
+
+        if ($buscar == '') {
+            $categorias = Categoria::where('tipo_categoria', 'S')
+                ->orderBy('id', 'desc');
+        } else {
+            $categorias = Categoria::where('tipo_categoria', 'S')
+                ->where(function ($q) use ($buscar) {
+                    $q->where('categorias.nombre', 'like', '%' . $buscar . '%')
+                        ->orWhere('categorias.descripcion', 'like', '%' . $buscar . '%')
+                        ->orWhere('categorias.codigoProductoSin', 'like', '%' . $buscar . '%');
+                })
+                ->orderBy('id', 'desc');
+        }
+
+        $categorias = $categorias->get();
+        return ['categorias' => $categorias];
+    }
+
 }

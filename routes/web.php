@@ -1019,6 +1019,18 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post('/ingreso/actualizar', 'IngresoController@actualizar');
         Route::get('/reporte/caja/{idCaja}', 'CajaController@generarReporte')->name('reporte.caja');
 
+         // rutas para los items compuestos
+        Route::get("/ItemsCompuestos/pdf", "ItemCompuestoController@exportarItemsCompuestosPDF");
+        Route::get("/ItemsCompuestos/excel", "ItemCompuestoController@exportarItemsCompuestosExcel");
+        Route::post("/itemcompuesto/registrar", "ItemCompuestoController@storeCompuesto");
+        Route::get("/itemcompuesto", "ItemCompuestoController@indexCompuesto");
+        Route::get('/itemcompuesto/{idarticulo}', 'ItemCompuestoController@getItemsCompuestos');
+        Route::post("/itemcompuesto/actualizar", "ItemCompuestoController@updateCompuesto");
+        Route::get('/itemcompuesto/detalle/{idarticulo}', 'ItemCompuestoController@getItemsCompuestosDetalle');
+        Route::post('articulo/verificarStockCompuesto', 'ItemCompuestoController@verificarStockCompuesto');
+        
+        Route::get("/categoria/servicio/lista", "CategoriaController@indexServicio");
+        Route::post("/categoria/servicio/registrar", "CategoriaController@storeServicio");
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

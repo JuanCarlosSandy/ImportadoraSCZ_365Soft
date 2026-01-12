@@ -314,6 +314,7 @@ Vue.component("reportedeudores", require("./components/ReporteDeudores.vue"));
 Vue.component("cobros", require("./components/Cobros.vue"));
 
 Vue.component("reportedia", require("./components/ReporteDelDia.vue"));
+Vue.component("itemscompuestos", require("./components/ItemCompuestos/ItemsCompuestos.vue"));
 
 
 Vue.use(BootstrapVue);

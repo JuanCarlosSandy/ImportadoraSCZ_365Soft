@@ -104,6 +104,17 @@
                 </ul>
             </li>
 
+            <li class="nav-item nav-dropdown">
+                <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-h-square"></i> OFERTAR/COMBOS</a>
+                <ul class="nav-dropdown-items">
+                    <li @click="menu=76" class="nav-item">
+                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Mis Ofertas</a>
+                    </li>
+                    <!--<li @click="menu=75" class="nav-item">
+                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Categoria Servicios</a>
+                    </li>-->
+                </ul>
+            </li>
 
 
             <li class="nav-item nav-dropdown">

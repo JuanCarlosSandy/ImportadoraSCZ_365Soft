@@ -47,7 +47,7 @@
               @click="filtroVentasActivo = 'credito'; listarVenta(1, buscar, criterio, 2)">
               CRÉDITO
             </button> -->
-            
+
 
             <!--<button :class="['btn', 'btn-sm', filtroVentasActivo === 'factura' ? 'btn-primary' : 'btn-outline-primary']"
             style="margin-left: 8px; min-width: 70px; font-size: 0.85em; padding: 2px 10px;"
@@ -84,13 +84,8 @@
           </div>
         </div>
         <div>
-          <DataTable
-    :value="arrayVenta"
-    paginator
-    :rows="10"
-    responsiveLayout="scroll"
-    class="p-datatable-gridlines p-datatable-sm tabla-venta"
->
+          <DataTable :value="arrayVenta" paginator :rows="10" responsiveLayout="scroll"
+            class="p-datatable-gridlines p-datatable-sm tabla-venta">
             <Column header="Opciones">
               <template #body="slotProps">
                 <!-- Botón para ver venta -->
@@ -99,24 +94,26 @@
                     backgroundColor: slotProps.data.descuento_total > 0 ? 'yellow' : 'green',
                     borderColor: slotProps.data.descuento_total > 0 ? 'yellow' : 'green',
                     color: slotProps.data.descuento_total > 0 ? 'black' : 'white',
-                  }" v-tooltip.top="'Ver'"/>
+                  }" v-tooltip.top="'Ver'" />
 
-                <Button v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'" icon="pi pi-pencil"
-                  class="p-button-sm p-mr-1 btn-mini btn-negro" title="Editar" @click="editarVenta(slotProps.data)" v-tooltip.top="'Editar'" />
+                <!--<Button v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'" icon="pi pi-pencil"
+                  class="p-button-sm p-mr-1 btn-mini btn-negro" title="Editar" @click="editarVenta(slotProps.data)"
+                  v-tooltip.top="'Editar'" />-->
 
                 <!-- Botón eliminar si estado = 1 -->
                 <template v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'">
                   <Button icon="pi pi-trash" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
-                    @click="desactivarVenta(slotProps.data.id)" class="p-button-sm p-button-danger p-mr-1 btn-mini" v-tooltip.top="'Desactivar'"/>
+                    @click="desactivarVenta(slotProps.data.id)" class="p-button-sm p-button-danger p-mr-1 btn-mini"
+                    v-tooltip.top="'Desactivar'" />
                 </template>
 
                 <!-- Botones para RESIVO -->
                 <Button icon="pi pi-print" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
                   @click="imprimirResivo(slotProps.data.id, slotProps.data.correo)"
-                  class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Recibo'"/>
+                  class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Recibo'" />
                 <Button icon="pi pi-print" @click="imprimirRemision(slotProps.data.id, slotProps.data.correo)"
                   class="p-button-sm p-button-help p-mr-1 btn-mini" v-tooltip.top="'Remisión'" />
-                  <!--
+                <!--
                 <template v-if="slotProps.data.idtipo_venta == 2 && slotProps.data.estado === '2'">
                   <Button label="Cobrar" icon="pi pi-wallet" class="p-button-sm p-button-warning p-mr-1 btn-mini"
                     @click="abrirModalCobro(slotProps.data)" />
@@ -126,12 +123,12 @@
                 <!-- Botones para FACTURA -->
                 <template v-if="slotProps.data.tipo_comprobante === 'FACTURA'">
                   <Button icon="pi pi-check" @click="verificarFactura(slotProps.data.cuf, slotProps.data.numeroFactura)"
-                    class="p-button-sm p-mr-1 btn-mini" v-tooltip.top="'Verificar'"/>
+                    class="p-button-sm p-mr-1 btn-mini" v-tooltip.top="'Verificar'" />
                   <Button icon="pi pi-print" @click="imprimirFactura(slotProps.data.idFactura, slotProps.data.correo)"
-                    class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Imprimir'"/>
+                    class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Imprimir'" />
                   <Button v-if="slotProps.data.estado === '1'" icon="pi pi-trash"
                     @click="abrirDialogAnularFactura(slotProps.data)"
-                    class="p-button-sm p-button-danger p-mr-1 btn-mini" v-tooltip.top="'Anular Factura'"/>
+                    class="p-button-sm p-button-danger p-mr-1 btn-mini" v-tooltip.top="'Anular Factura'" />
                   <!-- 🔸 BOTÓN PAGAR -->
                   <template v-if="slotProps.data.estado == '4' || slotProps.data.facturaValidada == 0"> <Button
                       label="Facturar" icon="pi pi-wallet" class="p-button-warning p-button-sm p-mr-1 btn-mini"
@@ -157,13 +154,13 @@
             <Column field="nombre_sucursal" header="Sucursal"></Column>
             <Column field="estado" header="Estado">
               <template #body="slotProps">
-                <span v-if="slotProps.data.estado == 1" 
-                      style="background-color: #198754; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                <span v-if="slotProps.data.estado == 1"
+                  style="background-color: #198754; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
                   Registrado
                 </span>
 
-                <span v-else-if="slotProps.data.estado == 0" 
-                      style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                <span v-else-if="slotProps.data.estado == 0"
+                  style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
                   Anulado
                 </span>
 
@@ -180,7 +177,7 @@
                 </span>
               </template>
             </Column>-->
-            
+
           </DataTable>
           <!--<Paginator :rows="10" :totalRecords="pagination.total" :first="(pagination.current_page - 1) * 10"
             @page="onPageChange" />-->
@@ -217,28 +214,26 @@
             <DataTable :value="arrayDetalle" class="p-datatable-sm p-datatable-gridlines">
               <Column field="cantidad" header="Cant Vendida">
                 <template #body="slotProps">
-                  <span
-                    :style="{
-                      backgroundColor:
-                        slotProps.data.modo_venta === 'caja'
-                          ? '#0d6efd'
-                          : slotProps.data.modo_venta === 'docena'
+                  <span :style="{
+                    backgroundColor:
+                      slotProps.data.modo_venta === 'caja'
+                        ? '#0d6efd'
+                        : slotProps.data.modo_venta === 'docena'
                           ? '#6f42c1'
                           : '#198754',
-                      color: 'white',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontWeight: 'bold'
-                    }"
-                  >
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 'bold'
+                  }">
                     {{
                       slotProps.data.cantidad + ' ' +
                       (
                         slotProps.data.modo_venta === 'caja'
                           ? (slotProps.data.cantidad == 1 ? 'caja' : 'cajas')
                           : slotProps.data.modo_venta === 'docena'
-                          ? (slotProps.data.cantidad == 1 ? 'docena' : 'docenas')
-                          : (slotProps.data.cantidad == 1 ? 'unidad' : 'unidades')
+                            ? (slotProps.data.cantidad == 1 ? 'docena' : 'docenas')
+                            : (slotProps.data.cantidad == 1 ? 'unidad' : 'unidades')
                       )
                     }}
                   </span>
@@ -266,7 +261,7 @@
 
 
 
-              <!--<Column header="Subtotal sin Descuento">
+              <Column header="Subtotal sin Descuento">
                 <template #body="slotProps">
                   {{ (slotProps.data.subtotal_sin_descuento * parseFloat(monedaVenta[0])).toFixed(2) }}
                   {{ monedaVenta[1] }}
@@ -279,7 +274,7 @@
                   {{ (slotProps.data.descuento_monto * parseFloat(monedaVenta[0])).toFixed(2) }}
                   {{ monedaVenta[1] }}
                 </template>
-              </Column>-->
+              </Column>
 
               <Column field="subtotal" header="Subtotal">
                 <template #body="slotProps">
@@ -303,17 +298,13 @@
 
               <Column field="numero_cuota" header="# Cuota"></Column>
 
-             <Column field="fecha_pago" header="Fecha Pago">
+              <Column field="fecha_pago" header="Fecha Pago">
                 <template #body="slotProps">
 
                   <!-- MODO EDICIÓN -->
                   <div v-if="editarCuotas && slotProps.data.idtipo_pago !== 5">
-                    <input
-                      type="date"
-                      class="form-control form-control-sm"
-                      style="max-width: 160px"
-                      v-model="slotProps.data.fecha_pago"
-                    />
+                    <input type="date" class="form-control form-control-sm" style="max-width: 160px"
+                      v-model="slotProps.data.fecha_pago" />
                   </div>
 
 
@@ -328,17 +319,11 @@
                 <template #body="slotProps">
 
                   <!-- MODO EDICIÓN -->
-                  <div v-if="editarCuotas  && slotProps.data.idtipo_pago !== 5">
-                    <InputNumber 
-                      v-model="slotProps.data.precio_cuota" 
-                      mode="decimal" 
-                      :min="0" 
-                      :minFractionDigits="2"
-                      :maxFractionDigits="2" 
-                      class="p-inputtext-sm w-8rem" 
+                  <div v-if="editarCuotas && slotProps.data.idtipo_pago !== 5">
+                    <InputNumber v-model="slotProps.data.precio_cuota" mode="decimal" :min="0" :minFractionDigits="2"
+                      :maxFractionDigits="2" class="p-inputtext-sm w-8rem"
                       :class="{ 'p-invalid': cuotaExcedida(slotProps.data) }"
-                      @blur="validarMontoCuota(slotProps.data)" 
-                    />
+                      @blur="validarMontoCuota(slotProps.data)" />
                     <span class="ms-1">{{ monedaVenta[1] }}</span>
                     <small v-if="cuotaExcedida(slotProps.data)" class="text-danger d-block mt-1">
                       Monto excede el saldo
@@ -367,12 +352,15 @@
                   </span>
 
                   <!-- Cancelado: última cuota que liquida todo (saldo = 0) -->
-                  <span v-else-if="slotProps.data.saldo_restante == 0 || slotProps.data.saldo_restante === '0' || slotProps.data.saldo_restante === '0.00'" class="badge bg-primary">
+                  <span
+                    v-else-if="slotProps.data.saldo_restante == 0 || slotProps.data.saldo_restante === '0' || slotProps.data.saldo_restante === '0.00'"
+                    class="badge bg-primary">
                     Cancelado
                   </span>
 
                   <!-- Pagado: cuota pagada pero aún queda saldo -->
-                  <span v-else-if="slotProps.data.estado === 'Pagado' || slotProps.data.saldo_restante > 0" class="badge bg-success">
+                  <span v-else-if="slotProps.data.estado === 'Pagado' || slotProps.data.saldo_restante > 0"
+                    class="badge bg-success">
                     Pagado
                   </span>
 
@@ -389,32 +377,17 @@
                   <div v-if="editarCuotas" class="d-flex flex-column gap-1">
 
                     <!-- SELECT TIPO DE PAGO -->
-                    <Dropdown
-                      v-if="slotProps.data.idtipo_pago !== 5"
-                      v-model="slotProps.data.idtipo_pago"
-                      :options="tiposPagoOptions"
-                      optionLabel="label"
-                      optionValue="value"
-                      placeholder="Seleccione"
-                      class="p-inputtext-sm"
-                    />
+                    <Dropdown v-if="slotProps.data.idtipo_pago !== 5" v-model="slotProps.data.idtipo_pago"
+                      :options="tiposPagoOptions" optionLabel="label" optionValue="value" placeholder="Seleccione"
+                      class="p-inputtext-sm" />
 
                     <!-- TEXTO FIJO CUANDO ES LIQUIDACIÓN -->
-                    <span
-                      v-else
-                      class="badge bg-info p-2 text-center"
-                    >
+                    <span v-else class="badge bg-info p-2 text-center">
                       🔒 Liquidación
                     </span>
-                    <Dropdown
-                      v-if="slotProps.data.idtipo_pago === 7"
-                      v-model="slotProps.data.bancoSeleccionado"
-                      :options="bancosOptions"
-                      dataKey="id"
-                      placeholder="Seleccione un banco"
-                      class="w-full custom-dropdown mt-1"
-                      @change="onBancoSelectCuota(slotProps.data)"
-                    >
+                    <Dropdown v-if="slotProps.data.idtipo_pago === 7" v-model="slotProps.data.bancoSeleccionado"
+                      :options="bancosOptions" dataKey="id" placeholder="Seleccione un banco"
+                      class="w-full custom-dropdown mt-1" @change="onBancoSelectCuota(slotProps.data)">
                       <!-- OPTION -->
                       <template #option="slotPropsOpt">
                         <div class="banco-opcion">
@@ -464,13 +437,9 @@
               <!-- COLUMNA ELIMINAR (solo en modo edición) -->
               <Column v-if="editarCuotas" header="Eliminar" style="width: 80px; text-align: center;">
                 <template #body="slotProps">
-                  <Button
-                    v-if="slotProps.data.idtipo_pago !== 5"
-                    icon="pi pi-trash"
-                    class="p-button-sm p-button-danger btn-mini"
-                    title="Eliminar cuota"
-                    @click="abrirModalEliminarCuota(slotProps.data)"
-                  />
+                  <Button v-if="slotProps.data.idtipo_pago !== 5" icon="pi pi-trash"
+                    class="p-button-sm p-button-danger btn-mini" title="Eliminar cuota"
+                    @click="abrirModalEliminarCuota(slotProps.data)" />
                   <span v-else class="text-muted">-</span>
                 </template>
               </Column>
@@ -587,27 +556,14 @@
                       </label>
 
                       <div class="input-con-desplegable">
-                        <InputText
-                          v-model="direccionCliente"
-                          :disabled="!direccionClienteEditable"
-                          class="input-full"
-                          :class="{ 'p-invalid': errores.direccion }"
-                          @input="buscarDireccion"
+                        <InputText v-model="direccionCliente" :disabled="!direccionClienteEditable" class="input-full"
+                          :class="{ 'p-invalid': errores.direccion }" @input="buscarDireccion"
                           @keydown.down="moverSeleccionDireccion('abajo')"
-                          @keydown.up="moverSeleccionDireccion('arriba')"
-                          @keydown.enter="seleccionarDireccionEnter"
-                        />
+                          @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter" />
 
-                        <ul
-                          v-if="mostrarDesplegableDireccion"
-                          class="desplegable-simple"
-                        >
-                          <li
-                            v-for="(dir, index) in direccionesFiltradas"
-                            :key="dir"
-                            @click="seleccionarDireccion(dir)"
-                            :class="{ seleccionado: index === indiceDireccionSeleccionada }"
-                          >
+                        <ul v-if="mostrarDesplegableDireccion" class="desplegable-simple">
+                          <li v-for="(dir, index) in direccionesFiltradas" :key="dir" @click="seleccionarDireccion(dir)"
+                            :class="{ seleccionado: index === indiceDireccionSeleccionada }">
                             {{ dir }}
                           </li>
                         </ul>
@@ -696,35 +652,22 @@
                     <!-- DIRECCIÓN -->
                     <div class="p-mb-3">
                       <label class="label-input">
-                        <i class="pi pi-map-marker optional-icon"></i> Ubicación <span class="optional-tag"> Opcional</span>
+                        <i class="pi pi-map-marker optional-icon"></i> Ubicación <span class="optional-tag">
+                          Opcional</span>
                       </label>
 
                       <div class="input-con-desplegable p-input-icon-left" style="width: 100%;">
-                        
-                        
 
-                        <InputText
-                          v-model="direccionCliente"
-                          :disabled="!direccionClienteEditable"
-                          class="input-full"
-                          :class="{ 'p-invalid': errores.direccion }"
-                          placeholder="Ej: Av. Heroinas esq. Ayacucho"
-                          @input="buscarDireccion"
-                          @keydown.down="moverSeleccionDireccion('abajo')"
-                          @keydown.up="moverSeleccionDireccion('arriba')"
-                          @keydown.enter="seleccionarDireccionEnter"
-                        />
 
-                        <ul
-                          v-if="mostrarDesplegableDireccion"
-                          class="desplegable-simple"
-                        >
-                          <li
-                            v-for="(dir, index) in direccionesFiltradas"
-                            :key="dir"
-                            @click="seleccionarDireccion(dir)"
-                            :class="{ seleccionado: index === indiceDireccionSeleccionada }"
-                          >
+
+                        <InputText v-model="direccionCliente" :disabled="!direccionClienteEditable" class="input-full"
+                          :class="{ 'p-invalid': errores.direccion }" placeholder="Ej: Av. Heroinas esq. Ayacucho"
+                          @input="buscarDireccion" @keydown.down="moverSeleccionDireccion('abajo')"
+                          @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter" />
+
+                        <ul v-if="mostrarDesplegableDireccion" class="desplegable-simple">
+                          <li v-for="(dir, index) in direccionesFiltradas" :key="dir" @click="seleccionarDireccion(dir)"
+                            :class="{ seleccionado: index === indiceDireccionSeleccionada }">
                             {{ dir }}
                           </li>
                         </ul>
@@ -757,7 +700,7 @@
                       <i class="fa fa-money-bill mr-2"></i>
                       Contado
                     </button>-->
-                    
+
                     <!--<button class="btn-selector-btn" :class="{ active: tipoVenta === 'credito' }"
                       @click="tipoVenta = 'credito'">
                       <i class="fa fa-file-invoice mr-2"></i>
@@ -832,13 +775,14 @@
                         <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
                           Detalle de Venta
                         </h5>
-                        
+
                         <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2" style="font-size: 0.8rem;">
+                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                          style="font-size: 0.8rem;">
                           <i class="fa fa-gift mr-1"></i>
                           <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                         </div>
-                        
+
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                           <div class="d-flex flex-column">
                             <div class="d-flex align-items-center">
@@ -850,7 +794,9 @@
                                 {{ monedaVenta[1] }}</span>
                             </div>
                             <small v-if="saldoFavorCliente > 0" class="text-muted">
-                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor: {{ saldoFavorCliente.toFixed(2) }})
+                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                              {{
+                                saldoFavorCliente.toFixed(2) }})
                             </small>
                           </div>
                           <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
@@ -895,19 +841,21 @@
                             <h5 class="mb-0" style="font-size: 0.95rem;">
                               Detalle de Venta
                             </h5>
-                            
+
                             <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
-                            <div v-if="saldoFavorCliente > 0" class="alert alert-success py-1 mb-2" style="font-size: 0.75rem;">
+                            <div v-if="saldoFavorCliente > 0" class="alert alert-success py-1 mb-2"
+                              style="font-size: 0.75rem;">
                               <i class="fa fa-gift mr-1"></i>
                               <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                             </div>
-                            
+
                             <label for="montoEfectivo">Total a pagar:</label>
                             <span class="font-weight-bold">{{
                               (montoEfectivo = Math.max(0, calcularTotal - saldoFavorCliente).toFixed(2))
                             }}</span>
                             <small v-if="saldoFavorCliente > 0" class="d-block text-muted">
-                              (Subtotal: {{ calcularTotal.toFixed(2) }} - Saldo a favor: {{ saldoFavorCliente.toFixed(2) }})
+                              (Subtotal: {{ calcularTotal.toFixed(2) }} - Saldo a favor: {{ saldoFavorCliente.toFixed(2)
+                              }})
                             </small>
                           </div>
                         </div>
@@ -977,7 +925,8 @@
                             <i class="fa fa-exchange mr-1"></i> Saldo Total
                           </label>
                           <input type="text" id="cambioRecibir" class="form-control input-cambio bg-light"
-                            :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido" readonly />
+                            :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido"
+                            readonly />
                         </div>
                       </div>
                     </div>
@@ -987,13 +936,14 @@
                         <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
                           Detalle de Venta
                         </h5>
-                        
+
                         <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2" style="font-size: 0.8rem;">
+                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                          style="font-size: 0.8rem;">
                           <i class="fa fa-gift mr-1"></i>
                           <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                         </div>
-                        
+
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                           <div class="d-flex flex-column">
                             <div class="d-flex align-items-center">
@@ -1005,7 +955,9 @@
                                 {{ monedaVenta[1] }}</span>
                             </div>
                             <small v-if="saldoFavorCliente > 0" class="text-muted">
-                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor: {{ saldoFavorCliente.toFixed(2) }})
+                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                              {{
+                                saldoFavorCliente.toFixed(2) }})
                             </small>
                           </div>
                           <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
@@ -1085,7 +1037,8 @@
                             <i class="fa fa-exchange mr-1"></i> Saldo Total
                           </label>
                           <input type="text" id="cambioRecibir" class="form-control input-cambio bg-light"
-                            :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido" readonly />
+                            :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido"
+                            readonly />
                         </div>
                       </div>
                     </div>
@@ -1095,13 +1048,14 @@
                         <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
                           Detalle de Venta
                         </h5>
-                        
+
                         <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2" style="font-size: 0.8rem;">
+                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                          style="font-size: 0.8rem;">
                           <i class="fa fa-gift mr-1"></i>
                           <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                         </div>
-                        
+
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                           <div class="d-flex flex-column">
                             <div class="d-flex align-items-center">
@@ -1113,7 +1067,9 @@
                                 {{ monedaVenta[1] }}</span>
                             </div>
                             <small v-if="saldoFavorCliente > 0" class="text-muted">
-                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor: {{ saldoFavorCliente.toFixed(2) }})
+                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                              {{
+                                saldoFavorCliente.toFixed(2) }})
                             </small>
                           </div>
 
@@ -1187,7 +1143,7 @@
                     @click="seleccionarArticulo(articulo)" :class="{ seleccionado: index === indiceSeleccionado }">
                     {{ articulo.nombre }} / {{ articulo.codigo }} / {{ articulo.nombre_proveedor || 'N/A' }} / {{
                       articulo.precio_uno ||
-                    '0.00' }}
+                      '0.00' }}
                   </li>
                 </ul>
               </div>
@@ -1205,12 +1161,9 @@
                   " />
 
                 <!-- Botón cambiar modo venta -->
-                <Button
-                  :label="getLabelModoVenta(slotProps.data.modoVenta)"
-                  class="p-button-info p-button-sm btn-mini"
-                  style="margin-left: 5px"
-                  @click="cambiarModoVenta(slotProps.data)"
-                />
+                <Button :label="getLabelModoVenta(slotProps.data.modoVenta)" class="p-button-info p-button-sm btn-mini"
+                  style="margin-left: 5px" :disabled="slotProps.data.descripcion_fabrica == 1"
+                  @click="cambiarModoVenta(slotProps.data)" />
 
               </template>
             </Column>
@@ -1219,8 +1172,7 @@
             <Column field="stock" header="Stock Actual" style="width: 15%">
               <template #body="slotProps">
                 <div
-                  style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;"
-                >
+                  style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
                   <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
 
                   <span v-else>
@@ -1238,10 +1190,9 @@
 
             <Column field="unidad_envase" header="Cant x Caja" style="width: 10%" class="column-precio-unidad">
               <template #body="slotProps">
-                <input type="text" v-model="slotProps.data.unidad_envase"
-                  class="form-control form-control-sm input-precio-unidad"
+                <input type="text" class="form-control form-control-sm input-precio-unidad"
                   style="height: 32px; font-size: 0.875rem; padding: 0.25rem 0.3rem; text-align: center; width: 100%;"
-                  disabled />
+                  :value="slotProps.data.descripcion_fabrica == 1 ? '-' : slotProps.data.unidad_envase" disabled />
               </template>
             </Column>
 
@@ -1420,6 +1371,42 @@
           <h4>{{ tituloModal }}</h4>
         </template>
         <TabView>
+          <TabPanel header="Combos/Ofertas">
+            <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
+              <div class="p-inputgroup" style="width: 100%;">
+                <InputText id="buscarA" v-model="buscarA" placeholder="Texto a buscar"
+                  @input="listarItemCompuesto(buscarA)" class="input-full" />
+                <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
+                  buscarA = '';
+                listarItemCompuesto('');
+                " type="button" :disabled="!buscarA" :style="{ minWidth: '36px' }" title="Limpiar" />
+              </div>
+            </div>
+            <DataTable :value="arrayItemCompuesto" :paginator="true" :rows="10"
+              class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-venta" responsiveLayout="scroll">
+              <Column header="Opciones" style="width: 80px">
+                <template #body="slotProps">
+                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini" @click="
+                    agregarDetalleModal(slotProps.data, 'itemcompuesto')
+                    " />
+                  <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
+                    @click="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />
+                </template>
+              </Column>
+              <Column field="nombre" header="Descripcion" />
+              <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
+              <Column header="Precio de Venta">
+                <template #body="slotProps">
+                  {{
+                    (
+                      slotProps.data.precio_uno * parseFloat(monedaVenta[0])
+                    ).toFixed(2)
+                  }}
+                  {{ monedaVenta[1] }}
+                </template>
+              </Column>
+            </DataTable>
+          </TabPanel>
           <TabPanel header="Productos">
             <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0; position: relative;">
               <div class="p-inputgroup" style="width: 100%; position: relative;">
@@ -1441,7 +1428,7 @@
               <Column header="Opciones" style="width: 120px">
                 <template #body="slotProps">
                   <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
-                    @click="agregarDetalleModal(slotProps.data)" />
+                    @click="agregarDetalleModalProducto(slotProps.data)" />
                   <Button icon="pi pi-info-circle" class="p-button-info p-button-sm btn-mini"
                     @click="verStockPorSucursal(slotProps.data)" />
                 </template>
@@ -1470,6 +1457,7 @@
               </Column>
             </DataTable>
           </TabPanel>
+
         </TabView>
         <template #footer>
           <Button label="Cerrar" icon="pi pi-times" @click="cerrarModal" class="p-button-secondary" />
@@ -1669,12 +1657,8 @@
     </template>
 
     <!-- MODAL CONFIRMAR ELIMINAR CUOTA -->
-    <Dialog
-      :visible.sync="modalConfirmarEliminarCuota"
-      :modal="true"
-      :closable="true"
-      :containerStyle="{ width: '400px' }"
-    >
+    <Dialog :visible.sync="modalConfirmarEliminarCuota" :modal="true" :closable="true"
+      :containerStyle="{ width: '400px' }">
       <template #header>
         <div class="modal-header" style="display: flex; align-items: center; gap: 8px;">
           <i class="pi pi-exclamation-triangle" style="color: #f44336; font-size: 1.5rem;"></i>
@@ -1688,7 +1672,8 @@
         </p>
         <div v-if="cuotaAEliminar" class="mt-3 p-3" style="background: #f8f9fa; border-radius: 6px;">
           <p style="margin: 0 0 5px 0;"><strong>Cuota #:</strong> {{ cuotaAEliminar.numero_cuota }}</p>
-          <p style="margin: 0 0 5px 0;"><strong>Monto:</strong> {{ cuotaAEliminar.precio_cuota }} {{ monedaVenta[1] }}</p>
+          <p style="margin: 0 0 5px 0;"><strong>Monto:</strong> {{ cuotaAEliminar.precio_cuota }} {{ monedaVenta[1] }}
+          </p>
           <p style="margin: 0;">
             <strong>Tipo de Pago:</strong>
             <span v-if="cuotaAEliminar.idtipo_pago === 1">Efectivo</span>
@@ -1703,18 +1688,46 @@
       </div>
 
       <template #footer>
-        <Button
-          label="Cancelar"
-          icon="pi pi-times"
-          class="p-button-secondary"
-          @click="modalConfirmarEliminarCuota = false"
-        />
-        <Button
-          label="Sí, eliminar"
-          icon="pi pi-trash"
-          class="p-button-danger"
-          @click="confirmarEliminarCuota"
-        />
+        <Button label="Cancelar" icon="pi pi-times" class="p-button-secondary"
+          @click="modalConfirmarEliminarCuota = false" />
+        <Button label="Sí, eliminar" icon="pi pi-trash" class="p-button-danger" @click="confirmarEliminarCuota" />
+      </template>
+    </Dialog>
+
+    <Dialog :visible.sync="dialogVerCombo" :modal="true" :closable="false" :containerStyle="{ width: '800px' }"
+      class="dialog-combo">
+      <!-- HEADER PERSONALIZADO -->
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-box icon-header"></i>
+          <div>
+            <h3 class="title">{{ nombreComboActual }}</h3>
+            <span class="subtitle">Detalle de productos incluidos</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- CONTENIDO -->
+      <div class="dialog-content">
+        <DataTable :value="productosSeleccionados" responsiveLayout="scroll" class="p-datatable-sm p-datatable-striped">
+          <Column field="nombre" header="Producto"></Column>
+          <Column field="nombre_categoria" header="Categoría"></Column>
+          <Column field="cantidad" header="Cantidad" style="width: 120px; text-align:center">
+            <template #body="slotProps">
+              <span class="cantidad-badge">
+                {{ slotProps.data.cantidad }}
+              </span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+
+      <!-- FOOTER -->
+      <template #footer>
+        <div class="dialog-footer">
+          <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm"
+            @click="dialogVerCombo = false" />
+        </div>
       </template>
     </Dialog>
   </main>
@@ -1765,25 +1778,30 @@ export default {
     TabPanel,
     ToastService,
     Toast
-  },directives: {
+  }, directives: {
     'tooltip': Tooltip
   },
   data() {
     return {
+      dialogVerCombo: false,
+      nombreComboActual: '',
+      productosSeleccionados: [],
+
+      arrayItemCompuesto: [],
       clienteExistente: false,
       mostrarDesplegableDireccion: false,
       indiceDireccionSeleccionada: 0,
       debounceDireccion: null,
       // cliente
-    direccionCliente: '',
-    direccionClienteEditable: true,
+      direccionCliente: '',
+      direccionClienteEditable: true,
 
-    errores: {
-      direccion: null,
-      razonSocial: null
-    },
-    direccionesFiltradas: [],
-    indiceDireccionSeleccionada: -1,
+      errores: {
+        direccion: null,
+        razonSocial: null
+      },
+      direccionesFiltradas: [],
+      indiceDireccionSeleccionada: -1,
       clienteEncontrado: false,
       idcliente: null,
 
@@ -2049,25 +2067,25 @@ export default {
       totaldescuentoseleccionada: 0,
       ventaSeleccionada: null,
       tiposPago: [
-      { label: '💵 Efectivo', value: 1 },
-      { label: '🏦 Transferencia / QR', value: 7 },
-    ],
+        { label: '💵 Efectivo', value: 1 },
+        { label: '🏦 Transferencia / QR', value: 7 },
+      ],
       procesandoSeleccion: false,
     };
   },
 
   watch: {
     cuotas: {
-    deep: true,
-    handler(cuotas) {
-      cuotas.forEach(c => {
-        if (c.idtipo_pago !== 7) {
-          c.bancoSeleccionado = null;
-          c.idbanco = null;
-        }
-      });
-    }
-  },
+      deep: true,
+      handler(cuotas) {
+        cuotas.forEach(c => {
+          if (c.idtipo_pago !== 7) {
+            c.bancoSeleccionado = null;
+            c.idbanco = null;
+          }
+        });
+      }
+    },
     editarCuotas(val) {
       if (val) {
         this.cargarBancos();
@@ -2099,11 +2117,11 @@ export default {
   },
   computed: {
     tiposPagoOptions() {
-    return this.tiposPago;
-  },
-  bancosOptions() {
-    return this.bancos;
-  },
+      return this.tiposPago;
+    },
+    bancosOptions() {
+      return this.bancos;
+    },
     totalCantidades() {
       return this.arrayArticulosKit.reduce((total, articulo) => {
         return total + parseInt(articulo.cantidad);
@@ -2181,15 +2199,47 @@ export default {
   },
 
   methods: {
+    verCombosOfertas(id) {
+      axios.get(`/itemcompuesto/${id}`).then((res) => {
+        this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
+
+        this.productosSeleccionados = (res.data.items || []).map(item => ({
+          nombre: item.nombre,
+          nombre_categoria: item.nombre_categoria || 'SIN CATEGORIA',
+          cantidad: parseInt(item.cantidad || 1)
+        }));
+
+        this.dialogVerCombo = true;
+      });
+    },
+    listarItemCompuesto(buscar, criterio) {
+      let me = this;
+      me.isLoading = true; // Activar loader
+
+      var url = "/itemcompuesto?buscar=" + buscar + "&criterio=" + criterio;
+      return axios
+        .get(url)
+        .then(function (response) {
+          var respuesta = response.data;
+          me.arrayItemCompuesto = respuesta.articulos;
+          me.first = 0; // Reiniciar a la primera página
+        })
+        .catch(function (error) {
+          console.log(error);
+        })
+        .finally(() => {
+          me.isLoading = false; // Desactivar loader
+        });
+    },
     asignarPrecioPorModo(detalle) {
-    if (detalle.modoVenta === 'caja') {
-      detalle.precioseleccionado = detalle.precio_tres;
-    } else if (detalle.modoVenta === 'docena') {
-      detalle.precioseleccionado = detalle.precio_dos;
-    } else {
-      detalle.precioseleccionado = detalle.precio_uno;
-    }
-  },
+      if (detalle.modoVenta === 'caja') {
+        detalle.precioseleccionado = detalle.precio_tres;
+      } else if (detalle.modoVenta === 'docena') {
+        detalle.precioseleccionado = detalle.precio_dos;
+      } else {
+        detalle.precioseleccionado = detalle.precio_uno;
+      }
+    },
     getLabelModoVenta(modo) {
       switch (modo) {
         case 'caja':
@@ -2205,12 +2255,12 @@ export default {
       if (idtipo_venta == 2 && parseFloat(saldo_restante) < 0) {
         return '💰 Saldo a Favor';
       }
-      
+
       // Si es crédito y el saldo restante es 0, mostrar como Pagado
       if (idtipo_venta == 2 && (saldo_restante === 0 || saldo_restante === '0' || saldo_restante === '0.00')) {
         return 'Pagado';
       }
-      
+
       if (estado === '1') {
         return 'Pagado';
       } else if (estado === '0') {
@@ -2233,10 +2283,10 @@ export default {
     getEstadoClass(estado, idtipo_venta, saldo_restante = null) {
       // Si es crédito y el saldo restante es negativo (saldo a favor)
       const esSaldoAFavor = idtipo_venta == 2 && parseFloat(saldo_restante) < 0;
-      
+
       // Si es crédito y el saldo restante es 0, mostrar en verde
       const esCreditoPagado = idtipo_venta == 2 && (saldo_restante === 0 || saldo_restante === '0' || saldo_restante === '0.00');
-      
+
       return {
         'estado-badge': true,          // clase base
         'estado-verde': estado === '1' || esCreditoPagado || esSaldoAFavor,  // Pagado, Crédito pagado o Saldo a Favor
@@ -2250,25 +2300,25 @@ export default {
       console.log("Dirección seleccionada:", this.direccionCliente);
     },
     moverSeleccionDireccion(direccion) {
-        if (!this.mostrarDesplegableDireccion || this.direccionesFiltradas.length === 0) return;
+      if (!this.mostrarDesplegableDireccion || this.direccionesFiltradas.length === 0) return;
 
-        if (direccion === "abajo") {
-          this.indiceDireccionSeleccionada =
-            (this.indiceDireccionSeleccionada + 1) % this.direccionesFiltradas.length;
-        } else if (direccion === "arriba") {
-          this.indiceDireccionSeleccionada =
-            (this.indiceDireccionSeleccionada - 1 + this.direccionesFiltradas.length)
-            % this.direccionesFiltradas.length;
-        }
-      },
-  seleccionarDireccionEnter() {
-    if (
-      this.indiceDireccionSeleccionada >= 0 &&
-      this.indiceDireccionSeleccionada < this.direccionesFiltradas.length
-    ) {
-      this.seleccionarDireccion(this.direccionesFiltradas[this.indiceDireccionSeleccionada]);
-    }
-  },
+      if (direccion === "abajo") {
+        this.indiceDireccionSeleccionada =
+          (this.indiceDireccionSeleccionada + 1) % this.direccionesFiltradas.length;
+      } else if (direccion === "arriba") {
+        this.indiceDireccionSeleccionada =
+          (this.indiceDireccionSeleccionada - 1 + this.direccionesFiltradas.length)
+          % this.direccionesFiltradas.length;
+      }
+    },
+    seleccionarDireccionEnter() {
+      if (
+        this.indiceDireccionSeleccionada >= 0 &&
+        this.indiceDireccionSeleccionada < this.direccionesFiltradas.length
+      ) {
+        this.seleccionarDireccion(this.direccionesFiltradas[this.indiceDireccionSeleccionada]);
+      }
+    },
     async buscarDireccion() {
       clearTimeout(this.debounceDireccion);
 
@@ -2587,19 +2637,19 @@ export default {
       try {
 
         const payload = this.cuotas.map(c => {
-        let fechaHora = null;
+          let fechaHora = null;
 
-        if (c.fecha_pago) {
-          const now = new Date();
-          const hora = now.toTimeString().substring(0, 8); // HH:mm:ss
-          fechaHora = `${c.fecha_pago} ${hora}`;
-        }
+          if (c.fecha_pago) {
+            const now = new Date();
+            const hora = now.toTimeString().substring(0, 8); // HH:mm:ss
+            fechaHora = `${c.fecha_pago} ${hora}`;
+          }
 
-        return {
-          ...c,
-          fecha_pago: fechaHora
-        };
-      });
+          return {
+            ...c,
+            fecha_pago: fechaHora
+          };
+        });
 
         await axios.post('/credito/actualizarCuotas', {
           cuotas: payload
@@ -2616,24 +2666,24 @@ export default {
     },
 
     async listarCuotas() {
-  try {
-    const response = await axios.get(`/credito/cuotas/${this.idcredito}`);
+      try {
+        const response = await axios.get(`/credito/cuotas/${this.idcredito}`);
 
-    this.cuotas = response.data.cuotas.map(c => ({
-      ...c,
+        this.cuotas = response.data.cuotas.map(c => ({
+          ...c,
 
-      // ✅ input type="date" necesita string "YYYY-MM-DD"
-      fecha_pago: c.fecha_pago ? String(c.fecha_pago).substring(0, 10) : null,
+          // ✅ input type="date" necesita string "YYYY-MM-DD"
+          fecha_pago: c.fecha_pago ? String(c.fecha_pago).substring(0, 10) : null,
 
-      idtipo_pago: Number(c.idtipo_pago),
-      idbanco: c.idbanco ? Number(c.idbanco) : null,
-      bancoSeleccionado: null
-    }));
+          idtipo_pago: Number(c.idtipo_pago),
+          idbanco: c.idbanco ? Number(c.idbanco) : null,
+          bancoSeleccionado: null
+        }));
 
-  } catch (error) {
-    console.error("Error al cargar cuotas:", error);
-  }
-},
+      } catch (error) {
+        console.error("Error al cargar cuotas:", error);
+      }
+    },
 
 
 
@@ -2648,28 +2698,28 @@ export default {
     // Verificar si una cuota excede el saldo disponible
     cuotaExcedida(cuota) {
       if (!this.cuotas || this.cuotas.length === 0) return false;
-      
+
       const monto = Number(cuota.precio_cuota || 0);
       const totalVenta = Number(this.total || 0);
-      
+
       // Verificar si la cuota individual es mayor al total
       if (monto > totalVenta) return true;
-      
+
       // Verificar si la suma de todas las cuotas excede el total
       const sumaCuotas = this.cuotas.reduce((acc, c) => {
         return acc + Number(c.precio_cuota || 0);
       }, 0);
-      
+
       return sumaCuotas > totalVenta;
     },
 
     // Recalcular los saldos restantes de todas las cuotas
     recalcularSaldosCuotas() {
       if (!this.cuotas || this.cuotas.length === 0) return;
-      
+
       const totalVenta = Number(this.total || 0);
       let saldoAcumulado = totalVenta;
-      
+
       this.cuotas.forEach(cuota => {
         const montoCuota = Number(cuota.precio_cuota || 0) + Number(cuota.descuento || 0);
         saldoAcumulado -= montoCuota;
@@ -2876,12 +2926,12 @@ export default {
 
         this.bancos = Array.isArray(res.data)
           ? res.data.map(b => ({
-              id: b.id,
-              nombre_cuenta: b.nombre_cuenta,
-              nombre_banco: b.nombre_banco,
-              numero_cuenta: b.numero_cuenta,
-              tipo_cuenta: b.tipo_cuenta
-            }))
+            id: b.id,
+            nombre_cuenta: b.nombre_cuenta,
+            nombre_banco: b.nombre_banco,
+            numero_cuenta: b.numero_cuenta,
+            tipo_cuenta: b.tipo_cuenta
+          }))
           : [];
 
       } catch (error) {
@@ -3548,7 +3598,7 @@ export default {
 
       this.arraySeleccionado = articulo;
       this.mostrarDesplegable = false;
-      
+
 
       this.agregarDetalle();
 
@@ -3733,27 +3783,27 @@ export default {
           idarticulo: this.arraySeleccionado.id,
           articulo: this.arraySeleccionado.nombre,
           medida: this.arraySeleccionado.medida,
-          unidad_envase: envase, 
+          unidad_envase: envase,
           cantidad: cantidad,
           cantidad_paquetes: envase,
           precio: precioUnitario,
           descuento: this.arraySeleccionado.descuento,
           stock: this.arraySeleccionado.saldo_stock,
-          stock_cajas: stockEnCajasCalculado,         
+          stock_cajas: stockEnCajasCalculado,
           precioseleccionado: precioUnitario,
           total: total,
           descripcion_fabrica: this.arraySeleccionado.descripcion_fabrica,
           codigo_producto: this.arraySeleccionado.codigo,
           precio_uno: parseFloat(this.arraySeleccionado.precio_uno || 0),
           precio_dos: parseFloat(this.arraySeleccionado.precio_dos || 0),
-          precio_tres: parseFloat(this.arraySeleccionado.precio_tres || 0), 
-          
+          precio_tres: parseFloat(this.arraySeleccionado.precio_tres || 0),
+
           usando_precio: 'uno',
-          modoVenta: 'unidad', 
+          modoVenta: 'unidad',
         };
 
-        this.asignarPrecioPorModo(nuevoDetalle); 
-        
+        this.asignarPrecioPorModo(nuevoDetalle);
+
         this.arrayDetalle.push(nuevoDetalle);
       }
 
@@ -3783,11 +3833,11 @@ export default {
       }
 
       this.precioBloqueado = true;
-      this.arraySeleccionado = null; 
+      this.arraySeleccionado = null;
       this.cantidad = 1;
       this.unidadPaquete = 1;
       this.descuentoProducto = 0;
-      
+
       this.$toast.add({
         severity: "success",
         summary: "Producto agregado",
@@ -3796,32 +3846,346 @@ export default {
       });
     },
 
-    agregarDetalleModal(data) {
-      if (data.saldo_stock <= 0 && data.descripcion_fabrica != '1') {
+    agregarDetalleModalProducto(data) {
+      if (data.saldo_stock == 0) {
         Swal.fire({
           icon: "warning",
           title: "Sin stock",
-          text: "No hay stock disponible de este ítem.",
+          text: "No hay stock de este ítem en el almacén.",
         });
         return;
       }
 
       this.desdeModal = true;
-      this.codigo = data.codigo;     
-      this.arraySeleccionado = {
-          ...data, 
-          precio_uno: data.precio_uno,
-          precio_dos: data.precio_dos || 0,   
-          precio_tres: data.precio_tres || 0, 
-          saldo_stock: data.saldo_stock
-      };
+      this.codigo = data.codigo;
       this.precioseleccionado = data.precio_uno;
 
       const descuentoVigente = this.obtenerDescuentoVigente(data);
-      this.arraySeleccionado.descuento = descuentoVigente;
+      data.descuento = descuentoVigente;
 
+      this.arraySeleccionado = data;
       this.mostrarDesplegable = false;
       this.agregarDetalle();
+    },
+
+    async agregarDetalleModal(data, tipo = "medicamento") {
+      // Si es medicamento, validar stock
+      if (tipo === "medicamento") {
+        if (data.saldo_stock == 0) {
+          Swal.fire({
+            icon: "warning",
+            title: "Sin stock",
+            text: "No hay stock de este ítem en el almacén.",
+          });
+          return;
+        }
+
+        this.codigo = data.codigo;
+        this.buscarPromocion(data.id);
+        this.precioseleccionado = data.precio_uno;
+
+        // ✅ Buscar si ya existe en el carrito
+        const existente = this.arrayDetalle.find(
+          (d) => d.idarticulo === data.id && d.tipo === "medicamento"
+        );
+
+        if (existente) {
+          // Si existe → sumar cantidad
+          if (existente.cantidad + 1 > data.saldo_stock) {
+            Swal.fire({
+              icon: "warning",
+              title: "Stock insuficiente",
+              text: "No puedes agregar más unidades de este producto.",
+            });
+            return;
+          }
+
+          existente.cantidad += 1;
+          existente.total = existente.cantidad * existente.precio;
+          console.log("Cantidad actualizada:", existente);
+        } else {
+          // Si no existe → agregar nuevo
+          const nuevoDetalle = {
+            id: Date.now(),
+            idkit: -1,
+            idarticulo: data.id,
+            articulo: data.nombre,
+            medida: data.medida || "",
+            unidad_envase: data.unidad_envase || 1,
+            cantidad: 1,
+            cantidad_paquetes: 1,
+            precio: data.precio_uno,
+            descuento: 0,
+            stock: data.saldo_stock,
+            precioseleccionado: data.precio_uno,
+            total: data.precio_uno,
+            tipo: tipo,
+          };
+          this.arrayDetalle.push(nuevoDetalle);
+
+          const nuevoProducto = {
+            actividadEconomica: data.actividadEconomica || "",
+            codigoProductoSin: data.codigoProductoSin || "",
+            codigoProducto: data.codigo || "",
+            descripcion: data.nombre,
+            cantidad: 1,
+            unidadMedida: data.codigoClasificador || "",
+            precioUnitario: data.precio_uno,
+            montoDescuento: 0,
+            subTotal: data.precio_uno,
+            numeroSerie: null,
+            numeroImei: null,
+          };
+          this.arrayProductos.push(nuevoProducto);
+        }
+        this.$toast.add({
+          severity: "success",
+          summary: "Producto agregado",
+          detail: "El producto fue agregado al carrito correctamente",
+          life: 2500,
+        });
+
+        // ❌ No cerramos el modal
+        // this.cerrarModal();
+      } else if (tipo === "itemcompuesto") {
+        try {
+          const response = await axios.post(
+            "/articulo/verificarStockCompuesto",
+            {
+              idarticulo: data.id,
+              cantidad: 1,
+              idalmacen: this.idAlmacen,
+            }
+          );
+          if (!response.data.success) {
+            let mensajes = response.data.faltantes.map(
+              (faltante) =>
+                `El Item Compuesto: "${data.nombre}", no tiene stock suficiente en el item "${faltante.nombre_item}" (disponible "${faltante.stock}" requerido "${faltante.requerido}")`
+            );
+            Swal.fire({
+              icon: "warning",
+              title: "Stock insuficiente",
+              html: mensajes.join("<br>"),
+            });
+            return;
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "No se pudo verificar el stock del compuesto.",
+          });
+          return;
+        }
+
+        // CALCULAR SIEMPRE el precio compuesto = precio_uno + precio_dos (precio_dos puede ser 0)
+        const precioUno = Number(data.precio_uno || 0);
+        const precioDos = Number(data.precio_dos || 0);
+        const precioCompuesto = precioUno + precioDos;
+
+        // Verificar si ya está agregado en arrayDetalle
+        const existente = this.arrayDetalle.find(
+          (d) => d.idarticulo === data.id && d.tipo === "itemcompuesto"
+        );
+
+        if (existente) {
+          // Aumentar cantidad del detalle compuesto y calcular total con precioCompuesto
+          existente.cantidad += 1;
+          existente.precio = precioCompuesto;
+          existente.total = existente.cantidad * existente.precio;
+          console.log("Cantidad actualizada (item compuesto):", existente);
+
+          // Actualizar las cantidades/subTotals de los componentes en arrayProductos
+          try {
+            const detalleResponse = await axios.get(
+              `/itemcompuesto/detalle/${data.id}`
+            );
+            const componentes = detalleResponse.data;
+            componentes.forEach((componente) => {
+              // buscamos el componente por codigoProducto o descripcion para actualizarlo
+              const prod = this.arrayProductos.find(
+                (p) =>
+                  (p.codigoProducto &&
+                    componente.codigo &&
+                    p.codigoProducto === componente.codigo) ||
+                  p.descripcion === componente.nombre
+              );
+              const qtyToAdd = componente.cantidad || 1;
+              if (prod) {
+                prod.cantidad = (prod.cantidad || 0) + qtyToAdd;
+                prod.subTotal = (prod.cantidad || 0) * prod.precioUnitario;
+              } else {
+                // Si por alguna razón no existe (caso raro), lo agregamos con precio_uno
+                this.arrayProductos.push({
+                  actividadEconomica: componente.actividadEconomica || "",
+                  codigoProductoSin: componente.codigoProductoSin || "",
+                  codigoProducto: componente.codigo || "",
+                  descripcion: componente.nombre,
+                  cantidad: qtyToAdd,
+                  unidadMedida: componente.codigoClasificador || "",
+                  precioUnitario: componente.precio_uno,
+                  montoDescuento: 0,
+                  subTotal: qtyToAdd * componente.precio_uno,
+                  numeroSerie: null,
+                  numeroImei: null,
+                });
+              }
+            });
+          } catch (error) {
+            // No bloqueamos la acción si falla la actualización de componentes,
+            // solo avisamos y seguimos (para que no se pierda la venta).
+            console.error(
+              "No se pudo actualizar componentes del item compuesto:",
+              error
+            );
+            Swal.fire({
+              icon: "warning",
+              title: "Advertencia",
+              text:
+                "La venta se agregó pero no se pudieron actualizar las cantidades de los componentes en el carrito.",
+            });
+          }
+        } else {
+          // Agregar nuevo item compuesto en arrayDetalle con precio compuesto
+          const nuevoDetalle = {
+            id: Date.now(),
+            idkit: -1,
+            idarticulo: data.id,
+            articulo: data.nombre,
+            medida: data.medida || "",
+            unidad_envase: data.unidad_envase || 1,
+            cantidad: 1,
+            cantidad_paquetes: 1,
+            precio: precioCompuesto,
+            descuento: 0,
+            stock: null,
+            precioseleccionado: precioCompuesto,
+            total: precioCompuesto,
+            tipo: tipo,
+            precio_dos: data.precio_dos || 0,
+            modoVenta: "unidad", // 🔹 inicia vendiendo en cajas
+            descripcion_fabrica: data.descripcion_fabrica || "",
+            codigo_producto: data.codigo || "",
+          };
+          this.arrayDetalle.push(nuevoDetalle);
+          console.log("Nuevo detalle agregado (item compuesto):", nuevoDetalle);
+
+          // Obtener componentes y agregarlos a arrayProductos (cada componente con precioUnitario = precio_uno)
+          try {
+            const detalleResponse = await axios.get(
+              `/itemcompuesto/detalle/${data.id}`
+            );
+            const componentes = detalleResponse.data;
+            componentes.forEach((componente) => {
+              const qty = componente.cantidad || 1;
+              // Si el componente ya existe en arrayProductos, aumentamos su cantidad y subTotal
+              const prodExist = this.arrayProductos.find(
+                (p) =>
+                  (p.codigoProducto &&
+                    componente.codigo &&
+                    p.codigoProducto === componente.codigo) ||
+                  p.descripcion === componente.nombre
+              );
+              if (prodExist) {
+                prodExist.cantidad = (prodExist.cantidad || 0) + qty;
+                prodExist.subTotal =
+                  (prodExist.cantidad || 0) * prodExist.precioUnitario;
+              } else {
+                const producto = {
+                  actividadEconomica: componente.actividadEconomica || "",
+                  codigoProductoSin: componente.codigoProductoSin || "",
+                  codigoProducto: componente.codigo || "",
+                  descripcion: componente.nombre,
+                  cantidad: qty,
+                  unidadMedida: componente.codigoClasificador || "",
+                  precioUnitario: componente.precio_uno,
+                  montoDescuento: 0,
+                  subTotal: componente.precio_uno * qty,
+                  numeroSerie: null,
+                  numeroImei: null,
+                };
+                this.arrayProductos.push(producto);
+              }
+            });
+          } catch (error) {
+            console.error(
+              "Error al obtener componentes del item compuesto:",
+              error
+            );
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text:
+                "No se pudo obtener el detalle de los componentes del item compuesto para el carrito.",
+            });
+          }
+
+          console.log("Detalle agregado (item compuesto):", nuevoDetalle);
+          this.$toast.add({
+            severity: "success",
+            summary: "Producto agregado",
+            detail: "El producto fue agregado al carrito correctamente",
+            life: 2500,
+          });
+        }
+
+        // ❌ No cerrar modal
+        // this.cerrarModal();
+      } else {
+        // Para servicios
+        const existente = this.arrayDetalle.find(
+          (d) => d.idarticulo === data.id && d.tipo === "servicio"
+        );
+
+        if (existente) {
+          existente.cantidad += 1;
+          existente.total = existente.cantidad * existente.precio;
+        } else {
+          const nuevoDetalle = {
+            id: Date.now(),
+            idkit: -1,
+            idarticulo: data.id,
+            articulo: data.nombre,
+            medida: data.medida || "",
+            unidad_envase: data.unidad_envase || 1,
+            cantidad: 1,
+            cantidad_paquetes: 1,
+            precio: data.precio_uno,
+            descuento: 0,
+            stock: null,
+            precioseleccionado: data.precio_uno,
+            total: data.precio_uno,
+            tipo: tipo,
+            codigo_producto: data.codigo,
+            modoVenta: "unidad", // 🔹 inicia vendiendo en cajas
+          };
+          this.arrayDetalle.push(nuevoDetalle);
+
+          const nuevoProducto = {
+            actividadEconomica: data.actividadEconomica || "",
+            codigoProductoSin: data.codigoProductoSin || "",
+            codigoProducto: data.codigo || "",
+            descripcion: data.nombre,
+            cantidad: 1,
+            unidadMedida: data.codigoClasificador || "",
+            precioUnitario: data.precio_uno,
+            montoDescuento: 0,
+            subTotal: data.precio_uno,
+            numeroSerie: null,
+            numeroImei: null,
+          };
+          this.arrayProductos.push(nuevoProducto);
+        }
+        this.$toast.add({
+          severity: "success",
+          summary: "Producto agregado",
+          detail: "El producto fue agregado al carrito correctamente",
+          life: 2500,
+        });
+
+        // ❌ No cerrar modal
+        // this.cerrarModal();
+      }
     },
     eliminarSeleccionado() {
       this.codigo = "";
@@ -3903,39 +4267,67 @@ export default {
     getAlmacenProductos(event) {
       this.idAlmacen = event.value;
     },
-    validarVenta() {
+    async validarVenta() {
       let me = this;
       me.errorVenta = 0;
       me.errorMostrarMsjVenta = [];
-      let condicion = true;
-      me.arrayDetalle.forEach(function (x) {
+      let errores = [];
+      const promesas = me.arrayDetalle.map(async function (x) {
+        // Si es servicio, no validar stock
+        if (x.tipo === "servicio") {
+          return;
+        }
+        // Si es compuesto, validar stock de los hijos
+        if (x.tipo === "itemcompuesto") {
+          try {
+            const response = await axios.post(
+              "/articulo/verificarStockCompuesto",
+              {
+                idarticulo: x.idarticulo,
+                cantidad: x.cantidad,
+                idalmacen: me.idAlmacen,
+              }
+            );
+            if (!response.data.success) {
+              response.data.faltantes.forEach((faltante) => {
+                let art = `El Item Compuesto: "${x.articulo}", no tiene stock suficiente en el item "${faltante.nombre_item}" (disponible "${faltante.stock}" requerido "${faltante.requerido}")`;
+                errores.push(art);
+              });
+            }
+          } catch (error) {
+            errores.push(
+              `Error al verificar stock de compuesto: ${x.articulo}`
+            );
+          }
+          return;
+        }
+        // Normal: validar stock propio
         if (x.cantidad > x.stock) {
           let art = `${x.articulo}: Stock insuficiente`;
-          me.errorMostrarMsjVenta.push(art);
-          condicion = false;
+          errores.push(art);
         }
       });
+      await Promise.all(promesas);
       if (me.tipo_comprobante == 0) {
-        me.errorMostrarMsjVenta.push("Seleccione el Comprobante");
-        condicion = false;
+        errores.push("Seleccione el Comprobante");
       }
       if (!me.impuesto) {
-        me.errorMostrarMsjVenta.push("Ingrese el impuesto de compra");
-        condicion = false;
+        errores.push("Ingrese el impuesto de compra");
       }
       if (me.arrayDetalle.length <= 0) {
-        me.errorMostrarMsjVenta.push("Ingrese detalles");
-        condicion = false;
+        errores.push("Ingrese detalles");
       }
-      if (me.errorMostrarMsjVenta.length > 0) {
+      if (errores.length > 0) {
         me.errorVenta = 1;
+        me.errorMostrarMsjVenta = errores;
         swal({
           type: "error",
           title: "Error en la venta",
-          text: me.errorMostrarMsjVenta.join("\n"),
+          text: errores.join("\n"),
         });
+        return false;
       }
-      return condicion;
+      return true;
     },
     aplicarDescuento(idtipopago) {
       this.tipo_comprobante = "FACTURA";
@@ -4325,82 +4717,82 @@ export default {
     },
 
     async buscarOCrearCliente() {
-  try {
-    // 🔍 Buscar si existe por documento
-    const response = await axios.get(
-      `/api/clientes/existe?documento=${this.documento}`
-    );
+      try {
+        // 🔍 Buscar si existe por documento
+        const response = await axios.get(
+          `/api/clientes/existe?documento=${this.documento}`
+        );
 
-    // =============================
-    // ✅ CLIENTE EXISTE
-    // =============================
-    if (response.data.existe) {
-      const c = response.data.cliente;
+        // =============================
+        // ✅ CLIENTE EXISTE
+        // =============================
+        if (response.data.existe) {
+          const c = response.data.cliente;
 
-      this.idcliente = c.id;
-      this.nombreCliente = c.nombre;
-      this.tipo_documento = c.tipo_documento;
-      this.complemento_id = c.complemento_id;
-      this.telefonoCliente = c.telefono;
-      this.emailCliente = c.email || null;
+          this.idcliente = c.id;
+          this.nombreCliente = c.nombre;
+          this.tipo_documento = c.tipo_documento;
+          this.complemento_id = c.complemento_id;
+          this.telefonoCliente = c.telefono;
+          this.emailCliente = c.email || null;
 
-      this.clienteExistente = true;
+          this.clienteExistente = true;
 
-      // 🔒 BLOQUEAR CAMPOS
-      this.nombreClienteEditable = false;
-      this.telefonoClienteEditable = false;
-      this.direccionCliente = c.direccion || '';
-      this.direccionClienteEditable = false;
-
-
-      return;
-    }
-
-    // =============================
-    // ❌ CLIENTE NO EXISTE
-    // =============================
-    this.clienteExistente = false;
-
-    // 🔓 PERMITIR ESCRIBIR (no limpiar los valores ya ingresados)
-    this.nombreClienteEditable = true;
-    this.telefonoClienteEditable = true;
-    this.direccionClienteEditable = true;
+          // 🔒 BLOQUEAR CAMPOS
+          this.nombreClienteEditable = false;
+          this.telefonoClienteEditable = false;
+          this.direccionCliente = c.direccion || '';
+          this.direccionClienteEditable = false;
 
 
-    // 🛑 VALIDACIÓN MÍNIMA
-    if (!this.nombreCliente || this.nombreCliente.trim() === "") {
-      throw new Error("Debe ingresar la Razón Social del cliente");
-    }
+          return;
+        }
 
-    // =============================
-    // ➕ CREAR CLIENTE
-    // =============================
-    const nuevoClienteResponse = await axios.post("/cliente/registrar", {
-      nombre: this.nombreCliente,
-      num_documento: this.documento,
-      tipo_documento: this.tipo_documento,
-      direccion: this.direccionCliente ? this.direccionCliente : null, 
-      telefono: this.telefonoCliente || null,
-      email: this.emailCliente || null
-    });
+        // =============================
+        // ❌ CLIENTE NO EXISTE
+        // =============================
+        this.clienteExistente = false;
 
-    this.idcliente = nuevoClienteResponse.data.id;
-    this.clienteExistente = false;
+        // 🔓 PERMITIR ESCRIBIR (no limpiar los valores ya ingresados)
+        this.nombreClienteEditable = true;
+        this.telefonoClienteEditable = true;
+        this.direccionClienteEditable = true;
 
-  } catch (error) {
-    console.error("Error al buscar o crear cliente:", error);
 
-    // 🔥 Cortar flujo de venta
-    this.$toast.add({
-      severity: "error",
-      summary: "Cliente",
-      detail: error.message || "Error al registrar cliente",
-      life: 3000
-    });
+        // 🛑 VALIDACIÓN MÍNIMA
+        if (!this.nombreCliente || this.nombreCliente.trim() === "") {
+          throw new Error("Debe ingresar la Razón Social del cliente");
+        }
 
-    throw error; // ⛔ IMPORTANTE
-  }
-},
+        // =============================
+        // ➕ CREAR CLIENTE
+        // =============================
+        const nuevoClienteResponse = await axios.post("/cliente/registrar", {
+          nombre: this.nombreCliente,
+          num_documento: this.documento,
+          tipo_documento: this.tipo_documento,
+          direccion: this.direccionCliente ? this.direccionCliente : null,
+          telefono: this.telefonoCliente || null,
+          email: this.emailCliente || null
+        });
+
+        this.idcliente = nuevoClienteResponse.data.id;
+        this.clienteExistente = false;
+
+      } catch (error) {
+        console.error("Error al buscar o crear cliente:", error);
+
+        // 🔥 Cortar flujo de venta
+        this.$toast.add({
+          severity: "error",
+          summary: "Cliente",
+          detail: error.message || "Error al registrar cliente",
+          life: 3000
+        });
+
+        throw error; // ⛔ IMPORTANTE
+      }
+    },
 
     async registrarVenta(idtipo_pago, idtipo_venta) {
       if (this.validarVenta()) {
@@ -5177,7 +5569,7 @@ export default {
       this.arrayDetalle = [];
       this.precioBloqueado = false;
       this.telefonoClienteEditable = false;
-      this.direccionClienteEditable= false;
+      this.direccionClienteEditable = false;
       this.nombreClienteEditable = false; // Asegura que el input esté deshabilitado en caso de erro
       this.mensajeRazonSocial = false;
       this.listarVenta(
@@ -5262,6 +5654,7 @@ export default {
 
     abrirModal() {
       this.scrollToTop();
+      this.listarItemCompuesto("", "");
       //this.selectAlmacen();
       this.arrayArticulo = [];
       this.modal = true;
@@ -5424,8 +5817,8 @@ export default {
             this.telefonoClienteEditable = true;
             this.mensajeRazonSocial = true;
             this.direccionClienteEditable = true;
-            
-              this.direccionCliente = "";
+
+            this.direccionCliente = "";
           });
       }, 300);
     },
@@ -5496,7 +5889,7 @@ export default {
     async verificarAutorizacionDescuento() {
       try {
         const response = await axios.get("/verificar-descuento");
-        this.puedeDescontar = response.data.puedeDescontar; 
+        this.puedeDescontar = response.data.puedeDescontar;
       } catch (error) {
         console.error("Error al verificar autorización de descuento:", error);
       }
@@ -5567,6 +5960,51 @@ export default {
 </script>
 
 <style scoped>
+.dialog-combo .p-dialog-header {
+  padding: 0;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.icon-header {
+  font-size: 2rem;
+  color: #3f51b5;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.dialog-content {
+  padding: 0 1.25rem 1rem;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1.25rem;
+}
+
+.cantidad-badge {
+  background: #eef2ff;
+  color: #3f51b5;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
 .precio-wrapper {
   display: flex;
   align-items: center;
