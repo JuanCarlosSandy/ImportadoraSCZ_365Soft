@@ -35,7 +35,7 @@
         responsiveLayout="scroll">
         <Column v-for="(column, index) in computedColumns" :key="index" :field="column.field" :header="column.header">
           <template #body="slotProps">
-            <span v-if="column.type === 'button' && idrol !== 2"
+            <span v-if="column.type === 'button'"
               class="d-flex align-items-center justify-content-center gap-1">
               <Button v-if="column.field === 'acciones'" icon="pi pi-pencil" class="p-button-warning btn-mini"
                 @click="abrirModal('articulo', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
@@ -802,6 +802,19 @@ export default {
     },
   },
   methods: {
+    validarPermisoVendedor() {
+      if (this.idrol === 2) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Acceso Restringido',
+          text: 'Solo el Super Administrador o Administrador puede editar los datos de los medicamentos.',
+          confirmButtonColor: '#3085d6',
+          confirmButtonText: 'Entendido'
+        });
+        return false; 
+      }
+      return true; 
+    },
     onPrecioPaqChange(e) {
       this.datosFormulario.precio_costo_paq = e.value;
 
@@ -1734,6 +1747,7 @@ export default {
     },
 
     async desactivarArticulo(id) {
+            if (!this.validarPermisoVendedor()) return;
       try {
         const result = await Swal.fire({
           title: "¿Está seguro de ELIMINAR este artículo?",
@@ -1782,6 +1796,7 @@ export default {
     },
 
     activarArticulo(id) {
+      if (!this.validarPermisoVendedor()) return;
       Swal.fire({
         title: "¿Está seguro de activar este artículo?",
         icon: "warning",
@@ -1867,7 +1882,11 @@ export default {
       this.fecha_venc_descuento = null;
       this.intentoEnviar = false;
     },
-    async abrirModal(modelo, accion, data = []) {
+   async abrirModal(modelo, accion, data = []) {
+      if (modelo === 'articulo' && accion === 'actualizar') {
+        if (!this.validarPermisoVendedor()) return;
+      }
+
       switch (modelo) {
         case "articulo": {
           switch (accion) {
