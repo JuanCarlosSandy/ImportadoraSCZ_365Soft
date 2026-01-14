@@ -1,5 +1,13 @@
 <template>
   <main class="main">
+
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">LOADING...</div>
+      </div>
+    </div>
+
     <Panel>
       <!-- Encabezado del Panel -->
       <template #header>
@@ -1263,6 +1271,7 @@ export default {
   },
   data() {
     return {
+       isLoading: false,
       // CONTROL DE VISTAS
       listado: 1, // 1 = listado, 2 = detalle
       modoVista: "lectura", // lectura | edicion
@@ -2370,6 +2379,10 @@ export default {
 
     listaReporte() {
       let me = this;
+       me.isLoading = true;
+            
+       me.modal = false; 
+
       var url = "/resumen-ventas-documento?";
 
       url += "sucursal=" + this.sucursalseleccionada.id;
@@ -2433,7 +2446,11 @@ export default {
         .catch(function(error) {
           console.error("ERROR:", error);
           me.$swal.fire("Error", "No se pudo generar el reporte", "error");
-        });
+        }) .finally(function() {
+                    setTimeout(() => {
+                        me.isLoading = false;
+                    }, 500);
+          });
     },
 
     calcularTotalVentas() {
@@ -4655,5 +4672,48 @@ body.modal-open {
 .detalle-footer-pro {
   margin-top: 2rem;
   text-align: right;
+}
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 30px;
+  border-radius: 15px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
