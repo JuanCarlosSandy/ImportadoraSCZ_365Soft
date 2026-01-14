@@ -276,6 +276,8 @@ export default {
 
       this.isLoading = true;
 
+      const cambioImagenes = this.logoFile !== null || this.fondoFile !== null;
+
       const formData = new FormData();
       formData.append("nombre", this.nombre);
       formData.append("direccion", this.direccion);
@@ -297,17 +299,43 @@ export default {
           headers: { "Content-Type": "multipart/form-data" },
         })
         .then((response) => {
-          this.estadoInputs = true;
-          this.logoFile = null;
-          this.fondoFile = null;
-          this.imagenTemporal = null;
-          this.imagenFondoTemporal = null;
-          // Agregar timestamp para forzar recarga de imágenes
-          const timestamp = new Date().getTime();
-          this.imagenTemporal = this.imagenTemporal ? this.imagenTemporal + '?t=' + timestamp : null;
-          this.imagenFondoTemporal = this.imagenFondoTemporal ? this.imagenFondoTemporal + '?t=' + timestamp : null;
-          this.toastSuccess("Actualización Exitosa");
-          this.datosEmpresa();
+          this.isLoading = false;
+
+          if (cambioImagenes) {
+            
+            
+            Swal.fire({
+              title: "Cambios guardados",
+              text: "Para visualizar el nuevo logo o fondo correctamente, es necesario actualizar la página.",
+              icon: "info",
+              showCancelButton: false,
+              confirmButtonColor: "#3085d6",
+              confirmButtonText: "Actualizar página",
+              allowOutsideClick: false,
+              allowEscapeKey: false
+            }).then((result) => {
+              if (result.isConfirmed) {
+                window.location.reload();
+              }
+            });
+
+          } else {
+            this.estadoInputs = true;
+            this.logoFile = null;
+            this.fondoFile = null;
+            
+           
+            const timestamp = new Date().getTime();
+            if (this.imagenTemporal && !this.imagenTemporal.startsWith('data:')) {
+               this.imagenTemporal = this.imagenTemporal.split('?')[0] + '?t=' + timestamp;
+            }
+            if (this.imagenFondoTemporal && !this.imagenFondoTemporal.startsWith('data:')) {
+               this.imagenFondoTemporal = this.imagenFondoTemporal.split('?')[0] + '?t=' + timestamp;
+            }
+
+            this.toastSuccess("Actualización Exitosa");
+            this.datosEmpresa();
+          }
         })
         .catch((error) => {
           console.log(error);
@@ -319,6 +347,7 @@ export default {
           });
         });
     },
+
     validarEmpresa() {
       this.errorEmpresa = 0;
       this.errorMostrarMsjEmpresa = [];
