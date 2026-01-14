@@ -83,37 +83,54 @@ class EmpresaController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
-{
-    if (!$request->ajax()) return redirect('/');
+    {
+        if (!$request->ajax()) return redirect('/');
 
-    $empresa = Empresa::findOrFail($request->id);
+        $empresa = Empresa::findOrFail($request->id);
 
-    $empresa->nombre = $request->nombre;
-    $empresa->direccion = $request->direccion;
-    $empresa->telefono = $request->telefono;
-    $empresa->email = $request->email;
-    $empresa->nit = $request->nit;
+        $empresa->nombre = $request->nombre;
+        $empresa->direccion = $request->direccion;
+        $empresa->telefono = $request->telefono;
+        $empresa->email = $request->email;
+        $empresa->nit = $request->nit;
 
-    // Manejo del logo
-    if ($request->hasFile('logo')) {
+        // Manejo del logo
+        if ($request->hasFile('logo')) {
 
-        $rutaDestino = public_path('img/logoPrincipal.png');
+            $rutaDestino = public_path('img/logoPrincipal.png');
 
-        // Eliminar logo anterior si existe
-        if (File::exists($rutaDestino)) {
-            File::delete($rutaDestino);
+            // Eliminar logo anterior si existe
+            if (File::exists($rutaDestino)) {
+                File::delete($rutaDestino);
+            }
+
+            // Convertir a PNG
+            Image::make($request->file('logo'))
+                ->encode('png', 90) // calidad 0–100
+                ->save($rutaDestino);
         }
 
-        // Convertir a PNG
-        Image::make($request->file('logo'))
-            ->encode('png', 90) // calidad 0–100
-            ->save($rutaDestino);
+        // Manejo de la imagen de fondo del login
+        if ($request->hasFile('backLoginFarma')) {
+
+            $rutaDestino = public_path('img/BackLoginFarma.jpg');
+
+            // Eliminar imagen anterior si existe
+            if (File::exists($rutaDestino)) {
+                File::delete($rutaDestino);
+            }
+
+            // Convertir a JPG
+            Image::make($request->file('backLoginFarma'))
+                ->encode('jpg', 90) // calidad 0–100
+                ->save($rutaDestino);
+        }
+
+        $empresa->save();
+
+        return response()->json(['success' => true]);
     }
 
-    $empresa->save();
-
-    return response()->json(['success' => true]);
-}
 
     /**
      * Remove the specified resource from storage.
