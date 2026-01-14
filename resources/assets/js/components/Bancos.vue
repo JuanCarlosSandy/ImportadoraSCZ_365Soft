@@ -136,15 +136,16 @@
 
             <template #footer>
                 <Button v-if="paso === 2" label="Volver" icon="pi pi-arrow-left" class="p-button-sm p-button-secondary btn-sm"
-                    @click="volverAPaso1" />
+                    @click="volverAPaso1" :disabled="isLoading" />
 
-                <Button label="Cerrar" icon="pi pi-times" class="p-button-sm p-button-danger btn-sm" @click="cerrarModal()" />
+                <Button label="Cerrar" icon="pi pi-times" class="p-button-sm p-button-danger btn-sm" @click="cerrarModal()" 
+                    :disabled="isLoading" />
 
                 <Button v-if="tipoAccion == 1 && paso === 2" icon="pi pi-check" label="Guardar"
-                    class="p-button-sm p-button-success btn-sm" @click="enviarFormulario" />
+                    class="p-button-sm p-button-success btn-sm" @click="enviarFormulario" :disabled="isLoading" />
 
                 <Button v-if="tipoAccion == 2 && paso === 2" icon="pi pi-check" label="Actualizar"
-                    class="p-button-sm p-button-success btn-sm" @click="enviarFormulario" />
+                    class="p-button-sm p-button-success btn-sm" @click="enviarFormulario" :disabled="isLoading" />
             </template>
         </Dialog>
     </main>
@@ -389,6 +390,7 @@ export default {
             me.listarBancos(page, buscar);
         },
         registrarBanco(datos) {
+            this.isLoading = true;
             axios.post('/bancos/registrar', datos)
                 .then(response => {
                     this.cerrarModal();
@@ -400,11 +402,18 @@ export default {
                 })
                 .catch(error => {
                     console.error('Error al agregar un banco:', error);
+                })
+                .finally(() => {
+                    // Desactivar loading con un pequeño retraso visual
+                    setTimeout(() => {
+                        this.isLoading = false;
+                    }, 500);
                 });
 
         },
 
         actualizarBanco(datos) {
+            this.isLoading = true;
             console.log(datos)
 
             axios.put(`/bancos/actualizar`, datos)
@@ -415,6 +424,12 @@ export default {
                 })
                 .catch(error => {
                     console.error('Error al actualizar el banco:', error);
+                })
+                .finally(() => {
+                    // Desactivar loading con un pequeño retraso visual
+                    setTimeout(() => {
+                        this.isLoading = false;
+                    }, 500);
                 });
         },
 
