@@ -5,7 +5,7 @@
 <div class="content" id="app">
   <!-- Logo en la esquina inferior derecha -->
   <div class="logo-container">
-    <img src="{{ asset('img/logojugueteria.jpg') }}" alt="Logo" class="login-logo">
+    <img src="{{ asset('img/logoPrincipal.png') }}" alt="Logo" class="login-logo">
   </div>
 
   <!-- Formulario central -->

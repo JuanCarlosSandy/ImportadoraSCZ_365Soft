@@ -10225,8 +10225,8 @@ base-chart.chart {
   background-repeat: no-repeat;
   background-position: center center;
   border-bottom: 1px solid #c2cfd6;
-  width: 60px;  
-  height: 60px;  
+  width: 50px;  
+  height: 50px;  
   object-fit: cover; 
   margin-left: 15px;
 }
@@ -12802,11 +12802,11 @@ hr.transparent {
   );*/
   background: linear-gradient(
   90deg,
-  #3BAB00 0%,
-  #088F05 20%,
-  #46A13A 40%,
-  #184b94 70%,
-  #010573 100%
+  #e35417 0%,
+  #b37c1e 20%,
+  #c2911f 40%,
+  #d4571e 70%,
+  #b01510 100%
 );
         
   color: #ffffff;

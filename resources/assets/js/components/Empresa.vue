@@ -7,7 +7,7 @@
             <i class="pi pi-bars panel-icon"></i>
             <h4 class="panel-title" style="margin: 0;">DATOS DE EMPRESA</h4>
           </div>
-          <Button v-if="estadoInputs" icon="pi pi-pencil" :label="mostrarLabel ? 'Nuevo' : ''"
+          <Button v-if="estadoInputs" icon="pi pi-pencil" :label="mostrarLabel ? 'Editar' : ''"
             class="p-button-secondary p-button-sm" @click="estadoCampos"
             style="background-color: #f59e0b; border: none; color: white; padding: 0.75rem 1.5rem; font-weight: bold; font-size: 1rem;" />
         </div>
