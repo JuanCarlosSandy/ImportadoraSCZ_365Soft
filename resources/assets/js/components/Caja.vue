@@ -68,6 +68,8 @@
               </template>
             </div>
             <div v-else>
+              <Button icon="pi pi-file-pdf" class="p-button-danger p-button-sm btn-mini"
+                  @click="generarReporte(slotProps.data.id)" v-tooltip.top="'Reporte'" />
               <Button icon="pi pi-eye" class="p-button-warning p-button-sm btn-mini"
                 @click="abrirModal4('cajaVer', 'ver', slotProps.data.id)" v-tooltip.top="'Ver'" />
             </div>
