@@ -5934,6 +5934,7 @@ export default {
     document.addEventListener("keypress", this.handleKeyPress);
     window.addEventListener("keydown", this.handleKeyPress);
     try {
+      this.isLoading = true; // Activar loading al iniciar
       await Promise.all([
         //this.ejecutarSecuencial(),
         this.datosConfiguracion(),
@@ -5944,6 +5945,8 @@ export default {
       ]);
     } catch (error) {
       swal("Error", "Hubo un problema al cargar los datos iniciales", "error");
+    } finally {
+      this.isLoading = false; // Desactivar loading cuando todo termina
     }
   },
   beforeUnmount() {
