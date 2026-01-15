@@ -400,10 +400,13 @@ export default {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     try {
+      this.isLoading = true; // Activar loading al iniciar
       await Promise.all([this.selectAlmacen()]);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
       Swal.fire("Error", "Error al cargar los datos iniciales", "error");
+    } finally {
+      this.isLoading = false; // Desactivar loading cuando todo termina
     }
   },
   beforeUnmount() {
