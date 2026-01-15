@@ -1156,6 +1156,7 @@ export default {
 
     async listarAjuste(page, buscar, criterio) {
       try {
+        this.isLoading = true; // Activar loading
         let me = this;
         var url = `/ajusteinv?page=${page}&buscar=${buscar || ""}&categoria=${this.categoria
           }`;
@@ -1166,6 +1167,8 @@ export default {
         me.pagination = respuesta.pagination;
       } catch (error) {
         console.error("Error al listar artículos:", error);
+      } finally {
+        this.isLoading = false; // Desactivar loading al completar o en error
       }
     },
 
@@ -1676,6 +1679,7 @@ export default {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     try {
+      this.isLoading = true; // Activar loading al iniciar
       await Promise.all([
         this.selectAlmacen(),
         this.recuperarIdRol(),
@@ -1686,6 +1690,8 @@ export default {
     } catch (error) {
       console.error("Error en la carga inicial:", error);
       swal("Error", "Error al cargar los datos iniciales", "error");
+    } finally {
+      this.isLoading = false; // Desactivar loading cuando todo termina
     }
   },
   beforeUnmount() {
