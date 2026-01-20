@@ -37,7 +37,7 @@
         <Column field="fechaCierre" header="Fecha Cierre" style="min-width: 130px;" />
         <Column field="saldoInicial" header="Saldo Inicial" style="min-width: 110px; text-align: right;" />
         <Column field="ventasContado" header="Cobros Efectivo" style="min-width: 120px; text-align: right;" />
-        <Column field="ventasQR" header="Cobros Banco" style="min-width: 100px; text-align: right;" />
+        <Column field="ventasQR" header="Cobros QR" style="min-width: 100px; text-align: right;" />
         <Column field="depositos" header="Depósitos Extras" style="min-width: 120px; text-align: right;" />
         <Column field="salidas" header="Salidas Extras" style="min-width: 120px; text-align: right;" />
         <!--<Column field="saldoCaja" header="Saldo Caja" style="min-width: 120px; text-align: right;" />-->
@@ -527,13 +527,13 @@ generarReporte(idCaja) {
     showDenyButton: true,
     showConfirmButton: true,
     confirmButtonText: 'Efectivo',
-    denyButtonText: 'Banco',
+    denyButtonText: 'QR',
     cancelButtonText: 'Completo',
     reverseButtons: true
   }).then((result) => {
     let tipo = 'completo';
     if (result.isConfirmed) tipo = 'efectivo';
-    else if (result.isDenied) tipo = 'banco';
+    else if (result.isDenied) tipo = 'qr';
 
     // Descargar PDF automáticamente
     const url = `/reporte/caja/${idCaja}?tipo=${tipo}`;

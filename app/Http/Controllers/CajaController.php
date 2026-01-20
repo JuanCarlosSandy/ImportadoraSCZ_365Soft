@@ -223,7 +223,7 @@ class CajaController extends Controller
 
 public function generarReporte($idCaja, Request $request)
 {
-    $tipo = $request->query('tipo', 'completo'); // efectivo, banco o completo
+    $tipo = trim(strtolower($request->query('tipo', 'completo'))); // efectivo, qr o completo
     $caja = Caja::findOrFail($idCaja);
     $idsucursal = $caja->idsucursal;
 
@@ -252,27 +252,21 @@ public function generarReporte($idCaja, Request $request)
         ->get();
 
     foreach ($ventas as $venta) {
-        $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'banco' : 'otros');
-        $banco = null;
-
-        if ($venta->idtipo_pago == 7 && $venta->idbanco) {
-            $b = \DB::table('bancos')->find($venta->idbanco);
-            if ($b) $banco = ['id' => $b->id, 'nombre_banco' => $b->nombre_banco];
-        }
+        $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : 'otros');
 
         $cliente = \DB::table('personas')->find($venta->idcliente);
         $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
 
-        if ($tipo === 'efectivo' && $tipo_pago !== 'efectivo') continue;
-        if ($tipo === 'banco' && $tipo_pago !== 'banco') continue;
+        // Filtrado por tipo de reporte
+        if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
 
         $historial[] = [
             'fecha' => $venta->fecha_hora,
             'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
             'tipo_pago' => $tipo_pago,
             'monto' => floatval($venta->total),
-            'idbanco' => $banco['id'] ?? null,
-            'nombre_banco' => $banco['nombre_banco'] ?? null,
+            'idbanco' => null,
+            'nombre_banco' => null,
             'tipo' => 'venta'
         ];
     }
@@ -287,18 +281,7 @@ $cuotas = \DB::table('cuotas_credito')
 
 foreach ($cuotas as $cuota) {
 
-    $tipo_pago = $cuota->idtipo_pago == 1 ? 'efectivo' : 'banco';
-    $banco = null;
-
-    if ($cuota->idtipo_pago == 7 && $cuota->idbanco) {
-        $b = \DB::table('bancos')->find($cuota->idbanco);
-        if ($b) {
-            $banco = [
-                'id' => $b->id,
-                'nombre_banco' => $b->nombre_banco
-            ];
-        }
-    }
+    $tipo_pago = $cuota->idtipo_pago == 1 ? 'efectivo' : 'qr';
 
     // =========================
     // 👉 COBRO ADELANTADO (saldo a favor)
@@ -308,16 +291,16 @@ foreach ($cuotas as $cuota) {
         $cliente = \DB::table('personas')->find($cuota->idcliente);
         $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
 
-        if ($tipo === 'efectivo' && $tipo_pago !== 'efectivo') continue;
-        if ($tipo === 'banco' && $tipo_pago !== 'banco') continue;
+        // Filtrado por tipo de reporte
+        if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
 
         $historial[] = [
             'fecha' => $cuota->fecha_pago,
             'detalle' => 'Cobro Adelantado - ' . $nombreCliente,
             'tipo_pago' => $tipo_pago,
             'monto' => floatval($cuota->precio_cuota), // ✅ suma
-            'idbanco' => $banco['id'] ?? null,
-            'nombre_banco' => $banco['nombre_banco'] ?? null,
+            'idbanco' => null,
+            'nombre_banco' => null,
             'tipo' => 'cuota'
         ];
 
@@ -340,16 +323,16 @@ if (!$ventaRelacionada) {
     $cliente = \DB::table('personas')->find($idCliente);
     $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
 
-    if ($tipo === 'efectivo' && $tipo_pago !== 'efectivo') continue;
-    if ($tipo === 'banco' && $tipo_pago !== 'banco') continue;
+    // Filtrado por tipo de reporte
+    if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
 
     $historial[] = [
         'fecha' => $cuota->fecha_pago,
         'detalle' => 'Cobro Cuota N° ' . $numComprobante . ' - ' . $nombreCliente,
         'tipo_pago' => $tipo_pago,
         'monto' => floatval($cuota->precio_cuota),
-        'idbanco' => $banco['id'] ?? null,
-        'nombre_banco' => $banco['nombre_banco'] ?? null,
+        'idbanco' => null,
+        'nombre_banco' => null,
         'tipo' => 'cuota'
     ];
 }
@@ -367,21 +350,10 @@ if (!$ventaRelacionada) {
 
 foreach ($transacciones as $trans) {
 
-    $tipo_pago = $trans->tipo_pago == 1 ? 'efectivo' : ($trans->tipo_pago == 7 ? 'banco' : 'otros');
-    $banco = null;
+    $tipo_pago = $trans->tipo_pago == 1 ? 'efectivo' : ($trans->tipo_pago == 7 ? 'qr' : 'otros');
 
-    if ($trans->tipo_pago == 7 && $trans->idbanco) {
-        $b = \DB::table('bancos')->find($trans->idbanco);
-        if ($b) {
-            $banco = [
-                'id' => $b->id,
-                'nombre_banco' => $b->nombre_banco
-            ];
-        }
-    }
-
-    if ($tipo === 'efectivo' && $tipo_pago !== 'efectivo') continue;
-    if ($tipo === 'banco' && $tipo_pago !== 'banco') continue;
+    // Filtrado por tipo de reporte
+    if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
 
     $monto = floatval($trans->importe);
 
@@ -401,8 +373,8 @@ foreach ($transacciones as $trans) {
         'detalle' => $trans->transaccion,
         'tipo_pago' => $tipo_pago,
         'monto' => $monto,
-        'idbanco' => $banco['id'] ?? null,
-        'nombre_banco' => $banco['nombre_banco'] ?? null,
+        'idbanco' => null,
+        'nombre_banco' => null,
         'tipo' => 'transaccion'
     ];
 }

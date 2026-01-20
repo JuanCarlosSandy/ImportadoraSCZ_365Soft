@@ -124,7 +124,6 @@
                 <th>Fecha / Hora</th>
                 <th>Detalle</th>
                 <th>Tipo de Pago</th>
-                <th>Banco</th>
                 <th class="text-right">Monto</th>
                 <th class="text-right">Saldo Actual</th>
             </tr>
@@ -145,13 +144,12 @@
                         font-weight: bold;
                         color: 
                             @if(strtolower($item['tipo_pago']) === 'efectivo') #27ae60
-                            @elseif(strtolower($item['tipo_pago']) === 'banco') #2980b9
+                            @elseif(strtolower($item['tipo_pago']) === 'qr') #2980b9
                             @else #7f8c8d
                             @endif
                     ">
                                     {{ ucfirst($item['tipo_pago']) }}
                                 </td>
-                                <td>{{ $item['nombre_banco'] ?? '-' }}</td>
                                 <td class="text-right">
                                     @if($item['monto'] < 0)
                                         <span class="saldo-negativo">{{ number_format($item['monto'], 2) }}</span>
