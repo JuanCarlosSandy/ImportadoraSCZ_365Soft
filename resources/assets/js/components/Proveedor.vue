@@ -44,7 +44,7 @@
       <DataTable
         :value="arrayPersona"
         :paginator="true"
-        :rows="9"
+        :rows="25"
         :totalRecords="pagination.total"
         :lazy="true"
         @page="onPageChange"
@@ -61,16 +61,49 @@
             />
           </template>
         </Column>
-        <Column field="nombre" header="Nombre_proveedor"></Column>
-        <template>
-          <Column field="documento" header="Documento">
-            <template #body="slotProps">
-              {{ getDocumento(slotProps.data) }}
-            </template>
-          </Column>
-        </template>
-        <Column field="telefono" header="Teléfono"></Column>
-        <Column field="contacto" header="Contacto"></Column>
+        <Column field="nombre" header="Nombre Proveedor"></Column>
+        <Column field="documento" header="Documento">
+          <template #body="slotProps">
+            {{ getDocumento(slotProps.data) }}
+          </template>
+        </Column>
+        <Column field="telefono" header="Teléfono">
+          <template #body="slotProps">
+            <span v-if="slotProps.data.telefono" class="text-success">
+              {{ slotProps.data.telefono }}
+            </span>
+            <span v-else class="datos-no-registrados">
+              <i class="pi pi-exclamation-triangle"></i>
+              Datos no registrados
+            </span>
+          </template>
+        </Column>
+        
+        <!-- Columnas de Contacto - Ocultas para rol Vendedor
+        <Column v-if="!esVendedor" field="contacto" header="Contacto">
+          <template #body="slotProps">
+            <span v-if="slotProps.data.contacto" class="text-success">
+              {{ slotProps.data.contacto }}
+            </span>
+            <span v-else class="datos-no-registrados">
+              <i class="pi pi-exclamation-triangle"></i>
+              Datos no registrados
+            </span>
+          </template>
+        </Column>
+        
+        <Column v-if="!esVendedor" field="telefono_contacto" header="Teléfono de Contacto">
+          <template #body="slotProps">
+            <span v-if="slotProps.data.telefono_contacto" class="text-success">
+              {{ slotProps.data.telefono_contacto }}
+            </span>
+            <span v-else class="datos-no-registrados">
+              <i class="pi pi-exclamation-triangle"></i>
+              Datos no registrados
+            </span>
+          </template>
+        </Column>
+         -->
       </DataTable>
     </Panel>
 
@@ -87,7 +120,10 @@
       <form @submit.prevent="enviarFormulario">
         <div class="p-fluid p-formgrid p-grid">
           <div class="p-field p-col-12 p-md-6">
-            <label for="nombre">Nombre del proveedor</label>
+            <label for="nombre" class="required-field">
+              Nombre del Proveedor 
+              <span class="required-icon">*</span>
+            </label>
             <InputText
               id="nombre"
               v-model="datosFormulario.nombre"
@@ -100,10 +136,10 @@
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="tipo_documento"
-              >Tipo de documento
-              <span class="p-tag p-tag-secondary">Opcional</span></label
-            >
+            <label for="tipo_documento">
+              Tipo de documento
+              <span class="p-tag p-tag-secondary">Opcional</span>
+            </label>
             <Dropdown
               id="tipo_documento"
               v-model="datosFormulario.tipo_documento"
@@ -111,60 +147,64 @@
               optionLabel="etiqueta"
               optionValue="valor"
               placeholder="Selecciona un tipo de documento"
-              
+              :class="{ 'p-invalid': errores.tipo_documento }"
+              @change="validarCampo('tipo_documento')"
             />
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="num_documento"
-              >Nro de documento
-              <span class="p-tag p-tag-secondary">Opcional</span></label
-            >
+            <label for="num_documento">
+              Nro de documento
+              <span class="p-tag p-tag-secondary">Opcional</span>
+            </label>
             <InputText
               id="num_documento"
               v-model="datosFormulario.num_documento"
-              
+              :class="{ 'p-invalid': errores.num_documento }"
+              @input="validarCampo('num_documento')"
             />
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="telefono">Teléfono</label>
+            <label for="telefono">
+              Teléfono
+              <span class="p-tag p-tag-secondary">Opcional</span>
+            </label>
             <InputNumber
               id="telefono"
               v-model="datosFormulario.telefono"
+              :useGrouping="false"
               :class="{ 'p-invalid': errores.telefono }"
               @input="validarCampo('telefono')"
             />
-            <small class="p-error" v-if="errores.telefono">{{
-              errores.telefono
-            }}</small>
           </div>
 
+          <!-- CAMPOS AGREGADOS: Contacto y Teléfono de Contacto 
           <div class="p-field p-col-12 p-md-6">
-            <label for="contacto">Contacto</label>
+            <label for="contacto">
+              Contacto
+              <span class="p-tag p-tag-secondary">Opcional</span>
+            </label>
             <InputText
               id="contacto"
               v-model="datosFormulario.contacto"
-              :class="{ 'p-invalid': errores.contacto }"
-              @input="validarCampo('contacto')"
+              placeholder="Nombre de la persona de contacto"
             />
-            <small class="p-error" v-if="errores.contacto">{{
-              errores.contacto
-            }}</small>
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="telefono_contacto">Teléfono de contacto</label>
+            <label for="telefono_contacto">
+              Teléfono de Contacto
+              <span class="p-tag p-tag-secondary">Opcional</span>
+            </label>
             <InputNumber
               id="telefono_contacto"
               v-model="datosFormulario.telefono_contacto"
-              :class="{ 'p-invalid': errores.telefono_contacto }"
-              @input="validarCampo('telefono_contacto')"
+              placeholder="Teléfono del contacto"
+              :useGrouping="false"
             />
-            <small class="p-error" v-if="errores.telefono_contacto">{{
-              errores.telefono_contacto
-            }}</small>
           </div>
+          -->
         </div>
       </form>
 
@@ -222,7 +262,8 @@ export default {
     Dialog,
     Dropdown,
     InputNumber,
-  },directives: {
+  },
+  directives: {
     'tooltip': Tooltip
   },
   data() {
@@ -240,8 +281,8 @@ export default {
       datosFormulario: {
         nombre: "",
         documento: "",
-        //tipo_documento: '',
-        //num_documento: '',
+        tipo_documento: "",
+        num_documento: "",
         direccion: "",
         telefono: "",
         email: "",
@@ -272,6 +313,7 @@ export default {
       criterio: "todos",
       buscar: "",
       modalImportar: false,
+      esVendedor: false, // Nueva propiedad para controlar visibilidad
     };
   },
   computed: {
@@ -296,7 +338,7 @@ export default {
   },
   methods: {
     handleResize() {
-      this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
+      this.mostrarLabel = window.innerWidth > 768;
     },
     getDocumento(data) {
       const tipo = this.tiposDocumento[data.tipo_documento];
@@ -309,12 +351,12 @@ export default {
       return `${tipo} ${numero}`;
     },
     onPageChange(event) {
-      let page = event.page + 1; // PrimeVue pages are 0-based, while your logic uses 1-based
+      let page = event.page + 1;
       this.cambiarPagina(page, this.buscar, this.criterio);
     },
     async cambiarPagina(page, buscar, criterio) {
       try {
-        this.isLoading = true; // Activar loading
+        this.isLoading = true;
         this.pagination.current_page = page;
         await this.listarPersona(page, buscar, criterio);
       } catch (error) {
@@ -322,12 +364,19 @@ export default {
         swal("Error", "No se pudo cambiar de página", "error");
       } finally {
         setTimeout(() => {
-          this.isLoading = false; // Desactivar loading
+          this.isLoading = false;
         }, 500);
       }
     },
     async validarCampo(campo) {
       try {
+        const valor = this.datosFormulario[campo];
+        // No validar campos opcionales si están vacíos
+        const camposOpcionales = ['tipo_documento', 'num_documento', 'telefono'];
+        if (camposOpcionales.includes(campo) && (valor === null || valor === '' || valor === undefined)) {
+          this.errores[campo] = null;
+          return;
+        }
         await esquemaProveedor.validateAt(campo, this.datosFormulario);
         this.errores[campo] = null;
       } catch (error) {
@@ -338,37 +387,10 @@ export default {
       if (!this.datosFormulario.nombre) {
         swal({
           title: "¡Campo obligatorio!",
-          text: "El Nombre del proveedor es obligatorio.",
+          text: "El Nombre del Proveedor es obligatorio.",
           icon: "warning",
         });
-        return; // Detiene la ejecución si el nombre está vacío
-      }
-
-      if (!this.datosFormulario.telefono) {
-        swal({
-          title: "¡Campo obligatorio!",
-          text: "El Teléfono es obligatorio.",
-          icon: "warning",
-        });
-        return; // Detiene la ejecución si el teléfono está vacío
-      }
-
-      if (!this.datosFormulario.contacto) {
-        swal({
-          title: "¡Campo obligatorio!",
-          text: "El Contacto es obligatorio.",
-          icon: "warning",
-        });
-        return; // Detiene la ejecución si el contacto está vacío
-      }
-
-      if (!this.datosFormulario.telefono_contacto) {
-        swal({
-          title: "¡Campo obligatorio!",
-          text: "El Teléfono de contacto es obligatorio.",
-          icon: "warning",
-        });
-        return; // Detiene la ejecución si el teléfono de contacto está vacío
+        return;
       }
 
       await esquemaProveedor
@@ -403,11 +425,12 @@ export default {
     async listarPersona(page, buscar, criterio) {
       let me = this;
       try {
-        this.isLoading = true; // Activar loading
+        this.isLoading = true;
         const url = `/proveedor?page=${page}&buscar=${buscar}&criterio=${criterio}`;
         const response = await axios.get(url);
         const respuesta = response.data;
 
+        // Laravel paginate() devuelve un objeto con la propiedad "data"
         me.arrayPersona = respuesta.personas.data.map((persona) => {
           persona.documento = persona.tipo_documento
             ? `${me.getTipoDocumentoText(
@@ -416,13 +439,14 @@ export default {
             : "Documento no Registrado";
           return persona;
         });
+        
         me.pagination = respuesta.pagination;
       } catch (error) {
         console.error("Error al listar proveedores:", error);
         swal("Error", "No se pudieron cargar los proveedores", "error");
       } finally {
         setTimeout(() => {
-          this.isLoading = false; // Desactivar loading
+          this.isLoading = false;
         }, 500);
       }
     },
@@ -433,7 +457,7 @@ export default {
         }
 
         this.searchTimeout = setTimeout(async () => {
-          this.isLoading = true; // Activar loading
+          this.isLoading = true;
           await this.listarPersona(1, this.buscar, this.criterio);
         }, 300);
       } catch (error) {
@@ -443,7 +467,7 @@ export default {
     },
     async registrarPersona(data) {
       try {
-        this.isLoading = true; // Activar loading
+        this.isLoading = true;
         await axios.post("/proveedor/registrar", data);
         this.cerrarModal();
         await this.listarPersona(1, "", "nombre");
@@ -452,12 +476,12 @@ export default {
         console.error("Error al registrar:", error);
         swal("Error", "No se pudo registrar el proveedor", "error");
       } finally {
-        this.isLoading = false; // Desactivar loading
+        this.isLoading = false;
       }
     },
     async actualizarPersona(data) {
       try {
-        this.isLoading = true; // Activar loading
+        this.isLoading = true;
         await axios.put("/proveedor/actualizar", data);
         this.cerrarModal();
         await this.listarPersona(1, "", "nombre");
@@ -466,7 +490,7 @@ export default {
         console.error("Error al actualizar:", error);
         swal("Error", "No se pudo actualizar el proveedor", "error");
       } finally {
-        this.isLoading = false; // Desactivar loading
+        this.isLoading = false;
       }
     },
     cerrarModal() {
@@ -485,9 +509,7 @@ export default {
                 nombre: "",
                 tipo_documento: "",
                 num_documento: "",
-                direccion: "",
                 telefono: "",
-                email: "",
                 contacto: "",
                 telefono_contacto: "",
               };
@@ -503,19 +525,27 @@ export default {
           break;
       }
     },
+    verificarRolUsuario() {
+      // Verificar el rol del usuario logueado
+      if (window.userData && window.userData.rol) {
+        this.esVendedor = window.userData.rol === 2;
+      }
+    },
   },
   async mounted() {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
+    this.verificarRolUsuario(); // Verificar rol al montar
+    
     try {
-      this.isLoading = true; // Activar loading
+      this.isLoading = true;
       await this.listarPersona(1, this.buscar, this.criterio);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
       swal("Error", "Error al cargar los datos iniciales", "error");
     } finally {
       setTimeout(() => {
-        this.isLoading = false; // Desactivar loading
+        this.isLoading = false;
       }, 500);
     }
   },
@@ -523,6 +553,25 @@ export default {
 </script>
 
 <style scoped>
+/* Estilo para "Datos no registrados" */
+.datos-no-registrados {
+  color: #dc3545;
+  font-size: 0.85rem;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.datos-no-registrados i {
+  font-size: 0.9rem;
+}
+
+.text-success {
+  color: #28a745;
+  font-weight: 500;
+}
+
 /* Arreglar icono de lupa - Centrado perfecto */
 .search-bar .p-input-icon-left {
   position: relative;
@@ -551,21 +600,21 @@ export default {
 
 .input-container {
   position: relative;
-  padding-bottom: 20px; /* Aumentado de 8px a 12px para dar espacio al error */
-  margin-bottom: 8px; /* Agregado margen inferior pequeño */
+  padding-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .input-container .p-inputtext {
   width: 100%;
-  margin-bottom: 0; /* Eliminar margen inferior si existe */
+  margin-bottom: 0;
 }
 
 .error-message {
   position: absolute;
-  bottom: 2px; /* Ajustado para tener más espacio arriba del input */
+  bottom: 2px;
   left: 0;
-  font-size: 0.75rem; /* Tamaño de fuente más pequeño */
-  margin-top: 0; /* Eliminado margen superior */
+  font-size: 0.75rem;
+  margin-top: 0;
 }
 
 /* Panel Content Spacing */
@@ -590,16 +639,16 @@ export default {
 
 .responsive-dialog >>> .p-dialog-content {
   overflow-x: auto;
-  padding: 0.75rem 1rem; /* Reducido padding vertical */
+  padding: 0.75rem 1rem;
 }
 
 .responsive-dialog >>> .p-dialog-header {
-  padding: 0.75rem 1.5rem; /* Reducido padding vertical */
+  padding: 0.75rem 1.5rem;
   font-size: 1.1rem;
 }
 
 .responsive-dialog >>> .p-dialog-footer {
-  padding: 0.5rem 1.5rem; /* Reducido padding vertical */
+  padding: 0.5rem 1.5rem;
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -634,16 +683,16 @@ export default {
 
 /* Formulario compacto - Reducir espacios entre campos */
 .form-compact >>> .p-field {
-  margin-bottom: 0.25rem !important; /* Reducido de 0.5rem a 0.25rem */
+  margin-bottom: 0.25rem !important;
 }
 
 >>> .p-fluid .p-field {
-  margin-bottom: 0.25rem; /* Reducido de 0.5rem a 0.25rem */
+  margin-bottom: 0.25rem;
 }
 
 /* Reducir padding del contenedor del diálogo */
 .responsive-dialog >>> .p-dialog-content {
-  padding: 0.75rem 1rem !important; /* Reducido padding vertical */
+  padding: 0.75rem 1rem !important;
 }
 
 /* Estilos para campos obligatorios */
@@ -748,16 +797,16 @@ export default {
   }
 
   .responsive-dialog >>> .p-dialog-content {
-    padding: 0.5rem 0.75rem; /* Más compacto en móviles */
+    padding: 0.5rem 0.75rem;
   }
 
   .responsive-dialog >>> .p-dialog-header {
-    padding: 0.5rem 1rem; /* Reducido padding vertical */
+    padding: 0.5rem 1rem;
     font-size: 1rem;
   }
 
   .responsive-dialog >>> .p-dialog-footer {
-    padding: 0.4rem 1rem; /* Reducido padding vertical */
+    padding: 0.4rem 1rem;
     justify-content: flex-end;
   }
 
@@ -815,7 +864,7 @@ export default {
 
   /* Reducir espacios entre campos en móviles */
   .input-container {
-    padding-bottom: 20px; /* Aumentado para dar espacio al error en móviles */
+    padding-bottom: 20px;
     margin-bottom: 6px;
   }
 }
@@ -832,16 +881,16 @@ export default {
   }
 
   .responsive-dialog >>> .p-dialog-content {
-    padding: 0.4rem 0.5rem; /* Más compacto en móviles extra pequeños */
+    padding: 0.4rem 0.5rem;
   }
 
   .responsive-dialog >>> .p-dialog-header {
-    padding: 0.4rem 0.75rem; /* Reducido padding vertical */
+    padding: 0.4rem 0.75rem;
     font-size: 0.95rem;
   }
 
   .responsive-dialog >>> .p-dialog-footer {
-    padding: 0.3rem 0.75rem; /* Reducido padding vertical */
+    padding: 0.3rem 0.75rem;
     justify-content: flex-end;
   }
 
@@ -914,7 +963,7 @@ export default {
 
   /* Espacios aún más compactos en móviles extra pequeños */
   .input-container {
-    padding-bottom: 20px; /* Aumentado para dar espacio al error en móviles pequeños */
+    padding-bottom: 20px;
     margin-bottom: 4px;
   }
 }

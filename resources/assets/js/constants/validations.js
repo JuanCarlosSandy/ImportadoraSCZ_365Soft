@@ -265,9 +265,4 @@ export const esquemaBanco = yup.object().shape({
 
 export const esquemaProveedor = yup.object().shape({
   nombre: yup.string().required("El nombre es obligatorio"),
-  telefono: yup.string().required("El teléfono es obligatorio"),
-  contacto: yup.string().required("El contacto es obligatorio"),
-  telefono_contacto: yup
-    .string()
-    .required("El teléfono del contacto es obligatorio"),
 });

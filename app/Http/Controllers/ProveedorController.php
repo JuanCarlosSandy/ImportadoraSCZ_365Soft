@@ -25,7 +25,7 @@ class ProveedorController extends Controller
         $por_pagina = $request->por_pagina;
 
         if ($por_pagina == null) {
-            $paginacion = 10;
+            $paginacion = 25;
         } else {
             $paginacion = $por_pagina;
         }
@@ -149,8 +149,8 @@ class ProveedorController extends Controller
         $persona->save();
 
         $proveedor = new Proveedor();
-        $proveedor->contacto = $request->contacto;
-        $proveedor->telefono_contacto = $request->telefono_contacto;
+        $proveedor->contacto = $request->nombre;
+        $proveedor->telefono_contacto = $request->telefono;
         $proveedor->id = $persona->id;
         $proveedor->save();
 
@@ -196,8 +196,8 @@ class ProveedorController extends Controller
         $persona->email = $request->email;
         $persona->save();
 
-        $proveedor->contacto = $request->contacto;
-        $proveedor->telefono_contacto = $request->telefono_contacto;
+        $proveedor->contacto = $request->nombre;
+        $proveedor->telefono_contacto = $request->telefono;
         $proveedor->save();
 
         DB::commit();
