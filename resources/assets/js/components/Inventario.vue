@@ -65,6 +65,19 @@
         <Column field="nombre_producto" header="PRODUCTO"></Column>
         <Column field="nombre_proveedor" header="PROVEEDOR"></Column>
         <Column field="unidad_envase" header="UNID X PAQ."></Column>
+        <Column field="saldo_stock_total" header="STOCK UNIDADES">
+          <template #body="slotProps">
+            <span v-if="slotProps.data.saldo_stock_total == 0"
+              style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
+              <i class="pi pi-exclamation-triangle" style="margin-right: 6px; font-size: 1.1em;"></i>
+              Sin Stock
+            </span>
+            <span v-else>
+              {{ slotProps.data.saldo_stock_total }} {{ slotProps.data.descripcion_fabrica }}
+            </span>
+          </template>
+        </Column>
+        
         <Column field="stock_formateado" header="STOCK CAJAS">
           <template #body="slotProps">
 
@@ -83,18 +96,7 @@
           </template>
         </Column>
 
-        <Column field="saldo_stock_total" header="STOCK UNIDADES">
-          <template #body="slotProps">
-            <span v-if="slotProps.data.saldo_stock_total == 0"
-              style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
-              <i class="pi pi-exclamation-triangle" style="margin-right: 6px; font-size: 1.1em;"></i>
-              Sin Stock
-            </span>
-            <span v-else>
-              {{ slotProps.data.saldo_stock_total }} {{ slotProps.data.descripcion_fabrica }}
-            </span>
-          </template>
-        </Column>
+        
       </DataTable>
 
       <!-- DataTable para vista por Lote -->
