@@ -1133,10 +1133,6 @@ public function indexFiltrar(Request $request)
 
     private function crearVenta($request)
     {
-        if ((int)$request->idtipo_pago === 7 && empty($request->idbanco)) {
-            throw new \Exception("Debe seleccionar un banco antes de registrar la venta.");
-
-        }
         $venta = new Venta();
         $venta->fill($request->only([
             'idcliente',
@@ -1292,7 +1288,7 @@ public function indexFiltrar(Request $request)
                 $ultimaCaja->saldototalventas += $request->primer_precio_cuota;
             } else {
                 // Sumar a ventas contado
-                //$ultimaCaja->ventasQR += $request->total;
+                $ultimaCaja->ventasQR += $request->total;
                 $ultimaCaja->saldototalventas += $request->total;
             }
         }
@@ -2481,11 +2477,6 @@ public function indexFiltrar(Request $request)
 
     private function crearVentaResivo($request)
     {
-
-        if ((int)$request->idtipo_pago === 7 && empty($request->idbanco)) {
-            throw new \Exception("Debe seleccionar un banco antes de registrar la venta.");
-        }
-
         $ventaResivo = new Venta();
         $ventaResivo->fill($request->only([
             'idcliente',
