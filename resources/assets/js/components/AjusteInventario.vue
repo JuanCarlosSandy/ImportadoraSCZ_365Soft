@@ -200,12 +200,31 @@
 
     <Panel v-if="vistaActual === 'tabla'">
       <template #header>
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1rem;">
           <div style="display: flex; align-items: center;">
-            <i class="pi pi-list mr-2"></i>
+            <i class="pi pi-list mr-2" style="font-size: 1.5rem;"></i>
             <h4 class="panel-title mb-0">AJUSTE DE INVENTARIO</h4>
           </div>
-          <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-success" @click="vistaActual = 'formulario'" />
+          
+          <div style="display: flex; gap: 10px;">
+            <Button 
+              label="PDF" 
+              icon="pi pi-file-pdf" 
+              class="p-button-danger p-button-sm" 
+              @click="generarReporte('pdf')"
+              title="Descargar Reporte PDF" 
+            />
+
+            <Button 
+              label="Excel" 
+              icon="pi pi-file-excel" 
+              class="p-button-success p-button-sm" 
+              @click="generarReporte('excel')"
+              title="Descargar Reporte Excel" 
+            />
+
+            <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-primary p-button-sm" @click="vistaActual = 'formulario'" />
+          </div>
         </div>
       </template>
       <div class="mt-3">
@@ -1244,6 +1263,20 @@ export default {
         } finally {
           this.isLoading = false;
         }
+    },
+
+    generarReporte(tipo) {
+        if (!this.fechaInicio || !this.fechaFin) {
+            swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
+            return;
+        }
+
+        const fInicio = this.formatDate(this.fechaInicio);
+        const fFin = this.formatDate(this.fechaFin);
+        const almacen = this.idAlmacen ? this.idAlmacen : '';
+        const busqueda = this.buscar ? this.buscar : '';
+        let url = `/ajusteinv/reporte/${tipo}?fechaInicio=${fInicio}&fechaFin=${fFin}&idAlmacen=${almacen}&buscar=${busqueda}`;
+        window.open(url, '_blank');
     },
 
     formatDate(date) {

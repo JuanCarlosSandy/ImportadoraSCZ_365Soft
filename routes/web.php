@@ -66,6 +66,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post('/ajuste/registrar-multiple', 'AjusteInventarioController@registrarMultiple');
         Route::get('/motivo', 'AjusteInventarioController@listarMotivo');
         Route::post('/motivo/registrar', 'AjusteInventarioController@registrarMotivo');
+        Route::get('/ajusteinv/reporte/{tipo}', 'AjusteInventarioController@generarReporte');
         Route::post('/ajustes-inventario/exportar-pdf', 'AjusteInventarioController@exportarPDF')->name('ajustes.exportar-pdf');
 
 
