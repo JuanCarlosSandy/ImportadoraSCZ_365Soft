@@ -27,8 +27,12 @@
             class="p-button-secondary p-button-sm" @click="abrirModal('articulo', 'registrar')" />
           <Button :label="mostrarLabel ? 'Reporte' : ''" icon="pi pi-file" class="p-button-success p-button-sm"
             @click="descargarReporteExcel()" />
-          <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm"
-            @click="abrirDialogos('Importar')" />
+          <Button 
+            :label="mostrarLabel ? 'Importar' : ''" 
+            icon="pi pi-upload" 
+            class="p-button-help p-button-sm"
+            @click="validarPermisoImportar()" 
+          />
         </div>
       </div>
       <DataTable :value="arrayArticulo" class="p-datatable-gridlines p-datatable-sm tabla-pro"
@@ -1213,6 +1217,22 @@ export default {
         this.validarCampoInventario("AlmacenSeleccionado");
       }
     },
+
+    validarPermisoImportar() {
+        const rolUsuario = parseInt(this.idrol);
+
+        if (rolUsuario === 1 || rolUsuario === 4) {
+            this.abrirDialogos('Importar');
+        } else {
+            this.$toast.add({
+                severity: 'error',
+                summary: 'Acceso Denegado',
+                detail: 'Esta acción solo está permitida para Administradores.',
+                life: 3000
+            });
+        }
+    },
+
     abrirDialogos(dialogo) {
       switch (dialogo) {
         case "Proveedores":

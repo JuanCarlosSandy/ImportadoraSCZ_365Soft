@@ -619,12 +619,21 @@ generarReporte(idCaja) {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
     },
     guardarMontoCierre() {
+      if (!this.montoCierre || this.montoCierre <= 0) {
+        this.$toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: "Debe ingresar un monto válido",
+          life: 3000,
+        });
+        return;
+      }
       this.idCajaBotonesSecundarios = this.id;
       this.cerrarModal5();
       this.$toast.add({
         severity: "success",
         summary: "Monto Guardado",
-        detail: "Monto de cierre registrado localmente",
+        detail: `Monto de arqueo registrado: Bs ${parseFloat(this.montoCierre).toFixed(2)}`,
         life: 2500,
       });
     },
@@ -791,14 +800,26 @@ generarReporte(idCaja) {
         return;
       }
 
-      const saldoCajaCalculado = caja.saldoCaja; // Usar el saldoCaja del registro
+      // Verificar si se ha registrado un monto de arqueo
+      if (this.idCajaBotonesSecundarios !== id || !this.montoCierre || this.montoCierre <= 0) {
+        this.$toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: "Debe realizar el arqueo de caja antes de cerrar",
+          life: 3000,
+        });
+        return;
+      }
+
+      const montoArqueo = parseFloat(this.montoCierre); // Usar el monto que contaste en el arqueo
       
       try {
         const result = await Swal.fire({
           title: "¿Está seguro de cerrar la caja?",
           html: `<div style="text-align: left; padding: 10px;">
-                   <p><strong>Saldo Caja (Efectivo):</strong> Bs ${parseFloat(saldoCajaCalculado).toFixed(2)}</p>
-                   <p style="font-size: 0.9rem; color: #666; margin-top: 8px;">Este monto se utilizará como base para el cierre.</p>
+                   <p><strong>Saldo Caja (Esperado):</strong> Bs ${parseFloat(caja.saldoCaja).toFixed(2)}</p>
+                   <p><strong>Monto Arqueo (Contado):</strong> Bs ${montoArqueo.toFixed(2)}</p>
+                   <p style="font-size: 0.9rem; color: #666; margin-top: 8px;">Se comparará lo contado vs lo esperado para calcular sobrante o faltante.</p>
                  </div>`,
           icon: "warning",
           showCancelButton: true,
@@ -818,8 +839,12 @@ generarReporte(idCaja) {
           let me = this;
           await axios.put("/caja/cerrar", {
             id: id,
-            saldoFaltante: saldoCajaCalculado, // Usar el saldoCaja calculado
+            saldoFaltante: montoArqueo, // Enviar el monto de arqueo (lo que contaste)
           });
+
+          // Limpiar los datos del arqueo después de cerrar
+          this.montoCierre = 0;
+          this.idCajaBotonesSecundarios = null;
 
           await me.listarCaja(1, "", "id");
           this.$toast.add({
