@@ -14,56 +14,62 @@ class AjusteInventarioController extends Controller
 {
     public function index(Request $request)
     {
-        if (!$request->ajax())
-            return redirect('/');
-
+        if (!$request->ajax()) return redirect('/');
+        
         $buscar = $request->buscar;
         $criterio = $request->criterio;
+        
+        $fechaInicio = $request->fechaInicio;
+        $fechaFin = $request->fechaFin;
+        $idAlmacen = $request->idAlmacen;
 
-        if ($buscar == '') {
-            $ajuste = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
-                ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
-                ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
-                ->select(
-                    'ajuste_invetarios.*',
-                    'articulos.nombre as nombre',
-                    'tipo_bajas.nombre as tipo',
-                    'almacens.nombre_almacen as nombre_almacen',
-                    'articulos.descripcion_fabrica'
-                )
-                ->orderBy('id', 'desc')->paginate(10);
-        } else {
-            $ajuste = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
-                ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
-                ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
-                ->select(
-                    'ajuste_invetarios.*',
-                    'articulos.nombre as nombre',
-                    'tipo_bajas.nombre as tipo',
-                    'almacens.nombre_almacen as nombre_almacen',
-                    'articulos.descripcion_fabrica'
-                )
-                ->when($criterio == '', function ($query) use ($buscar) {
-                    $query->where(function ($q) use ($buscar) {
-                        $q->where('articulos.nombre', 'like', "%$buscar%")
-                            ->orWhere('tipo_bajas.nombre', 'like', "%$buscar%")
-                            ->orWhere('almacens.nombre_almacen', 'like', "%$buscar%")
-                            ->orWhere('ajuste_invetarios.cantidad', 'like', "%$buscar%")
-                            ->orWhere('ajuste_invetarios.created_at', 'like', "%$buscar%");
-                    });
-                }, function ($query) use ($criterio, $buscar) {
-                    $query->where($criterio, 'like', "%$buscar%");
-                })
-                ->orderBy('id', 'desc')->paginate(10);
+        $query = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
+            ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
+            ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
+            ->select(
+                'ajuste_invetarios.*',
+                'articulos.nombre as nombre',
+                'tipo_bajas.nombre as tipo',
+                'almacens.nombre_almacen as nombre_almacen',
+                'articulos.descripcion_fabrica'
+            );
+
+        if (!empty($fechaInicio) && !empty($fechaFin)) {
+            $query->whereBetween('ajuste_invetarios.created_at', [
+                $fechaInicio . ' 00:00:00', 
+                $fechaFin . ' 23:59:59'
+            ]);
         }
+
+        if (!empty($idAlmacen)) {
+            $query->where('ajuste_invetarios.almacen', $idAlmacen);
+        }
+
+        if ($buscar != '') {
+            $query->where(function ($q) use ($buscar, $criterio) {
+                if ($criterio != '') {
+                    $q->where($criterio, 'like', "%$buscar%");
+                } 
+                else {
+                    $q->where('articulos.nombre', 'like', "%$buscar%")
+                    ->orWhere('tipo_bajas.nombre', 'like', "%$buscar%")
+                    ->orWhere('almacens.nombre_almacen', 'like', "%$buscar%")
+                    ->orWhere('ajuste_invetarios.cantidad', 'like', "%$buscar%")
+                    ->orWhere('ajuste_invetarios.created_at', 'like', "%$buscar%");
+                }
+            });
+        }
+
+        $ajuste = $query->orderBy('ajuste_invetarios.id', 'desc')->paginate(10);
+
         return [
             'pagination' => [
-                'total' => $ajuste->total(),
+                'total'        => $ajuste->total(),
                 'current_page' => $ajuste->currentPage(),
-                'per_page' => $ajuste->perPage(),
-                'last_page' => $ajuste->lastPage(),
-                'from' => $ajuste->firstItem(),
-                'to' => $ajuste->lastItem(),
+                'per_page'     => $ajuste->perPage(),
+                'last_page'    => $ajuste->lastPage(),
+                'from'         => $ajuste->firstItem(),
+                'to'           => $ajuste->lastItem(),
             ],
             'ajuste' => $ajuste
         ];

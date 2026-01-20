@@ -209,17 +209,78 @@
         </div>
       </template>
       <div class="mt-3">
-        <div class="toolbar-container">
-          <div class="search-bar">
-            <span class="p-input-icon-left">
-              <i class="pi pi-search" />
-              <InputText v-model="buscar" class="form-control" placeholder="Texto a buscar" />
-            </span>
-          </div>
-          <div class="toolbar">
-            <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaProductos" class="p-button-help p-button-sm"
-              title="Limpiar" :disabled="!proveedorSeleccionado || !proveedorSeleccionado.nombre" />
-          </div>
+        <div class="toolbar-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+            
+            <div style="flex: 1 1 150px;">
+              <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Desde</label>
+              <Calendar 
+                v-model="fechaInicio" 
+                dateFormat="yy-mm-dd" 
+                showIcon 
+                :appendTo="'body'"
+                class="p-inputtext-sm" 
+                style="width: 100%;" 
+              />
+            </div>
+
+            <div style="flex: 1 1 150px;">
+              <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Hasta</label>
+              <Calendar 
+                v-model="fechaFin" 
+                dateFormat="yy-mm-dd" 
+                showIcon 
+                :appendTo="'body'"
+                class="p-inputtext-sm" 
+                style="width: 100%;" 
+              />
+            </div>
+
+            <div style="flex: 1 1 180px;">
+              <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Almacén</label>
+              <Dropdown 
+                v-model="idAlmacen" 
+                :options="arrayAlmacenes" 
+                optionLabel="nombre_almacen" 
+                optionValue="id"
+                placeholder="Todos" 
+                showClear 
+                class="p-inputtext-sm" 
+                style="width: 100%;" 
+              />
+            </div>
+
+            <div style="padding-bottom: 2px;">
+              <Button 
+                :label="mostrarLabel ? 'Filtrar' : ''"
+                icon="pi pi-filter" 
+                class="p-button-help p-button-sm" 
+                title="Aplicar Filtros" 
+                @click="listarAjuste(1, buscar, '')" 
+              />
+            </div>
+
+            <div class="search-bar" style="flex: 2 1 200px;">
+              <span class="p-input-icon-left" style="width: 100%;">
+                <i class="pi pi-search" />
+                <InputText 
+                  v-model="buscar" 
+                  class="form-control" 
+                  placeholder="Buscar por producto..." 
+                  style="width: 100%;"
+                  @keyup.enter="listarAjuste(1, buscar, '')"
+                />
+              </span>
+            </div>
+
+            <div class="toolbar" style="padding-bottom: 2px;">
+              <Button 
+                label="Limpiar" 
+                icon="pi pi-refresh" 
+                @click="resetFiltros" 
+                class="p-button-secondary p-button-sm"
+                title="Restablecer filtros" 
+              />
+            </div>
         </div>
         <DataTable :value="arrayAjuste" class="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">           
           <Column field="nombre_almacen" header="ALMACEN" />
@@ -434,6 +495,7 @@ import VueBarcode from "vue-barcode";
 import Panel from "primevue/panel";
 import Sidebar from 'primevue/sidebar';
 import AutoComplete from 'primevue/autocomplete';
+import Calendar from "primevue/calendar";
 
 export default {
   components: {
@@ -448,6 +510,7 @@ export default {
     Panel,
     Sidebar,
     AutoComplete,
+    Calendar
   },
   data() {
     return {
@@ -568,6 +631,10 @@ export default {
       dialogoEscaneoVisible: false,
       indiceFoco: -1,
       vistaActual: 'tabla',
+
+      fechaInicio: null,
+      fechaFin: null,
+      idAlmacen: null,
     };
   },
   computed: {
@@ -1155,21 +1222,38 @@ export default {
     },
 
     async listarAjuste(page, buscar, criterio) {
-      try {
-        this.isLoading = true; // Activar loading
-        let me = this;
-        var url = `/ajusteinv?page=${page}&buscar=${buscar || ""}&categoria=${this.categoria
-          }`;
+        try {
+          this.isLoading = true;
+          let me = this;
 
-        const response = await axios.get(url);
-        var respuesta = response.data;
-        me.arrayAjuste = respuesta.ajuste.data;
-        me.pagination = respuesta.pagination;
-      } catch (error) {
-        console.error("Error al listar artículos:", error);
-      } finally {
-        this.isLoading = false; // Desactivar loading al completar o en error
-      }
+          const fInicio = this.formatDate(this.fechaInicio);
+          const fFin = this.formatDate(this.fechaFin);
+
+          let url = `/ajusteinv?page=${page}&buscar=${buscar || ""}&criterio=${criterio || ""}`;
+
+          if(fInicio) url += `&fechaInicio=${fInicio}`;
+          if(fFin)    url += `&fechaFin=${fFin}`;
+          if(this.idAlmacen) url += `&idAlmacen=${this.idAlmacen}`;
+
+          const response = await axios.get(url);
+          var respuesta = response.data;
+          me.arrayAjuste = respuesta.ajuste.data;
+          me.pagination = respuesta.pagination;
+        } catch (error) {
+          console.error("Error al listar ajustes:", error);
+        } finally {
+          this.isLoading = false;
+        }
+    },
+
+    formatDate(date) {
+      if (!date) return '';
+      if (typeof date === 'string') return date;
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     },
 
     filtrarProductos() {
@@ -1276,6 +1360,19 @@ export default {
     resetBusquedaMotivos() {
       this.buscarA = '';
       this.listarMotivo(1, '', this.criterioA);
+    },
+
+    resetFiltros() {
+      this.buscar = '';
+      this.idAlmacen = null;
+      this.establecerFechasPorDefecto();
+      this.listarAjuste(1, this.buscar, this.criterio);
+    },
+
+    establecerFechasPorDefecto() {
+      const date = new Date();
+      this.fechaInicio = new Date(date.getFullYear(), date.getMonth(), 1);
+      this.fechaFin = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     },
 
     agregarTodosProductos() {
@@ -1678,20 +1775,22 @@ export default {
   async mounted() {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
+    this.establecerFechasPorDefecto(); 
     try {
-      this.isLoading = true; // Activar loading al iniciar
+      this.isLoading = true;
+      
       await Promise.all([
-        this.selectAlmacen(),
+        this.selectAlmacen(),           
         this.recuperarIdRol(),
         this.datosConfiguracion(),
         this.obtenerConfiguracionTrabajo(),
-        this.listarAjuste(1, this.buscar, ""),
+        this.listarAjuste(1, this.buscar, ""), 
       ]);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
       swal("Error", "Error al cargar los datos iniciales", "error");
     } finally {
-      this.isLoading = false; // Desactivar loading cuando todo termina
+      this.isLoading = false;
     }
   },
   beforeUnmount() {
