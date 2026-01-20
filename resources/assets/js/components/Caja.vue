@@ -20,7 +20,7 @@
         </div>
       </template>
 
-      <DataTable :value="arrayCaja" :paginator="false" responsiveLayout="scroll"
+      <DataTable :key="idrol" :value="arrayCaja" :paginator="false" responsiveLayout="scroll"
         class="p-datatable-gridlines p-datatable-sm tabla-caja">
         <Column header="Sucursal" style="min-width: 130px;">
           <template #body="slotProps">
@@ -44,7 +44,8 @@
         <Column field="saldoCaja" header="Saldo Caja" style="min-width: 120px; text-align: right;" />
         <Column field="saldoFaltante" header="Saldo Faltante" style="min-width: 120px; text-align: right;" />
         <Column field="saldoSobrante" header="Saldo Sobrante" style="min-width: 120px; text-align: right;" />
-
+        <Column v-if="puedeMostrarMontoArqueo" field="monto_arqueo" header="Monto Arqueo" style="min-width: 120px; text-align: right;" />
+        
         <Column header="Acciones" style="min-width: 200px; text-align: center;">
           <template #body="slotProps">
             <div v-if="slotProps.data.estado">
@@ -419,6 +420,7 @@ export default {
       bancos: [],
       mostrarLabel: true,
       isLoading: false,
+      idrol: 0,
       id: 0,
       idsucursal: 0,
       nombre_sucursal: "",
@@ -494,6 +496,10 @@ export default {
   computed: {
     isActived: function () {
       return this.pagination.current_page;
+    },
+    puedeMostrarMontoArqueo: function () {
+      // Solo mostrar para roles 1 (admin) y 4 (supervisor)
+      return this.idrol === 1 || this.idrol === 4;
     },
     //Calcula los elementos de la paginación
     pagesNumber: function () {
@@ -1026,6 +1032,12 @@ generarReporte(idCaja) {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     try {
+      // Obtener el rol del usuario autenticado
+      const userResponse = await axios.get('/usuario-autenticado');
+      console.log('Usuario obtenido:', userResponse.data);
+      this.idrol = userResponse.data.idrol || 0;
+      console.log('idrol asignado:', this.idrol);
+      
       await this.listarCaja(1, this.buscar, this.criterio);
     } catch (error) {
       console.error("Error en la carga inicial:", error);

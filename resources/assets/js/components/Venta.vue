@@ -2111,6 +2111,17 @@ export default {
     },
   },
   computed: {
+    dialogContainerStyleQR() {
+      if (window.innerWidth <= 480) {
+        return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 768) {
+        return { width: "90vw", maxWidth: "90vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 1024) {
+        return { width: "85vw", maxWidth: "900px", margin: "0 auto" };
+      } else {
+        return { width: "800px", maxWidth: "90vw", margin: "0 auto" };
+      }
+    },
     tiposPagoOptions() {
       return this.tiposPago;
     },

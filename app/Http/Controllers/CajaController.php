@@ -44,6 +44,7 @@ class CajaController extends Controller
                 'comprasContado',
                 'saldoFaltante',
                 'saldoSobrante',
+                'monto_arqueo',
                 'PagoCuotaEfectivo',
                 'saldoCaja',
                 'saldototalventas',
@@ -73,6 +74,7 @@ class CajaController extends Controller
                 'cajas.comprasContado',
                 'cajas.saldoFaltante',
                 'cajas.saldoSobrante',
+                'cajas.monto_arqueo',
                 'cajas.PagoCuotaEfectivo',
                 'cajas.saldoCaja',
                 'cajas.saldototalventas',
@@ -199,6 +201,9 @@ class CajaController extends Controller
     $caja = Caja::findOrFail($request->id);
     $caja->fechaCierre = now()->setTimezone('America/La_Paz');
     $caja->estado = '0';
+
+    // Guardar el monto de arqueo (el saldoCaja que se usa para cierre)
+    $caja->monto_arqueo = $request->saldoFaltante;
 
     // Calcular diferencia entre saldo en caja y saldo declarado en el cierre
     $diferencia = $request->saldoFaltante - $caja->saldototalventas;

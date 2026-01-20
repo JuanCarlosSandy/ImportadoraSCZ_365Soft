@@ -27,6 +27,7 @@ class Caja extends Model
         'comprasContado',
         'saldoFaltante',
         'saldoSobrante',
+        'monto_arqueo',
         'PagoCuotaEfectivo', 
         'saldoCaja', 
         'saldototalventas',

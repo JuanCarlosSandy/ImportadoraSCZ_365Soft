@@ -299,6 +299,7 @@ class UserController extends Controller
             'id' => $usuario->id,
             'nombre' => $usuario->nombre, // Asegúrate que en tu BD la columna sea 'nombre' (o usa 'name')
             'usuario' => $usuario->usuario, // Opcional, por si usas este campo
+            'idrol' => $usuario->idrol, // Rol del usuario
 
             // --- Datos de la Sucursal ---
             'idsucursal' => $sucursal->id,
