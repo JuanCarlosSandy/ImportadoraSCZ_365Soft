@@ -34,9 +34,9 @@
                     <li @click="menu=16" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-money"></i> Mi Cartera</a>
                     </li>
-                    <li @click="menu=65" class="nav-item">
+                    <!--<li @click="menu=65" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-university"></i> Bancos</a>
-                    </li>
+                    </li>-->
                 </ul>
             </li>
 
@@ -68,9 +68,6 @@
                     <li @click="menu=3" class="nav-item">
                         <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Comprar</a>
                     </li>
-                    <li @click="menu=4" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Mis Proveedores</a>
-                    </li>
                 </ul>
             </li>
 
@@ -100,6 +97,10 @@
 
                     <li @click="menu=19" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-tags" style="font-size: 19px;"></i> Categoria</a>
+                    </li>
+                    
+                    <li @click="menu=4" class="nav-item">
+                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Mis Proveedores</a>
                     </li>
                 </ul>
             </li>
