@@ -17,6 +17,13 @@
                 />
 
                 <Button
+                    icon="pi pi-file-excel"
+                    label="Excel General"
+                    class="p-button-success p-button-sm"
+                    @click="descargarExcelGeneral()"
+                />
+
+                <Button
                     icon="pi pi-filter"
                     :label="mostrarLabel ? 'Filtros' : ''"
                     class="p-button-secondary p-button-sm"
@@ -46,117 +53,155 @@
             </div>
           </div>
           <DataTable
-            :value="sortedResultados"
-            scrollable
-            stripedRows
-            responsiveLayout="scroll"
-            size="small"
-            paginator
-            :rows="5"
-            :rowsPerPageOptions="[5, 10, 20, 50]"
-            :filters="filters"
-            :globalFilterFields="[
-              'codigo',
-              'nombre_producto',
-              'categoria',
-              'sucursal',
-              'almacen',
-            ]"
-          >
-            <Column 
-                header="ACCIONES" 
-                headerStyle="width: 12rem; min-width: 12rem; text-align: center" 
-                bodyStyle="text-align: center; overflow: visible"
-            >
-                <template #body="slotProps">
-                    <div style="display: flex; justify-content: center; gap: 0.5rem; white-space: nowrap;">
-                        <Button
-                            type="button"
-                            icon="pi pi-eye"
-                            class="p-button-rounded p-button-info p-button-text"
-                            title="Ver Detalle en Pantalla"
-                            @click="verDetalleMovimiento(slotProps.data)"
-                        />
+  :value="sortedResultados"
+  scrollable
+  scrollHeight="600px"
+  stripedRows
+  responsiveLayout="scroll"
+  size="small"
+  paginator
+  :rows="5"
+  :rowsPerPageOptions="[5, 10, 20, 50]"
+  :filters="filters"
+  :globalFilterFields="['codigo', 'nombre_producto', 'categoria', 'sucursal', 'almacen']"
+>
+  <!-- Columna ACCIONES (fija) -->
+ 
+<Column 
+    header="ACCIONES" 
+    :exportable="false" 
+    frozen 
+    headerStyle="min-width: 9rem; width: 9rem; text-align: center;" 
+    bodyStyle="min-width: 9rem; width: 9rem; text-align: center; justify-content: center;"
+>
+    <template #body="slotProps">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 0.25rem;">
+            <Button 
+                icon="pi pi-eye" 
+                class="p-button-rounded p-button-info p-button-text" 
+                v-tooltip.top="'Ver Detalle'" 
+                @click="verDetalleMovimiento(slotProps.data)" 
+                style="width: 2rem; height: 2rem;" 
+            />
+            <Button 
+                icon="pi pi-file-pdf" 
+                class="p-button-rounded p-button-danger p-button-text" 
+                v-tooltip.top="'Descargar PDF'" 
+                @click="descargarPdfDetallado(slotProps.data)" 
+                style="width: 2rem; height: 2rem;" 
+            />
+            <Button 
+                icon="pi pi-file-excel" 
+                class="p-button-rounded p-button-success p-button-text" 
+                v-tooltip.top="'Descargar Excel'" 
+                @click="descargarExcelDetallado(slotProps.data)" 
+                style="width: 2rem; height: 2rem;" 
+            />
+        </div>
+    </template>
+</Column>
+  <!-- Columna CÓDIGO ITEM (fija) -->
+  <Column
+    field="codigo"
+    header="CODIGO ITEM"
+    filter
+    filterPlaceholder="Buscar código"
+    style="min-width: 10rem; width: 10rem;"
+    frozen
+  />
 
-                        <Button
-                            type="button"
-                            icon="pi pi-file-pdf"
-                            class="p-button-rounded p-button-danger p-button-text"
-                            title="Descargar PDF Detallado"
-                            @click="descargarPdfDetallado(slotProps.data)"
-                        />
-                    </div>
-                </template>
-            </Column>
-            <Column
-              field="codigo"
-              header="CODIGO ITEM"
-              filter
-              filterPlaceholder="Buscar código"
-            />
-            <Column
-              field="sucursal"
-              header="SUCURSAL"
-              filter
-              filterPlaceholder="Buscar sucursal"
-            />
-            <Column
-              field="almacen"
-              header="ALMACÉN"
-              filter
-              filterPlaceholder="Buscar almacén"
-            />
-            <Column
-              field="nombre_producto"
-              header="ITEM"
-              filter
-              filterPlaceholder="Buscar item"
-            />
-            <Column
-              field="categoria"
-              header="CATEGORÍA"
-              filter
-              filterPlaceholder="Buscar categoría"
-            />
-            <Column field="total_ventas_texto" header="TOTAL VENTAS" />
-            <Column field="total_ingresos_texto" header="TOTAL COMPRAS" />
-            <Column
-              field="total_traspasos_entrada"
-              header="TOTAL TRASPASO ENTRADA"
-            />
-            <Column
-              field="total_traspasos_salida"
-              header="TOTAL TRASPASO SALIDA"
-            />
-            <Column header="AJUSTE ENTRADA" style="text-align: center">
-              <template #body="slotProps">
-                <span 
-                  v-if="slotProps.data.ajuste_entrada > 0" 
-                  style="color: green; font-weight: bold;"
-                >
-                  +{{ slotProps.data.ajuste_entrada }} {{ slotProps.data.ajuste_entrada == 1 ? 'Unidad' : 'Unidades' }}
-                </span>
-                <span v-else style="color: inherit;">
-                  0 Unidades
-                </span>
-              </template>
-            </Column>
+  <!-- Columna SUCURSAL -->
+  <Column
+    field="sucursal"
+    header="SUCURSAL"
+    filter
+    filterPlaceholder="Buscar sucursal"
+    style="min-width: 12rem;"
+  />
 
-            <Column header="AJUSTE SALIDA" style="text-align: center">
-              <template #body="slotProps">
-                <span 
-                  v-if="slotProps.data.ajuste_salida > 0" 
-                  style="color: red; font-weight: bold;"
-                >
-                  -{{ slotProps.data.ajuste_salida }} {{ slotProps.data.ajuste_salida == 1 ? 'Unidad' : 'Unidades' }}
-                </span>
-                <span v-else style="color: inherit;">
-                  0 Unidades
-                </span>
-              </template>
-            </Column>
-            <Column field="saldo_stock_actual_texto" header="STOCK ACTUAL" />
-          </DataTable>
+  <!-- Columna ALMACÉN -->
+  <Column
+    field="almacen"
+    header="ALMACÉN"
+    filter
+    filterPlaceholder="Buscar almacén"
+    style="min-width: 12rem;"
+  />
+
+  <!-- Columna ITEM -->
+  <Column
+    field="nombre_producto"
+    header="ITEM"
+    filter
+    filterPlaceholder="Buscar item"
+    style="min-width: 20rem;"
+  />
+
+  <!-- Columna CATEGORÍA -->
+  <Column
+    field="categoria"
+    header="CATEGORÍA"
+    filter
+    filterPlaceholder="Buscar categoría"
+    style="min-width: 12rem;"
+  />
+
+  <!-- Columna TOTAL VENTAS -->
+  <Column
+    field="total_ventas_texto"
+    header="TOTAL VENTAS"
+    style="min-width: 10rem;"
+  />
+
+  <!-- Columna TOTAL COMPRAS -->
+  <Column
+    field="total_ingresos_texto"
+    header="TOTAL COMPRAS"
+    style="min-width: 10rem;"
+  />
+
+  <!-- Columna TOTAL TRASPASO ENTRADA -->
+  <Column
+    field="total_traspasos_entrada"
+    header="TOTAL TRASPASO ENTRADA"
+    style="min-width: 10rem;"
+  />
+
+  <!-- Columna TOTAL TRASPASO SALIDA -->
+  <Column
+    field="total_traspasos_salida"
+    header="TOTAL TRASPASO SALIDA"
+    style="min-width: 10rem;"
+  />
+
+  <!-- Columna AJUSTE ENTRADA -->
+  <Column header="AJUSTE ENTRADA" style="min-width: 12rem; text-align: center">
+    <template #body="slotProps">
+      <span v-if="slotProps.data.ajuste_entrada > 0" style="color: green; font-weight: bold;">
+        +{{ slotProps.data.ajuste_entrada }} {{ slotProps.data.ajuste_entrada === 1 ? 'Unidad' : 'Unidades' }}
+      </span>
+      <span v-else style="color: inherit;">0 Unidades</span>
+    </template>
+  </Column>
+
+  <!-- Columna AJUSTE SALIDA -->
+  <Column header="AJUSTE SALIDA" style="min-width: 12rem; text-align: center">
+    <template #body="slotProps">
+      <span v-if="slotProps.data.ajuste_salida > 0" style="color: red; font-weight: bold;">
+        -{{ slotProps.data.ajuste_salida }} {{ slotProps.data.ajuste_salida === 1 ? 'Unidad' : 'Unidades' }}
+      </span>
+      <span v-else style="color: inherit;">0 Unidades</span>
+    </template>
+  </Column>
+
+  <!-- Columna STOCK ACTUAL -->
+  <Column
+    field="saldo_stock_actual_texto"
+    header="STOCK ACTUAL"
+    style="min-width: 10rem;"
+  />
+</DataTable>
+
         </div>
       </template>
     </Panel>
@@ -1438,6 +1483,22 @@ export default {
   },
 
   methods: {
+    descargarExcelDetallado(data) {
+      let me = this;
+      if (!me.fechaInicio || !me.fechaFin) {
+        swal("Atención", "Debe seleccionar un rango de fechas", "warning");
+        return;
+      }
+
+      let params = new URLSearchParams();
+      params.append("idArticulo", data.id_articulo);
+      params.append("idAlmacen", data.id_almacen);
+      params.append("fechaInicio", me.fechaInicio);
+      params.append("fechaFin", me.fechaFin);
+
+      let url = "/reporte-resumen-detallado-excel?" + params.toString();
+      window.open(url, "_blank");
+    },
     limpiarFiltro(tipo) {
       switch (tipo) {
         case 'sucursal':
@@ -2304,6 +2365,28 @@ export default {
         if(me.lineaseleccionada && me.lineaseleccionada.id) params.append("linea", me.lineaseleccionada.id);
 
         let url = '/reporte-resumen-general-pdf?' + params.toString();
+        window.open(url, '_blank');
+    },
+
+    descargarExcelGeneral() {
+        let me = this;
+        if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
+            swal("Atención", "Debe seleccionar Sucursal y Fechas primero", "warning");
+            return;
+        }
+
+        // Construir la URL con todos los filtros actuales
+        let params = new URLSearchParams();
+        params.append("sucursal", me.sucursalseleccionada.id);
+        params.append("fechaInicio", me.fechaInicio);
+        params.append("fechaFin", me.fechaFin);
+        
+        // Agregar filtros opcionales solo si están seleccionados
+        if(me.articuloseleccionada && me.articuloseleccionada.id) params.append("articulo", me.articuloseleccionada.id);
+        if(me.marcaseleccionada && me.marcaseleccionada.id) params.append("marca", me.marcaseleccionada.id);
+        if(me.lineaseleccionada && me.lineaseleccionada.id) params.append("linea", me.lineaseleccionada.id);
+
+        let url = '/reporte-resumen-general-excel?' + params.toString();
         window.open(url, '_blank');
     },
 

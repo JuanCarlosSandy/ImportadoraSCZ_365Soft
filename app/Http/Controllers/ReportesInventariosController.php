@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use App\Inventario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Exports\ResumenKardexExport;
+use Maatwebsite\Excel\Facades\Excel;
 use FPDF;
+use App\Exports\KardexDetalladoExport;
+
 
 
 class ReportesInventariosController extends Controller
@@ -581,18 +585,67 @@ class ReportesInventariosController extends Controller
             // Cantidades alineadas a la derecha ('R')
             $pdf->Cell($w[3], 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
             $pdf->Cell($w[4], 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
-            $pdf->Cell($w[5], 8, utf8_decode($item['ajuste_entrada']), 1, 0, 'R');
-            $pdf->Cell($w[6], 8, utf8_decode($item['ajuste_salida']), 1, 0, 'R');
+
+            $valEntrada = $item['ajuste_entrada'];
+            if ($valEntrada == 0) {
+                $txtEntrada = '0';
+            } else {
+                $txtEntrada = $valEntrada . ' ' . (abs($valEntrada) == 1 ? 'Unidad' : 'Unidades');
+            }
+            $pdf->Cell($w[5], 8, utf8_decode($txtEntrada), 1, 0, 'R');
+
+            $valSalida = $item['ajuste_salida'];
+            if ($valSalida == 0) {
+                $txtSalida = '0';
+            } else {
+                $txtSalida = $valSalida . ' ' . (abs($valSalida) == 1 ? 'Unidad' : 'Unidades');
+            }
+            $pdf->Cell($w[6], 8, utf8_decode($txtSalida), 1, 0, 'R');
             $pdf->Cell($w[7], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
         }
 
         // Generar nombre de archivo con fecha actual del sistema
         $fechaGeneracion = date('Y-m-d');
-        $nombreArchivo = 'KardexFisico_' . $fechaGeneracion . '.pdf';
+        $nombreArchivo = 'KardexFisico_' . $request->fechaInicio . '_' . $request->fechaFin . '.pdf';
 
         return response($pdf->Output('S'))
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+    }
+
+    public function exportarExcelResumenGeneral(Request $request)
+    {
+        $data = $this->resumenFisicoMovimientos($request); 
+        $resultados = $data['resultados'];
+
+        $nombreSucursal = 'Casa Matriz'; 
+
+   
+        $nombreArticulo = null;
+        if ($request->has('idarticulo') && $request->idarticulo != null) {
+            $art = Articulo::find($request->idarticulo);
+            $nombreArticulo = $art ? $art->nombre : null;
+        }
+
+
+        $nombreCategoria = null;
+        if ($request->has('idcategoria') && $request->idcategoria != null) {
+            $cat = Categoria::find($request->idcategoria);
+            $nombreCategoria = $cat ? $cat->nombre : null;
+        }
+
+
+        $filtros = [
+            'sucursal'    => $nombreSucursal,
+            'articulo'    => $nombreArticulo,    
+            'categoria'   => $nombreCategoria,   
+            'fechaInicio' => $request->fechaInicio,
+            'fechaFin'    => $request->fechaFin,
+        ];
+
+        $nombreArchivo = 'KardexFisico_' . $request->fechaInicio . '_' . $request->fechaFin . '.xlsx';
+
+        return Excel::download(new ResumenKardexExport($resultados, $filtros), $nombreArchivo);
     }
 
     public function exportarPDFDetallado(Request $request)
@@ -700,7 +753,9 @@ class ReportesInventariosController extends Controller
             foreach ($ajustes as $a) {
                 $pdf->Cell(35, 6, $a->fecha_hora, 1);
                 $pdf->Cell(130, 6, utf8_decode($a->motivo), 1);
-                $pdf->Cell(25, 6, $a->cantidad, 1, 1, 'R');
+                $textoCantidad = $v->cantidad . ' ' . ($v->cantidad == 1 ? 'unidad' : 'unidades');
+                $pdf->Cell(25, 6, $textoCantidad, 1, 1, 'R');
+
             }
         } else {
             $pdf->SetFont('Arial', 'I', 9);
@@ -713,11 +768,39 @@ class ReportesInventariosController extends Controller
         $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio); // Evitar múltiples guiones bajos consecutivos
         $nombreProductoLimpio = trim($nombreProductoLimpio, '_'); // Eliminar guiones bajos al inicio y final
         
-        $nombreArchivo = $nombreProductoLimpio . '_' . $request->fechaInicio . '_a_' . $request->fechaFin . '.pdf';
+        $nombreArchivo = 'KF_' . $nombreProductoLimpio . '_' . $request->fechaInicio . '_' . $request->fechaFin . '.pdf';
 
         return response($pdf->Output('S'))
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+    }
+
+    public function exportarExcelDetallado(Request $request)
+    {
+        
+        $response = $this->detalleMovimientosProducto($request);
+        $data = $response->getData(); 
+
+        
+        $articulo = DB::table('articulos')->where('id', $request->idArticulo)->first();
+
+        
+        $nombreProductoLimpio = preg_replace('/[^A-Za-z0-9\-_]/', '_', $articulo->nombre);
+        $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio);
+        $nombreProductoLimpio = trim($nombreProductoLimpio, '_');
+        
+        $nombreArchivo = 'KF_' . $nombreProductoLimpio . '_' . $request->fechaInicio . '_' . $request->fechaFin . '.xlsx';
+
+        
+        return Excel::download(
+            new KardexDetalladoExport(
+                $data, 
+                $articulo, 
+                $request->fechaInicio, 
+                $request->fechaFin
+            ), 
+            $nombreArchivo
+        );
     }
 }
 
