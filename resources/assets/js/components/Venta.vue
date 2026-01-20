@@ -720,7 +720,7 @@
                       <button class="btn-selector-btn" :class="{ active: opcionPago === 'qr' }"
                         @click="opcionPago = 'qr'">
                         <i class="fa fa-qrcode mr-2"></i>
-                        Banco
+                        QR
                       </button>
                     </div>
                   </div>
@@ -810,61 +810,47 @@
                   </div>
 
                   <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
-                    <div class="card">
-                      <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
-                        <div class="d-flex align-items-center">
-                          <div class="form-group mb-0">
-                            <div class="p-mb-3" style="width: 100%;">
-                              <label class="label-input">Seleccionar Banco</label>
-                              <Dropdown v-model="bancoSeleccionado" :options="bancos" optionLabel="nombre_banco"
-                                placeholder="Seleccione un banco" class="w-full" @change="onBancoSelect">
-                                <template #option="slotProps">
-                                  <div class="banco-opcion">
-                                    <img :src="getBankUrl(slotProps.option.nombre_banco)" class="banco-logo" />
-                                    <div class="banco-detalles">
-                                      <div class="cuenta">{{ slotProps.option.nombre_cuenta }}</div>
-                                      <div class="numero">{{ slotProps.option.numero_cuenta }}</div>
-                                      <div class="tipo">{{ slotProps.option.tipo_cuenta }}</div>
-                                    </div>
-                                  </div>
-                                </template>
+                    <div class="card mb-2">
+                      <div class="card-body">
+                        <h5 class="mb-3" style="font-size: 0.95rem;">
+                          Detalle de Venta
+                        </h5>
 
-                                <template #value="slotProps">
-                                  <div v-if="slotProps.value" class="banco-value">
-                                    <img :src="getBankUrl(slotProps.value.nombre_banco)" class="banco-logo" />
-                                    <span class="cuenta">{{ slotProps.value.nombre_cuenta }}</span>
-                                  </div>
-                                  <span v-else>-</span>
-                                </template>
-                              </Dropdown>
-                            </div>
-                            <h5 class="mb-0" style="font-size: 0.95rem;">
-                              Detalle de Venta
-                            </h5>
-
-                            <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
-                            <div v-if="saldoFavorCliente > 0" class="alert alert-success py-1 mb-2"
-                              style="font-size: 0.75rem;">
-                              <i class="fa fa-gift mr-1"></i>
-                              <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
-                            </div>
-
-                            <label for="montoEfectivo">Total a pagar:</label>
-                            <span class="font-weight-bold">{{
-                              (montoEfectivo = Math.max(0, calcularTotal - saldoFavorCliente).toFixed(2))
-                            }}</span>
-                            <small v-if="saldoFavorCliente > 0" class="d-block text-muted">
-                              (Subtotal: {{ calcularTotal.toFixed(2) }} - Saldo a favor: {{ saldoFavorCliente.toFixed(2)
-                              }})
-                            </small>
-                          </div>
+                        <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
+                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                          style="font-size: 0.8rem;">
+                          <i class="fa fa-gift mr-1"></i>
+                          <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                         </div>
-                        <div class="d-flex flex-wrap justify-content-center mt-2 mt-md-0">
-                          <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
-                            <i class="fa fa-check mr-2"></i> Registrar Pago
-                          </button>
+
+                        <div class="d-flex flex-column">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
+                            <span style="font-size: 0.85rem;">Total a Pagar:</span>
+                            <span class="font-weight-bold ml-2" style="font-size: 0.95rem;">{{
+                              Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
+                            }}
+                              {{ monedaVenta[1] }}</span>
+                          </div>
+                          <small v-if="saldoFavorCliente > 0" class="text-muted">
+                            (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                            {{
+                              saldoFavorCliente.toFixed(2) }})
+                          </small>
                         </div>
                       </div>
+                    </div>
+
+                    <button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
+                    <!-- Contenedor de los botones -->
+                    <div class="d-flex flex-wrap justify-content-center">
+                      <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(1)">
+                        <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
+                          style="height: 24px;">
+                      </button>
+                      <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
+                        <i class="fa fa-check mr-2"></i> Registrar Pago
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -975,77 +961,9 @@
                   </div>
 
                   <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
-                    <div class="card mb-2" style="font-size: 0.8rem;">
-                      <div class="card-body d-flex flex-column">
-
-                        <!-- 🔹 Descuento al Total -->
-                        <div v-if="permitir_bonificacion == 1 || permitir_descuento == 1" class="form-group mb-3">
-                          <label for="descuentoTotal" class="label-input">
-                            <i class="fa fa-percent mr-1"></i> Descuento al Total
-                          </label>
-
-                          <div class="input-group input-group-sm custom-input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text addon-small">%</span>
-                            </div>
-
-                            <input type="number" id="descuentoTotal" class="form-control input-uniforme"
-                              v-model="descuentoAdicional" :disabled="permitir_descuento != 1 && !habilitacionpromocion"
-                              placeholder="Ingrese el % de descuento" min="0" max="100" />
-                          </div>
-                        </div>
-
-                        <!-- 🔹 Monto Recibido -->
-                        <div class="form-group mb-3">
-                          <label class="label-input">Seleccionar Banco</label>
-                          <Dropdown v-model="bancoSeleccionado" :options="bancos" optionLabel="nombre_banco"
-                            placeholder="Seleccione un banco" class="w-full" @change="onBancoSelect">
-                            <template #option="slotProps">
-                              <div class="banco-opcion">
-                                <img :src="getBankUrl(slotProps.option.nombre_banco)" class="banco-logo" />
-                                <div class="banco-detalles">
-                                  <div class="cuenta">{{ slotProps.option.nombre_cuenta }}</div>
-                                  <div class="numero">{{ slotProps.option.numero_cuenta }}</div>
-                                  <div class="tipo">{{ slotProps.option.tipo_cuenta }}</div>
-                                </div>
-                              </div>
-                            </template>
-
-                            <template #value="slotProps">
-                              <div v-if="slotProps.value" class="banco-value">
-                                <img :src="getBankUrl(slotProps.value.nombre_banco)" class="banco-logo" />
-                                <span class="cuenta">{{ slotProps.value.nombre_cuenta }}</span>
-                              </div>
-                              <span v-else>-</span>
-                            </template>
-                          </Dropdown>
-                          <label for="montoEfectivo" class="label-input">
-                            <i class="fa fa-money mr-1"></i> Monto Recibido
-                          </label>
-                          <div class="input-group input-group-sm custom-input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text addon-small">{{ monedaVenta[1] }}</span>
-                            </div>
-                            <input type="number" id="montoEfectivo" class="form-control input-uniforme"
-                              v-model="recibido" placeholder="Ingrese el monto recibido" />
-                          </div>
-                        </div>
-
-                        <!-- 🔹 Cambio a Entregar -->
-                        <div class="form-group mb-0">
-                          <label for="cambioRecibir" class="label-input">
-                            <i class="fa fa-exchange mr-1"></i> Saldo Total
-                          </label>
-                          <input type="text" id="cambioRecibir" class="form-control input-cambio bg-light"
-                            :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido"
-                            readonly />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="card" style="font-size: 0.75rem;">
+                    <div class="card mb-2">
                       <div class="card-body">
-                        <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
+                        <h5 class="mb-3" style="font-size: 0.95rem;">
                           Detalle de Venta
                         </h5>
 
@@ -1056,45 +974,32 @@
                           <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                         </div>
 
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                          <div class="d-flex flex-column">
-                            <div class="d-flex align-items-center">
-                              <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
-                              <span style="font-size: 0.85rem;">Total a Pagar:</span>
-                              <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">{{
-                                Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
-                              }}
-                                {{ monedaVenta[1] }}</span>
-                            </div>
-                            <small v-if="saldoFavorCliente > 0" class="text-muted">
-                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
-                              {{
-                                saldoFavorCliente.toFixed(2) }})
-                            </small>
+                        <div class="d-flex flex-column">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
+                            <span style="font-size: 0.85rem;">Total a Pagar:</span>
+                            <span class="font-weight-bold ml-2" style="font-size: 0.95rem;">{{
+                              Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
+                            }}
+                              {{ monedaVenta[1] }}</span>
                           </div>
-
+                          <small v-if="saldoFavorCliente > 0" class="text-muted">
+                            (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                            {{
+                              saldoFavorCliente.toFixed(2) }})
+                          </small>
                         </div>
                       </div>
                     </div>
 
-                    <!--<button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
-                                                <div v-if="qrImage" class="mb-2 text-center">
-                                                    <img :src="qrImage" alt="Código QR" class="img-fluid" />
-                                                </div>
-                                                <button class="btn btn-secondary mb-2" @click="verificarEstado" v-if="qrImage">Verificar Estado de Pago</button>
-                                                <div v-if="estadoTransaccion" class="card p-2">
-                                                    <div class="font-weight-bold">Estado Actual:</div>
-                                                    <div>
-                                                        <span :class="'badge badge-' + badgeSeverity">{{ estadoTransaccion.objeto.estadoActual }}</span>
-                                                    </div>
-                                                </div>-->
-
+                    <button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
+      
                     <!-- Contenedor de los botones -->
-                    <div class="d-flex flex-wrap justify-content-center mt-2 mt-md-0">
-                      <!--<button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(7)">
-                            <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
-                              style="height: 24px;">
-                          </button>-->
+                    <div class="d-flex flex-wrap justify-content-center">
+                      <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(2)">
+                        <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
+                          style="height: 24px;">
+                      </button>
                       <button type="button" @click="aplicarDescuentoRecibo(2, 7)" class="btn btn-success">
                         <i class="fa fa-check mr-2"></i> Registrar Pago
                       </button>
@@ -1198,13 +1103,17 @@
 
             <Column field="precioUnidad" header="Precio Unidad" style="width: 12%" class="column-precio-unidad">
               <template #body="slotProps">
-                <div class="precio-wrapper">
+                <div class="precio-wrapper" style="display: flex; gap: 5px; align-items: center;">
                   <input type="text" v-model.number="slotProps.data.precioseleccionado"
-                    @input="actualizarDetalle(slotProps.index)" class="form-control form-control-sm input-precio-unidad"
-                    :disabled="permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1'" />
+                    @input="actualizarDetalle(slotProps.index); guardarCambioPrecio(slotProps.data)" class="form-control form-control-sm input-precio-unidad"
+                    :disabled="!slotProps.data.editandoPrecio && (permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1')" />
 
-                  <!-- <Button icon="pi pi-sync" class="p-button-sm p-button-secondary btn-precio-toggle"
-                    title="Cambiar precio" @click="togglePrecio(slotProps.index)" /> -->
+                  <Button 
+                    :icon="slotProps.data.editandoPrecio ? 'pi pi-check' : 'pi pi-pencil'" 
+                    class="p-button-sm p-button-secondary btn-precio-toggle"
+                    :class="slotProps.data.editandoPrecio ? 'p-button-success' : ''"
+                    :title="slotProps.data.editandoPrecio ? 'Guardar precio' : 'Editar precio'" 
+                    @click="toggleEditarPrecio(slotProps.data)" />
                 </div>
               </template>
             </Column>
@@ -1322,10 +1231,9 @@
               <!-- 🔽 DROPDOWN DE BANCOS -->
               <div v-if="tipoPagoCuota === 'banco'" class="mt-3 fade-in">
                 <label class="label-input">Seleccionar Banco</label>
-
+                <!--
                 <Dropdown v-model="bancoSeleccionado" :options="bancos" optionLabel="nombre_banco"
                   placeholder="Seleccione un banco" class="w-full custom-dropdown" @change="onBancoSelect">
-                  <!-- OPCIONES -->
                   <template #option="slotProps">
                     <div class="banco-opcion">
                       <img :src="getBankUrl(slotProps.option.nombre_banco)" class="banco-logo" />
@@ -1336,8 +1244,6 @@
                       </div>
                     </div>
                   </template>
-
-                  <!-- VALOR SELECCIONADO -->
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="banco-value">
                       <img :src="getBankUrl(slotProps.value.nombre_banco)" class="banco-logo" />
@@ -1347,6 +1253,8 @@
                   </template>
 
                 </Dropdown>
+                -->
+                
               </div>
             </div>
             <div class="p-mb-3">
@@ -1693,6 +1601,65 @@
         <Button label="Sí, eliminar" icon="pi pi-trash" class="p-button-danger" @click="confirmarEliminarCuota" />
       </template>
     </Dialog>
+    <Dialog :visible.sync="showQrDialog" :modal="true" :closable="true" :containerStyle="dialogContainerStyleQR">
+      <template #header>
+        <div class="d-flex align-items-center gap-2" style="border-bottom: 2px solid #dee2e6; padding-bottom: 0.5rem;">
+          <i class="pi pi-qrcode" style="font-size: 1.5rem; color: #000;"></i>
+          <h3 class="font-weight-bold m-0" style="color: #000;">Pago con QR</h3>
+        </div>
+      </template>
+
+      <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-4 py-3 px-2"
+        style="text-align: center;">
+        <div class="qr-image-container">
+          <img v-if="qrImage" :src="qrImage" alt="Código QR" class="img-fluid rounded border shadow-sm"
+            style="max-width: 350px; width: 100%; height: auto;" />
+        </div>
+
+        <div class="qr-actions d-flex flex-column align-items-center w-100" style="max-width: 350px;">
+          <div class="d-flex align-items-center mb-3 w-100 gap-3" v-if="qrImage" style="gap: 12px;">
+            <Button label="Verificar Estado de Pago" icon="pi pi-sync" class="p-button-info w-100"
+              @click="verificarEstado" />
+            <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+              <InputSwitch 
+                v-model="autoVerificarQR" 
+                :true-value="true"
+                :false-value="false" 
+                :aria-label="'Auto-verificar'"
+                :style="{
+                  zoom: '1.2'
+                }"
+                class="auto-verificar-switch" />
+              <span 
+                style="font-size: 0.9em; font-weight: 500; color: #495057;">
+                Auto
+              </span>
+            </div>
+          </div>
+
+          
+
+          <div v-if="estadoTransaccion" class="card w-100 p-3 text-left border shadow-sm" style="background: #f8f9fa;">
+            <div class="text-muted font-weight-bold mb-1">Estado actual:</div>
+            <span :class="'badge badge-' + badgeSeverity" style="font-size: 0.95rem;">
+              {{ estadoTransaccion.objeto.estadoActual }}
+            </span>
+          </div>
+          <!-- Progress Bar y Contador -->
+          <div v-if="autoVerificarQR && qrImage" class="w-100 mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-muted">Próxima verificación:</small>
+              <small class="font-weight-bold text-info">{{ verificacionCountdown }}s</small>
+            </div>
+            <ProgressBar :value="((8 - verificacionCountdown) / 8) * 100" :showValue="false" style="height: 6px;" />
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="Cerrar" icon="pi pi-times" @click="showQrDialog = false" class="p-button-danger" />
+      </template>
+    </Dialog>
 
     <Dialog :visible.sync="dialogVerCombo" :modal="true" :closable="false" :containerStyle="{ width: '800px' }"
       class="dialog-combo">
@@ -1750,6 +1717,8 @@ import Message from "primevue/message";
 import Tag from "primevue/tag";
 import SelectButton from "primevue/selectbutton";
 import InputNumber from "primevue/inputnumber";
+import InputSwitch from "primevue/inputswitch";
+import ProgressBar from "primevue/progressbar";
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import ToastService from 'primevue/toastservice';
@@ -1776,6 +1745,8 @@ export default {
     InputNumber,
     TabView,
     TabPanel,
+    InputSwitch,
+    ProgressBar,
     ToastService,
     Toast
   }, directives: {
@@ -1783,6 +1754,11 @@ export default {
   },
   data() {
     return {
+      autoVerificarQR: false,
+      autoVerificarQRInterval: null,
+      countdownInterval: null,
+      verificacionCountdown: 8,
+      showQrDialog: false,
       dialogVerCombo: false,
       nombreComboActual: '',
       productosSeleccionados: [],
@@ -2091,6 +2067,25 @@ export default {
         this.cargarBancos();
       }
     },
+    autoVerificarQR(newVal) {
+      if (newVal) {
+        this.startAutoVerificarQR();
+      } else {
+        this.stopAutoVerificarQR();
+      }
+    },
+    showQrDialog(newVal) {
+      if (!newVal) {
+        this.autoVerificarQR = false;
+        this.stopAutoVerificarQR();
+      }
+    },
+    
+    estadoTransaccion(newVal) {
+      if (newVal && newVal.objeto && newVal.objeto.estadoActual === "PAGADO") {
+        this.autoVerificarQR = false;
+      }
+    },
     documento(newVal) {
       const clienteSeleccionado = this.resultadosClientes[this.indiceSeleccionadoCliente];
       if (!clienteSeleccionado || clienteSeleccionado.num_documento !== newVal) {
@@ -2199,6 +2194,38 @@ export default {
   },
 
   methods: {
+    stopAutoVerificarQR() {
+      if (this.autoVerificarQRInterval) {
+        clearInterval(this.autoVerificarQRInterval);
+        this.autoVerificarQRInterval = null;
+      }
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+        this.countdownInterval = null;
+      }
+      this.verificacionCountdown = 8;
+    },
+    startAutoVerificarQR() {
+      if (this.autoVerificarQRInterval) return;
+      
+      // Inicializar el contador
+      this.verificacionCountdown = 8;
+      
+      // Interval para verificar cada 8 segundos
+      this.autoVerificarQRInterval = setInterval(() => {
+        if (this.autoVerificarQR && this.showQrDialog) {
+          this.verificarEstado();
+          this.verificacionCountdown = 8; // Reiniciar countdown
+        }
+      }, 8000);
+      
+      // Interval para actualizar el countdown cada segundo
+      this.countdownInterval = setInterval(() => {
+        if (this.autoVerificarQR && this.showQrDialog && this.verificacionCountdown > 0) {
+          this.verificacionCountdown--;
+        }
+      }, 1000);
+    },
     verCombosOfertas(id) {
       axios.get(`/itemcompuesto/${id}`).then((res) => {
         this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
@@ -2566,7 +2593,8 @@ export default {
             stocks: item.modo_venta === 'unidad' ? stockUnidad : stockCaja,
             stock_cajas: stockCaja,
             stock: stockUnidad,
-            codigo_producto: item.codigo
+            codigo_producto: item.codigo,
+            editandoPrecio: false // 🔹 Estado para editar precio
           };
         });
 
@@ -2737,6 +2765,62 @@ export default {
         detalle.modoVenta = 'unidad';
       }
       this.asignarPrecioPorModo(detalle);
+      // Guardar el cambio de modo y precio en BD
+      this.guardarCambioPrecio(detalle);
+    },
+
+    toggleEditarPrecio(detalle) {
+      // Cambiar el estado de edición
+      detalle.editandoPrecio = !detalle.editandoPrecio;
+
+      // Si se está guardando (desactivando edición), llamar a guardarCambioPrecio
+      if (!detalle.editandoPrecio) {
+        this.guardarCambioPrecio(detalle);
+      }
+    },
+
+    guardarCambioPrecio(detalle) {
+      // Cancelar el debounce anterior si existe
+      if (detalle._saveTimeout) {
+        clearTimeout(detalle._saveTimeout);
+      }
+
+      // Establecer un nuevo debounce de 500ms
+      detalle._saveTimeout = setTimeout(async () => {
+        try {
+          // Solo guardar si es una venta existente (tiene ID)
+          if (!this.ventaSeleccionada || !this.ventaSeleccionada.id) {
+            return;
+          }
+
+          const payload = {
+            idventa: this.ventaSeleccionada.id,
+            iddetalle: detalle.id,
+            precio: detalle.precioseleccionado,
+            modo_venta: detalle.modoVenta,
+            cantidad: detalle.cantidad,
+            descuento: detalle.descuento
+          };
+
+          await axios.post('/ventas/actualizar-detalle-precio', payload);
+
+          // Mostrar notificación de éxito (opcional, puede ser muy frecuente)
+          // this.$toast.add({
+          //   severity: 'success',
+          //   summary: 'Precio actualizado',
+          //   detail: 'El precio ha sido guardado correctamente.',
+          //   life: 2000
+          // });
+        } catch (error) {
+          console.error('Error al guardar el precio:', error);
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo guardar el cambio de precio.',
+            life: 3000
+          });
+        }
+      }, 500);
     },
 
     seleccionarDescuento() {
@@ -3182,6 +3266,7 @@ export default {
       this.alias = now.toLocaleString();
     },
     verificarEstado() {
+      this.isLoading = true;
       axios
         .post("/qr/verificarestado", {
           alias: this.aliasverificacion,
@@ -3191,9 +3276,14 @@ export default {
         })
         .catch((error) => {
           console.error(error);
+        })
+        .finally(() => {
+          this.isLoading = false;
         });
     },
     generarQr() {
+      this.isLoading = true;
+      this.actualizarFechaHora(); // Actualiza el alias siempre antes de generar QR
       this.aliasverificacion = this.alias;
       axios
         .post("/qr/generarqr", {
@@ -3203,12 +3293,15 @@ export default {
         .then((response) => {
           const imagenBase64 = response.data.objeto.imagenQr;
           this.qrImage = `data:image/png;base64,${imagenBase64}`;
+          this.showQrDialog = true; // Abrir el modal QR
         })
         .catch((error) => {
           console.error(error);
+        })
+        .finally(() => {
+          this.isLoading = false;
         });
-
-      this.alias = "";
+      // No vaciar alias aquí para evitar el bug
       this.montoQR = 0;
     },
     calcularPrecioUnitario(articulo) {
@@ -3800,6 +3893,7 @@ export default {
 
           usando_precio: 'uno',
           modoVenta: 'unidad',
+          editandoPrecio: false,
         };
 
         this.asignarPrecioPorModo(nuevoDetalle);
@@ -3920,6 +4014,7 @@ export default {
             precioseleccionado: data.precio_uno,
             total: data.precio_uno,
             tipo: tipo,
+            editandoPrecio: false,
           };
           this.arrayDetalle.push(nuevoDetalle);
 
@@ -4066,6 +4161,7 @@ export default {
             modoVenta: "unidad", // 🔹 inicia vendiendo en cajas
             descripcion_fabrica: data.descripcion_fabrica || "",
             codigo_producto: data.codigo || "",
+            editandoPrecio: false,
           };
           this.arrayDetalle.push(nuevoDetalle);
           console.log("Nuevo detalle agregado (item compuesto):", nuevoDetalle);
@@ -4158,6 +4254,7 @@ export default {
             tipo: tipo,
             codigo_producto: data.codigo,
             modoVenta: "unidad", // 🔹 inicia vendiendo en cajas
+            editandoPrecio: false,
           };
           this.arrayDetalle.push(nuevoDetalle);
 
@@ -7583,5 +7680,66 @@ div[class*="swal"] {
   background: #d93025 !important;
   color: white !important;
   font-weight: bold;
+}
+
+/* === Estilos para Auto-Verificar InputSwitch === */
+.auto-verificar-switch :deep(.p-inputswitch) {
+  width: 50px !important;
+  height: 26px !important;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 2px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch.p-highlight) {
+  background-color: #28a745 !important;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.4) !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch:not(.p-highlight)) {
+  background-color: #c0c0c0 !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch .p-inputswitch-slider) {
+  background: transparent !important;
+  border-radius: 12px !important;
+  transition: 0.3s ease !important;
+  padding: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch .p-inputswitch-slider:before) {
+  content: '' !important;
+  background-color: white !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: transform 0.3s ease !important;
+  margin: 0 3px !important;
+  flex-shrink: 0 !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch.p-highlight .p-inputswitch-slider:before) {
+  transform: translateX(24px) !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch:hover) {
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.auto-verificar-switch :deep(.p-inputswitch.p-disabled) {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Espaciado entre switch y label */
+.auto-verificar-switch {
+  margin: 0 2px !important;
+  vertical-align: middle !important;
 }
 </style>

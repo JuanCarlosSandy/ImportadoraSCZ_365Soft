@@ -5033,6 +5033,154 @@ public function actualizarVenta(Request $request)
         ], 500);
     }
 }
+public function actualizarDetallePrecio(Request $request)
+{
+    try {
+        $request->validate([
+            'idventa' => 'required|integer|exists:ventas,id',
+            'iddetalle' => 'required|integer|exists:detalle_ventas,id',
+            'precio' => 'required|numeric|min:0',
+            'modo_venta' => 'required|string|in:unidad,docena,caja',
+            'cantidad' => 'required|numeric|min:1',
+            'descuento' => 'required|numeric|min:0|max:100'
+        ]);
+
+        DB::beginTransaction();
+
+        // 🔹 Obtener la venta
+        $venta = Venta::findOrFail($request->idventa);
+
+        // 🔹 Obtener el detalle
+        $detalle = DetalleVenta::findOrFail($request->iddetalle);
+
+        // 🔹 Guardar inventario original
+        $articulo = Articulo::find($detalle->idarticulo);
+        $unidadEnvase = $articulo->unidad_envase ?? 1;
+
+        // 🔹 Calcular unidades originales
+        $unidadesOriginales = $detalle->modo_venta === 'caja'
+            ? $detalle->cantidad * $unidadEnvase
+            : $detalle->cantidad;
+
+        // 🔹 Calcular unidades nuevas
+        $unidadesNuevas = $request->modo_venta === 'caja'
+            ? $request->cantidad * $unidadEnvase
+            : $request->cantidad;
+
+        // 🔹 Actualizar detalle
+        $precioAnterior = $detalle->precio;
+        $detalle->precio = $request->precio;
+        $detalle->modo_venta = $request->modo_venta;
+        $detalle->cantidad = $request->cantidad;
+        $detalle->descuento = $request->descuento;
+        $detalle->save();
+
+        // 🔹 AJUSTAR INVENTARIO (revertir original + aplicar nuevo)
+        // Revertir unidades originales
+        if ($unidadesOriginales > 0) {
+            DB::table('inventarios')
+                ->where('idalmacen', $venta->idalmacen)
+                ->where('idarticulo', $detalle->idarticulo)
+                ->increment('saldo_stock', $unidadesOriginales);
+        }
+
+        // Aplicar unidades nuevas
+        if ($unidadesNuevas > 0) {
+            DB::table('inventarios')
+                ->where('idalmacen', $venta->idalmacen)
+                ->where('idarticulo', $detalle->idarticulo)
+                ->decrement('saldo_stock', $unidadesNuevas);
+        }
+
+        // 🔹 RECALCULAR TOTAL DE LA VENTA
+        $nuevoTotal = DetalleVenta::where('idventa', $venta->id)
+            ->get()
+            ->sum(function ($item) {
+                $cantidadReal = $item->modo_venta === 'caja'
+                    ? $item->cantidad * ($item->articulo->unidad_envase ?? 1)
+                    : $item->cantidad;
+
+                $subtotal = $item->precio * $cantidadReal;
+                $descuento = $subtotal * ($item->descuento / 100);
+                return $subtotal - $descuento;
+            });
+
+        $totalAnterior = (float)$venta->total;
+        $venta->total = $nuevoTotal;
+        $venta->save();
+
+        // 🔹 ACTUALIZAR CUOTAS DE CRÉDITO (si existen)
+        if ($venta->idtipo_venta == 2) {
+            $cuotas = CuotasCredito::where('idcredito', $venta->id)
+                ->orderBy('numero_cuota', 'asc')
+                ->get();
+
+            if ($cuotas->count() > 0) {
+                $diferencia = $nuevoTotal - $totalAnterior;
+
+                foreach ($cuotas as $cuota) {
+                    $nuevoSaldo = (float)$cuota->saldo_restante + $diferencia;
+                    if ($nuevoSaldo < 0) $nuevoSaldo = 0;
+
+                    $cuota->saldo_restante = $nuevoSaldo;
+                    $cuota->save();
+                }
+            }
+        }
+
+        // 🔹 ACTUALIZAR CAJA (si venta al contado)
+        if ($venta->idtipo_venta == 1) {
+            $caja = Caja::find($venta->idcaja);
+            if ($caja) {
+                $diferencia = $nuevoTotal - $totalAnterior;
+
+                $caja->ventas += $diferencia;
+                $caja->saldototalventas += $diferencia;
+
+                if ($venta->idtipo_pago == 1) {
+                    $caja->ventasContado += $diferencia;
+                    $caja->saldoCaja += $diferencia;
+                } elseif ($venta->idtipo_pago == 7) {
+                    $caja->ventasQR += $diferencia;
+                }
+
+                $caja->save();
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Precio actualizado correctamente',
+            'nuevoTotal' => $nuevoTotal
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Datos inválidos',
+            'errors' => $e->errors()
+        ], 422);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        \Log::error("Error al actualizar precio del detalle", [
+            'exception' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+            'request' => $request->all()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al actualizar el precio',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 public function registrarGastoCredito(Request $request)
 {
     DB::beginTransaction();

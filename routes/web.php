@@ -1014,6 +1014,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::delete('/monto-bonificacion/eliminar/{id}', 'MontoBonificacionController@destroy');
         Route::get('/ventas/obtener-completa/{id}', 'VentaController@obtenerVentaCompleta');
         Route::post('/ventas/actualizar', 'VentaController@actualizarVenta');
+        Route::post('/ventas/actualizar-detalle-precio', 'VentaController@actualizarDetallePrecio');
         Route::get('/ingresos/obtener-completo/{id}', 'IngresoController@obtenerCompleto');
         Route::get('/ingreso/obtener/{id}', 'IngresoController@obtenerIngreso');
         Route::post('/ingreso/actualizar', 'IngresoController@actualizar');
