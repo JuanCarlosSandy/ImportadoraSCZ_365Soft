@@ -28,7 +28,10 @@
       <Column field="nombre_almacen" header="Almacén"></Column>
       <Column header="En Stock">
         <template #body="slotProps">
-          <span>{{ slotProps.data.stock }} {{ slotProps.data.descripcion_fabrica }}</span>
+          <span
+            >{{ slotProps.data.stock }}
+            {{ slotProps.data.descripcion_fabrica }}</span
+          >
         </template>
       </Column>
       <Column header="Estado">
@@ -89,7 +92,7 @@ export default {
     listarInventario(page = 1, buscar = "", criterio = "") {
       axios
         .get(
-          `/inventarios/productosbajostock?page=${page}&buscar=${buscar}&criterio=${criterio}`
+          `/inventarios/productosbajostock?page=${page}&buscar=${buscar}&criterio=${criterio}`,
         )
         .then((response) => {
           this.arrayInventario = response.data.inventarios.data;
@@ -105,7 +108,28 @@ export default {
       this.listarInventario(page, this.buscar, this.criterio);
     },
     cargarExcel() {
-      window.open("/inventarios/listarReporteBajoStockExcel", "_blank");
+      axios
+        .post(
+          "/inventarios/listarReporteBajoStockExcel",
+          {
+            // Aquí pasas tu array tal cual lo tienes
+            lista: this.arrayInventario,
+          },
+          {
+            responseType: "blob", // OBLIGATORIO: Para que entienda que recibe un archivo
+          },
+        )
+        .then((response) => {
+          // Truco para descargar el archivo que devuelve el backend
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", "articulosBajoStock.xlsx");
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        })
+        .catch((e) => console.error(e));
     },
     getRowClass(data) {
       return {

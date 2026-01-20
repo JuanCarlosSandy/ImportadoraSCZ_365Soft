@@ -763,6 +763,10 @@ Route::group(["middleware" => ["auth"]], function () {
             "/inventarios/listarReporteBajoStockExcel",
             "InventarioController@listarReporteBajoStockExcel"
         );
+        Route::post(
+            "/inventarios/listarReporteBajoStockExcel",
+            "InventarioController@listarReporteBajoStockExcel"
+        );
         //listado para seleccionar producto En TRASPASO
         Route::get(
             "/inventariosTraspaso",

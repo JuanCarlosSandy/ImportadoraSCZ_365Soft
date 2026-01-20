@@ -251,15 +251,7 @@ class ReportesInventariosController extends Controller
             $saldoCajas = intdiv($saldo_stock, $unidadEnvase);
             $saldoUnidades = $saldo_stock % $unidadEnvase;
 
-            if ($saldoCajas > 0 && $saldoUnidades > 0) {
-                $saldoTexto = "{$saldoCajas} cajas y {$saldoUnidades} {$unidadNombre}";
-            } elseif ($saldoCajas > 0) {
-                $saldoTexto = "{$saldoCajas} cajas";
-            } elseif ($saldoUnidades > 0) {
-                $saldoTexto = "{$saldoUnidades} {$unidadNombre}";
-            } else {
-                $saldoTexto = "0";
-            }
+            $saldoTexto = "{$saldo_stock} Unidades";
 
             $resultados[] = [
                 'id_articulo' => $producto->id,         
@@ -272,7 +264,7 @@ class ReportesInventariosController extends Controller
                 'total_ventas' => $ventasEnUnidades, 
                 'total_ventas_texto' => $ventasTexto,
                 'total_ingresos' => $ingresos,
-                'total_ingresos_texto' => $ingresos . ' cajas',
+                'total_ingresos_texto' => $ingresos . ' Unidades',
 
                 'total_traspasos_entrada' => $traspasosEntrada,
                 'total_traspasos_salida' => $traspasosSalida,
@@ -336,7 +328,7 @@ class ReportesInventariosController extends Controller
                 'ingresos.fecha_hora',
                 'ingresos.tipo_comprobante',
                 'ingresos.num_comprobante',
-                'detalle_ingresos.cantidad',
+                DB::raw("CONCAT(detalle_ingresos.cantidad, ' Unidades') as cantidad"),
                 'detalle_ingresos.precio',
                 'users.usuario as responsable_compra' 
             )

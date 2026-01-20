@@ -2,43 +2,38 @@
 
 namespace App\Exports;
 
-use App\Inventario;
-use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWidths, WithStyles
+class ProductosBajoStockExport implements FromArray, WithHeadings, WithColumnWidths, WithStyles
 {
-    /**
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function query()
+    protected $datos;
+
+    // Recibimos el array (la parte "data" de tu JSON)
+    public function __construct(array $datos)
     {
-        $usuario = Auth::user(); // Usuario logueado
+        $this->datos = $datos;
+    }
 
-        $query = Inventario::join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-            ->join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-            ->join('personas', 'proveedores.id', '=', 'personas.id')
-            ->select(
-                'articulos.codigo',
-                'articulos.nombre as nombre_producto',
-                'almacens.nombre_almacen',
-                'inventarios.saldo_stock',
-                'personas.nombre as nombre_proveedor'
-            )
-            ->whereRaw('articulos.stock > inventarios.saldo_stock')
-            ->orderBy('inventarios.id', 'desc');
-
-        // ✅ Filtrar por la sucursal del usuario, excepto si tiene idrol = 4
-        if ($usuario->idrol != 4) {
-            $query->where('almacens.sucursal', $usuario->idsucursal);
-        }
-
-        return $query;
+    /**
+     * Aquí convertimos tu array JSON en las filas del Excel
+     */
+    public function array(): array
+    {
+        // Usamos array_map para devolver SOLO los campos que queremos en el orden de los encabezados
+        return array_map(function ($item) {
+            // $item representa cada objeto dentro de "data"
+            return [
+                $item['codigo'],              // Columna A: Código
+                $item['nombre_producto'],     // Columna B: Producto
+                $item['nombre_almacen'],      // Columna C: Almacen
+                $item['stock'],               // Columna D: Saldo Stock (Nota: en tu JSON es "stock", no "saldo_stock")
+                $item['nombre_proveedor'],    // Columna E: Proveedor
+            ];
+        }, $this->datos);
     }
 
     public function headings(): array
@@ -60,7 +55,6 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
             'C' => 20,
             'D' => 15,
             'E' => 20,
-            'F' => 25,
         ];
     }
 

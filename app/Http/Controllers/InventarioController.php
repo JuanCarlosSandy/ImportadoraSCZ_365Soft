@@ -375,9 +375,11 @@ class InventarioController extends Controller
 
 
 
-    public function listarReporteBajoStockExcel()
+    public function listarReporteBajoStockExcel(Request $request)
     {
-        return Excel::download(new ProductosBajoStockExport, 'articulosBajoStock.xlsx');
+        $datos = $request->lista; 
+
+        return Excel::download(new ProductosBajoStockExport($datos), 'articulosBajoStock.xlsx');
     }
     //-------------------aumente el listado mejorado------
     public function indextraspaso(Request $request)
