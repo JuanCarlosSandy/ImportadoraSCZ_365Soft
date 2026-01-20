@@ -820,6 +820,15 @@ class ArticuloController extends Controller
 
     public function importar(Request $request)
     {
+        $user = auth()->user(); 
+
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => 'Acceso Restringido',
+                'mensaje' => 'No tienes permisos para realizar importaciones masivas.'
+            ], 403); 
+        }
+
         try {
             $request->validate([
                 'archivo' => 'required|mimes:xlsx,xls',
