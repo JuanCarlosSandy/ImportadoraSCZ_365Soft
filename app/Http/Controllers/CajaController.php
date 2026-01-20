@@ -202,20 +202,22 @@ class CajaController extends Controller
     $caja->fechaCierre = now()->setTimezone('America/La_Paz');
     $caja->estado = '0';
 
-    // Guardar el monto de arqueo (el saldoCaja que se usa para cierre)
+    // Guardar el monto de arqueo (el monto que realizas del arqueo)
     $caja->monto_arqueo = $request->saldoFaltante;
 
-    // Calcular diferencia entre saldo en caja y saldo declarado en el cierre
-    $diferencia = $request->saldoFaltante - $caja->saldototalventas;
+    // Calcular diferencia: monto arqueo (lo que contaste) - saldo caja (lo que debería haber en caja)
+    $montoArqueo = floatval($request->saldoFaltante);
+    $saldoCaja = floatval($caja->saldoCaja);
+    $diferencia = $montoArqueo - $saldoCaja;
 
     if ($diferencia > 0) {
-        // Si el saldo declarado es mayor al saldo en caja → HAY FALTANTE
+        // Si contaste más que lo que dice el sistema → HAY SOBRANTE
         $caja->saldoFaltante = 0; // Asegurar que no se registre faltante
         $caja->saldoSobrante = abs($diferencia);
     } elseif ($diferencia < 0) {
-        // Si el saldo en caja es mayor al declarado → HAY SOBRANTE
+        // Si contaste menos que lo que dice el sistema → HAY FALTANTE
         $caja->saldoSobrante = 0; // Asegurar que no se registre sobrante
-        $caja->saldoFaltante = $diferencia;
+        $caja->saldoFaltante = abs($diferencia);
 
     } else {
         // Si no hay diferencia, ambos quedan en 0
