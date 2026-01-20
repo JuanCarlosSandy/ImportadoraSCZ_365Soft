@@ -222,7 +222,7 @@
               <div class="col-md-6">
                 <label for="nombre" class="required-field">
                   <span class="required-icon">*</span>
-                  Stock Minimo (Cajas)
+                  Stock Minimo (Unidades)
                 </label>
                 <div class="p-inputgroup">
                   <InputNumber id="stockMinimo" v-model="datosFormulario.stock" placeholder="Ej: 10"
@@ -403,7 +403,7 @@
             <!-- Stock mínimo -->
             <div class="detalle-row detalle-stock">
               <span class="detalle-label"><i class="pi pi-box"></i> Stock mínimo:</span>
-              <span class="badge-stock">{{ articuloSeleccionado.stock }} Cajas</span>
+              <span class="badge-stock">{{ articuloSeleccionado.stock }} {{ articuloSeleccionado.descripcion_fabrica }}</span>
             </div>
             <!-- Medida Producto -->
             <div class="detalle-row detalle-stock">
@@ -1611,7 +1611,8 @@ export default {
       }
     },
     async descargarReporteExcel() {
-      await this.descargarArchivoReporte('/articulo/reporteExcel', 'articulos.xlsx');
+      const fecha = new Date().toISOString().slice(0, 10);
+      await this.descargarArchivoReporte('/articulo/reporteExcel', `ProductosBajoStock_${fecha}.xlsx`);
     },
     cambiarPagina(page, buscar, criterio) {
       let me = this;

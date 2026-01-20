@@ -317,6 +317,8 @@ class InventarioController extends Controller
                 'articulos.stock',
                 'articulos.precio_costo_unid',
                 'personas.nombre as nombre_proveedor',
+                'articulos.descripcion_fabrica',
+
 
                 // SUMA del stock total real del artículo (en unidades)
                 DB::raw('SUM(inventarios.saldo_stock) as saldo_total_unidades'),
@@ -337,7 +339,8 @@ class InventarioController extends Controller
                 'articulos.unidad_envase',
                 'articulos.stock',
                 'articulos.precio_costo_unid',
-                'personas.nombre'
+                'personas.nombre',
+                'articulos.descripcion_fabrica',
             )
 
             // 🔥 Bajo stock comparando CAJAS TOTALES de inventario vs stock mínimo configurado

@@ -161,158 +161,217 @@
       </template>
     </Panel>
 
-    <div
-      class="modal"
-      tabindex="-1"
-      :class="{ mostrar: modal }"
-      role="dialog"
-      aria-labelledby="myModalLabel"
-      style="display: none;"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-primary modal-lg" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title">FILTROS DE REPORTES</h4>
-            <button
-              type="button"
-              class="close"
-              @click="cerrarModal()"
-              aria-label="Close"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </div>
-          <form @submit.prevent="enviarFormulario">
-            <div class="modal-body">
-              <!-- Primera fila: Sucursal, Artículo, Categoría -->
-              <div class="form-group row">
-                <div class="col-12 col-md-4 mb-3">
-                  <label class="font-weight-bold"
-                    >Sucursal
-                    <span class="text-danger">OBLIGATORIO</span></label
-                  >
-                  <div class="input-group">
-                    <input
-                      class="form-control"
-                      type="text"
-                      :class="{ 'is-invalid': erroresFiltros.sucursal }"
-                      placeholder="Seleccione una sucursal"
-                      disabled
-                      v-model="sucursalseleccionada.nombre"
-                    />
-                    <div class="input-group-append">
-                      <button
-                        class="btn btn-primary"
-                        type="button"
-                        @click="abrirModal2('Sucursal')"
-                      >
-                        ...
-                      </button>
-                    </div>
-                  </div>
-                  <small v-if="erroresFiltros.sucursal" class="text-danger">{{ erroresFiltros.sucursal }}</small>
-                </div>
-
-                <div class="col-12 col-md-4 mb-3">
-                  <label class="font-weight-bold">Artículo</label>
-                  <div class="input-group">
-                    <input
-                      class="form-control"
-                      type="text"
-                      placeholder="Seleccione un artículo"
-                      disabled
-                      v-model="articuloseleccionada.nombre"
-                    />
-                    <div class="input-group-append">
-                      <button
-                        class="btn btn-primary"
-                        type="button"
-                        @click="abrirModal2('Articulo')"
-                      >
-                        ...
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-4 mb-3">
-                  <label class="font-weight-bold">Categoría</label>
-                  <div class="input-group">
-                    <input
-                      class="form-control"
-                      type="text"
-                      placeholder="Seleccione una categoría"
-                      disabled
-                      v-model="lineaseleccionada.nombre"
-                    />
-                    <div class="input-group-append">
-                      <button
-                        class="btn btn-primary"
-                        type="button"
-                        @click="abrirModal2('Lineas')"
-                      >
-                        ...
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Segunda fila: Fechas -->
-              <div class="form-group row">
-                <div class="col-12 col-md-6 mb-3">
-                  <label class="font-weight-bold"
-                    >Fecha Inicio
-                    <span class="text-danger">OBLIGATORIO</span></label
-                  >
-                  <input
-                    class="form-control"
-                    :class="{ 'is-invalid': erroresFiltros.fechaInicio }"
-                    type="date"
-                    v-model="fechaInicio"
-                    @change="erroresFiltros.fechaInicio = ''"
-                  />
-                  <small v-if="erroresFiltros.fechaInicio" class="text-danger">{{ erroresFiltros.fechaInicio }}</small>
-                </div>
-
-                <div class="col-12 col-md-6 mb-3">
-                  <label class="font-weight-bold"
-                    >Fecha Fin
-                    <span class="text-danger">OBLIGATORIO</span></label
-                  >
-                  <input 
-                    class="form-control" 
-                    :class="{ 'is-invalid': erroresFiltros.fechaFin }"
-                    type="date" 
-                    v-model="fechaFin"
-                    @change="erroresFiltros.fechaFin = ''" 
-                  />
-                  <small v-if="erroresFiltros.fechaFin" class="text-danger">{{ erroresFiltros.fechaFin }}</small>
-                </div>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-danger"
-                @click="cerrarModal()"
-              >
-                Cerrar
-              </button>
-              <button
-                type="button"
-                @click="aplicarFiltrosReporte()"
-                class="btn btn-primary"
-              >
-                Visualizar Reporte
-              </button>
-            </div>
-          </form>
-        </div>
+    
+<div
+  class="modal"
+  tabindex="-1"
+  :class="{ mostrar: modal }"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  style="display: none;"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-primary modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">FILTROS DE REPORTES</h4>
+        <button
+          type="button"
+          class="close"
+          @click="cerrarModal()"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
       </div>
+      <form @submit.prevent="enviarFormulario">
+        <div class="modal-body">
+          <!-- Primera fila: Sucursal, Artículo, Categoría -->
+          <div class="form-group row">
+            <!-- Sucursal -->
+            <div class="col-12 col-md-4 mb-3">
+              <label class="font-weight-bold">
+                Sucursal
+                <span class="text-danger">OBLIGATORIO</span>
+              </label>
+              <div class="input-group">
+                <input
+                  class="form-control"
+                  type="text"
+                  :class="{ 'is-invalid': erroresFiltros.sucursal }"
+                  placeholder="Seleccione una sucursal"
+                  disabled
+                  v-model="sucursalseleccionada.nombre"
+                />
+                <div class="input-group-append">
+                  <button
+                    class="btn btn-primary"
+                    type="button"
+                    @click="abrirModal2('Sucursal')"
+                  >
+                    Buscar
+                  </button>
+                  <button
+                    v-if="sucursalseleccionada.nombre"
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="limpiarFiltro('sucursal')"
+                    title="Limpiar filtro"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+              <small v-if="erroresFiltros.sucursal" class="text-danger">{{ erroresFiltros.sucursal }}</small>
+            </div>
+
+            <!-- Artículo -->
+            <div class="col-12 col-md-4 mb-3">
+              <label class="font-weight-bold">Artículo</label>
+              <div class="input-group">
+                <input
+                  class="form-control"
+                  type="text"
+                  placeholder="Seleccione un artículo"
+                  disabled
+                  v-model="articuloseleccionada.nombre"
+                />
+                <div class="input-group-append">
+                  <button
+                    class="btn btn-primary"
+                    type="button"
+                    @click="abrirModal2('Articulo')"
+                  >
+                    Buscar
+                  </button>
+                  <button
+                    v-if="articuloseleccionada.nombre"
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="limpiarFiltro('articulo')"
+                    title="Limpiar filtro"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Categoría -->
+            <div class="col-12 col-md-4 mb-3">
+              <label class="font-weight-bold">Categoría</label>
+              <div class="input-group">
+                <input
+                  class="form-control"
+                  type="text"
+                  placeholder="Seleccione una categoría"
+                  disabled
+                  v-model="lineaseleccionada.nombre"
+                />
+                <div class="input-group-append">
+                  <button
+                    class="btn btn-primary"
+                    type="button"
+                    @click="abrirModal2('Lineas')"
+                  >
+                    Buscar
+                  </button>
+                  <button
+                    v-if="lineaseleccionada.nombre"
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="limpiarFiltro('linea')"
+                    title="Limpiar filtro"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Segunda fila: Fechas -->
+          <div class="form-group row">
+            <!-- Fecha Inicio -->
+            <div class="col-12 col-md-6 mb-3">
+              <label class="font-weight-bold">
+                Fecha Inicio
+                <span class="text-danger">OBLIGATORIO</span>
+              </label>
+              <div class="input-group">
+                <input
+                  class="form-control"
+                  :class="{ 'is-invalid': erroresFiltros.fechaInicio }"
+                  type="date"
+                  v-model="fechaInicio"
+                  @change="erroresFiltros.fechaInicio = ''"
+                />
+                <div class="input-group-append">
+                  <button
+                    v-if="fechaInicio"
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="limpiarFiltro('fechaInicio')"
+                    title="Limpiar filtro"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+              <small v-if="erroresFiltros.fechaInicio" class="text-danger">{{ erroresFiltros.fechaInicio }}</small>
+            </div>
+
+            <!-- Fecha Fin -->
+            <div class="col-12 col-md-6 mb-3">
+              <label class="font-weight-bold">
+                Fecha Fin
+                <span class="text-danger">OBLIGATORIO</span>
+              </label>
+              <div class="input-group">
+                <input
+                  class="form-control"
+                  :class="{ 'is-invalid': erroresFiltros.fechaFin }"
+                  type="date"
+                  v-model="fechaFin"
+                  @change="erroresFiltros.fechaFin = ''"
+                />
+                <div class="input-group-append">
+                  <button
+                    v-if="fechaFin"
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    @click="limpiarFiltro('fechaFin')"
+                    title="Limpiar filtro"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+              <small v-if="erroresFiltros.fechaFin" class="text-danger">{{ erroresFiltros.fechaFin }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-danger"
+            @click="cerrarModal()"
+          >
+            Cerrar
+          </button>
+          <button
+            type="button"
+            @click="aplicarFiltrosReporte()"
+            class="btn btn-primary"
+          >
+            Visualizar Reporte
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
+</div>
 
     <!-- MODAL PARA LA LISTA DE MEDIDA -->
     <div
@@ -1366,6 +1425,32 @@ export default {
   },
 
   methods: {
+    limpiarFiltro(tipo) {
+      switch (tipo) {
+        case 'sucursal':
+          this.sucursalseleccionada = []; 
+          this.erroresFiltros.sucursal = ''; 
+          break;
+        
+        case 'articulo':
+          this.articuloseleccionada = []; 
+          break;
+        
+        case 'linea': 
+          this.lineaseleccionada = [];
+          break;
+        
+        case 'fechaInicio':
+          this.fechaInicio = '';
+          this.erroresFiltros.fechaInicio = '';
+          break;
+
+        case 'fechaFin':
+          this.fechaFin = '';
+          this.erroresFiltros.fechaFin = '';
+          break;
+      }
+    },
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
     },
