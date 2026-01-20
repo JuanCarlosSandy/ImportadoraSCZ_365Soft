@@ -1094,6 +1094,7 @@
                         <Column field="nombre_cliente" header="Cliente"></Column>
                         <Column field="modo_venta" header="Modo"></Column>
                         <Column field="cantidad" header="Cantidad"></Column>
+                        <Column field="cantidad_en_unidades" header="Cantidad en Unidades"></Column>
                     </DataTable>
                     <div v-if="detalleMovimientos.ventas.length === 0" class="text-center p-3">No hay ventas en este periodo.</div>
                 </div>

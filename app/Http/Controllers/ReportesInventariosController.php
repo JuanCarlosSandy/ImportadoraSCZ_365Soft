@@ -97,196 +97,186 @@ class ReportesInventariosController extends Controller
         return ['inventarios_valorado' => $resultados];
 
     }
-    public function resumenFisicoMovimientos(Request $request)
-    {
-        $fechaInicio = $request->fechaInicio . ' 00:00:00';
-        $fechaFin = $request->fechaFin . ' 23:59:59';
+   public function resumenFisicoMovimientos(Request $request)
+{
+    $fechaInicio = $request->fechaInicio . ' 00:00:00';
+    $fechaFin = $request->fechaFin . ' 23:59:59';
 
-        $productos = DB::table('articulos')
-            ->select(
-                'articulos.id',
-                'articulos.nombre as nombre_producto',
-                'articulos.codigo',
-                'categorias.nombre as nombre_categoria',
-                'almacens.id as id_almacen',
-                'almacens.nombre_almacen as nombre_almacen',
-                'sucursales.nombre as nombre_sucursal',
-                'articulos.descripcion_fabrica',
-                'articulos.unidad_envase'
-            )
-            ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
-            ->join('inventarios', 'inventarios.idarticulo', '=', 'articulos.id')
-            ->join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-            ->join('sucursales', 'almacens.sucursal', '=', 'sucursales.id')
-            ->where('articulos.condicion', 1)
-            ->groupBy(
-                'articulos.id',
-                'articulos.nombre',
-                'articulos.codigo',
-                'categorias.nombre',
-                'almacens.id',
-                'almacens.nombre_almacen',
-                'sucursales.nombre',
-                'articulos.descripcion_fabrica',
-                'articulos.unidad_envase'
-            );
+    $productos = DB::table('articulos')
+        ->select(
+            'articulos.id',
+            'articulos.nombre as nombre_producto',
+            'articulos.codigo',
+            'categorias.nombre as nombre_categoria',
+            'almacens.id as id_almacen',
+            'almacens.nombre_almacen as nombre_almacen',
+            'sucursales.nombre as nombre_sucursal',
+            'articulos.descripcion_fabrica',
+            'articulos.unidad_envase'
+        )
+        ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+        ->join('inventarios', 'inventarios.idarticulo', '=', 'articulos.id')
+        ->join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+        ->join('sucursales', 'almacens.sucursal', '=', 'sucursales.id')
+        ->where('articulos.condicion', 1)
+        ->groupBy(
+            'articulos.id',
+            'articulos.nombre',
+            'articulos.codigo',
+            'categorias.nombre',
+            'almacens.id',
+            'almacens.nombre_almacen',
+            'sucursales.nombre',
+            'articulos.descripcion_fabrica',
+            'articulos.unidad_envase'
+        );
 
-        if ($request->has('articulo') && $request->articulo !== 'undefined') {
-            $productos->where('articulos.id', $request->articulo);
-        }
-        if ($request->has('sucursal') && $request->sucursal !== 'undefined') {
-            $productos->where('sucursales.id', $request->sucursal);
-        }
-        if ($request->has('marca') && $request->marca !== 'undefined') {
-            $productos->where('articulos.idmarca', $request->marca);
-        }
-        if ($request->has('linea') && $request->linea !== 'undefined') {
-            $productos->where('articulos.idcategoria', $request->linea);
-        }
-
-        $productos = $productos->get();
-
-        $resultados = [];
-
-        foreach ($productos as $producto) {
-            $unidadNombre = $producto->descripcion_fabrica ?: 'unidades';
-
-            $ingresos = DB::table('detalle_ingresos')
-                ->join('ingresos', 'detalle_ingresos.idingreso', '=', 'ingresos.id')
-                ->where('ingresos.estado', 1)
-                ->where('ingresos.idalmacen', $producto->id_almacen)
-                ->where('detalle_ingresos.idarticulo', $producto->id)
-                ->whereBetween('ingresos.fecha_hora', [$fechaInicio, $fechaFin])
-                ->sum('detalle_ingresos.cantidad');
-
-            $ventasCaja = DB::table('ventas')
-                ->join('detalle_ventas', 'detalle_ventas.idventa', '=', 'ventas.id')
-                ->where('ventas.estado', '<>', 0)
-                ->where('ventas.idalmacen', $producto->id_almacen)
-                ->where('detalle_ventas.idarticulo', $producto->id)
-                ->where('detalle_ventas.modo_venta', 'caja')
-                ->whereBetween('ventas.fecha_hora', [$fechaInicio, $fechaFin])
-                ->sum('detalle_ventas.cantidad');
-
-            $ventasUnidad = DB::table('ventas')
-                ->join('detalle_ventas', 'detalle_ventas.idventa', '=', 'ventas.id')
-                ->where('ventas.estado', '<>', 0)
-                ->where('ventas.idalmacen', $producto->id_almacen)
-                ->where('detalle_ventas.idarticulo', $producto->id)
-                ->where('detalle_ventas.modo_venta', 'unidad')
-                ->whereBetween('ventas.fecha_hora', [$fechaInicio, $fechaFin])
-                ->sum('detalle_ventas.cantidad');
-            $unidadEnvase = max(1, (int) $producto->unidad_envase);
-
-            // convertir cajas -> unidades
-            $ventasEnUnidades = ($ventasCaja * $unidadEnvase) + $ventasUnidad;
-
-            // ahora obtener cajas y unidades sobrantes
-            $ventasCajasFinal = intdiv($ventasEnUnidades, $unidadEnvase);
-            $ventasUnidadesFinal = $ventasEnUnidades % $unidadEnvase;
-
-            // generar texto final
-            if ($ventasCajasFinal > 0 && $ventasUnidadesFinal > 0) {
-                $ventasTexto = "{$ventasCajasFinal} cajas y {$ventasUnidadesFinal} {$unidadNombre}";
-            } elseif ($ventasCajasFinal > 0) {
-                $ventasTexto = "{$ventasCajasFinal} cajas";
-            } else {
-                $ventasTexto = "{$ventasUnidadesFinal} {$unidadNombre}";
-            }
-
-            $traspasosEntrada = DB::table('detalle_traspasos')
-                ->join('traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
-                ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
-                ->where('inventarios.idarticulo', $producto->id)
-                ->where('traspasos.almacen_destino', $producto->id_almacen)
-                ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
-                ->sum('detalle_traspasos.cantidad_traspaso');
-
-            $traspasosSalida = DB::table('detalle_traspasos')
-                ->join('traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
-                ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
-                ->where('inventarios.idarticulo', $producto->id)
-                ->where('traspasos.almacen_origen', $producto->id_almacen)
-                ->where('traspasos.tipo_traspaso', 'Salida')
-                ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
-                ->sum('detalle_traspasos.cantidad_traspaso');
-
-            $ajusteEntrada = DB::table('ajuste_invetarios')
-                ->where('producto', $producto->id)
-                ->where('almacen', $producto->id_almacen)
-                ->where('idtipobajas', '!=', 2) 
-                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-                ->where('tipo_movimiento', 'entrada') 
-                ->sum('cantidad');
-
-          
-            $ajusteSalida = DB::table('ajuste_invetarios')
-                ->where('producto', $producto->id)
-                ->where('almacen', $producto->id_almacen)
-                ->where('idtipobajas', '!=', 2) 
-                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-                ->where('tipo_movimiento', 'salida') // <--- CORRECCIÓN AQUÍ (Verifica si en tu BD es 'Salida' o 'salida')
-                ->sum('cantidad');
-
-            $ajuste = DB::table('ajuste_invetarios')
-                ->where('producto', $producto->id)
-                ->where('almacen', $producto->id_almacen)
-                ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-                ->sum('cantidad');
-
-            $ajusteCajas = intdiv($ajuste, $unidadEnvase);
-            $ajusteUnidades = $ajuste % $unidadEnvase;
-
-            // generar texto final
-            if ($ajusteCajas > 0 && $ajusteUnidades > 0) {
-                $ajusteTexto = "{$ajusteCajas} cajas y {$ajusteUnidades} {$unidadNombre}";
-            } elseif ($ajusteCajas > 0) {
-                $ajusteTexto = "{$ajusteCajas} cajas";
-            } elseif ($ajusteUnidades > 0) {
-                $ajusteTexto = "{$ajusteUnidades} {$unidadNombre}";
-            } else {
-                $ajusteTexto = "0";
-            }
-
-            $saldo_stock = DB::table('inventarios')
-                ->where('idarticulo', $producto->id)
-                ->where('idalmacen', $producto->id_almacen)
-                ->sum('saldo_stock');
-            $saldoCajas = intdiv($saldo_stock, $unidadEnvase);
-            $saldoUnidades = $saldo_stock % $unidadEnvase;
-
-            $saldoTexto = "{$saldo_stock} Unidades";
-
-            $resultados[] = [
-                'id_articulo' => $producto->id,         
-                'id_almacen'  => $producto->id_almacen,
-                'codigo' => $producto->codigo,
-                'sucursal' => $producto->nombre_sucursal,
-                'almacen' => $producto->nombre_almacen,
-                'nombre_producto' => $producto->nombre_producto,
-                'categoria' => $producto->nombre_categoria,
-                'total_ventas' => $ventasEnUnidades, 
-                'total_ventas_texto' => $ventasTexto,
-                'total_ingresos' => $ingresos,
-                'total_ingresos_texto' => $ingresos . ' Unidades',
-
-                'total_traspasos_entrada' => $traspasosEntrada,
-                'total_traspasos_salida' => $traspasosSalida,
-                'total_ajuste' => $ajuste,
-                'ajuste_entrada' => $ajusteEntrada, 
-                'ajuste_salida' => $ajusteSalida,
-                'ajuste_entrada_detalle' => $ajusteEntrada, 
-                'ajuste_salida_detalle' => $ajusteSalida * -1,
-                'total_ajuste_texto' => $ajusteTexto,
-                'saldo_stock_actual' => $saldo_stock,
-                'saldo_stock_actual_texto' => $saldoTexto,
-                'descripcion_fabrica' => $producto->descripcion_fabrica,
-                'unidad_envase' => $producto->unidad_envase
-            ];
-        }
-
-        return ['resultados' => $resultados];
+    if ($request->has('articulo') && $request->articulo !== 'undefined') {
+        $productos->where('articulos.id', $request->articulo);
     }
+    if ($request->has('sucursal') && $request->sucursal !== 'undefined') {
+        $productos->where('sucursales.id', $request->sucursal);
+    }
+    if ($request->has('marca') && $request->marca !== 'undefined') {
+        $productos->where('articulos.idmarca', $request->marca);
+    }
+    if ($request->has('linea') && $request->linea !== 'undefined') {
+        $productos->where('articulos.idcategoria', $request->linea);
+    }
+
+    $productos = $productos->get();
+
+    $resultados = [];
+
+    foreach ($productos as $producto) {
+        $unidadNombre = $producto->descripcion_fabrica ?: 'unidades';
+
+        
+        $ingresos = DB::table('detalle_ingresos')
+            ->join('ingresos', 'detalle_ingresos.idingreso', '=', 'ingresos.id')
+            ->where('ingresos.estado', 1)
+            ->where('ingresos.idalmacen', $producto->id_almacen)
+            ->where('detalle_ingresos.idarticulo', $producto->id)
+            ->whereBetween('ingresos.fecha_hora', [$fechaInicio, $fechaFin])
+            ->sum('detalle_ingresos.cantidad');
+
+        
+        
+        $totalVentasCalculado = DB::table('ventas')
+            ->join('detalle_ventas', 'detalle_ventas.idventa', '=', 'ventas.id')
+            ->join('articulos', 'detalle_ventas.idarticulo', '=', 'articulos.id') 
+            ->where('ventas.estado', '<>', 0)
+            ->where('ventas.idalmacen', $producto->id_almacen)
+            ->where('detalle_ventas.idarticulo', $producto->id)
+            ->whereBetween('ventas.fecha_hora', [$fechaInicio, $fechaFin])
+            ->value(DB::raw("SUM(detalle_ventas.cantidad * (CASE 
+                WHEN detalle_ventas.modo_venta = 'caja' THEN articulos.unidad_envase 
+                WHEN detalle_ventas.modo_venta = 'docena' THEN 12 
+                ELSE 1 
+            END))"));
+
+        
+        $ventasEnUnidades = intval($totalVentasCalculado);
+
+        
+        $ventasTexto = $ventasEnUnidades . ' ' . ($ventasEnUnidades == 1 ? 'Unidad' : 'Unidades');
+
+        
+        $traspasosEntrada = DB::table('detalle_traspasos')
+            ->join('traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
+            ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
+            ->where('inventarios.idarticulo', $producto->id)
+            ->where('traspasos.almacen_destino', $producto->id_almacen)
+            ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
+            ->sum('detalle_traspasos.cantidad_traspaso');
+
+        
+        $traspasosSalida = DB::table('detalle_traspasos')
+            ->join('traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
+            ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
+            ->where('inventarios.idarticulo', $producto->id)
+            ->where('traspasos.almacen_origen', $producto->id_almacen)
+            ->where('traspasos.tipo_traspaso', 'Salida')
+            ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
+            ->sum('detalle_traspasos.cantidad_traspaso');
+
+        
+        $ajusteEntrada = DB::table('ajuste_invetarios')
+            ->where('producto', $producto->id)
+            ->where('almacen', $producto->id_almacen)
+            ->where('idtipobajas', '!=', 2)
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->where('tipo_movimiento', 'entrada')
+            ->sum('cantidad');
+
+        
+        $ajusteSalida = DB::table('ajuste_invetarios')
+            ->where('producto', $producto->id)
+            ->where('almacen', $producto->id_almacen)
+            ->where('idtipobajas', '!=', 2)
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->where('tipo_movimiento', 'salida')
+            ->sum('cantidad');
+
+        
+        $ajuste = DB::table('ajuste_invetarios')
+            ->where('producto', $producto->id)
+            ->where('almacen', $producto->id_almacen)
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->sum('cantidad');
+
+        $unidadEnvase = max(1, (int) $producto->unidad_envase);
+        $ajusteCajas = intdiv($ajuste, $unidadEnvase);
+        $ajusteUnidades = $ajuste % $unidadEnvase;
+
+        
+        if ($ajusteCajas > 0 && $ajusteUnidades > 0) {
+            $ajusteTexto = "{$ajusteCajas} cajas y {$ajusteUnidades} {$unidadNombre}";
+        } elseif ($ajusteCajas > 0) {
+            $ajusteTexto = "{$ajusteCajas} cajas";
+        } elseif ($ajusteUnidades > 0) {
+            $ajusteTexto = "{$ajusteUnidades} {$unidadNombre}";
+        } else {
+            $ajusteTexto = "0";
+        }
+
+        
+        $saldo_stock = DB::table('inventarios')
+            ->where('idarticulo', $producto->id)
+            ->where('idalmacen', $producto->id_almacen)
+            ->sum('saldo_stock');
+
+        $saldoTexto = "{$saldo_stock} Unidades";
+
+        $resultados[] = [
+            'id_articulo' => $producto->id,
+            'id_almacen'  => $producto->id_almacen,
+            'codigo' => $producto->codigo,
+            'sucursal' => $producto->nombre_sucursal,
+            'almacen' => $producto->nombre_almacen,
+            'nombre_producto' => $producto->nombre_producto,
+            'categoria' => $producto->nombre_categoria,
+            'total_ventas' => $ventasEnUnidades, 
+            'total_ventas_texto' => $ventasTexto, 
+            'total_ingresos' => $ingresos,
+            'total_ingresos_texto' => $ingresos . ' Unidades',
+            'total_traspasos_entrada' => $traspasosEntrada,
+            'total_traspasos_salida' => $traspasosSalida,
+            'total_ajuste' => $ajuste,
+            'ajuste_entrada' => $ajusteEntrada,
+            'ajuste_salida' => $ajusteSalida,
+            'ajuste_entrada_detalle' => $ajusteEntrada,
+            'ajuste_salida_detalle' => $ajusteSalida * -1,
+            'total_ajuste_texto' => $ajusteTexto,
+            'saldo_stock_actual' => $saldo_stock,
+            'saldo_stock_actual_texto' => $saldoTexto,
+            'descripcion_fabrica' => $producto->descripcion_fabrica,
+            'unidad_envase' => $producto->unidad_envase
+        ];
+    }
+
+    return ['resultados' => $resultados];
+}
 
     public function detalleMovimientosProducto(Request $request)
     {
@@ -306,6 +296,7 @@ class ReportesInventariosController extends Controller
             ->join('users', 'ventas.idusuario', '=', 'users.id')
             
             ->join('personas', 'ventas.idcliente', '=', 'personas.id') 
+            ->join('articulos', 'detalle_ventas.idarticulo', '=', 'articulos.id')
             
             ->select(
                 'ventas.fecha_hora',
@@ -315,7 +306,11 @@ class ReportesInventariosController extends Controller
                 'detalle_ventas.modo_venta',
                 'detalle_ventas.precio',
                 'users.usuario as vendedor',
-                'personas.nombre as nombre_cliente' 
+                'personas.nombre as nombre_cliente',
+                DB::raw("detalle_ventas.cantidad * (CASE 
+                WHEN detalle_ventas.modo_venta = 'caja' THEN articulos.unidad_envase 
+                WHEN detalle_ventas.modo_venta = 'docena' THEN 12 
+                ELSE 1 END) as cantidad_en_unidades")
             )
             ->where('detalle_ventas.idarticulo', $idArticulo)
             ->where('ventas.idalmacen', $idAlmacen)
@@ -334,7 +329,7 @@ class ReportesInventariosController extends Controller
                 'ingresos.num_comprobante',
                 DB::raw("CONCAT(detalle_ingresos.cantidad, ' Unidades') as cantidad"),
                 'detalle_ingresos.precio',
-                'users.usuario as responsable_compra' 
+                'users.usuario as responsable_compra'
             )
             ->where('detalle_ingresos.idarticulo', $idArticulo)
             ->where('ingresos.idalmacen', $idAlmacen)
@@ -650,23 +645,23 @@ class ReportesInventariosController extends Controller
 
     public function exportarPDFDetallado(Request $request)
     {
-        // 1. Obtenemos la data del JSON Response
-        // Como detalleMovimientosProducto retorna un response()->json(), accedemos a la data así:
+        
+        
         $response = $this->detalleMovimientosProducto($request);
-        $data = $response->getData(); // Esto convierte el JSON a Objeto PHP
+        $data = $response->getData(); 
         
         $ventas = $data->ventas;
         $ingresos = $data->ingresos;
         $ajustes = $data->ajustes;
 
-        // 2. Buscar info del producto (Nombre y Código) para el título
+        
         $articulo = DB::table('articulos')->where('id', $request->idArticulo)->first();
 
         $pdf = new PDFWithPagination('P', 'mm', 'A4');
         $pdf->AliasNbPages();
         $pdf->AddPage();
 
-        // --- ENCABEZADO ---
+        
         $pdf->SetFont('Arial', 'B', 14);
         $pdf->Cell(0, 10, 'KARDEX DETALLADO DE PRODUCTO', 0, 1, 'C');
         
@@ -674,7 +669,7 @@ class ReportesInventariosController extends Controller
         $pdf->Cell(0, 6, 'Rango: ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1, 'C');
         $pdf->Ln(4);
 
-        // Info Producto
+        
         $pdf->SetFont('Arial', 'B', 11);
         $pdf->Cell(20, 6, 'Codigo:', 0, 0);
         $pdf->SetFont('Arial', '', 11);
@@ -686,26 +681,27 @@ class ReportesInventariosController extends Controller
         $pdf->Cell(0, 6, utf8_decode($articulo->nombre), 0, 1);
         $pdf->Ln(6);
 
-        // --- SECCIÓN 1: VENTAS ---
+        
         $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(200, 220, 255); // Azulito
+        $pdf->SetFillColor(200, 220, 255); 
         $pdf->Cell(0, 8, '1. VENTAS', 1, 1, 'L', true);
 
         if (count($ventas) > 0) {
-            $pdf->SetFont('Arial', 'B', 9);
             $pdf->Cell(35, 6, 'FECHA', 1);
             $pdf->Cell(25, 6, 'DOC', 1);
-            $pdf->Cell(80, 6, 'CLIENTE', 1);
-            $pdf->Cell(25, 6, 'MODO', 1);
-            $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
+            $pdf->Cell(65, 6, 'CLIENTE', 1);
+            $pdf->Cell(20, 6, 'MODO', 1);
+            $pdf->Cell(15, 6, 'CANT.', 1, 0, 'R'); 
+            $pdf->Cell(30, 6, 'TOTAL UNID.', 1, 1, 'R');
 
             $pdf->SetFont('Arial', '', 8);
             foreach ($ventas as $v) {
                 $pdf->Cell(35, 6, $v->fecha_hora, 1);
                 $pdf->Cell(25, 6, $v->num_comprobante, 1);
-                $pdf->Cell(80, 6, substr(utf8_decode($v->nombre_cliente), 0, 45), 1);
-                $pdf->Cell(25, 6, $v->modo_venta, 1);
-                $pdf->Cell(25, 6, $v->cantidad, 1, 1, 'R');
+                $pdf->Cell(65, 6, substr(utf8_decode($v->nombre_cliente), 0, 45), 1);
+                $pdf->Cell(20, 6, $v->modo_venta, 1);
+                $pdf->Cell(15, 6, $v->cantidad, 1, 0, 'R');
+                $pdf->Cell(30, 6, $v->cantidad_en_unidades, 1, 1, 'R'); 
             }
         } else {
             $pdf->SetFont('Arial', 'I', 9);
@@ -713,9 +709,9 @@ class ReportesInventariosController extends Controller
         }
         $pdf->Ln(5);
 
-        // --- SECCIÓN 2: COMPRAS ---
+        
         $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(220, 255, 220); // Verdecito
+        $pdf->SetFillColor(220, 255, 220); 
         $pdf->Cell(0, 8, '2. COMPRAS / INGRESOS', 1, 1, 'L', true);
 
         if (count($ingresos) > 0) {
@@ -738,9 +734,9 @@ class ReportesInventariosController extends Controller
         }
         $pdf->Ln(5);
 
-        // --- SECCIÓN 3: AJUSTES ---
+        
         $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(255, 240, 200); // Naranja bajito
+        $pdf->SetFillColor(255, 240, 200); 
         $pdf->Cell(0, 8, '3. AJUSTES', 1, 1, 'L', true);
 
         if (count($ajustes) > 0) {
@@ -762,11 +758,11 @@ class ReportesInventariosController extends Controller
             $pdf->Cell(0, 8, 'No hay ajustes en este periodo.', 1, 1, 'C');
         }
 
-        // Construir nombre de archivo: NombreDelProducto_FechaInicio_a_FechaFin.pdf
-        // Limpiar nombre del producto: reemplazar espacios por guiones bajos y eliminar caracteres especiales
+        
+        
         $nombreProductoLimpio = preg_replace('/[^A-Za-z0-9\-_]/', '_', $articulo->nombre);
-        $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio); // Evitar múltiples guiones bajos consecutivos
-        $nombreProductoLimpio = trim($nombreProductoLimpio, '_'); // Eliminar guiones bajos al inicio y final
+        $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio); 
+        $nombreProductoLimpio = trim($nombreProductoLimpio, '_'); 
         
         $nombreArchivo = 'KF_' . $nombreProductoLimpio . '_' . $request->fechaInicio . '_' . $request->fechaFin . '.pdf';
 
