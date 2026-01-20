@@ -732,20 +732,24 @@ class InventarioController extends Controller
         $almacen = \DB::table('almacens')->where('id', $idAlmacen)->first();
         $nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Desconocido';
 
-        // Obtener inventario según modo
+        // Obtener inventario según modo - MEJORADO CON CATEGORÍA
         if ($modo === 'item') {
             $inventarios = \DB::table('articulos')
                 ->join('inventarios', 'articulos.id', '=', 'inventarios.idarticulo')
                 ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+                ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
                 ->select(
                     'articulos.nombre as item',
-                    'proveedores.contacto as laboratorio',
+                    'categorias.nombre as categoria',
+                    'proveedores.contacto as proveedor',
                     'articulos.unidad_envase',
-                    \DB::raw('SUM(inventarios.saldo_stock) as saldo_stock_total')
+                    \DB::raw('CAST(SUM(inventarios.saldo_stock) as UNSIGNED) as stock_unidades'),
+                    \DB::raw('FLOOR(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0)) as stock_cajas')
                 )
                 ->where('inventarios.idalmacen', $idAlmacen)
                 ->where('articulos.condicion', 1)
-                ->groupBy('articulos.id', 'articulos.nombre', 'proveedores.contacto', 'articulos.unidad_envase')
+                ->groupBy('articulos.id', 'articulos.nombre', 'categorias.nombre', 'proveedores.contacto', 'articulos.unidad_envase')
+                ->orderBy('categorias.nombre')
                 ->orderBy('proveedores.contacto')
                 ->get();
         } else {
@@ -753,16 +757,20 @@ class InventarioController extends Controller
             $inventarios = \DB::table('articulos')
                 ->join('inventarios', 'articulos.id', '=', 'inventarios.idarticulo')
                 ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+                ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
                 ->select(
                     'articulos.nombre as item',
-                    'proveedores.contacto as laboratorio',
+                    'categorias.nombre as categoria',
+                    'proveedores.contacto as proveedor',
                     'articulos.unidad_envase',
-                    'inventarios.saldo_stock',
+                    'inventarios.saldo_stock as stock_unidades',
+                    \DB::raw('FLOOR(inventarios.saldo_stock / NULLIF(articulos.unidad_envase, 0)) as stock_cajas'),
                     'inventarios.created_at',
                     'inventarios.fecha_vencimiento'
                 )
                 ->where('inventarios.idalmacen', $idAlmacen)
                 ->where('articulos.condicion', 1)
+                ->orderBy('categorias.nombre')
                 ->orderBy('proveedores.contacto')
                 ->get();
         }
@@ -771,90 +779,150 @@ class InventarioController extends Controller
         $pdf->AliasNbPages();
         $pdf->AddPage();
 
-        // Logo
-        if (file_exists(public_path('logo.png'))) {
-            $pdf->Image(public_path('logo.png'), 10, 8, 30);
+        // Logo - Izquierda - Buscar en diferentes ubicaciones
+        $logoPath = null;
+        if (file_exists(public_path('img/logoPrincipal.png'))) {
+            $logoPath = public_path('img/logoPrincipal.png');
+        } elseif (file_exists(public_path('logo.png'))) {
+            $logoPath = public_path('logo.png');
+        } elseif (file_exists(public_path('img/logo.png'))) {
+            $logoPath = public_path('img/logo.png');
+        } elseif (file_exists(public_path('images/logo.png'))) {
+            $logoPath = public_path('images/logo.png');
+        }
+        
+        if ($logoPath) {
+            $pdf->Image($logoPath, 10, 8, 30);
         }
 
-        // Encabezado
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(0, 10, utf8_decode('REPORTE DE INVENTARIO - ' . strtoupper($modo)), 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Almacen: ' . utf8_decode($nombreAlmacen), 0, 1, 'C');
-        $pdf->Cell(0, 6, 'Fecha: ' . date('d/m/Y H:i'), 0, 1, 'C');
-        $pdf->Ln(5);
+        // Encabezado con colores corporativos
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(47, 50, 107); // Color #21234a
+        $pdf->SetXY(50, 15);
+        $pdf->Cell(140, 10, utf8_decode('REPORTE DE INVENTARIO'), 0, 1, 'L');
+        
+        $pdf->SetFont('Arial', '', 11);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetXY(50, 26);
+        $pdf->Cell(140, 6, utf8_decode('Modo: ' . strtoupper($modo)), 0, 1, 'L');
+        
+        $pdf->SetXY(50, 32);
+        $pdf->Cell(140, 6, utf8_decode('Almacén: ' . $nombreAlmacen), 0, 1, 'L');
+        
+        $pdf->SetXY(50, 38);
+        $pdf->Cell(140, 6, 'Fecha: ' . date('d/m/Y H:i'), 0, 1, 'L');
+
+        $pdf->Ln(8);
 
         if ($modo === 'item') {
-            // Agrupar por laboratorio
+            // Agrupar por categoría
             $agrupado = [];
             foreach ($inventarios as $inv) {
-                $agrupado[$inv->laboratorio][] = $inv;
+                if (!isset($agrupado[$inv->categoria])) {
+                    $agrupado[$inv->categoria] = [];
+                }
+                $agrupado[$inv->categoria][] = $inv;
             }
 
-            foreach ($agrupado as $lab => $items) {
+            foreach ($agrupado as $categoria => $items) {
+                // Encabezado de categoría con color corporativo
                 $pdf->SetFont('Arial', 'B', 10);
-                $pdf->SetFillColor(240, 240, 240);
-                $pdf->Cell(0, 7, utf8_decode("LABORATORIO: $lab"), 1, 1, 'L', true);
+                $pdf->SetFillColor(47, 50, 107); // Color #21234a
+                $pdf->SetTextColor(255, 255, 255); // Blanco
+                $pdf->Cell(143, 7, utf8_decode("CATEGORÍA: " . strtoupper($categoria)), 0, 1, 'L', true);
 
-                // Cabecera
-                $pdf->SetFillColor(0, 102, 204);
-                $pdf->SetTextColor(255);
-                $pdf->SetFont('Arial', 'B', 9);
-                $pdf->Cell(140, 7, 'ITEM', 1, 0, 'C', true);
-                $pdf->Cell(20, 7, 'UNID.', 1, 0, 'C', true);
-                $pdf->Cell(30, 7, 'STOCK', 1, 1, 'C', true);
+                // Cabecera de tabla con colores corporativos
+                $pdf->SetFillColor(72, 75, 138); // Color #21234a
+                $pdf->SetTextColor(255, 255, 255); // Blanco
+                $pdf->SetFont('Arial', 'B', 8);
+                
+                $pdf->Cell(50, 7, utf8_decode('PRODUCTO'), 1, 0, 'C', true);
+                $pdf->Cell(35, 7, utf8_decode('PROVEEDOR'), 1, 0, 'C', true);
+                $pdf->Cell(18, 7, utf8_decode('UNID/PAQ'), 1, 0, 'C', true);
+                $pdf->Cell(20, 7, utf8_decode('STOCK UND'), 1, 0, 'C', true);
+                $pdf->Cell(20, 7, utf8_decode('STOCK CAJAS'), 1, 1, 'C', true);
 
-                $pdf->SetFont('Arial', '', 9);
-                $pdf->SetTextColor(0);
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->SetTextColor(0, 0, 0);
 
+                $contador = 0;
                 foreach ($items as $inv) {
-                    if ($inv->saldo_stock_total == 0) {
-                        $pdf->SetFillColor(255, 220, 220); // Rojo claro
+                    // Color alternado para mejor legibilidad
+                    if ($inv->stock_unidades == 0) {
+                        $pdf->SetFillColor(255, 200, 200); // Rojo claro para sin stock
                     } else {
-                        $pdf->SetFillColor(255);
+                        // Alternar entre blanco y gris muy claro
+                        if ($contador % 2 == 0) {
+                            $pdf->SetFillColor(255, 255, 255);
+                        } else {
+                            $pdf->SetFillColor(245, 245, 245);
+                        }
                     }
+                    $contador++;
 
-                    $pdf->Cell(140, 7, utf8_decode(substr($inv->item, 0, 60)), 1, 0, 'L', true);
-                    $pdf->Cell(20, 7, utf8_decode($inv->unidad_envase), 1, 0, 'C', true);
-                    $pdf->Cell(30, 7, $inv->saldo_stock_total, 1, 1, 'C', true);
+                    $pdf->Cell(50, 6, utf8_decode(substr($inv->item, 0, 40)), 1, 0, 'L', true);
+                    $pdf->Cell(35, 6, utf8_decode(substr($inv->proveedor, 0, 25)), 1, 0, 'L', true);
+                    $pdf->Cell(18, 6, $inv->unidad_envase, 1, 0, 'C', true);
+                    $pdf->Cell(20, 6, $inv->stock_unidades, 1, 0, 'R', true);
+                    $pdf->Cell(20, 6, $inv->stock_cajas, 1, 1, 'R', true);
                 }
 
-                $pdf->Ln(2);
+                $pdf->Ln(3);
             }
         } else {
             // Modo lote
-            $pdf->SetFillColor(0, 102, 204);
-            $pdf->SetTextColor(255);
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->Cell(85, 8, 'ITEM', 1, 0, 'C', true);
-            $pdf->Cell(35, 8, 'LABORATORIO', 1, 0, 'C', true);
-            $pdf->Cell(15, 8, 'STOCK', 1, 0, 'C', true);
-            $pdf->Cell(25, 8, 'F. INGRESO', 1, 0, 'C', true);
-            $pdf->Cell(30, 8, 'F. VENCIM.', 1, 1, 'C', true);
+            $pdf->SetFillColor(33, 35, 74); // Color #21234a
+            $pdf->SetTextColor(255, 255, 255); // Blanco
+            $pdf->SetFont('Arial', 'B', 8);
+            
+            $pdf->Cell(45, 7, utf8_decode('PRODUCTO'), 1, 0, 'C', true);
+            $pdf->Cell(30, 7, utf8_decode('PROVEEDOR'), 1, 0, 'C', true);
+            $pdf->Cell(15, 7, utf8_decode('UNID/PAQ'), 1, 0, 'C', true);
+            $pdf->Cell(18, 7, utf8_decode('STOCK UND'), 1, 0, 'C', true);
+            $pdf->Cell(18, 7, utf8_decode('STOCK CAJ'), 1, 0, 'C', true);
+            $pdf->Cell(22, 7, utf8_decode('F. INGRESO'), 1, 0, 'C', true);
+            $pdf->Cell(22, 7, utf8_decode('F. VENCIM'), 1, 1, 'C', true);
 
-            $pdf->SetFont('Arial', '', 9);
-            $pdf->SetTextColor(0);
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->SetTextColor(0, 0, 0);
 
+            $contador = 0;
             foreach ($inventarios as $inv) {
-                if ($inv->saldo_stock == 0) {
-                    $pdf->SetFillColor(255, 220, 220); // Rojo claro
+                if ($inv->stock_unidades == 0) {
+                    $pdf->SetFillColor(255, 200, 200); // Rojo claro
                 } else {
-                    $pdf->SetFillColor(255);
+                    // Alternar entre blanco y gris muy claro
+                    if ($contador % 2 == 0) {
+                        $pdf->SetFillColor(255, 255, 255);
+                    } else {
+                        $pdf->SetFillColor(245, 245, 245);
+                    }
                 }
+                $contador++;
 
-                $pdf->Cell(85, 7, utf8_decode(substr($inv->item, 0, 35)), 1, 0, 'L', true);
-                $pdf->Cell(35, 7, utf8_decode(substr($inv->laboratorio, 0, 20)), 1, 0, 'L', true);
-                $pdf->Cell(15, 7, $inv->saldo_stock, 1, 0, 'C', true);
-                $pdf->Cell(25, 7, date('d/m/Y', strtotime($inv->created_at)), 1, 0, 'C', true);
-                $pdf->Cell(30, 7, date('d/m/Y', strtotime($inv->fecha_vencimiento)), 1, 1, 'C', true);
+                $pdf->Cell(45, 6, utf8_decode(substr($inv->item, 0, 25)), 1, 0, 'L', true);
+                $pdf->Cell(30, 6, utf8_decode(substr($inv->proveedor, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell(15, 6, $inv->unidad_envase, 1, 0, 'C', true);
+                $pdf->Cell(18, 6, $inv->stock_unidades, 1, 0, 'R', true);
+                $pdf->Cell(18, 6, $inv->stock_cajas, 1, 0, 'R', true);
+                $pdf->Cell(22, 6, date('d/m/Y', strtotime($inv->created_at)), 1, 0, 'C', true);
+                $pdf->Cell(22, 6, date('d/m/Y', strtotime($inv->fecha_vencimiento)), 1, 1, 'C', true);
             }
         }
 
         // Output
-        $filename = 'inventario_' . $modo . '_' . date('Ymd_His') . '.pdf';
-        return response($pdf->Output('S', $filename))
+        $fecha = date('d_m_Y');
+        $nombreArchivoLimpio = preg_replace('/[^a-zA-Z0-9_-]/', '_', $nombreAlmacen);
+        $nombreArchivoLimpio = preg_replace('/_+/', '_', $nombreArchivoLimpio); // Eliminar guiones bajos duplicados
+        $filename = 'reporteInventario_' . $nombreArchivoLimpio . '_' . $fecha . '.pdf';
+        
+        $pdfContent = $pdf->Output('S');
+        return response($pdfContent, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function exportarExcel(Request $request)
@@ -862,7 +930,15 @@ class InventarioController extends Controller
         $modo = $request->input('modo', 'item');
         $idAlmacen = $request->input('idAlmacen');
 
-        $filename = 'inventario_' . $modo . '_' . now()->format('Ymd_His') . '.xlsx';
+        // Obtener nombre de almacén
+        $almacen = \DB::table('almacens')->where('id', $idAlmacen)->first();
+        $nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Desconocido';
+
+        // Generar nombre del archivo
+        $fecha = date('d_m_Y');
+        $nombreArchivoLimpio = preg_replace('/[^a-zA-Z0-9_-]/', '_', $nombreAlmacen);
+        $nombreArchivoLimpio = preg_replace('/_+/', '_', $nombreArchivoLimpio); // Eliminar guiones bajos duplicados
+        $filename = 'reporteInventario_' . $nombreArchivoLimpio . '_' . $fecha . '.xlsx';
 
         return Excel::download(new InventarioExport($modo, $idAlmacen), $filename);
     }

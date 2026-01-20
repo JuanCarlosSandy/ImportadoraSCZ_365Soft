@@ -265,14 +265,26 @@ export default {
       });
       const modo = this.tipoSeleccionado;
       const idAlmacen = this.AlmacenSeleccionado;
+      
+      // Obtener nombre del almacén seleccionado
+      const almacenSeleccionado = this.arrayAlmacenes.find(a => a.id === idAlmacen);
+      const nombreAlmacen = almacenSeleccionado ? almacenSeleccionado.nombre_almacen : 'Desconocido';
+      
+      // Generar nombre del archivo con la misma lógica del backend
+      const fecha = new Date();
+      const fechaFormato = `${String(fecha.getDate()).padStart(2, '0')}_${String(fecha.getMonth() + 1).padStart(2, '0')}_${fecha.getFullYear()}`;
+      const nombreArchivoLimpio = nombreAlmacen.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
+      
       if (result.isConfirmed) {
         // Exportar a Excel
         const url = `/inventario/exportar-excel?modo=${modo}&idAlmacen=${idAlmacen}`;
-        await this.descargarArchivoReporte(url, 'inventario.xlsx');
+        const filename = `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.xlsx`;
+        await this.descargarArchivoReporte(url, filename);
       } else if (result.isDenied) {
         // Exportar a PDF
         const url = `/inventario/exportar-pdf?modo=${modo}&idAlmacen=${idAlmacen}`;
-        await this.descargarArchivoReporte(url, 'inventario.pdf');
+        const filename = `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.pdf`;
+        await this.descargarArchivoReporte(url, filename);
       }
     },
     handleResize() {
