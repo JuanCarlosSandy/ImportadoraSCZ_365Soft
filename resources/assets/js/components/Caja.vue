@@ -38,10 +38,10 @@
         <Column field="saldoInicial" header="Saldo Inicial" style="min-width: 110px; text-align: right;" />
         <Column field="ventasContado" header="Cobros Efectivo" style="min-width: 120px; text-align: right;" />
         <Column field="ventasQR" header="Cobros QR" style="min-width: 100px; text-align: right;" />
+        <Column field="saldototalventas" header="Cobros Totales" style="min-width: 120px; text-align: right;" />
         <Column field="depositos" header="Depósitos Extras" style="min-width: 120px; text-align: right;" />
         <Column field="salidas" header="Salidas Extras" style="min-width: 120px; text-align: right;" />
-        <!--<Column field="saldoCaja" header="Saldo Caja" style="min-width: 120px; text-align: right;" />-->
-        <Column field="saldototalventas" header="Saldo Cartera" style="min-width: 120px; text-align: right;" />
+        <Column field="saldoCaja" header="Saldo Caja" style="min-width: 120px; text-align: right;" />
         <Column field="saldoFaltante" header="Saldo Faltante" style="min-width: 120px; text-align: right;" />
         <Column field="saldoSobrante" header="Saldo Sobrante" style="min-width: 120px; text-align: right;" />
 
@@ -134,12 +134,13 @@
               <i class="fa fa-money mr-2"></i>
               Efectivo
             </button>
-
+            <!--
             <button type="button" class="btn pago-btn" :class="{ 'active-btn': tipoPagoCuota === 'banco' }"
               @click="tipoPagoCuota = 'banco'">
               <i class="fa fa-university mr-2"></i>
               Banco
             </button>
+            -->
           </div>
           <!-- 🔽 DROPDOWN DE BANCOS -->
           <div v-if="tipoPagoCuota === 'banco'" class="mt-3 fade-in">
@@ -229,12 +230,13 @@
               <i class="fa fa-money mr-2"></i>
               Efectivo
             </button>
-
+            <!--
             <button type="button" class="btn pago-btn" :class="{ 'active-btn': tipoPagoCuota === 'banco' }"
               @click="tipoPagoCuota = 'banco'">
               <i class="fa fa-university mr-2"></i>
               Banco
             </button>
+            -->
           </div>
           <!-- 🔽 DROPDOWN DE BANCOS -->
           <div v-if="tipoPagoCuota === 'banco'" class="mt-3 fade-in">
@@ -771,10 +773,27 @@ generarReporte(idCaja) {
         moneda010 * 0.1;
     },
     async cerrarCaja(id) {
-      const total = this.montoCierre;
+      // Obtener el saldoCaja de la caja seleccionada
+      const caja = this.arrayCaja.find(c => c.id === id);
+      if (!caja) {
+        this.$toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: "No se pudo encontrar la caja",
+          life: 3000,
+        });
+        return;
+      }
+
+      const saldoCajaCalculado = caja.saldoCaja; // Usar el saldoCaja del registro
+      
       try {
         const result = await Swal.fire({
           title: "¿Está seguro de cerrar la caja?",
+          html: `<div style="text-align: left; padding: 10px;">
+                   <p><strong>Saldo Caja (Efectivo):</strong> Bs ${parseFloat(saldoCajaCalculado).toFixed(2)}</p>
+                   <p style="font-size: 0.9rem; color: #666; margin-top: 8px;">Este monto se utilizará como base para el cierre.</p>
+                 </div>`,
           icon: "warning",
           showCancelButton: true,
           confirmButtonColor: "#22c55e",
@@ -793,7 +812,7 @@ generarReporte(idCaja) {
           let me = this;
           await axios.put("/caja/cerrar", {
             id: id,
-            saldoFaltante: total,
+            saldoFaltante: saldoCajaCalculado, // Usar el saldoCaja calculado
           });
 
           await me.listarCaja(1, "", "id");
