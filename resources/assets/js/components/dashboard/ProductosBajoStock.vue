@@ -26,7 +26,11 @@
       <Column field="nombre_producto" header="Nombre de artículo"></Column>
       <Column field="nombre_proveedor" header="Proveedor"></Column>
       <Column field="nombre_almacen" header="Almacén"></Column>
-      <Column field="saldo_total_cajas" header="En Stock"></Column>
+      <Column header="En Stock">
+        <template #body="slotProps">
+          <span>{{ slotProps.data.stock }} {{ slotProps.data.descripcion_fabrica }}</span>
+        </template>
+      </Column>
       <Column header="Estado">
         <template #body="slotProps">
           <Tag
