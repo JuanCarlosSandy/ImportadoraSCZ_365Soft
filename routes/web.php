@@ -794,6 +794,7 @@ Route::group(["middleware" => ["auth"]], function () {
             "/traspaso/obtenerTraspaso",
             "TraspasoController@indexPorID"
         );
+        Route::get('/traspaso/exportar/{id}', 'TraspasoController@exportarPdf');
 
         //Eventos Significativos
         Route::get("/eventos", "EventosSignificativosController@index");

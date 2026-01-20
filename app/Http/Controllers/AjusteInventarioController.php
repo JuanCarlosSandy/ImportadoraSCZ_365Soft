@@ -304,6 +304,13 @@ class AjusteInventarioController extends Controller
         $pdf->AddPage();
         $pdf->AliasNbPages();
 
+        $rutaLogo = public_path('img/logoPrincipal.png');
+        if (file_exists($rutaLogo)) {
+            $pdf->Image($rutaLogo, 10, 5, 20);
+        }
+
+        $pdf->SetY(15);
+
         $pdf->SetFont('Arial', 'B', 12);
         $pdf->Cell(0, 8, utf8_decode('REPORTE DE AJUSTES DE INVENTARIO'), 0, 1, 'C');
         

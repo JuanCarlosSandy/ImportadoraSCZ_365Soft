@@ -72,13 +72,22 @@
           :rowsPerPageOptions="[8, 10, 20]"
           showCurrentPageReport
         >
-          <Column header="Acciones" style="width: 100px">
+          <Column header="Acciones" style="width: 120px; text-align: center;">
             <template #body="slotProps">
               <Button
                 icon="pi pi-eye"
                 class="p-button-success p-button-sm"
-                style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
+                style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset; margin-right: 5px;"
                 @click="verTraspaso(slotProps.data.id)"
+                title="Ver Detalle"
+              />
+              
+              <Button
+                icon="pi pi-file-pdf"
+                class="p-button-danger p-button-sm"
+                style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
+                @click="exportarPdfTraspaso(slotProps.data.id)"
+                title="Descargar PDF"
               />
             </template>
           </Column>
@@ -984,6 +993,12 @@ export default {
         );
       }
     },
+
+    exportarPdfTraspaso(id) {
+      const url = `/traspaso/exportar/${id}`;
+      window.open(url, '_blank');
+    },
+    
     //---abrir modal de registro de traspaso--
     abrirModal(modelo, accion, data = []) {
       switch (modelo) {
