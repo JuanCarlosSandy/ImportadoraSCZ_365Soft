@@ -2,34 +2,41 @@
   <main class="main">
     <Panel>
       <template #header>
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <i class="pi pi-bars panel-icon"></i>
-                <h4 class="panel-title" style="margin: 0;">KARDEX FISICO DE INVENTARIO</h4>
-            </div>
-            
-            <div style="display: flex; gap: 0.5rem;">
-                <Button
-                    icon="pi pi-file-pdf"
-                    label="PDF General"
-                    class="p-button-danger p-button-sm"
-                    @click="descargarPdfGeneral()"
-                />
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
+        >
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="pi pi-bars panel-icon"></i>
+            <h4 class="panel-title" style="margin: 0;">
+              KARDEX FISICO DE INVENTARIO
+            </h4>
+          </div>
 
-                <Button
-                    icon="pi pi-file-excel"
-                    label="Excel General"
-                    class="p-button-success p-button-sm"
-                    @click="descargarExcelGeneral()"
-                />
+          <div style="display: flex; gap: 0.5rem;">
+            <Button
+              icon="pi pi-file-pdf"
+              label="PDF General"
+              class="p-button-danger p-button-sm"
+              @click="descargarPdfGeneral()"
+            />
 
-                <Button
-                    icon="pi pi-filter"
-                    :label="mostrarLabel ? 'Filtros' : ''"
-                    class="p-button-secondary p-button-sm"
-                    @click="abrirModal('articulo', 'registrar'); listarPrecio();"
-                />
-            </div>
+            <Button
+              icon="pi pi-file-excel"
+              label="Excel General"
+              class="p-button-success p-button-sm"
+              @click="descargarExcelGeneral()"
+            />
+
+            <Button
+              icon="pi pi-filter"
+              :label="mostrarLabel ? 'Filtros' : ''"
+              class="p-button-secondary p-button-sm"
+              @click="
+                abrirModal('articulo', 'registrar');
+                listarPrecio();
+              "
+            />
+          </div>
         </div>
       </template>
       <template>
@@ -53,370 +60,383 @@
             </div>
           </div>
           <DataTable
-  :value="sortedResultados"
-  scrollable
-  scrollHeight="600px"
-  stripedRows
-  responsiveLayout="scroll"
-  size="small"
-  paginator
-  :rows="5"
-  :rowsPerPageOptions="[5, 10, 20, 50]"
-  :filters="filters"
-  :globalFilterFields="['codigo', 'nombre_producto', 'categoria', 'sucursal', 'almacen']"
->
-  <!-- Columna ACCIONES (fija) -->
- 
-<Column 
-    header="ACCIONES" 
-    :exportable="false" 
-    frozen 
-    headerStyle="min-width: 9rem; width: 9rem; text-align: center;" 
-    bodyStyle="min-width: 9rem; width: 9rem; text-align: center; justify-content: center;"
->
-    <template #body="slotProps">
-        <div style="display: flex; justify-content: center; align-items: center; gap: 0.25rem;">
-            <Button 
-                icon="pi pi-eye" 
-                class="p-button-rounded p-button-info p-button-text" 
-                v-tooltip.top="'Ver Detalle'" 
-                @click="verDetalleMovimiento(slotProps.data)" 
-                style="width: 2rem; height: 2rem;" 
+            :value="sortedResultados"
+            scrollable
+            scrollHeight="600px"
+            stripedRows
+            responsiveLayout="scroll"
+            size="small"
+            paginator
+            :rows="5"
+            :rowsPerPageOptions="[5, 10, 20, 50]"
+            :filters="filters"
+            :globalFilterFields="[
+              'codigo',
+              'nombre_producto',
+              'categoria',
+              'sucursal',
+              'almacen',
+            ]"
+          >
+            <Column
+              header="ACCIONES"
+              :exportable="false"
+              frozen
+              headerClass="col-acciones"
+              bodyClass="col-acciones"
+            >
+              <template #body="slotProps">
+                <div class="actions-wrapper">
+                  <Button
+                    icon="pi pi-ellipsis-v"
+                    class="p-button-rounded p-button-text p-button-secondary action-btn"
+                    v-tooltip.top="'Opciones'"
+                    aria-haspopup="true"
+                    aria-controls="overlay_menu"
+                    @click="toggleMenu($event, slotProps.data)"
+                  />
+                </div>
+              </template>
+            </Column>
+
+            <Column
+              field="codigo"
+              header="CODIGO ITEM"
+              filter
+              filterPlaceholder="Buscar código"
+              frozen
+              headerClass="col-codigo"
+              bodyClass="col-codigo"
             />
-            <Button 
-                icon="pi pi-file-pdf" 
-                class="p-button-rounded p-button-danger p-button-text" 
-                v-tooltip.top="'Descargar PDF'" 
-                @click="descargarPdfDetallado(slotProps.data)" 
-                style="width: 2rem; height: 2rem;" 
+
+            <Column
+              field="sucursal"
+              header="SUCURSAL"
+              filter
+              filterPlaceholder="Buscar sucursal"
+              headerClass="col-sucursal"
+              bodyClass="col-sucursal"
             />
-            <Button 
-                icon="pi pi-file-excel" 
-                class="p-button-rounded p-button-success p-button-text" 
-                v-tooltip.top="'Descargar Excel'" 
-                @click="descargarExcelDetallado(slotProps.data)" 
-                style="width: 2rem; height: 2rem;" 
+
+            <Column
+              field="almacen"
+              header="ALMACÉN"
+              filter
+              filterPlaceholder="Buscar almacén"
+              headerClass="col-almacen"
+              bodyClass="col-almacen"
             />
-        </div>
-    </template>
-</Column>
-  <!-- Columna CÓDIGO ITEM (fija) -->
-  <Column
-    field="codigo"
-    header="CODIGO ITEM"
-    filter
-    filterPlaceholder="Buscar código"
-    style="min-width: 10rem; width: 10rem;"
-    frozen
-  />
 
-  <!-- Columna SUCURSAL -->
-  <Column
-    field="sucursal"
-    header="SUCURSAL"
-    filter
-    filterPlaceholder="Buscar sucursal"
-    style="min-width: 12rem;"
-  />
+            <Column
+              field="nombre_producto"
+              header="ITEM"
+              filter
+              filterPlaceholder="Buscar item"
+              headerClass="col-item"
+              bodyClass="col-item"
+            />
 
-  <!-- Columna ALMACÉN -->
-  <Column
-    field="almacen"
-    header="ALMACÉN"
-    filter
-    filterPlaceholder="Buscar almacén"
-    style="min-width: 12rem;"
-  />
+            <Column
+              field="categoria"
+              header="CATEGORÍA"
+              filter
+              filterPlaceholder="Buscar categoría"
+              headerClass="col-categoria"
+              bodyClass="col-categoria"
+            />
 
-  <!-- Columna ITEM -->
-  <Column
-    field="nombre_producto"
-    header="ITEM"
-    filter
-    filterPlaceholder="Buscar item"
-    style="min-width: 20rem;"
-  />
+            <Column
+              field="total_ventas_texto"
+              header="TOTAL VENTAS"
+              headerClass="col-numerica"
+              bodyClass="col-numerica"
+            />
 
-  <!-- Columna CATEGORÍA -->
-  <Column
-    field="categoria"
-    header="CATEGORÍA"
-    filter
-    filterPlaceholder="Buscar categoría"
-    style="min-width: 12rem;"
-  />
+            <Column
+              field="total_ingresos_texto"
+              header="TOTAL COMPRAS"
+              headerClass="col-numerica"
+              bodyClass="col-numerica"
+            />
 
-  <!-- Columna TOTAL VENTAS -->
-  <Column
-    field="total_ventas_texto"
-    header="TOTAL VENTAS"
-    style="min-width: 10rem;"
-  />
+            <Column
+              field="total_traspasos_entrada"
+              header="TOTAL TRASPASO ENTRADA"
+              headerClass="col-numerica"
+              bodyClass="col-numerica"
+            />
 
-  <!-- Columna TOTAL COMPRAS -->
-  <Column
-    field="total_ingresos_texto"
-    header="TOTAL COMPRAS"
-    style="min-width: 10rem;"
-  />
+            <Column
+              field="total_traspasos_salida"
+              header="TOTAL TRASPASO SALIDA"
+              headerClass="col-numerica"
+              bodyClass="col-numerica"
+            />
 
-  <!-- Columna TOTAL TRASPASO ENTRADA -->
-  <Column
-    field="total_traspasos_entrada"
-    header="TOTAL TRASPASO ENTRADA"
-    style="min-width: 10rem;"
-  />
+            <Column
+              header="AJUSTE ENTRADA"
+              headerClass="col-ajuste"
+              bodyClass="col-ajuste"
+            >
+              <template #body="slotProps">
+                <span
+                  v-if="slotProps.data.ajuste_entrada > 0"
+                  class="status-positive"
+                >
+                  +{{ slotProps.data.ajuste_entrada }}
+                  {{ slotProps.data.ajuste_entrada === 1 ? "Unid." : "Unid." }}
+                </span>
+                <span v-else class="status-neutral">0 Unid.</span>
+              </template>
+            </Column>
 
-  <!-- Columna TOTAL TRASPASO SALIDA -->
-  <Column
-    field="total_traspasos_salida"
-    header="TOTAL TRASPASO SALIDA"
-    style="min-width: 10rem;"
-  />
+            <Column
+              header="AJUSTE SALIDA"
+              headerClass="col-ajuste"
+              bodyClass="col-ajuste"
+            >
+              <template #body="slotProps">
+                <span
+                  v-if="slotProps.data.ajuste_salida > 0"
+                  class="status-negative"
+                >
+                  -{{ slotProps.data.ajuste_salida }}
+                  {{ slotProps.data.ajuste_salida === 1 ? "Unid." : "Unid." }}
+                </span>
+                <span v-else class="status-neutral">0 Unid.</span>
+              </template>
+            </Column>
 
-  <!-- Columna AJUSTE ENTRADA -->
-  <Column header="AJUSTE ENTRADA" style="min-width: 12rem; text-align: center">
-    <template #body="slotProps">
-      <span v-if="slotProps.data.ajuste_entrada > 0" style="color: green; font-weight: bold;">
-        +{{ slotProps.data.ajuste_entrada }} {{ slotProps.data.ajuste_entrada === 1 ? 'Unid.' : 'Unid.' }}
-      </span>
-      <span v-else style="color: inherit;">0 Unid.</span>
-    </template>
-  </Column>
-
-  <!-- Columna AJUSTE SALIDA -->
-  <Column header="AJUSTE SALIDA" style="min-width: 12rem; text-align: center">
-    <template #body="slotProps">
-      <span v-if="slotProps.data.ajuste_salida > 0" style="color: red; font-weight: bold;">
-        -{{ slotProps.data.ajuste_salida }} {{ slotProps.data.ajuste_salida === 1 ? 'Unid.' : 'Unid.' }}
-      </span>
-      <span v-else style="color: inherit;">0 Unid.</span>
-    </template>
-  </Column>
-
-  <!-- Columna STOCK ACTUAL -->
-  <Column
-    field="saldo_stock_actual_texto"
-    header="STOCK ACTUAL"
-    style="min-width: 10rem;"
-  />
-</DataTable>
-
+            <Column
+              field="saldo_stock_actual_texto"
+              header="STOCK ACTUAL"
+              headerClass="col-numerica"
+              bodyClass="col-numerica"
+            />
+          </DataTable>
+          <Menu ref="menuDescargas" :model="itemsMenu" :popup="true" />
         </div>
       </template>
     </Panel>
 
-    
-<div
-  class="modal"
-  tabindex="-1"
-  :class="{ mostrar: modal }"
-  role="dialog"
-  aria-labelledby="myModalLabel"
-  style="display: none;"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-primary modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title">FILTROS DE REPORTES</h4>
-        <button
-          type="button"
-          class="close"
-          @click="cerrarModal()"
-          aria-label="Close"
-        >
-          <span aria-hidden="true">×</span>
-        </button>
+    <div
+      class="modal"
+      tabindex="-1"
+      :class="{ mostrar: modal }"
+      role="dialog"
+      aria-labelledby="myModalLabel"
+      style="display: none;"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-primary modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">FILTROS DE REPORTES</h4>
+            <button
+              type="button"
+              class="close"
+              @click="cerrarModal()"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+          <form @submit.prevent="enviarFormulario">
+            <div class="modal-body">
+              <!-- Primera fila: Sucursal, Artículo, Categoría -->
+              <div class="form-group row">
+                <!-- Sucursal -->
+                <div class="col-12 col-md-4 mb-3">
+                  <label class="font-weight-bold">
+                    Sucursal
+                    <span class="text-danger">OBLIGATORIO</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      class="form-control"
+                      type="text"
+                      :class="{ 'is-invalid': erroresFiltros.sucursal }"
+                      placeholder="Seleccione una sucursal"
+                      disabled
+                      v-model="sucursalseleccionada.nombre"
+                    />
+                    <div class="input-group-append">
+                      <button
+                        class="btn btn-primary"
+                        type="button"
+                        @click="abrirModal2('Sucursal')"
+                      >
+                        Buscar
+                      </button>
+                      <button
+                        v-if="sucursalseleccionada.nombre"
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        @click="limpiarFiltro('sucursal')"
+                        title="Limpiar filtro"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <small v-if="erroresFiltros.sucursal" class="text-danger">{{
+                    erroresFiltros.sucursal
+                  }}</small>
+                </div>
+
+                <!-- Artículo -->
+                <div class="col-12 col-md-4 mb-3">
+                  <label class="font-weight-bold">Artículo</label>
+                  <div class="input-group">
+                    <input
+                      class="form-control"
+                      type="text"
+                      placeholder="Seleccione un artículo"
+                      disabled
+                      v-model="articuloseleccionada.nombre"
+                    />
+                    <div class="input-group-append">
+                      <button
+                        class="btn btn-primary"
+                        type="button"
+                        @click="abrirModal2('Articulo')"
+                      >
+                        Buscar
+                      </button>
+                      <button
+                        v-if="articuloseleccionada.nombre"
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        @click="limpiarFiltro('articulo')"
+                        title="Limpiar filtro"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Categoría -->
+                <div class="col-12 col-md-4 mb-3">
+                  <label class="font-weight-bold">Categoría</label>
+                  <div class="input-group">
+                    <input
+                      class="form-control"
+                      type="text"
+                      placeholder="Seleccione una categoría"
+                      disabled
+                      v-model="lineaseleccionada.nombre"
+                    />
+                    <div class="input-group-append">
+                      <button
+                        class="btn btn-primary"
+                        type="button"
+                        @click="abrirModal2('Lineas')"
+                      >
+                        Buscar
+                      </button>
+                      <button
+                        v-if="lineaseleccionada.nombre"
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        @click="limpiarFiltro('linea')"
+                        title="Limpiar filtro"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Segunda fila: Fechas -->
+              <div class="form-group row">
+                <!-- Fecha Inicio -->
+                <div class="col-12 col-md-6 mb-3">
+                  <label class="font-weight-bold">
+                    Fecha Inicio
+                    <span class="text-danger">OBLIGATORIO</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      class="form-control"
+                      :class="{ 'is-invalid': erroresFiltros.fechaInicio }"
+                      type="date"
+                      v-model="fechaInicio"
+                      @change="erroresFiltros.fechaInicio = ''"
+                    />
+                    <div class="input-group-append">
+                      <button
+                        v-if="fechaInicio"
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        @click="limpiarFiltro('fechaInicio')"
+                        title="Limpiar filtro"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <small
+                    v-if="erroresFiltros.fechaInicio"
+                    class="text-danger"
+                    >{{ erroresFiltros.fechaInicio }}</small
+                  >
+                </div>
+
+                <!-- Fecha Fin -->
+                <div class="col-12 col-md-6 mb-3">
+                  <label class="font-weight-bold">
+                    Fecha Fin
+                    <span class="text-danger">OBLIGATORIO</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      class="form-control"
+                      :class="{ 'is-invalid': erroresFiltros.fechaFin }"
+                      type="date"
+                      v-model="fechaFin"
+                      @change="erroresFiltros.fechaFin = ''"
+                    />
+                    <div class="input-group-append">
+                      <button
+                        v-if="fechaFin"
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        @click="limpiarFiltro('fechaFin')"
+                        title="Limpiar filtro"
+                      >
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <small v-if="erroresFiltros.fechaFin" class="text-danger">{{
+                    erroresFiltros.fechaFin
+                  }}</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-danger"
+                @click="cerrarModal()"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                @click="aplicarFiltrosReporte()"
+                class="btn btn-primary"
+              >
+                Visualizar Reporte
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      <form @submit.prevent="enviarFormulario">
-        <div class="modal-body">
-          <!-- Primera fila: Sucursal, Artículo, Categoría -->
-          <div class="form-group row">
-            <!-- Sucursal -->
-            <div class="col-12 col-md-4 mb-3">
-              <label class="font-weight-bold">
-                Sucursal
-                <span class="text-danger">OBLIGATORIO</span>
-              </label>
-              <div class="input-group">
-                <input
-                  class="form-control"
-                  type="text"
-                  :class="{ 'is-invalid': erroresFiltros.sucursal }"
-                  placeholder="Seleccione una sucursal"
-                  disabled
-                  v-model="sucursalseleccionada.nombre"
-                />
-                <div class="input-group-append">
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    @click="abrirModal2('Sucursal')"
-                  >
-                    Buscar
-                  </button>
-                  <button
-                    v-if="sucursalseleccionada.nombre"
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="limpiarFiltro('sucursal')"
-                    title="Limpiar filtro"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </div>
-              <small v-if="erroresFiltros.sucursal" class="text-danger">{{ erroresFiltros.sucursal }}</small>
-            </div>
-
-            <!-- Artículo -->
-            <div class="col-12 col-md-4 mb-3">
-              <label class="font-weight-bold">Artículo</label>
-              <div class="input-group">
-                <input
-                  class="form-control"
-                  type="text"
-                  placeholder="Seleccione un artículo"
-                  disabled
-                  v-model="articuloseleccionada.nombre"
-                />
-                <div class="input-group-append">
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    @click="abrirModal2('Articulo')"
-                  >
-                    Buscar
-                  </button>
-                  <button
-                    v-if="articuloseleccionada.nombre"
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="limpiarFiltro('articulo')"
-                    title="Limpiar filtro"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Categoría -->
-            <div class="col-12 col-md-4 mb-3">
-              <label class="font-weight-bold">Categoría</label>
-              <div class="input-group">
-                <input
-                  class="form-control"
-                  type="text"
-                  placeholder="Seleccione una categoría"
-                  disabled
-                  v-model="lineaseleccionada.nombre"
-                />
-                <div class="input-group-append">
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    @click="abrirModal2('Lineas')"
-                  >
-                    Buscar
-                  </button>
-                  <button
-                    v-if="lineaseleccionada.nombre"
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="limpiarFiltro('linea')"
-                    title="Limpiar filtro"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Segunda fila: Fechas -->
-          <div class="form-group row">
-            <!-- Fecha Inicio -->
-            <div class="col-12 col-md-6 mb-3">
-              <label class="font-weight-bold">
-                Fecha Inicio
-                <span class="text-danger">OBLIGATORIO</span>
-              </label>
-              <div class="input-group">
-                <input
-                  class="form-control"
-                  :class="{ 'is-invalid': erroresFiltros.fechaInicio }"
-                  type="date"
-                  v-model="fechaInicio"
-                  @change="erroresFiltros.fechaInicio = ''"
-                />
-                <div class="input-group-append">
-                  <button
-                    v-if="fechaInicio"
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="limpiarFiltro('fechaInicio')"
-                    title="Limpiar filtro"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </div>
-              <small v-if="erroresFiltros.fechaInicio" class="text-danger">{{ erroresFiltros.fechaInicio }}</small>
-            </div>
-
-            <!-- Fecha Fin -->
-            <div class="col-12 col-md-6 mb-3">
-              <label class="font-weight-bold">
-                Fecha Fin
-                <span class="text-danger">OBLIGATORIO</span>
-              </label>
-              <div class="input-group">
-                <input
-                  class="form-control"
-                  :class="{ 'is-invalid': erroresFiltros.fechaFin }"
-                  type="date"
-                  v-model="fechaFin"
-                  @change="erroresFiltros.fechaFin = ''"
-                />
-                <div class="input-group-append">
-                  <button
-                    v-if="fechaFin"
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    @click="limpiarFiltro('fechaFin')"
-                    title="Limpiar filtro"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-              </div>
-              <small v-if="erroresFiltros.fechaFin" class="text-danger">{{ erroresFiltros.fechaFin }}</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-danger"
-            @click="cerrarModal()"
-          >
-            Cerrar
-          </button>
-          <button
-            type="button"
-            @click="aplicarFiltrosReporte()"
-            class="btn btn-primary"
-          >
-            Visualizar Reporte
-          </button>
-        </div>
-      </form>
     </div>
-  </div>
-</div>
 
     <!-- MODAL PARA LA LISTA DE MEDIDA -->
     <div
@@ -508,7 +528,7 @@
                       cambiarPaginaMedida(
                         paginationMedida.current_page - 2,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Ant</a
@@ -540,7 +560,7 @@
                       cambiarPaginaMedida(
                         paginationMedida.current_page + 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Sig</a
@@ -788,7 +808,7 @@
                       cambiarPaginaMarca(
                         pagination.current_page - 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Ant</a
@@ -818,7 +838,7 @@
                       cambiarPaginaMarca(
                         pagination.current_page + 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Sig</a
@@ -836,7 +856,7 @@
                       cambiarPaginaLinea(
                         pagination.current_page - 1,
                         buscarA,
-                        criterioA
+                        criterioA,
                       )
                     "
                     >Ant</a
@@ -868,7 +888,7 @@
                       cambiarPaginaLinea(
                         pagination.current_page + 1,
                         buscarA,
-                        criterioA
+                        criterioA,
                       )
                     "
                     >Sig</a
@@ -886,7 +906,7 @@
                       cambiarPaginaIndustria(
                         pagination.current_page - 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Ant</a
@@ -918,7 +938,7 @@
                       cambiarPaginaIndustria(
                         pagination.current_page + 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Sig</a
@@ -936,7 +956,7 @@
                       cambiarPaginaProveedor(
                         pagination.current_page - 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Ant</a
@@ -968,7 +988,7 @@
                       cambiarPaginaProveedor(
                         pagination.current_page + 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Sig</a
@@ -986,7 +1006,7 @@
                       cambiarPaginaGrupo(
                         pagination.current_page - 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Ant</a
@@ -1016,7 +1036,7 @@
                       cambiarPaginaGrupo(
                         pagination.current_page + 1,
                         buscar,
-                        criterio
+                        criterio,
                       )
                     "
                     >Sig</a
@@ -1040,189 +1060,266 @@
       <!-- /.modal-dialog -->
     </div>
     <!--Fin del modal-->
-    <div 
-      class="modal fade" 
-      tabindex="-1" 
-      :class="{ 'mostrar': modalDetalleMovimientos }" 
-      role="dialog" 
-      style="display: none;" 
-      :style="modalDetalleMovimientos ? 'display: block; overflow-y: auto;' : ''"
+    <div
+      class="modal fade"
+      tabindex="-1"
+      :class="{ mostrar: modalDetalleMovimientos }"
+      role="dialog"
+      style="display: none;"
+      :style="
+        modalDetalleMovimientos ? 'display: block; overflow-y: auto;' : ''
+      "
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-dialog-centered modal-primary modal-lg" role="document">            
+      <div
+        class="modal-dialog modal-dialog-centered modal-primary modal-lg"
+        role="document"
+      >
         <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">
-                    Detalle: {{ productoSeleccionado.nombre_producto }}
-                </h4>
-                <button type="button" class="close" @click="cerrarModalDetalle()" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            
-            <div class="modal-body">
-                <ul class="nav nav-tabs mb-3">
-                    <li class="nav-item">
-                        <a class="nav-link" :class="{ active: tabActual === 'ventas' }" href="#" @click.prevent="tabActual = 'ventas'">
-                            <i class="icon-basket"></i> Ventas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" :class="{ active: tabActual === 'ingresos' }" href="#" @click.prevent="tabActual = 'ingresos'">
-                            <i class="icon-bag"></i> Compras
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" :class="{ active: tabActual === 'ajustes' }" href="#" @click.prevent="tabActual = 'ajustes'">
-                            <i class="icon-settings"></i> Ajustes
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" :class="{ active: tabActual === 'traspasos' }" href="#" @click.prevent="tabActual = 'traspasos'">
-                            <i class="pi pi-arrows-h"></i> Traspasos
-                        </a>
-                    </li>
-                </ul>
+          <div class="modal-header">
+            <h4 class="modal-title">
+              Detalle: {{ productoSeleccionado.nombre_producto }}
+            </h4>
+            <button
+              type="button"
+              class="close"
+              @click="cerrarModalDetalle()"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
 
-                <div v-if="tabActual === 'ventas'">
-                    <DataTable 
-                        key="dt-ventas" 
-                        :value="detalleMovimientos.ventas" 
-                        :paginator="true" 
-                        :rows="5" 
-                        size="small" 
-                        stripedRows 
-                        responsiveLayout="scroll"
+          <div class="modal-body">
+            <ul class="nav nav-tabs mb-3">
+              <li class="nav-item">
+                <a
+                  class="nav-link"
+                  :class="{ active: tabActual === 'ventas' }"
+                  href="#"
+                  @click.prevent="tabActual = 'ventas'"
+                >
+                  <i class="icon-basket"></i> Ventas
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link"
+                  :class="{ active: tabActual === 'ingresos' }"
+                  href="#"
+                  @click.prevent="tabActual = 'ingresos'"
+                >
+                  <i class="icon-bag"></i> Compras
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link"
+                  :class="{ active: tabActual === 'ajustes' }"
+                  href="#"
+                  @click.prevent="tabActual = 'ajustes'"
+                >
+                  <i class="icon-settings"></i> Ajustes
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link"
+                  :class="{ active: tabActual === 'traspasos' }"
+                  href="#"
+                  @click.prevent="tabActual = 'traspasos'"
+                >
+                  <i class="pi pi-arrows-h"></i> Traspasos
+                </a>
+              </li>
+            </ul>
+
+            <div v-if="tabActual === 'ventas'">
+              <DataTable
+                key="dt-ventas"
+                :value="detalleMovimientos.ventas"
+                :paginator="true"
+                :rows="5"
+                size="small"
+                stripedRows
+                responsiveLayout="scroll"
+              >
+                <Column field="fecha_hora" header="Fecha"></Column>
+                <Column
+                  field="num_comprobante"
+                  header="N° Comprobante"
+                ></Column>
+                <Column field="nombre_cliente" header="Cliente"></Column>
+                <Column field="modo_venta" header="Modo"></Column>
+                <Column field="cantidad" header="Cantidad"></Column>
+                <Column
+                  field="cantidad_en_unidades"
+                  header="Cantidad en Unidades"
+                ></Column>
+              </DataTable>
+              <div
+                v-if="detalleMovimientos.ventas.length === 0"
+                class="text-center p-3"
+              >
+                No hay ventas en este periodo.
+              </div>
+            </div>
+
+            <div v-if="tabActual === 'ingresos'">
+              <DataTable
+                key="dt-ingresos"
+                :value="detalleMovimientos.ingresos"
+                :paginator="true"
+                :rows="5"
+                size="small"
+                stripedRows
+                responsiveLayout="scroll"
+              >
+                <Column field="fecha_hora" header="Fecha"></Column>
+                <Column
+                  field="num_comprobante"
+                  header="N° Comprobante"
+                ></Column>
+                <Column
+                  field="responsable_compra"
+                  header="Registrado Por"
+                ></Column>
+                <Column field="cantidad" header="Cantidad"></Column>
+              </DataTable>
+              <div
+                v-if="detalleMovimientos.ingresos.length === 0"
+                class="text-center p-3"
+              >
+                No hay compras en este periodo.
+              </div>
+            </div>
+
+            <div v-if="tabActual === 'ajustes'">
+              <DataTable
+                key="dt-ajustes"
+                :value="detalleMovimientos.ajustes"
+                :paginator="true"
+                :rows="5"
+                size="small"
+                stripedRows
+                responsiveLayout="scroll"
+              >
+                <Column field="fecha_hora" header="Fecha"></Column>
+                <Column field="motivo" header="Motivo"></Column>
+                <Column field="responsable" header="Registrado Por"></Column>
+                <Column field="tipo_ajuste" header="Tipo"></Column>
+                <Column header="Entrada">
+                  <template #body="slotProps">
+                    <span
+                      v-if="slotProps.data.cantidad > 0"
+                      style="color: green; font-weight: bold;"
                     >
-                        <Column field="fecha_hora" header="Fecha"></Column>
-                        <Column field="num_comprobante" header="N° Comprobante"></Column>
-                        <Column field="nombre_cliente" header="Cliente"></Column>
-                        <Column field="modo_venta" header="Modo"></Column>
-                        <Column field="cantidad" header="Cantidad"></Column>
-                        <Column field="cantidad_en_unidades" header="Cantidad en Unidades"></Column>
-                    </DataTable>
-                    <div v-if="detalleMovimientos.ventas.length === 0" class="text-center p-3">No hay ventas en este periodo.</div>
-                </div>
+                      {{ slotProps.data.cantidad }}
+                      {{
+                        slotProps.data.cantidad === 1 ? "Unidad" : "Unidades"
+                      }}
+                    </span>
+                    <span v-else>
+                      0
+                    </span>
+                  </template>
+                </Column>
 
-                <div v-if="tabActual === 'ingresos'">
-                    <DataTable 
-                        key="dt-ingresos"
-                        :value="detalleMovimientos.ingresos" 
-                        :paginator="true" 
-                        :rows="5" 
-                        size="small" 
-                        stripedRows 
-                        responsiveLayout="scroll"
+                <Column header="Salida">
+                  <template #body="slotProps">
+                    <span
+                      v-if="slotProps.data.cantidad < 0"
+                      style="color: red; font-weight: bold;"
                     >
-                        <Column field="fecha_hora" header="Fecha"></Column>
-                        <Column field="num_comprobante" header="N° Comprobante"></Column>
-                        <Column field="responsable_compra" header="Registrado Por"></Column>
-                        <Column field="cantidad" header="Cantidad"></Column>
-                    </DataTable>
-                    <div v-if="detalleMovimientos.ingresos.length === 0" class="text-center p-3">No hay compras en este periodo.</div>
-                </div>
-
-                <div v-if="tabActual === 'ajustes'">
-                  <DataTable 
-                      key="dt-ajustes"
-                      :value="detalleMovimientos.ajustes" 
-                      :paginator="true" 
-                      :rows="5" 
-                      size="small" 
-                      stripedRows 
-                      responsiveLayout="scroll"
-                  >
-                      <Column field="fecha_hora" header="Fecha"></Column>
-                      <Column field="motivo" header="Motivo"></Column>
-                      <Column field="responsable" header="Registrado Por"></Column>
-                      <Column field="tipo_ajuste" header="Tipo"></Column>
-                      <Column header="Entrada">
-  <template #body="slotProps">
-    <span 
-      v-if="slotProps.data.cantidad > 0" 
-      style="color: green; font-weight: bold;"
-    >
-      {{ slotProps.data.cantidad }} {{ slotProps.data.cantidad === 1 ? 'Unidad' : 'Unidades' }}
-    </span>
-    <span v-else>
-      0
-    </span>
-  </template>
-</Column>
-
-<Column header="Salida">
-  <template #body="slotProps">
-    <span 
-      v-if="slotProps.data.cantidad < 0" 
-      style="color: red; font-weight: bold;"
-    >
-      {{ Math.abs(slotProps.data.cantidad) }} {{ Math.abs(slotProps.data.cantidad) === 1 ? 'Unidad' : 'Unidades' }}
-    </span>
-    <span v-else>
-      0
-    </span>
-  </template>
-</Column>
-                      
-                  </DataTable>
-                  <div v-if="detalleMovimientos.ajustes.length === 0" class="text-center p-3">No hay ajustes en este periodo.</div>
-                </div>
-
-                <div v-if="tabActual === 'traspasos'">
-    <DataTable 
-        key="dt-traspasos"
-        :value="detalleMovimientos.traspasos" 
-        :paginator="true" 
-        :rows="5" 
-        size="small" 
-        stripedRows 
-        responsiveLayout="scroll"
-    >
-        <Column field="fecha_hora" header="Fecha"></Column>
-        
-        <Column header="Movimiento">
-            <template #body="slotProps">
-                <span 
-                    :class="slotProps.data.tipo_movimiento === 'Entrada' ? 'badge badge-success' : 'badge badge-danger'"
-                    style="font-size: 0.9em;"
-                >
-                    {{ slotProps.data.tipo_movimiento.toUpperCase() }}
-                </span>
-            </template>
-        </Column>
-
-        <Column field="almacen_origen" header="Origen"></Column>
-        <Column field="almacen_destino" header="Destino"></Column>
-
-        <Column header="Cantidad">
-            <template #body="slotProps">
-                <span 
-                    v-if="slotProps.data.tipo_movimiento === 'Entrada'" 
-                    style="color: green; font-weight: bold;"
-                >
-                    +{{ slotProps.data.cantidad }} Unidades
-                </span>
-                <span 
-                    v-else 
-                    style="color: red; font-weight: bold;"
-                >
-                    -{{ slotProps.data.cantidad }} Unidades
-                </span>
-            </template>
-        </Column>
-        
-        <Column field="responsable" header="Responsable"></Column>
-    </DataTable>
-    
-    <div v-if="!detalleMovimientos.traspasos || detalleMovimientos.traspasos.length === 0" class="text-center p-3">
-        No hay traspasos en este periodo.
-    </div>
-</div>
+                      {{ Math.abs(slotProps.data.cantidad) }}
+                      {{
+                        Math.abs(slotProps.data.cantidad) === 1
+                          ? "Unidad"
+                          : "Unidades"
+                      }}
+                    </span>
+                    <span v-else>
+                      0
+                    </span>
+                  </template>
+                </Column>
+              </DataTable>
+              <div
+                v-if="detalleMovimientos.ajustes.length === 0"
+                class="text-center p-3"
+              >
+                No hay ajustes en este periodo.
+              </div>
             </div>
 
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="cerrarModalDetalle()">Cerrar</button>
+            <div v-if="tabActual === 'traspasos'">
+              <DataTable
+                key="dt-traspasos"
+                :value="detalleMovimientos.traspasos"
+                :paginator="true"
+                :rows="5"
+                size="small"
+                stripedRows
+                responsiveLayout="scroll"
+              >
+                <Column field="fecha_hora" header="Fecha"></Column>
+
+                <Column header="Movimiento">
+                  <template #body="slotProps">
+                    <span
+                      :class="
+                        slotProps.data.tipo_movimiento === 'Entrada'
+                          ? 'badge badge-success'
+                          : 'badge badge-danger'
+                      "
+                      style="font-size: 0.9em;"
+                    >
+                      {{ slotProps.data.tipo_movimiento.toUpperCase() }}
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="almacen_origen" header="Origen"></Column>
+                <Column field="almacen_destino" header="Destino"></Column>
+
+                <Column header="Cantidad">
+                  <template #body="slotProps">
+                    <span
+                      v-if="slotProps.data.tipo_movimiento === 'Entrada'"
+                      style="color: green; font-weight: bold;"
+                    >
+                      +{{ slotProps.data.cantidad }} Unidades
+                    </span>
+                    <span v-else style="color: red; font-weight: bold;">
+                      -{{ slotProps.data.cantidad }} Unidades
+                    </span>
+                  </template>
+                </Column>
+
+                <Column field="responsable" header="Responsable"></Column>
+              </DataTable>
+
+              <div
+                v-if="
+                  !detalleMovimientos.traspasos ||
+                    detalleMovimientos.traspasos.length === 0
+                "
+                class="text-center p-3"
+              >
+                No hay traspasos en este periodo.
+              </div>
             </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="cerrarModalDetalle()"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1240,6 +1337,8 @@ import VueBarcode from "vue-barcode";
 import * as XLSX from "xlsx-js-style";
 import { FilterMatchMode } from "primevue/api";
 import InputText from "primevue/inputtext";
+import { ref } from "vue";
+import Menu from "primevue/menu";
 
 export default {
   data() {
@@ -1478,20 +1577,49 @@ export default {
         almacen: { value: null, matchMode: FilterMatchMode.CONTAINS },
       },
 
-      tabActual: 'ventas',          
-      modalDetalleMovimientos: 0,   
-      productoSeleccionado: {},     
-      detalleMovimientos: {         
-          ventas: [],
-          ingresos: [],
-          ajustes: [],
-          traspasos: []
+      tabActual: "ventas",
+      modalDetalleMovimientos: 0,
+      productoSeleccionado: {},
+      detalleMovimientos: {
+        ventas: [],
+        ingresos: [],
+        ajustes: [],
+        traspasos: [],
       },
       erroresFiltros: {
-        sucursal: '',
-        fechaInicio: '',
-        fechaFin: ''
+        sucursal: "",
+        fechaInicio: "",
+        fechaFin: "",
       },
+      filaSeleccionada: null,
+      itemsMenu: [
+        {
+          label: "Ver Detalle",
+          icon: "pi pi-eye",
+          class: "text-blue-500", 
+          command: () => {
+            
+            this.verDetalleMovimiento(this.filaSeleccionada);
+          },
+        },
+        {
+          separator: true, 
+        },
+        {
+          label: "Descargar PDF",
+          icon: "pi pi-file-pdf",
+          command: () => {
+            this.descargarPdfDetallado(this.filaSeleccionada);
+          },
+        },
+        {
+          label: "Descargar Excel",
+          icon: "pi pi-file-excel",
+          command: () => {
+            this.descargarExcelDetallado(this.filaSeleccionada);
+          },
+        },
+      ],
     };
   },
   components: {
@@ -1501,6 +1629,7 @@ export default {
     InputText,
     Panel,
     Button,
+    Menu,
   },
   computed: {
     sortedResultados: function() {
@@ -1524,7 +1653,7 @@ export default {
     pagesNumberMedida: function() {
       return this.calculatePages(
         this.paginationMedida,
-        this.offset.paginationMedida
+        this.offset.paginationMedida,
       );
     },
     imagen() {
@@ -1534,13 +1663,17 @@ export default {
   },
   watch: {
     selectedDelimiter: "updateData",
-    previewCsv: "parseCsv", // Llama a parseCsv cuando previewCsv cambie
+    previewCsv: "parseCsv", 
     globalFilter(newVal) {
       this.filters.global.value = newVal;
     },
   },
 
   methods: {
+    toggleMenu(event, data) {
+      this.filaSeleccionada = data; 
+      this.$refs.menuDescargas.toggle(event); 
+    },
     descargarExcelDetallado(data) {
       let me = this;
       if (!me.fechaInicio || !me.fechaFin) {
@@ -1559,32 +1692,32 @@ export default {
     },
     limpiarFiltro(tipo) {
       switch (tipo) {
-        case 'sucursal':
-          this.sucursalseleccionada = []; 
-          this.erroresFiltros.sucursal = ''; 
-          break;
-        
-        case 'articulo':
-          this.articuloseleccionada = []; 
-          break;
-        
-        case 'linea': 
-          this.lineaseleccionada = [];
-          break;
-        
-        case 'fechaInicio':
-          this.fechaInicio = '';
-          this.erroresFiltros.fechaInicio = '';
+        case "sucursal":
+          this.sucursalseleccionada = [];
+          this.erroresFiltros.sucursal = "";
           break;
 
-        case 'fechaFin':
-          this.fechaFin = '';
-          this.erroresFiltros.fechaFin = '';
+        case "articulo":
+          this.articuloseleccionada = [];
+          break;
+
+        case "linea":
+          this.lineaseleccionada = [];
+          break;
+
+        case "fechaInicio":
+          this.fechaInicio = "";
+          this.erroresFiltros.fechaInicio = "";
+          break;
+
+        case "fechaFin":
+          this.fechaFin = "";
+          this.erroresFiltros.fechaFin = "";
           break;
       }
     },
     handleResize() {
-      this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
+      this.mostrarLabel = window.innerWidth > 768; 
     },
     toastSuccess(mensaje) {
       this.$toasted.show(
@@ -1599,7 +1732,7 @@ export default {
           type: "success",
           position: "bottom-right",
           duration: 4000,
-        }
+        },
       );
     },
     toastError(mensaje) {
@@ -1615,7 +1748,7 @@ export default {
           type: "error",
           position: "bottom-right",
           duration: 4000,
-        }
+        },
       );
     },
     asignarCampos() {
@@ -1630,23 +1763,23 @@ export default {
       this.datosFormulario.idCliente = this.clienteseleccionada.id;
 
       this.datosFormulario.precio_costo_unid = this.convertDolar(
-        this.datosFormulario.precio_costo_unid
+        this.datosFormulario.precio_costo_unid,
       );
       this.datosFormulario.precio_costo_paq = this.convertDolar(
-        this.datosFormulario.precio_costo_paq
+        this.datosFormulario.precio_costo_paq,
       );
       this.datosFormulario.precio_venta = this.convertDolar(
-        this.datosFormulario.precio_venta
+        this.datosFormulario.precio_venta,
       );
 
       this.datosFormulario.precio_uno = this.convertDolar(this.precio_uno);
       this.datosFormulario.precio_dos = this.convertDolar(this.precio_dos);
       this.datosFormulario.precio_tres = this.convertDolar(this.precio_tres);
       this.datosFormulario.precio_cuatro = this.convertDolar(
-        this.precio_cuatro
+        this.precio_cuatro,
       );
       this.datosFormulario.costo_compra = this.convertDolar(
-        this.datosFormulario.costo_compra
+        this.datosFormulario.costo_compra,
       );
     },
     async validarCampo(campo) {
@@ -1689,7 +1822,7 @@ export default {
         .then((response) => {
           console.log(
             "Esta es la configuracion: ",
-            response.data.configuracionTrabajo
+            response.data.configuracionTrabajo,
           );
         })
         .catch((error) => {
@@ -1801,7 +1934,7 @@ export default {
 
         const newCsvContent = this.getCsvSubset(
           csvContent,
-          this.selectedHeadersFromFile
+          this.selectedHeadersFromFile,
         );
 
         this.previewCsv = newCsvContent;
@@ -1813,7 +1946,7 @@ export default {
     getCsvSubset(csvContent, selectedHeaders) {
       const rows = csvContent.split("\n");
       const headerIndices = selectedHeaders.map((header) =>
-        rows[0].split(this.selectedDelimiter).indexOf(header)
+        rows[0].split(this.selectedDelimiter).indexOf(header),
       );
 
       let newRows;
@@ -1917,10 +2050,10 @@ export default {
             });
             console.log("Estos no existen: ", this.erroresNoExiste);
             this.errorsImport = datos.filter(
-              (item) => !item.includes("No existe")
+              (item) => !item.includes("No existe"),
             );
             this.erroresNoExiste = this.erroresNoExiste.filter(
-              (valor, indice, array) => array.indexOf(valor) === indice
+              (valor, indice, array) => array.indexOf(valor) === indice,
             );
             // Mostrar el nuevo array con los elementos filtrados
             console.log(this.erroresNoExiste);
@@ -2025,7 +2158,7 @@ export default {
       } else if (this.tituloModal2 == "Sucursal") {
         if (selected.condicion == 1) {
           this.sucursalseleccionada = selected;
-          this.erroresFiltros.sucursal = '';
+          this.erroresFiltros.sucursal = "";
           this.validarCampo("idSucursal");
         } else if (selected.condicion == 0) {
           this.advertenciaInactiva("Sucursal");
@@ -2308,24 +2441,24 @@ export default {
 
       // Limpiar errores anteriores
       me.erroresFiltros = {
-        sucursal: '',
-        fechaInicio: '',
-        fechaFin: ''
+        sucursal: "",
+        fechaInicio: "",
+        fechaFin: "",
       };
 
       if (!me.sucursalseleccionada || !me.sucursalseleccionada.id) {
-        me.erroresFiltros.sucursal = 'Debe seleccionar una sucursal.';
+        me.erroresFiltros.sucursal = "Debe seleccionar una sucursal.";
         esValido = false;
       }
 
       if (!me.fechaInicio) {
-        me.erroresFiltros.fechaInicio = 'Debe seleccionar una fecha de inicio.';
+        me.erroresFiltros.fechaInicio = "Debe seleccionar una fecha de inicio.";
         esValido = false;
       }
 
       // Validar fecha fin
       if (!me.fechaFin) {
-        me.erroresFiltros.fechaFin = 'Debe seleccionar una fecha de fin.';
+        me.erroresFiltros.fechaFin = "Debe seleccionar una fecha de fin.";
         esValido = false;
       }
 
@@ -2363,107 +2496,127 @@ export default {
           console.log("ERRORES", error);
         });
     },
-    
 
     verDetalleMovimiento(data) {
-        let me = this;
-      
-        me.modal2 = 0; 
+      let me = this;
 
-        me.modalDetalleMovimientos = 1;
+      me.modal2 = 0;
 
-        me.productoSeleccionado = data;
-        me.tabActual = 'ventas'; 
-        me.detalleMovimientos = { ventas: [], ingresos: [], ajustes: [], traspasos: [] };      
+      me.modalDetalleMovimientos = 1;
 
-        if (!data.id_articulo || !data.id_almacen) {
-            console.error("Faltan IDs en la fila seleccionada. Revisa resumenFisicoMovimientos en Laravel.");
-            return;
-        }
+      me.productoSeleccionado = data;
+      me.tabActual = "ventas";
+      me.detalleMovimientos = {
+        ventas: [],
+        ingresos: [],
+        ajustes: [],
+        traspasos: [],
+      };
 
-        const params = new URLSearchParams();
-        params.append("idArticulo", data.id_articulo);
-        params.append("idAlmacen", data.id_almacen);
-        params.append("fechaInicio", me.fechaInicio);
-        params.append("fechaFin", me.fechaFin);
+      if (!data.id_articulo || !data.id_almacen) {
+        console.error(
+          "Faltan IDs en la fila seleccionada. Revisa resumenFisicoMovimientos en Laravel.",
+        );
+        return;
+      }
 
-        axios
-            .get("/reporte-detalle-movimientos?" + params.toString())
-            .then(function(response) {
-                me.detalleMovimientos = response.data;
-                console.log("Detalle de movimientos cargado:", me.detalleMovimientos);
-            })
-            .catch(function(error) {
-                console.error("Error cargando detalles", error);
-            });
+      const params = new URLSearchParams();
+      params.append("idArticulo", data.id_articulo);
+      params.append("idAlmacen", data.id_almacen);
+      params.append("fechaInicio", me.fechaInicio);
+      params.append("fechaFin", me.fechaFin);
+
+      axios
+        .get("/reporte-detalle-movimientos?" + params.toString())
+        .then(function(response) {
+          me.detalleMovimientos = response.data;
+          console.log("Detalle de movimientos cargado:", me.detalleMovimientos);
+        })
+        .catch(function(error) {
+          console.error("Error cargando detalles", error);
+        });
     },
 
     cerrarModalDetalle() {
-        this.modalDetalleMovimientos = 0;
-        this.productoSeleccionado = {};
+      this.modalDetalleMovimientos = 0;
+      this.productoSeleccionado = {};
     },
 
     // Descargar el PDF de la tabla grande (Todos los productos)
     descargarPdfGeneral() {
-        let me = this;
-        if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
-            swal("Atención", "Debe seleccionar Sucursal y Fechas primero", "warning");
-            return;
-        }
+      let me = this;
+      if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
+        swal(
+          "Atención",
+          "Debe seleccionar Sucursal y Fechas primero",
+          "warning",
+        );
+        return;
+      }
 
-        // Construir la URL con todos los filtros actuales
-        let params = new URLSearchParams();
-        params.append("sucursal", me.sucursalseleccionada.id);
-        params.append("fechaInicio", me.fechaInicio);
-        params.append("fechaFin", me.fechaFin);
-        
-        // Agregar filtros opcionales solo si están seleccionados
-        if(me.articuloseleccionada && me.articuloseleccionada.id) params.append("articulo", me.articuloseleccionada.id);
-        if(me.marcaseleccionada && me.marcaseleccionada.id) params.append("marca", me.marcaseleccionada.id);
-        if(me.lineaseleccionada && me.lineaseleccionada.id) params.append("linea", me.lineaseleccionada.id);
+      // Construir la URL con todos los filtros actuales
+      let params = new URLSearchParams();
+      params.append("sucursal", me.sucursalseleccionada.id);
+      params.append("fechaInicio", me.fechaInicio);
+      params.append("fechaFin", me.fechaFin);
 
-        let url = '/reporte-resumen-general-pdf?' + params.toString();
-        window.open(url, '_blank');
+      // Agregar filtros opcionales solo si están seleccionados
+      if (me.articuloseleccionada && me.articuloseleccionada.id)
+        params.append("articulo", me.articuloseleccionada.id);
+      if (me.marcaseleccionada && me.marcaseleccionada.id)
+        params.append("marca", me.marcaseleccionada.id);
+      if (me.lineaseleccionada && me.lineaseleccionada.id)
+        params.append("linea", me.lineaseleccionada.id);
+
+      let url = "/reporte-resumen-general-pdf?" + params.toString();
+      window.open(url, "_blank");
     },
 
     descargarExcelGeneral() {
-        let me = this;
-        if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
-            swal("Atención", "Debe seleccionar Sucursal y Fechas primero", "warning");
-            return;
-        }
+      let me = this;
+      if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
+        swal(
+          "Atención",
+          "Debe seleccionar Sucursal y Fechas primero",
+          "warning",
+        );
+        return;
+      }
 
-        // Construir la URL con todos los filtros actuales
-        let params = new URLSearchParams();
-        params.append("sucursal", me.sucursalseleccionada.id);
-        params.append("fechaInicio", me.fechaInicio);
-        params.append("fechaFin", me.fechaFin);
-        
-        // Agregar filtros opcionales solo si están seleccionados
-        if(me.articuloseleccionada && me.articuloseleccionada.id) params.append("articulo", me.articuloseleccionada.id);
-        if(me.marcaseleccionada && me.marcaseleccionada.id) params.append("marca", me.marcaseleccionada.id);
-        if(me.lineaseleccionada && me.lineaseleccionada.id) params.append("linea", me.lineaseleccionada.id);
+      // Construir la URL con todos los filtros actuales
+      let params = new URLSearchParams();
+      params.append("sucursal", me.sucursalseleccionada.id);
+      params.append("fechaInicio", me.fechaInicio);
+      params.append("fechaFin", me.fechaFin);
 
-        let url = '/reporte-resumen-general-excel?' + params.toString();
-        window.open(url, '_blank');
+      // Agregar filtros opcionales solo si están seleccionados
+      if (me.articuloseleccionada && me.articuloseleccionada.id)
+        params.append("articulo", me.articuloseleccionada.id);
+      if (me.marcaseleccionada && me.marcaseleccionada.id)
+        params.append("marca", me.marcaseleccionada.id);
+      if (me.lineaseleccionada && me.lineaseleccionada.id)
+        params.append("linea", me.lineaseleccionada.id);
+
+      let url = "/reporte-resumen-general-excel?" + params.toString();
+      window.open(url, "_blank");
     },
 
     // Descargar el PDF de un solo producto (Ventas, Compras, Ajustes)
     descargarPdfDetallado(data) {
-        let me = this;
-        if (!me.fechaInicio || !me.fechaFin) {
-            swal("Atención", "Debe seleccionar un rango de fechas", "warning");
-            return;
-        }
+      let me = this;
+      if (!me.fechaInicio || !me.fechaFin) {
+        swal("Atención", "Debe seleccionar un rango de fechas", "warning");
+        return;
+      }
 
-        let params = new URLSearchParams();
-        params.append("idArticulo", data.id_articulo);
-        params.append("idAlmacen", data.id_almacen);
-        params.append("fechaInicio", me.fechaInicio);
-        params.append("fechaFin", me.fechaFin);
+      let params = new URLSearchParams();
+      params.append("idArticulo", data.id_articulo);
+      params.append("idAlmacen", data.id_almacen);
+      params.append("fechaInicio", me.fechaInicio);
+      params.append("fechaFin", me.fechaFin);
 
-        let url = '/reporte-resumen-detallado-pdf?' + params.toString();
-        window.open(url, '_blank');
+      let url = "/reporte-resumen-detallado-pdf?" + params.toString();
+      window.open(url, "_blank");
     },
 
     exportarExcel() {
@@ -2582,7 +2735,7 @@ export default {
       XLSX.utils.book_append_sheet(
         workbook,
         worksheet,
-        "Resumen Movimientos Fisicos"
+        "Resumen Movimientos Fisicos",
       );
 
       // Descargar el archivo
@@ -2902,13 +3055,13 @@ export default {
                 nombre_generico: data["nombre_generico"],
                 unidad_envase: data["unidad_envase"],
                 precio_costo_unid: this.calcularPrecioValorMoneda(
-                  data["precio_costo_unid"]
+                  data["precio_costo_unid"],
                 ),
                 precio_costo_paq: this.calcularPrecioValorMoneda(
-                  data["precio_costo_paq"]
+                  data["precio_costo_paq"],
                 ),
                 precio_venta: this.calcularPrecioValorMoneda(
-                  data["precio_venta"]
+                  data["precio_venta"],
                 ),
                 precio_uno: 0,
                 precio_dos: 0,
@@ -2916,7 +3069,7 @@ export default {
                 precio_cuatro: 0,
                 stock: data["stock"],
                 costo_compra: this.calcularPrecioValorMoneda(
-                  data["costo_compra"]
+                  data["costo_compra"],
                 ),
                 codigo: data["codigo"],
                 codigo_alfanumerico: data["codigo_alfanumerico"],
@@ -2968,16 +3121,16 @@ export default {
               };
 
               this.precio_uno = this.calcularPrecioValorMoneda(
-                data["precio_uno"]
+                data["precio_uno"],
               );
               this.precio_dos = this.calcularPrecioValorMoneda(
-                data["precio_dos"]
+                data["precio_dos"],
               );
               this.precio_tres = this.calcularPrecioValorMoneda(
-                data["precio_tres"]
+                data["precio_tres"],
               );
               this.precio_cuatro = this.calcularPrecioValorMoneda(
-                data["precio_cuatro"]
+                data["precio_cuatro"],
               );
               // this.precios.forEach((precio) => {
               //     this.calcularPrecio(precio);
@@ -3068,25 +3221,25 @@ export default {
       if (this.tituloModal2 === "Industrias") {
         if (!this.nombre)
           this.errorMostrarMsjIndustria.push(
-            "El nombre de Industria no puede estar vacío."
+            "El nombre de Industria no puede estar vacío.",
           );
       } else if (this.tituloModal2 === "Marcas") {
         if (!this.nombre)
           this.errorMostrarMsjIndustria.push(
-            "El nombre de Marca no puede estar vacío."
+            "El nombre de Marca no puede estar vacío.",
           );
       } else if (this.tituloModal2 === "Lineas") {
         if (!this.nombreLinea)
           this.errorMostrarMsjIndustria.push(
-            "El nombre de Linea no puede estar vacío."
+            "El nombre de Linea no puede estar vacío.",
           );
         if (!this.descripcion)
           this.errorMostrarMsjIndustria.push(
-            "La descripcion de Linea no puede estar vacío."
+            "La descripcion de Linea no puede estar vacío.",
           );
         if (!this.codigoProductoSin)
           this.errorMostrarMsjIndustria.push(
-            "El codigo de Linea no puede estar vacío."
+            "El codigo de Linea no puede estar vacío.",
           );
       }
 
@@ -3102,7 +3255,7 @@ export default {
 
       if (!this.descripcion_medida)
         this.errorMostrarMsjMedida.push(
-          "El nombre de la Medida no puede estar vacío."
+          "El nombre de la Medida no puede estar vacío.",
         );
       if (this.errorMostrarMsjMedida.length) this.errorMedida = 1;
 
@@ -3355,6 +3508,7 @@ export default {
   },
 };
 </script>
+
 <style>
 .card-error {
   margin-bottom: 10px;
@@ -3656,6 +3810,68 @@ export default {
 </style>
 
 <style scoped>
+:deep(.col-acciones) {
+  width: 6rem;
+  min-width: 6rem;
+  padding: 0 !important;
+}
+
+.col-acciones {
+  padding: 0 !important;
+}
+
+:deep(.col-codigo) {
+  width: 10rem;
+  min-width: 10rem;
+}
+/* ACCIONES → primera columna frozen */
+:deep(th.col-acciones.p-frozen-column),
+:deep(td.col-acciones.p-frozen-column) {
+  left: 0;
+  padding: 0 !important;
+}
+
+/* CODIGO ITEM → segunda columna frozen */
+:deep(th.col-codigo.p-frozen-column),
+:deep(td.col-codigo.p-frozen-column) {
+  left: 9rem; /* ancho de ACCIONES */
+  padding: 0 !important;
+}
+:deep(.p-frozen-column) {
+  position: sticky;
+  z-index: 3;
+  background-color: #ffffff;
+  padding: 0 !important;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td.col-acciones) {
+  padding: 0 !important;
+  /* Opcional: si quieres asegurar que el contenido llene la celda */
+  height: 100%;
+}
+
+.actions-wrapper {
+  display: flex;
+  justify-content: center; /* Cambiado de 'left' a 'center' para que se vea bien sin padding */
+  align-items: center;
+  width: 80%;
+  height: 100%;
+}
+:deep(.col-acciones) {
+  width: 6rem;
+  min-width: 6rem;
+  padding: 0 !important; /* Refuerzo */
+}
+
+/* Opcional: Estilo para el botón de descarga si quieres que resalte diferente */
+.p-button-secondary.action-btn {
+  color: #64748b; /* Un gris elegante */
+}
+.p-button-secondary.action-btn:hover {
+  color: #334155;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
 .custom-loading-overlay {
   position: fixed;
   top: 0;
@@ -4293,4 +4509,3 @@ export default {
   padding-top: 1rem;
 }
 </style>
-
