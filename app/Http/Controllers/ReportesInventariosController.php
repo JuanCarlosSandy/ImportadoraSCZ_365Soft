@@ -179,22 +179,27 @@ class ReportesInventariosController extends Controller
         $ventasEnUnidades = intval($totalVentasCalculado);
 
         
-        $ventasTexto = $ventasEnUnidades . ' ' . ($ventasEnUnidades == 1 ? 'Unidad' : 'Unidades');
+        $ventasTexto = $ventasEnUnidades . ' ' . ($ventasEnUnidades == 1 ? 'Unid.' : 'Unid.');
 
+        
         
         $traspasosEntrada = DB::table('detalle_traspasos')
             ->join('traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
             ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
             ->where('inventarios.idarticulo', $producto->id)
-            ->where('traspasos.almacen_destino', $producto->id_almacen)
             ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
             ->where(function($query) use ($producto) {
-                // Caso A: Soy el DESTINO y el tipo es 'Entrada' (normal)
+                
                 $query->where(function($q) use ($producto) {
+                    $q->where('traspasos.almacen_destino', $producto->id_almacen)
+                      ->where('traspasos.tipo_traspaso', 'Salida');
+                })
+                
+                ->orWhere(function($q) use ($producto) {
                     $q->where('traspasos.almacen_destino', $producto->id_almacen)
                       ->where('traspasos.tipo_traspaso', 'Entrada');
                 })
-                // Caso B: Soy el ORIGEN pero el tipo es 'Entrada' (Lógica invertida de tu BD)
+                
                 ->orWhere(function($q) use ($producto) {
                     $q->where('traspasos.almacen_origen', $producto->id_almacen)
                       ->where('traspasos.tipo_traspaso', 'Entrada');
@@ -211,12 +216,12 @@ class ReportesInventariosController extends Controller
             ->where('traspasos.tipo_traspaso', 'Salida')
             ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
             ->where(function($query) use ($producto) {
-                // Caso A: Soy el ORIGEN y el tipo es 'Salida' (normal)
+                
                 $query->where(function($q) use ($producto) {
                     $q->where('traspasos.almacen_origen', $producto->id_almacen)
                       ->where('traspasos.tipo_traspaso', 'Salida');
                 })
-                // Caso B: Soy el DESTINO pero el tipo es 'Salida' (Si existiera esa rareza en BD)
+                
                 ->orWhere(function($q) use ($producto) {
                     $q->where('traspasos.almacen_destino', $producto->id_almacen)
                       ->where('traspasos.tipo_traspaso', 'Salida');
@@ -270,7 +275,7 @@ class ReportesInventariosController extends Controller
             ->where('idalmacen', $producto->id_almacen)
             ->sum('saldo_stock');
 
-        $saldoTexto = "{$saldo_stock} Unidades";
+        $saldoTexto = "{$saldo_stock} Unid.";
 
         $resultados[] = [
             'id_articulo' => $producto->id,
@@ -283,9 +288,9 @@ class ReportesInventariosController extends Controller
             'total_ventas' => $ventasEnUnidades, 
             'total_ventas_texto' => $ventasTexto, 
             'total_ingresos' => $ingresos,
-            'total_ingresos_texto' => $ingresos . ' Unidades',
-            'total_traspasos_entrada' => $traspasosEntrada,
-            'total_traspasos_salida' => $traspasosSalida,
+            'total_ingresos_texto' => $ingresos . ' Unid.',
+            'total_traspasos_entrada' => $traspasosEntrada . ' Unid.',
+            'total_traspasos_salida' => $traspasosSalida . ' Unid.',
             'total_ajuste' => $ajuste,
             'ajuste_entrada' => $ajusteEntrada,
             'ajuste_salida' => $ajusteSalida,
@@ -382,7 +387,7 @@ class ReportesInventariosController extends Controller
             ->orderBy('ajuste_invetarios.created_at', 'desc')
             ->get();
 
-        // 4. TRASPASOS
+        
         $traspasos = DB::table('traspasos')
             ->join('detalle_traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
             ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
@@ -395,9 +400,9 @@ class ReportesInventariosController extends Controller
                 'origen.nombre_almacen as almacen_origen',
                 'destino.nombre_almacen as almacen_destino',
                 'users.usuario as responsable',
-                'detalle_traspasos.cantidad_traspaso as cantidad', // O la suma si decides agrupar
+                'detalle_traspasos.cantidad_traspaso as cantidad', 
                 
-                // --- AQUÍ ESTÁ LA LÓGICA MÁGICA ---
+                
                 DB::raw("CASE 
                     -- Si soy el Almacén Origen, respeto lo que dice la columna tipo_traspaso
                     WHEN traspasos.almacen_origen = " . intval($idAlmacen) . " THEN traspasos.tipo_traspaso
@@ -411,7 +416,7 @@ class ReportesInventariosController extends Controller
                     
                     ELSE 'Indefinido'
                 END as tipo_movimiento")
-                // -----------------------------------
+                
             )
             ->where('inventarios.idarticulo', $idArticulo)
             ->where(function($query) use ($idAlmacen) {

@@ -178,9 +178,9 @@
   <Column header="AJUSTE ENTRADA" style="min-width: 12rem; text-align: center">
     <template #body="slotProps">
       <span v-if="slotProps.data.ajuste_entrada > 0" style="color: green; font-weight: bold;">
-        +{{ slotProps.data.ajuste_entrada }} {{ slotProps.data.ajuste_entrada === 1 ? 'Unidad' : 'Unidades' }}
+        +{{ slotProps.data.ajuste_entrada }} {{ slotProps.data.ajuste_entrada === 1 ? 'Unid.' : 'Unid.' }}
       </span>
-      <span v-else style="color: inherit;">0 Unidades</span>
+      <span v-else style="color: inherit;">0 Unid.</span>
     </template>
   </Column>
 
@@ -188,9 +188,9 @@
   <Column header="AJUSTE SALIDA" style="min-width: 12rem; text-align: center">
     <template #body="slotProps">
       <span v-if="slotProps.data.ajuste_salida > 0" style="color: red; font-weight: bold;">
-        -{{ slotProps.data.ajuste_salida }} {{ slotProps.data.ajuste_salida === 1 ? 'Unidad' : 'Unidades' }}
+        -{{ slotProps.data.ajuste_salida }} {{ slotProps.data.ajuste_salida === 1 ? 'Unid.' : 'Unid.' }}
       </span>
-      <span v-else style="color: inherit;">0 Unidades</span>
+      <span v-else style="color: inherit;">0 Unid.</span>
     </template>
   </Column>
 
