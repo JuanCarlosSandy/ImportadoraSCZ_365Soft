@@ -1513,7 +1513,7 @@
                 <!-- Texto informativo -->
                 <span v-if="buscarA.trim() === ''"
                   style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
-                  Realice una búsqueda por nombre, laboratorio, código de barra o código del producto
+                  Realice una búsqueda por nombre, proveedor, código de barra o código del producto
                 </span>
                 <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
                   buscarA = '';

@@ -396,7 +396,7 @@
               />
             </template>
           </Column>
-          <Column field="nombre_producto" header="Medicamento" />
+          <Column field="nombre_producto" header="Producto" />
           <Column field="saldo_stock" header="Cantidad" />
           <Column field="nombre_proveedor" header="Proveedor" />
         </DataTable>

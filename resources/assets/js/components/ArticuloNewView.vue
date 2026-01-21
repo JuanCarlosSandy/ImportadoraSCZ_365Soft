@@ -811,7 +811,7 @@ export default {
         Swal.fire({
           icon: 'warning',
           title: 'Acceso Restringido',
-          text: 'Solo el Super Administrador o Administrador puede editar los datos de los medicamentos.',
+          text: 'Solo el Super Administrador o Administrador puede editar los datos de los productos.',
           confirmButtonColor: '#3085d6',
           confirmButtonText: 'Entendido'
         });
