@@ -188,6 +188,18 @@ class ReportesInventariosController extends Controller
             ->where('inventarios.idarticulo', $producto->id)
             ->where('traspasos.almacen_destino', $producto->id_almacen)
             ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
+            ->where(function($query) use ($producto) {
+                // Caso A: Soy el DESTINO y el tipo es 'Entrada' (normal)
+                $query->where(function($q) use ($producto) {
+                    $q->where('traspasos.almacen_destino', $producto->id_almacen)
+                      ->where('traspasos.tipo_traspaso', 'Entrada');
+                })
+                // Caso B: Soy el ORIGEN pero el tipo es 'Entrada' (Lógica invertida de tu BD)
+                ->orWhere(function($q) use ($producto) {
+                    $q->where('traspasos.almacen_origen', $producto->id_almacen)
+                      ->where('traspasos.tipo_traspaso', 'Entrada');
+                });
+            })
             ->sum('detalle_traspasos.cantidad_traspaso');
 
         
@@ -198,6 +210,18 @@ class ReportesInventariosController extends Controller
             ->where('traspasos.almacen_origen', $producto->id_almacen)
             ->where('traspasos.tipo_traspaso', 'Salida')
             ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
+            ->where(function($query) use ($producto) {
+                // Caso A: Soy el ORIGEN y el tipo es 'Salida' (normal)
+                $query->where(function($q) use ($producto) {
+                    $q->where('traspasos.almacen_origen', $producto->id_almacen)
+                      ->where('traspasos.tipo_traspaso', 'Salida');
+                })
+                // Caso B: Soy el DESTINO pero el tipo es 'Salida' (Si existiera esa rareza en BD)
+                ->orWhere(function($q) use ($producto) {
+                    $q->where('traspasos.almacen_destino', $producto->id_almacen)
+                      ->where('traspasos.tipo_traspaso', 'Salida');
+                });
+            })
             ->sum('detalle_traspasos.cantidad_traspaso');
 
         
@@ -290,7 +314,6 @@ class ReportesInventariosController extends Controller
         $fechaInicio = $request->fechaInicio . ' 00:00:00';
         $fechaFin = $request->fechaFin . ' 23:59:59';
 
-        // 1. VENTAS 
         $ventas = DB::table('ventas')
             ->join('detalle_ventas', 'detalle_ventas.idventa', '=', 'ventas.id')
             ->join('users', 'ventas.idusuario', '=', 'users.id')
@@ -319,7 +342,6 @@ class ReportesInventariosController extends Controller
             ->orderBy('ventas.fecha_hora', 'desc')
             ->get();
 
-        // 2. COMPRAS / INGRESOS 
         $ingresos = DB::table('ingresos')
             ->join('detalle_ingresos', 'detalle_ingresos.idingreso', '=', 'ingresos.id')
             ->join('users', 'ingresos.idusuario', '=', 'users.id') 
@@ -338,7 +360,6 @@ class ReportesInventariosController extends Controller
             ->orderBy('ingresos.fecha_hora', 'desc')
             ->get();
 
-        // 3. AJUSTES (ESTE YA ESTABA BIEN)
         $ajustes = DB::table('ajuste_invetarios')
         ->leftJoin('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
             ->select(
@@ -361,10 +382,51 @@ class ReportesInventariosController extends Controller
             ->orderBy('ajuste_invetarios.created_at', 'desc')
             ->get();
 
+        // 4. TRASPASOS
+        $traspasos = DB::table('traspasos')
+            ->join('detalle_traspasos', 'detalle_traspasos.idtraspaso', '=', 'traspasos.id')
+            ->join('inventarios', 'detalle_traspasos.idinventario', '=', 'inventarios.id')
+            ->join('almacens as origen', 'traspasos.almacen_origen', '=', 'origen.id')
+            ->join('almacens as destino', 'traspasos.almacen_destino', '=', 'destino.id')
+            ->join('users', 'traspasos.idusuario', '=', 'users.id')
+            ->select(
+                'traspasos.id',
+                'traspasos.created_at as fecha_hora', 
+                'origen.nombre_almacen as almacen_origen',
+                'destino.nombre_almacen as almacen_destino',
+                'users.usuario as responsable',
+                'detalle_traspasos.cantidad_traspaso as cantidad', // O la suma si decides agrupar
+                
+                // --- AQUÍ ESTÁ LA LÓGICA MÁGICA ---
+                DB::raw("CASE 
+                    -- Si soy el Almacén Origen, respeto lo que dice la columna tipo_traspaso
+                    WHEN traspasos.almacen_origen = " . intval($idAlmacen) . " THEN traspasos.tipo_traspaso
+                    
+                    -- Si soy el Almacén Destino, ocurre lo contrario al tipo_traspaso
+                    WHEN traspasos.almacen_destino = " . intval($idAlmacen) . " THEN 
+                        CASE 
+                            WHEN traspasos.tipo_traspaso = 'Entrada' THEN 'Salida'
+                            ELSE 'Entrada'
+                        END
+                    
+                    ELSE 'Indefinido'
+                END as tipo_movimiento")
+                // -----------------------------------
+            )
+            ->where('inventarios.idarticulo', $idArticulo)
+            ->where(function($query) use ($idAlmacen) {
+                $query->where('traspasos.almacen_origen', $idAlmacen)
+                      ->orWhere('traspasos.almacen_destino', $idAlmacen);
+            })
+            ->whereBetween('traspasos.created_at', [$fechaInicio, $fechaFin])
+            ->orderBy('traspasos.created_at', 'desc')
+            ->get();
+
         return response()->json([
             'ventas' => $ventas,
             'ingresos' => $ingresos,
-            'ajustes' => $ajustes
+            'ajustes' => $ajustes,
+            'traspasos' => $traspasos
         ]);
     }
 
@@ -421,7 +483,7 @@ class ReportesInventariosController extends Controller
             $sucursal = $request->sucursal;
             $productos->where('almacens.sucursal', $sucursal);
         }
-        // Agregar filtros opcionales si se proporcionan otros parámetros
+        
         if ($request->has('marca') && $request->marca !== 'undefined') {
             $idmarca = $request->marca;
             $productos->where('articulos.idmarca', $idmarca);
@@ -516,97 +578,113 @@ class ReportesInventariosController extends Controller
     }
 
     public function exportarPDFResumenGeneral(Request $request)
-    {
-        // 1. Obtenemos datos
-        $data = $this->resumenFisicoMovimientos($request); 
-        $resultados = $data['resultados'];
+{
+    // 1. Obtenemos datos (Asegúrate de haber actualizado esta función con el código anterior)
+    $data = $this->resumenFisicoMovimientos($request); 
+    $resultados = $data['resultados'];
 
-        // *** CORRECCIÓN 1: 'L' para Landscape (Horizontal) ***
-        $pdf = new PDFWithPagination('L', 'mm', 'A4');
-        $pdf->AliasNbPages(); // Importante para que funcione el {nb} del footer
-        $pdf->AddPage();
-        $pdf->SetMargins(10, 10, 10); // Márgenes de 1cm
-        $pdf->SetAutoPageBreak(true, 15); // Salto de página automático
+    // Configuración PDF Horizontal
+    $pdf = new PDFWithPagination('L', 'mm', 'A4');
+    $pdf->AliasNbPages(); 
+    $pdf->AddPage();
+    $pdf->SetMargins(10, 10, 10); 
+    $pdf->SetAutoPageBreak(true, 15); 
 
-        // --- ENCABEZADO ---
-        $pdf->SetFont('Arial', 'B', 16);
-        $pdf->Cell(0, 10, 'REPORTE GENERAL DE KARDEX FISICO', 0, 1, 'C');
+    // --- ENCABEZADO ---
+    $pdf->SetFont('Arial', 'B', 16);
+    $pdf->Cell(0, 10, 'REPORTE GENERAL DE KARDEX FISICO', 0, 1, 'C');
+    
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(0, 6, 'Generado el: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
+    $pdf->Ln(2);
+    
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(25, 6, 'Filtro Fecha:', 0, 0);
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(0, 6, 'Del ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1);
+    
+    // --- TABLA ---
+    $pdf->Ln(5);
+    $pdf->SetFont('Arial', 'B', 8); // Bajamos un poco la fuente a 8 para que entre todo
+    $pdf->SetFillColor(230, 230, 230); 
+    $pdf->SetDrawColor(180, 180, 180); 
+
+    // *** NUEVOS ANCHOS CALCULADOS (Total aprox 275mm) ***
+    // [0]COD, [1]PROD, [2]CAT, [3]VEN, [4]COM, [5]T.ENT, [6]T.SAL, [7]A.ENT, [8]A.SAL, [9]STOCK
+    $w = [20, 55, 25, 20, 20, 22, 22, 22, 22, 25]; 
+    
+    // Cabecera de la tabla
+    $pdf->Cell($w[0], 10, 'CODIGO', 1, 0, 'C', true);
+    $pdf->Cell($w[1], 10, 'PRODUCTO', 1, 0, 'C', true);
+    $pdf->Cell($w[2], 10, 'CATEGORIA', 1, 0, 'C', true);
+    $pdf->Cell($w[3], 10, 'VENTAS', 1, 0, 'C', true);
+    $pdf->Cell($w[4], 10, 'COMPRAS', 1, 0, 'C', true);
+    
+    // Nuevas Columnas
+    $pdf->Cell($w[5], 10, 'TRAS. ENT', 1, 0, 'C', true);
+    $pdf->Cell($w[6], 10, 'TRAS. SAL', 1, 0, 'C', true);
+    
+    $pdf->Cell($w[7], 10, 'AJ. ENT', 1, 0, 'C', true);
+    $pdf->Cell($w[8], 10, 'AJ. SAL', 1, 0, 'C', true);
+    $pdf->Cell($w[9], 10, 'STOCK', 1, 1, 'C', true);
+
+    $pdf->SetFont('Arial', '', 7); // Letra pequeña para el contenido
+
+    foreach ($resultados as $item) {
         
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Generado el: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
-        $pdf->Ln(2);
+        // 1. CODIGO
+        $pdf->Cell($w[0], 8, utf8_decode($item['codigo']), 1, 0, 'C');
         
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(25, 6, 'Filtro Fecha:', 0, 0);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Del ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1);
+        // 2. PRODUCTO (Recorte para evitar desbordes visuales)
+        $nombre = substr(utf8_decode($item['nombre_producto']), 0, 40);
+        $pdf->Cell($w[1], 8, $nombre, 1, 0, 'L');
         
-        // --- TABLA ---
-        $pdf->Ln(5);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(230, 230, 230); // Gris clarito
-        $pdf->SetDrawColor(180, 180, 180); // Bordes grises finos
-
-        // *** CORRECCIÓN 2: Ajuste de Anchos ***
-        // Total suma: 270mm (Entra perfecto en A4 Horizontal que mide 297mm)
-        // [Codigo, Producto, Categoria, Ventas, Compras, Ajustes, Stock]
-        $w = [25, 70, 30, 25, 30, 33, 33, 30]; 
+        // 3. CATEGORIA
+        $categoria = substr(utf8_decode($item['categoria']), 0, 18);
+        $pdf->Cell($w[2], 8, $categoria, 1, 0, 'L');
         
-        // Cabecera de la tabla
-        $pdf->Cell($w[0], 10, 'CODIGO', 1, 0, 'C', true);
-        $pdf->Cell($w[1], 10, 'PRODUCTO', 1, 0, 'C', true);
-        $pdf->Cell($w[2], 10, 'CATEGORIA', 1, 0, 'C', true);
-        $pdf->Cell($w[3], 10, 'VENTAS', 1, 0, 'C', true);
-        $pdf->Cell($w[4], 10, 'COMPRAS', 1, 0, 'C', true);
-        $pdf->Cell($w[5], 10, 'A. ENTRADA', 1, 0, 'C', true);
-        $pdf->Cell($w[6], 10, 'A. SALIDA', 1, 0, 'C', true);
-        $pdf->Cell($w[7], 10, 'STOCK', 1, 1, 'C', true);
+        // 4. VENTAS
+        $pdf->Cell($w[3], 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
+        
+        // 5. COMPRAS
+        $pdf->Cell($w[4], 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
 
-        $pdf->SetFont('Arial', '', 8);
+        // 6. TRASPASO ENTRADA (NUEVO)
+        $valTrasEnt = $item['total_traspasos_entrada'];
+        $txtTrasEnt = ($valTrasEnt > 0) ? $valTrasEnt . ' Und' : '0';
+        $pdf->SetTextColor(0, 100, 0); // Verde oscuro opcional para resaltar
+        $pdf->Cell($w[5], 8, utf8_decode($txtTrasEnt), 1, 0, 'R');
+        $pdf->SetTextColor(0, 0, 0); // Reset color
 
-        foreach ($resultados as $item) {
-            // Lógica para altura dinámica si el nombre es muy largo (opcional, pero ayuda)
-            // Por simplicidad usaremos Cell normal recortando texto si es excesivo
-            
-            $pdf->Cell($w[0], 8, utf8_decode($item['codigo']), 1, 0, 'C');
-            
-            // Recortamos a 50 caracteres para que no rompa la fila
-            $nombre = substr(utf8_decode($item['nombre_producto']), 0, 50);
-            $pdf->Cell($w[1], 8, $nombre, 1, 0, 'L');
-            
-            $categoria = substr(utf8_decode($item['categoria']), 0, 22);
-            $pdf->Cell($w[2], 8, $categoria, 1, 0, 'L');
-            
-            // Cantidades alineadas a la derecha ('R')
-            $pdf->Cell($w[3], 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
-            $pdf->Cell($w[4], 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
+        // 7. TRASPASO SALIDA (NUEVO)
+        $valTrasSal = $item['total_traspasos_salida'];
+        $txtTrasSal = ($valTrasSal > 0) ? $valTrasSal . ' Und' : '0';
+        $pdf->SetTextColor(150, 0, 0); // Rojo oscuro opcional para resaltar
+        $pdf->Cell($w[6], 8, utf8_decode($txtTrasSal), 1, 0, 'R');
+        $pdf->SetTextColor(0, 0, 0); // Reset color
 
-            $valEntrada = $item['ajuste_entrada'];
-            if ($valEntrada == 0) {
-                $txtEntrada = '0';
-            } else {
-                $txtEntrada = $valEntrada . ' ' . (abs($valEntrada) == 1 ? 'Unidad' : 'Unidades');
-            }
-            $pdf->Cell($w[5], 8, utf8_decode($txtEntrada), 1, 0, 'R');
+        // 8. AJUSTE ENTRADA
+        $valEntrada = $item['ajuste_entrada'];
+        $txtEntrada = ($valEntrada != 0) ? $valEntrada . ' Und' : '0';
+        $pdf->Cell($w[7], 8, utf8_decode($txtEntrada), 1, 0, 'R');
 
-            $valSalida = $item['ajuste_salida'];
-            if ($valSalida == 0) {
-                $txtSalida = '0';
-            } else {
-                $txtSalida = $valSalida . ' ' . (abs($valSalida) == 1 ? 'Unidad' : 'Unidades');
-            }
-            $pdf->Cell($w[6], 8, utf8_decode($txtSalida), 1, 0, 'R');
-            $pdf->Cell($w[7], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
-        }
-
-        // Generar nombre de archivo con fecha actual del sistema
-        $fechaGeneracion = date('Y-m-d');
-        $nombreArchivo = 'KardexFisico_' . $request->fechaInicio . '_' . $request->fechaFin . '.pdf';
-
-        return response($pdf->Output('S'))
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+        // 9. AJUSTE SALIDA
+        $valSalida = $item['ajuste_salida'];
+        $txtSalida = ($valSalida != 0) ? $valSalida . ' Und' : '0';
+        $pdf->Cell($w[8], 8, utf8_decode($txtSalida), 1, 0, 'R');
+        
+        // 10. STOCK FINAL
+        $pdf->SetFont('Arial', 'B', 7); // Negrita para el stock
+        $pdf->Cell($w[9], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
+        $pdf->SetFont('Arial', '', 7); // Reset fuente
     }
+
+    $nombreArchivo = 'KardexFisico_' . $request->fechaInicio . '.pdf';
+
+    return response($pdf->Output('S'))
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+}
 
     public function exportarExcelResumenGeneral(Request $request)
     {
@@ -644,132 +722,181 @@ class ReportesInventariosController extends Controller
     }
 
     public function exportarPDFDetallado(Request $request)
-    {
-        
-        
-        $response = $this->detalleMovimientosProducto($request);
-        $data = $response->getData(); 
-        
-        $ventas = $data->ventas;
-        $ingresos = $data->ingresos;
-        $ajustes = $data->ajustes;
+{
+    // 1. Obtenemos la data completa (incluyendo los nuevos TRASPASOS)
+    $response = $this->detalleMovimientosProducto($request);
+    $data = $response->getData(); 
+    
+    $ventas = $data->ventas;
+    $ingresos = $data->ingresos;
+    $ajustes = $data->ajustes;
+    
+    // Obtenemos los traspasos (Asegúrate de haber actualizado detalleMovimientosProducto)
+    $traspasos = isset($data->traspasos) ? $data->traspasos : [];
 
-        
-        $articulo = DB::table('articulos')->where('id', $request->idArticulo)->first();
+    // Info del artículo
+    $articulo = DB::table('articulos')->where('id', $request->idArticulo)->first();
 
-        $pdf = new PDFWithPagination('P', 'mm', 'A4');
-        $pdf->AliasNbPages();
-        $pdf->AddPage();
+    $pdf = new PDFWithPagination('P', 'mm', 'A4');
+    $pdf->AliasNbPages();
+    $pdf->AddPage();
 
-        
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(0, 10, 'KARDEX DETALLADO DE PRODUCTO', 0, 1, 'C');
-        
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Rango: ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1, 'C');
-        $pdf->Ln(4);
+    // --- ENCABEZADO ---
+    $pdf->SetFont('Arial', 'B', 14);
+    $pdf->Cell(0, 10, 'KARDEX DETALLADO DE PRODUCTO', 0, 1, 'C');
+    
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(0, 6, 'Rango: ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1, 'C');
+    $pdf->Ln(4);
 
-        
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->Cell(20, 6, 'Codigo:', 0, 0);
-        $pdf->SetFont('Arial', '', 11);
-        $pdf->Cell(40, 6, utf8_decode($articulo->codigo), 0, 0);
-        
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->Cell(20, 6, 'Producto:', 0, 0);
-        $pdf->SetFont('Arial', '', 11);
-        $pdf->Cell(0, 6, utf8_decode($articulo->nombre), 0, 1);
-        $pdf->Ln(6);
+    // Info Producto
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->Cell(20, 6, 'Codigo:', 0, 0);
+    $pdf->SetFont('Arial', '', 11);
+    $pdf->Cell(40, 6, utf8_decode($articulo->codigo), 0, 0);
+    
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->Cell(20, 6, 'Producto:', 0, 0);
+    $pdf->SetFont('Arial', '', 11);
+    $pdf->Cell(0, 6, utf8_decode($articulo->nombre), 0, 1);
+    $pdf->Ln(6);
 
-        
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(200, 220, 255); 
-        $pdf->Cell(0, 8, '1. VENTAS', 1, 1, 'L', true);
+    // --- 1. VENTAS ---
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetFillColor(200, 220, 255); 
+    $pdf->Cell(0, 8, '1. VENTAS', 1, 1, 'L', true);
 
-        if (count($ventas) > 0) {
-            $pdf->Cell(35, 6, 'FECHA', 1);
-            $pdf->Cell(25, 6, 'DOC', 1);
-            $pdf->Cell(65, 6, 'CLIENTE', 1);
-            $pdf->Cell(20, 6, 'MODO', 1);
-            $pdf->Cell(15, 6, 'CANT.', 1, 0, 'R'); 
-            $pdf->Cell(30, 6, 'TOTAL UNID.', 1, 1, 'R');
+    if (count($ventas) > 0) {
+        $pdf->SetFont('Arial', 'B', 9); // Faltaba definir fuente negrita para header tabla ventas
+        $pdf->Cell(35, 6, 'FECHA', 1);
+        $pdf->Cell(25, 6, 'DOC', 1);
+        $pdf->Cell(65, 6, 'CLIENTE', 1);
+        $pdf->Cell(20, 6, 'MODO', 1);
+        $pdf->Cell(15, 6, 'CANT.', 1, 0, 'R'); 
+        $pdf->Cell(30, 6, 'TOTAL UNID.', 1, 1, 'R');
 
-            $pdf->SetFont('Arial', '', 8);
-            foreach ($ventas as $v) {
-                $pdf->Cell(35, 6, $v->fecha_hora, 1);
-                $pdf->Cell(25, 6, $v->num_comprobante, 1);
-                $pdf->Cell(65, 6, substr(utf8_decode($v->nombre_cliente), 0, 45), 1);
-                $pdf->Cell(20, 6, $v->modo_venta, 1);
-                $pdf->Cell(15, 6, $v->cantidad, 1, 0, 'R');
-                $pdf->Cell(30, 6, $v->cantidad_en_unidades, 1, 1, 'R'); 
-            }
-        } else {
-            $pdf->SetFont('Arial', 'I', 9);
-            $pdf->Cell(0, 8, 'No hay ventas en este periodo.', 1, 1, 'C');
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($ventas as $v) {
+            $pdf->Cell(35, 6, $v->fecha_hora, 1);
+            $pdf->Cell(25, 6, $v->num_comprobante, 1);
+            $pdf->Cell(65, 6, substr(utf8_decode($v->nombre_cliente), 0, 45), 1);
+            $pdf->Cell(20, 6, $v->modo_venta, 1);
+            $pdf->Cell(15, 6, $v->cantidad, 1, 0, 'R');
+            $pdf->Cell(30, 6, $v->cantidad_en_unidades, 1, 1, 'R'); 
         }
-        $pdf->Ln(5);
-
-        
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(220, 255, 220); 
-        $pdf->Cell(0, 8, '2. COMPRAS / INGRESOS', 1, 1, 'L', true);
-
-        if (count($ingresos) > 0) {
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->Cell(35, 6, 'FECHA', 1);
-            $pdf->Cell(25, 6, 'DOC', 1);
-            $pdf->Cell(105, 6, 'REGISTRADO POR', 1);
-            $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
-
-            $pdf->SetFont('Arial', '', 8);
-            foreach ($ingresos as $i) {
-                $pdf->Cell(35, 6, $i->fecha_hora, 1);
-                $pdf->Cell(25, 6, $i->num_comprobante, 1);
-                $pdf->Cell(105, 6, utf8_decode($i->responsable_compra), 1);
-                $pdf->Cell(25, 6, $i->cantidad, 1, 1, 'R');
-            }
-        } else {
-            $pdf->SetFont('Arial', 'I', 9);
-            $pdf->Cell(0, 8, 'No hay compras en este periodo.', 1, 1, 'C');
-        }
-        $pdf->Ln(5);
-
-        
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(255, 240, 200); 
-        $pdf->Cell(0, 8, '3. AJUSTES', 1, 1, 'L', true);
-
-        if (count($ajustes) > 0) {
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->Cell(35, 6, 'FECHA', 1);
-            $pdf->Cell(130, 6, 'MOTIVO', 1);
-            $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
-
-            $pdf->SetFont('Arial', '', 8);
-            foreach ($ajustes as $a) {
-                $pdf->Cell(35, 6, $a->fecha_hora, 1);
-                $pdf->Cell(130, 6, utf8_decode($a->motivo), 1);
-                $textoCantidad = $v->cantidad . ' ' . ($v->cantidad == 1 ? 'unidad' : 'unidades');
-                $pdf->Cell(25, 6, $textoCantidad, 1, 1, 'R');
-
-            }
-        } else {
-            $pdf->SetFont('Arial', 'I', 9);
-            $pdf->Cell(0, 8, 'No hay ajustes en este periodo.', 1, 1, 'C');
-        }
-
-        
-        
-        $nombreProductoLimpio = preg_replace('/[^A-Za-z0-9\-_]/', '_', $articulo->nombre);
-        $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio); 
-        $nombreProductoLimpio = trim($nombreProductoLimpio, '_'); 
-        
-        $nombreArchivo = 'KF_' . $nombreProductoLimpio . '_' . $request->fechaInicio . '_' . $request->fechaFin . '.pdf';
-
-        return response($pdf->Output('S'))
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+    } else {
+        $pdf->SetFont('Arial', 'I', 9);
+        $pdf->Cell(0, 8, 'No hay ventas en este periodo.', 1, 1, 'C');
     }
+    $pdf->Ln(5);
+
+    // --- 2. COMPRAS ---
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetFillColor(220, 255, 220); 
+    $pdf->Cell(0, 8, '2. COMPRAS / INGRESOS', 1, 1, 'L', true);
+
+    if (count($ingresos) > 0) {
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(35, 6, 'FECHA', 1);
+        $pdf->Cell(25, 6, 'DOC', 1);
+        $pdf->Cell(105, 6, 'REGISTRADO POR', 1);
+        $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
+
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($ingresos as $i) {
+            $pdf->Cell(35, 6, $i->fecha_hora, 1);
+            $pdf->Cell(25, 6, $i->num_comprobante, 1);
+            $pdf->Cell(105, 6, utf8_decode($i->responsable_compra), 1);
+            $pdf->Cell(25, 6, $i->cantidad, 1, 1, 'R');
+        }
+    } else {
+        $pdf->SetFont('Arial', 'I', 9);
+        $pdf->Cell(0, 8, 'No hay compras en este periodo.', 1, 1, 'C');
+    }
+    $pdf->Ln(5);
+    
+    // --- 3. TRASPASOS (NUEVO) ---
+    // Insertamos la sección de Traspasos antes de Ajustes o después, según prefieras.
+    // Aquí la pongo como sección 3.
+    
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetFillColor(255, 220, 255); // Un color lila clarito
+    $pdf->Cell(0, 8, '3. TRASPASOS ENTRE ALMACENES', 1, 1, 'L', true);
+
+    if (count($traspasos) > 0) {
+        $pdf->SetFont('Arial', 'B', 9);
+        // Anchos: Fecha(35) + Mov(20) + Origen(40) + Destino(40) + Resp(30) + Cant(25) = 190
+        $pdf->Cell(35, 6, 'FECHA', 1);
+        $pdf->Cell(20, 6, 'MOV', 1, 0, 'C');
+        $pdf->Cell(40, 6, 'ORIGEN', 1);
+        $pdf->Cell(40, 6, 'DESTINO', 1);
+        $pdf->Cell(30, 6, 'RESPONSABLE', 1);
+        $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
+
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($traspasos as $t) {
+            $pdf->Cell(35, 6, $t->fecha_hora, 1);
+            
+            // Lógica para poner Entrada (Verde) o Salida (Rojo) visualmente si quisieras
+            // pero en FPDF estándar es más simple poner el texto.
+            $tipoMov = strtoupper($t->tipo_movimiento);
+            $pdf->Cell(20, 6, $tipoMov, 1, 0, 'C');
+            
+            $pdf->Cell(40, 6, substr(utf8_decode($t->almacen_origen), 0, 22), 1);
+            $pdf->Cell(40, 6, substr(utf8_decode($t->almacen_destino), 0, 22), 1);
+            $pdf->Cell(30, 6, substr(utf8_decode($t->responsable), 0, 18), 1);
+            
+            // Cantidad con signo
+            $signo = ($t->tipo_movimiento == 'Entrada' || $t->tipo_movimiento == 'ENTRADA') ? '+' : '-';
+            $txtCant = $signo . $t->cantidad . ' Und';
+            
+            $pdf->Cell(25, 6, $txtCant, 1, 1, 'R');
+        }
+    } else {
+        $pdf->SetFont('Arial', 'I', 9);
+        $pdf->Cell(0, 8, 'No hay traspasos en este periodo.', 1, 1, 'C');
+    }
+    $pdf->Ln(5);
+
+    // --- 4. AJUSTES ---
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetFillColor(255, 240, 200); 
+    $pdf->Cell(0, 8, '4. AJUSTES', 1, 1, 'L', true);
+
+    if (count($ajustes) > 0) {
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(35, 6, 'FECHA', 1);
+        $pdf->Cell(130, 6, 'MOTIVO', 1);
+        $pdf->Cell(25, 6, 'CANT.', 1, 1, 'R');
+
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($ajustes as $a) {
+            $pdf->Cell(35, 6, $a->fecha_hora, 1);
+            $pdf->Cell(130, 6, utf8_decode($a->motivo), 1);
+            
+            // CORRECCION: $a en vez de $v (tenías un error de copy-paste en tu código original)
+            $cantAbs = abs($a->cantidad);
+            $signo = ($a->cantidad > 0) ? '+' : '-';
+            $textoCantidad = $signo . $cantAbs . ' ' . ($cantAbs == 1 ? 'Ud' : 'Uds');
+            
+            $pdf->Cell(25, 6, $textoCantidad, 1, 1, 'R');
+        }
+    } else {
+        $pdf->SetFont('Arial', 'I', 9);
+        $pdf->Cell(0, 8, 'No hay ajustes en este periodo.', 1, 1, 'C');
+    }
+
+    // Generación de archivo
+    $nombreProductoLimpio = preg_replace('/[^A-Za-z0-9\-_]/', '_', $articulo->nombre);
+    $nombreProductoLimpio = preg_replace('/_+/', '_', $nombreProductoLimpio); 
+    $nombreProductoLimpio = trim($nombreProductoLimpio, '_'); 
+    
+    $nombreArchivo = 'KF_' . $nombreProductoLimpio . '_' . $request->fechaInicio . '.pdf';
+
+    return response($pdf->Output('S'))
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+}
 
     public function exportarExcelDetallado(Request $request)
     {

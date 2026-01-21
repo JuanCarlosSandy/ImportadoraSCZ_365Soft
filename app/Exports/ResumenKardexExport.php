@@ -17,7 +17,6 @@ class ResumenKardexExport implements FromArray, WithHeadings, WithColumnWidths, 
     protected $resultados;
     protected $filtros;
 
-    // Recibimos los datos Y un array con toda la info de los filtros
     public function __construct(array $resultados, array $filtros)
     {
         $this->resultados = $resultados;
@@ -27,12 +26,19 @@ class ResumenKardexExport implements FromArray, WithHeadings, WithColumnWidths, 
     public function array(): array
     {
         return array_map(function ($item) {
-            // Lógica Unidad/Unidades (Igual que antes)
+            // Lógica Unidad/Unidades para Ajustes (Existente)
             $valEntrada = $item['ajuste_entrada'];
             $txtEntrada = ($valEntrada == 0) ? '0' : $valEntrada . ' ' . (abs($valEntrada) == 1 ? 'Unidad' : 'Unidades');
 
             $valSalida = $item['ajuste_salida'];
             $txtSalida = ($valSalida == 0) ? '0' : $valSalida . ' ' . (abs($valSalida) == 1 ? 'Unidad' : 'Unidades');
+
+            // Lógica Unidad/Unidades para TRASPASOS (NUEVO)
+            $valTrasEnt = $item['total_traspasos_entrada'];
+            $txtTrasEnt = ($valTrasEnt == 0) ? '0' : $valTrasEnt . ' ' . ($valTrasEnt == 1 ? 'Unidad' : 'Unidades');
+
+            $valTrasSal = $item['total_traspasos_salida'];
+            $txtTrasSal = ($valTrasSal == 0) ? '0' : $valTrasSal . ' ' . ($valTrasSal == 1 ? 'Unidad' : 'Unidades');
 
             return [
                 $item['codigo'],
@@ -40,6 +46,12 @@ class ResumenKardexExport implements FromArray, WithHeadings, WithColumnWidths, 
                 $item['categoria'],
                 $item['total_ventas_texto'],
                 $item['total_ingresos_texto'],
+                
+                // --- NUEVAS COLUMNAS ---
+                $txtTrasEnt, 
+                $txtTrasSal,
+                // -----------------------
+
                 $txtEntrada,
                 $txtSalida,
                 $item['saldo_stock_actual_texto'],
@@ -49,48 +61,54 @@ class ResumenKardexExport implements FromArray, WithHeadings, WithColumnWidths, 
 
     public function headings(): array
     {
-        // Validamos si hay texto en los filtros opcionales, si no, ponemos "TODOS"
         $txtArticulo = !empty($this->filtros['articulo']) ? $this->filtros['articulo'] : 'TODOS';
         $txtCategoria = !empty($this->filtros['categoria']) ? $this->filtros['categoria'] : 'TODOS';
         
-        // Sucursal y Fechas son obligatorios según tu imagen, así que los mostramos directos
         $txtSucursal = $this->filtros['sucursal']; 
         $txtFechas = 'Del ' . $this->filtros['fechaInicio'] . ' al ' . $this->filtros['fechaFin'];
 
         return [
-            ['REPORTE GENERAL DE KARDEX FÍSICO'],       // Fila 1: Título
-            ['Generado el: ' . date('d/m/Y H:i:s')],    // Fila 2: Fecha gen
-            ['Sucursal: ' . $txtSucursal],              // Fila 3: Sucursal
-            ['Artículo: ' . $txtArticulo],              // Fila 4: Artículo
-            ['Categoría: ' . $txtCategoria],            // Fila 5: Categoría
-            ['Filtro Fecha: ' . $txtFechas],            // Fila 6: Rango Fechas
-            [''],                                       // Fila 7: Espacio vacío
-            [                                           // Fila 8: Encabezados de tabla
-                'CODIGO', 'PRODUCTO', 'CATEGORIA', 'VENTAS', 'COMPRAS', 'A. ENTRADA', 'A. SALIDA', 'STOCK'
+            ['REPORTE GENERAL DE KARDEX FÍSICO'],
+            ['Generado el: ' . date('d/m/Y H:i:s')],
+            ['Sucursal: ' . $txtSucursal],
+            ['Artículo: ' . $txtArticulo],
+            ['Categoría: ' . $txtCategoria],
+            ['Filtro Fecha: ' . $txtFechas],
+            [''],
+            [
+                // ACTUALIZADO: Agregamos Tras. Entrada y Tras. Salida
+                'CODIGO', 'PRODUCTO', 'CATEGORIA', 'VENTAS', 'COMPRAS', 'TRAS. ENT', 'TRAS. SAL', 'A. ENTRADA', 'A. SALIDA', 'STOCK'
             ]
         ];
     }
 
     public function columnWidths(): array
     {
+        // ACTUALIZADO: Definimos anchos hasta la letra J
         return [
-            'A' => 15, 'B' => 45, 'C' => 20, 'D' => 15, 
-            'E' => 15, 'F' => 18, 'G' => 18, 'H' => 18,
+            'A' => 15, // Codigo
+            'B' => 40, // Producto
+            'C' => 20, // Categoria
+            'D' => 15, // Ventas
+            'E' => 15, // Compras
+            'F' => 15, // Tras. Ent (NUEVO)
+            'G' => 15, // Tras. Sal (NUEVO)
+            'H' => 18, // Aj. Ent
+            'I' => 18, // Aj. Sal
+            'J' => 18, // Stock
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         return [
-            // Estilo para los ENCABEZADOS DE TABLA (Fila 8)
+            // Fila 8 es el encabezado de la tabla
             8 => [
                 'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ],
-            // Estilo Título (Fila 1)
             1 => ['font' => ['bold' => true, 'size' => 16]],
-            // Estilos para filtros (Filas 3, 4, 5, 6)
             3 => ['font' => ['bold' => true]],
             4 => ['font' => ['bold' => true]],
             5 => ['font' => ['bold' => true]],
@@ -104,21 +122,22 @@ class ResumenKardexExport implements FromArray, WithHeadings, WithColumnWidths, 
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet;
 
-                // 1. Combinar celdas para todas las filas del encabezado (A hasta H)
-                // Fila 1 a 6
-                $sheet->mergeCells('A1:H1'); // Título
-                $sheet->mergeCells('A2:H2'); // Fecha Gen
-                $sheet->mergeCells('A3:H3'); // Sucursal
-                $sheet->mergeCells('A4:H4'); // Artículo
-                $sheet->mergeCells('A5:H5'); // Categoría
-                $sheet->mergeCells('A6:H6'); // Rango Fechas
+                // CAMBIO IMPORTANTE: Ahora combinamos hasta la columna J (antes era H)
+                // porque agregamos 2 columnas nuevas.
+                
+                $sheet->mergeCells('A1:J1'); // Título
+                $sheet->mergeCells('A2:J2'); // Fecha Gen
+                $sheet->mergeCells('A3:J3'); // Sucursal
+                $sheet->mergeCells('A4:J4'); // Artículo
+                $sheet->mergeCells('A5:J5'); // Categoría
+                $sheet->mergeCells('A6:J6'); // Rango Fechas
 
-                // 2. Centrar el texto de esas filas
+                // Centrar texto del encabezado
                 $sheet->getStyle('A1:A6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                // 3. Poner bordes a la tabla de datos (desde la fila 8 hasta el final)
+                // Bordes para la tabla (Desde A8 hasta J final)
                 $highestRow = $sheet->getHighestRow();
-                $sheet->getStyle('A8:H'.$highestRow)->applyFromArray([
+                $sheet->getStyle('A8:J'.$highestRow)->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,

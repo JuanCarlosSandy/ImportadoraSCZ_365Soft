@@ -1077,6 +1077,11 @@
                             <i class="icon-settings"></i> Ajustes
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" :class="{ active: tabActual === 'traspasos' }" href="#" @click.prevent="tabActual = 'traspasos'">
+                            <i class="pi pi-arrows-h"></i> Traspasos
+                        </a>
+                    </li>
                 </ul>
 
                 <div v-if="tabActual === 'ventas'">
@@ -1162,6 +1167,57 @@
                   </DataTable>
                   <div v-if="detalleMovimientos.ajustes.length === 0" class="text-center p-3">No hay ajustes en este periodo.</div>
                 </div>
+
+                <div v-if="tabActual === 'traspasos'">
+    <DataTable 
+        key="dt-traspasos"
+        :value="detalleMovimientos.traspasos" 
+        :paginator="true" 
+        :rows="5" 
+        size="small" 
+        stripedRows 
+        responsiveLayout="scroll"
+    >
+        <Column field="fecha_hora" header="Fecha"></Column>
+        
+        <Column header="Movimiento">
+            <template #body="slotProps">
+                <span 
+                    :class="slotProps.data.tipo_movimiento === 'Entrada' ? 'badge badge-success' : 'badge badge-danger'"
+                    style="font-size: 0.9em;"
+                >
+                    {{ slotProps.data.tipo_movimiento.toUpperCase() }}
+                </span>
+            </template>
+        </Column>
+
+        <Column field="almacen_origen" header="Origen"></Column>
+        <Column field="almacen_destino" header="Destino"></Column>
+
+        <Column header="Cantidad">
+            <template #body="slotProps">
+                <span 
+                    v-if="slotProps.data.tipo_movimiento === 'Entrada'" 
+                    style="color: green; font-weight: bold;"
+                >
+                    +{{ slotProps.data.cantidad }} Unidades
+                </span>
+                <span 
+                    v-else 
+                    style="color: red; font-weight: bold;"
+                >
+                    -{{ slotProps.data.cantidad }} Unidades
+                </span>
+            </template>
+        </Column>
+        
+        <Column field="responsable" header="Responsable"></Column>
+    </DataTable>
+    
+    <div v-if="!detalleMovimientos.traspasos || detalleMovimientos.traspasos.length === 0" class="text-center p-3">
+        No hay traspasos en este periodo.
+    </div>
+</div>
             </div>
 
             <div class="modal-footer">
@@ -1428,7 +1484,8 @@ export default {
       detalleMovimientos: {         
           ventas: [],
           ingresos: [],
-          ajustes: []
+          ajustes: [],
+          traspasos: []
       },
       erroresFiltros: {
         sucursal: '',
@@ -2317,7 +2374,7 @@ export default {
 
         me.productoSeleccionado = data;
         me.tabActual = 'ventas'; 
-        me.detalleMovimientos = { ventas: [], ingresos: [], ajustes: [] };      
+        me.detalleMovimientos = { ventas: [], ingresos: [], ajustes: [], traspasos: [] };      
 
         if (!data.id_articulo || !data.id_almacen) {
             console.error("Faltan IDs en la fila seleccionada. Revisa resumenFisicoMovimientos en Laravel.");
