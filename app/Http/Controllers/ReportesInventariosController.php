@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Inventario;
+use App\Articulo;
+use App\Categoria;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Exports\ResumenKardexExport;

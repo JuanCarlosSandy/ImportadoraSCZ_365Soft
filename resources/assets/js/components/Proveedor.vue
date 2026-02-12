@@ -32,12 +32,12 @@
             @click="abrirModal('persona', 'registrar')"
             class="p-button-secondary p-button-sm"
           />
-          <Button
+          <!--<Button
             :label="mostrarLabel ? 'Importar' : ''"
             icon="pi pi-upload"
             @click="abrirModalImportar()"
             class="p-button-success p-button-sm"
-          />
+          />-->
         </div>
       </div>
 

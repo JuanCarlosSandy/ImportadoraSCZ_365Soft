@@ -9,7 +9,7 @@
   <meta name="author" content="compartiendocodigos.net">
   <meta name="keyword" content="Sistema Inventarios Laravel Vue Js">
 
-  <title>Sistema Inventarios - 365GROUP</title>
+  <title>Broken 365</title>
 
   <!--link href="css/plantilla.css" rel="stylesheet"-->
   <link rel="stylesheet" href="css/estiloLogin.css">

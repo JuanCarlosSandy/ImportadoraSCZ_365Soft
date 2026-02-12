@@ -26,8 +26,8 @@
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('categoria', 'registrar')"
             class="p-button-secondary p-button-sm" />
-          <Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download" @click="cargarExcel"
-            class="p-button-success p-button-sm" />
+          <!--<Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download" @click="cargarExcel"
+            class="p-button-success p-button-sm" />-->
         </div>
       </div>
       <DataTable :value="arrayCategoria" class="p-datatable-sm p-datatable-gridlines tabla-pro"

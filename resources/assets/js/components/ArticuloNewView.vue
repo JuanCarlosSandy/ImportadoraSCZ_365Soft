@@ -25,7 +25,7 @@
         <div class="toolbar">
           <Button v-if="idrol !== 2" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
             class="p-button-secondary p-button-sm" @click="abrirModal('articulo', 'registrar')" />
-          <Button :label="mostrarLabel ? 'Reporte' : ''" icon="pi pi-file" class="p-button-success p-button-sm"
+          <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm"
             @click="descargarReporteExcel()" />
           <Button 
             :label="mostrarLabel ? 'Importar' : ''" 
@@ -299,7 +299,7 @@
               </div>
 
               <div v-if="agregarStock" class="col-md-4">
-                <label class="required-field" for="cantidadStock">Stock en Cajas <span
+                <label class="required-field" for="cantidadStock">Stock Actual <span
                     class="text-danger">*</span></label>
                 <InputNumber id="cantidadStock" v-model="unidadStock" placeholder="Ej: 10"
                   class="p-inputtext-sm input-number-full" mode="decimal"

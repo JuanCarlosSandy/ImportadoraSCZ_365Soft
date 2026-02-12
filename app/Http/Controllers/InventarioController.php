@@ -476,6 +476,7 @@ class InventarioController extends Controller
                     ->where('inventarios.idalmacen', '=', $idAlmacen);
             })
                 ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+                ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
                 ->leftJoin('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
                 ->select(
                     'articulos.codigo',
@@ -484,6 +485,8 @@ class InventarioController extends Controller
                     'almacens.nombre_almacen',
                     'proveedores.contacto as nombre_proveedor',
                     'articulos.descripcion_fabrica',
+                    'categorias.nombre as nombre_categoria',
+
                     // Total unidades
                     DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock_total'),
 
@@ -505,7 +508,8 @@ class InventarioController extends Controller
 
                 )
                 ->where('articulos.condicion', '=', 1)
-                ->groupBy('articulos.codigo', 'articulos.nombre', 'almacens.nombre_almacen', 'articulos.unidad_envase', 'proveedores.contacto', 'articulos.descripcion_fabrica')
+                ->groupBy('articulos.codigo', 'articulos.nombre', 'almacens.nombre_almacen', 'articulos.unidad_envase', 'proveedores.contacto', 'articulos.descripcion_fabrica', 'categorias.nombre')
+                ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre')
                 ->orderBy('almacens.nombre_almacen');
         } else if ($tipo === 'lote') {
@@ -540,6 +544,8 @@ class InventarioController extends Controller
                         if ($tipo === 'item') {
                             $sub->where('articulos.nombre', 'like', '%' . $palabra . '%')
                                 ->orWhere('proveedores.contacto', 'like', '%' . $palabra . '%')
+                                ->orWhere('articulos.codigo', 'like', '%' . $palabra . '%')
+                                ->orWhere('categorias.nombre', 'like', '%' . $palabra . '%')
                                 ->orWhere('almacens.nombre_almacen', 'like', '%' . $palabra . '%');
                         } elseif ($tipo === 'lote') {
                             $sub->where('articulos.nombre', 'like', '%' . $palabra . '%')
@@ -804,12 +810,10 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', '', 11);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetXY(50, 26);
-        $pdf->Cell(140, 6, utf8_decode('Modo: ' . strtoupper($modo)), 0, 1, 'L');
         
-        $pdf->SetXY(50, 32);
         $pdf->Cell(140, 6, utf8_decode('Almacén: ' . $nombreAlmacen), 0, 1, 'L');
         
-        $pdf->SetXY(50, 38);
+        $pdf->SetXY(50, 33);
         $pdf->Cell(140, 6, 'Fecha: ' . date('d/m/Y H:i'), 0, 1, 'L');
 
         $pdf->Ln(8);
@@ -829,18 +833,17 @@ class InventarioController extends Controller
                 $pdf->SetFont('Arial', 'B', 10);
                 $pdf->SetFillColor(47, 50, 107); // Color #21234a
                 $pdf->SetTextColor(255, 255, 255); // Blanco
-                $pdf->Cell(143, 7, utf8_decode("CATEGORÍA: " . strtoupper($categoria)), 0, 1, 'L', true);
+                $pdf->Cell(188, 7, utf8_decode("CATEGORÍA: " . strtoupper($categoria)), 0, 1, 'L', true);
 
                 // Cabecera de tabla con colores corporativos
                 $pdf->SetFillColor(72, 75, 138); // Color #21234a
                 $pdf->SetTextColor(255, 255, 255); // Blanco
                 $pdf->SetFont('Arial', 'B', 8);
                 
-                $pdf->Cell(50, 7, utf8_decode('PRODUCTO'), 1, 0, 'C', true);
-                $pdf->Cell(35, 7, utf8_decode('PROVEEDOR'), 1, 0, 'C', true);
-                $pdf->Cell(18, 7, utf8_decode('UNID/PAQ'), 1, 0, 'C', true);
-                $pdf->Cell(20, 7, utf8_decode('STOCK UND'), 1, 0, 'C', true);
-                $pdf->Cell(20, 7, utf8_decode('STOCK CAJAS'), 1, 1, 'C', true);
+                $pdf->Cell(95, 7, utf8_decode('Producto'), 1, 0, 'C', true);
+                $pdf->Cell(55, 7, utf8_decode('Proveedr'), 1, 0, 'C', true);
+                $pdf->Cell(18, 7, utf8_decode('Unid/Paq'), 1, 0, 'C', true);
+                $pdf->Cell(20, 7, utf8_decode('Stock Actual'), 1, 1, 'C', true);
 
                 $pdf->SetFont('Arial', '', 8);
                 $pdf->SetTextColor(0, 0, 0);
@@ -860,11 +863,10 @@ class InventarioController extends Controller
                     }
                     $contador++;
 
-                    $pdf->Cell(50, 6, utf8_decode(substr($inv->item, 0, 40)), 1, 0, 'L', true);
-                    $pdf->Cell(35, 6, utf8_decode(substr($inv->proveedor, 0, 25)), 1, 0, 'L', true);
+                    $pdf->Cell(95, 6, utf8_decode(substr($inv->item, 0, 40)), 1, 0, 'L', true);
+                    $pdf->Cell(55, 6, utf8_decode(substr($inv->proveedor, 0, 25)), 1, 0, 'L', true);
                     $pdf->Cell(18, 6, $inv->unidad_envase, 1, 0, 'C', true);
-                    $pdf->Cell(20, 6, $inv->stock_unidades, 1, 0, 'R', true);
-                    $pdf->Cell(20, 6, $inv->stock_cajas, 1, 1, 'R', true);
+                    $pdf->Cell(20, 6, $inv->stock_unidades, 1, 1, 'R', true);
                 }
 
                 $pdf->Ln(3);

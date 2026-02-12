@@ -26,12 +26,12 @@
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Reset' : ''" icon="pi pi-refresh" @click="resetBusqueda"
             class="p-button-help p-button-sm" />
-          <!--<Button
+          <Button
             :label="mostrarLabel ? 'Nuevo' : ''"
             icon="pi pi-plus"
             @click="abrirModal('sucursal', 'registrar')"
             class="p-button-secondary p-button-sm"
-          />-->
+          />
         </div>
       </div>
 

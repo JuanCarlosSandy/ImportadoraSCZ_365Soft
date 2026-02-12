@@ -77,11 +77,7 @@ public function collection(Collection $rows)
                 }
                 $cantidadPasada = (float) $rawCantidad;
 
-                // obtener unidad_envase (1 si no)
-                $unidadEnvase = $this->getUnidadEnvase($idArticulo);
-
-                // cantidad real a guardar = cantidad pasada * unidad_envase
-                $cantidadEnUnidades = $cantidadPasada * $unidadEnvase;
+$cantidadEnUnidades = $cantidadPasada;
 
                 // Buscar inventario existente
                 $inventarioExistente = Inventario::where('idalmacen', $idAlmacen)

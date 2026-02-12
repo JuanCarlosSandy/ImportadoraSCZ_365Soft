@@ -925,7 +925,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get('/reporte-resumen-detallado-pdf', 'ReportesInventariosController@exportarPDFDetallado');
         Route::get('/reporte-resumen-detallado-excel', 'ReportesInventariosController@exportarExcelDetallado');
 
-        Route::get('inventario/exportar-excel', 'InventarioController@exportarExcelResumenGeneral')->name('inventario.exportarExcelResumenGeneral');
+        Route::get('inventario/exportar-excel', 'InventarioController@exportarExcel')->name('inventario.exportarExcelResumenGeneral');
         Route::get('inventario/exportar-pdf', 'InventarioController@exportarPdf')->name('inventario.exportarPdf');
         //RECIVO
         Route::post("/venta/emitirRecibo", "VentaController@emitirRecibo");

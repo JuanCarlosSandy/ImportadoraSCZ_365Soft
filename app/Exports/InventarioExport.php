@@ -43,12 +43,11 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                     'personas.nombre as proveedor',
                     'articulos.unidad_envase',
                     DB::raw('SUM(inventarios.saldo_stock) as stock_unidades'),
-                    DB::raw('FLOOR(SUM(inventarios.saldo_stock) / COALESCE(articulos.unidad_envase, 1)) as stock_cajas')
                 )
                 ->where('inventarios.idalmacen', $this->idAlmacen)
                 ->where('articulos.condicion', 1)
                 ->groupBy('articulos.id', 'articulos.nombre', 'personas.nombre', 'articulos.unidad_envase', 'categorias.nombre')
-                ->orderBy('personas.nombre')
+                                ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre');
         } else {
             return DB::table('articulos')
@@ -76,7 +75,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
     public function headings(): array
     {
         return $this->modo === 'item'
-            ? ['Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock en unidades', 'Stock en cajas']
+            ? ['Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock Actual']
             : ['Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock en unidades', 'Stock en cajas', 'Fecha Ingreso', 'Fecha Vencimiento'];
     }
 
@@ -89,7 +88,6 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 $row->proveedor,
                 $row->unidad_envase,
                 $row->stock_unidades,
-                $row->stock_cajas,
             ];
         } else {
             return [
@@ -113,21 +111,20 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
             'C' => 20, // Proveedor
             'D' => 18, // Unidades por paquete
             'E' => 18, // Stock en unidades
-            'F' => 15, // Stock en cajas
+            'F' => 18, // Stock en cajas
             'G' => 18, // Fecha Ingreso (solo lote)
-            'H' => 18, // Fecha Vencimiento (solo lote)
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $headings = $this->modo === 'item' ? 6 : 8;
+        $headings = $this->modo === 'item' ? 6 : 7;
 
         // Encabezado de datos en la fila 4 (después de las 3 filas de encabezado gráfico)
         // Los estilos se aplican en el evento AfterSheet, aquí dejamos estilos adicionales
         
         // Resaltar filas con stock en unidades = 0 (columna E, a partir de fila 5)
-        $column = 'E';
+        $column = 'D';
         $lastRow = $sheet->getHighestRow();
 
         for ($row = 5; $row <= $lastRow; $row++) {
@@ -159,7 +156,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 // Agregar título
                 $title = 'REPORTE DE INVENTARIO';
                 $sheet->setCellValue('A1', $title);
-                $sheet->mergeCells('A1:F1');
+                $sheet->mergeCells('A1:E1');
                 
                 $sheet->getStyle('A1')->applyFromArray([
                     'font' => [
@@ -175,7 +172,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 
                 // Agregar nombre del almacén
                 $sheet->setCellValue('A2', 'Almacén: ' . $this->nombreAlmacen);
-                $sheet->mergeCells('A2:F2');
+                $sheet->mergeCells('A2:E2');
                 $sheet->getStyle('A2')->applyFromArray([
                     'font' => [
                         'size' => 11,
@@ -188,7 +185,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 
                 // Agregar fecha
                 $sheet->setCellValue('A3', 'Fecha: ' . date('d/m/Y H:i:s'));
-                $sheet->mergeCells('A3:F3');
+                $sheet->mergeCells('A3:E3');
                 $sheet->getStyle('A3')->applyFromArray([
                     'font' => [
                         'size' => 10,
@@ -219,7 +216,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 $sheet->getRowDimension(3)->setRowHeight(20);
                 
                 // Aplicar estilos al encabezado de datos (fila 4)
-                $headings = $this->modo === 'item' ? 6 : 8;
+                $headings = $this->modo === 'item' ? 6 : 7;
                 $sheet->getStyle('A4:' . chr(64 + $headings) . '4')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => [

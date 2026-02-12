@@ -125,14 +125,17 @@ class ArticuloImport implements ToCollection
                     // Verificar si ya existe un artículo con el mismo código (case-insensitive)
                     $codigoImport = trim($row[0]);
                     $articuloExistente = Articulo::whereRaw('LOWER(codigo) = ?', [mb_strtolower($codigoImport)])->first();
+                    $nombreFormateado = $this->formatNombre($row[1]);
+
+
                     if ($articuloExistente) {
                         $rowErrors[] = "Error fila $rowNumber: Ya existe un registro con el codigo: '$codigoImport' y es el registro '" . $articuloExistente->nombre . "'";
                         $importacionExitosa = false;
                     } else {
                         Articulo::create([
                             'codigo' => $row[0],
-                            'nombre' => $row[1],
-                            'nombre_generico' => $row[1],
+                            'nombre' => $nombreFormateado,
+                            'nombre_generico' => $nombreFormateado,
                             'idcategoria' => $idCategoria,
                             'idproveedor' => $idProveedor,
                             'descripcion_fabrica' => $row[4],
@@ -237,24 +240,31 @@ class ArticuloImport implements ToCollection
     private function getProveedorId($nombreProveedor)
     {
         if ($nombreProveedor === null) return null;
+
         $nombreProveedorTrim = trim($nombreProveedor);
-        $nombreProveedorLower = mb_strtolower($nombreProveedorTrim);
+        $nombreProveedorUpper = $this->formatUpper($nombreProveedorTrim);
+        $nombreProveedorLower = mb_strtolower($nombreProveedorUpper);
+
         // Buscar en el mapping existente
         foreach ($this->personaMapping as $id => $nombre) {
             if (mb_strtolower(trim($nombre)) === $nombreProveedorLower) {
                 return $id;
             }
         }
+
         // Si no existe, crear en Persona y Proveedor
         $persona = new \App\Persona();
-        $persona->nombre = $nombreProveedorTrim;
+        $persona->nombre = $nombreProveedorUpper;
         $persona->save();
+
         $proveedor = new \App\Proveedor();
         $proveedor->id = $persona->id;
-        $proveedor->contacto = $nombreProveedorTrim;
+        $proveedor->contacto = $nombreProveedorUpper;
         $proveedor->save();
-        // Actualizar el mapping para futuras búsquedas en la misma importación
-        $this->personaMapping[$persona->id] = $nombreProveedorTrim;
+
+        // Actualizar mapping
+        $this->personaMapping[$persona->id] = $nombreProveedorUpper;
+
         return $persona->id;
     }
 
@@ -292,5 +302,17 @@ class ArticuloImport implements ToCollection
             }
         }
         return null;
+    }
+
+    private function formatNombre($text)
+    {
+        $text = mb_strtolower(trim($text), 'UTF-8');
+        return mb_strtoupper(mb_substr($text, 0, 1, 'UTF-8'), 'UTF-8') . 
+            mb_substr($text, 1, null, 'UTF-8');
+    }
+
+    private function formatUpper($text)
+    {
+        return mb_strtoupper(trim($text), 'UTF-8');
     }
 }

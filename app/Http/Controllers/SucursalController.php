@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use App\Empresa;
 use Illuminate\Http\Request;
+use App\PuntoVenta;
 use App\Sucursales;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -83,33 +84,56 @@ class SucursalController extends Controller
         return response()->json(['ultimoCodigo' => $ultimoCodigo->codigoSucursal]);
     }
 
+   
     public function store(Request $request)
     {
         if (!$request->ajax()) {
             return redirect('/');
         }
 
-        // Registra la información en el log antes de realizar la operación de almacenamiento
+        // Log de datos recibidos
         Log::info('Datos recibidos para registrar una nueva sucursal:', $request->all());
 
-        $sucursal = new Sucursales();
+        // Obtener empresa
+        $empresa = Empresa::first();
 
-        $sucursal->idempresa = Empresa::first()->id;
+        // Crear sucursal
+        $sucursal = new Sucursales();
+        $sucursal->idempresa = $empresa->id;
         $sucursal->nombre = $request->nombre;
         $sucursal->direccion = $request->direccion ?? '';
         $sucursal->correo = $request->correo ?? '';
         $sucursal->telefono = $request->telefono;
         $sucursal->departamento = $request->departamento;
         $sucursal->codigoSucursal = $request->codigoSucursal;
-
-        $sucursal->condicion = '1';
+        $sucursal->condicion = 1;
         $sucursal->save();
 
-        // Registra la información en el log después de realizar la operación de almacenamiento
         Log::info('Nueva sucursal registrada con éxito:', ['id' => $sucursal->id]);
 
-        // Resto del código...
+        // ===============================
+        // CREAR PUNTO DE VENTA AUTOMÁTICO
+        // ===============================
+        $puntoVenta = new PuntoVenta();
+        $puntoVenta->idtipopuntoventa = 5;
+        $puntoVenta->idsucursal = $sucursal->id;
+        $puntoVenta->codigoPuntoVenta = 0;
+        $puntoVenta->nombre = 'Punto de venta ' . $sucursal->nombre;
+        $puntoVenta->descripcion = 'Punto de venta ' . $sucursal->nombre;
+        $puntoVenta->nit = $empresa->nit;
+        $puntoVenta->estado = 1;
+        $puntoVenta->save();
+
+        Log::info('Punto de venta creado automáticamente:', [
+            'id' => $puntoVenta->id,
+            'idsucursal' => $sucursal->id
+        ]);
+
+        return response()->json([
+            'message' => 'Sucursal y punto de venta creados correctamente'
+        ]);
     }
+
     //---------hasa qui
     //-------actualizar datos
     public function update(Request $request)

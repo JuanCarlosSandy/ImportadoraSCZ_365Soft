@@ -104,14 +104,14 @@
                                             <h5><i class="fa fa-eye"></i> Vista previa:</h5>
                                         </div>
                                         <div class="col">
-                                            <div class="form-group">
+                                            <!--<div class="form-group">
                                                 <label for="exampleSelect">Selecciona la moneda</label>
                                                 <select class="form-select" v-model="monedaSeleccionada"
                                                     id="exampleSelect">
                                                     <option v-for="(option, index) in arrayMonedas" :key="index"
                                                         :value="option">{{ option.nombre }}</option>
                                                 </select>
-                                            </div>
+                                            </div>-->
                                         </div>
                                     </div>
 
@@ -233,7 +233,7 @@ export default {
 
                 "Almacen",
                 "Codigo Producto",
-                "Stock en Caja",
+                "Stock Actual",
             ],
 
             modalImportar: true,

@@ -841,13 +841,13 @@
                       </div>
                     </div>
 
-                    <button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
-                    <!-- Contenedor de los botones -->
+                    <!--<button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
+                     Contenedor de los botones -->
                     <div class="d-flex flex-wrap justify-content-center">
-                      <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(1, 7)">
+                      <!--<button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(1, 7)">
                         <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
                           style="height: 24px;">
-                      </button>
+                      </button>-->
                       <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
                         <i class="fa fa-check mr-2"></i> Registrar Pago
                       </button>

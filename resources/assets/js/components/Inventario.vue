@@ -61,11 +61,12 @@
       <!-- DataTable para vista por Item -->
       <DataTable v-if="tipoSeleccionado == 'item'" :value="arrayInventario" class="p-datatable-sm p-datatable-gridlines"
         responsiveLayout="scroll">
-                <Column field="codigo" header="CODIGO"></Column>
-        <Column field="nombre_producto" header="PRODUCTO"></Column>
-        <Column field="nombre_proveedor" header="PROVEEDOR"></Column>
-        <Column field="unidad_envase" header="UNID X PAQ."></Column>
-        <Column field="saldo_stock_total" header="STOCK UNIDADES">
+                <Column field="codigo" header="Codigo"></Column>
+        <Column field="nombre_producto" header="Producto"></Column>
+        <Column field="nombre_categoria" header="Categoria"></Column>
+        <Column field="nombre_proveedor" header="Proveedor"></Column>
+        <Column field="unidad_envase" header="Unid x Paq"></Column>
+        <Column field="saldo_stock_total" header="Stock Actual">
           <template #body="slotProps">
             <span v-if="slotProps.data.saldo_stock_total == 0"
               style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
@@ -78,23 +79,21 @@
           </template>
         </Column>
         
-        <Column field="stock_formateado" header="STOCK CAJAS">
+        <!--<Column field="stock_formateado" header="STOCK CAJAS">
           <template #body="slotProps">
 
-            <!-- Sin stock -->
             <span v-if="slotProps.data.cajas == 0 && slotProps.data.unidades == 0"
               style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
               <i class="pi pi-exclamation-triangle" style="margin-right: 6px; font-size: 1.1em;"></i>
               Sin Stock
             </span>
 
-            <!-- Mostrar: "7 cajas y 2 unidades" -->
             <span v-else>
               {{ slotProps.data.stock_formateado }}
             </span>
 
           </template>
-        </Column>
+        </Column>-->
 
         
       </DataTable>
