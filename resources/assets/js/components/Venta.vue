@@ -844,7 +844,7 @@
                     <button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
                     <!-- Contenedor de los botones -->
                     <div class="d-flex flex-wrap justify-content-center">
-                      <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(1)">
+                      <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(1, 7)">
                         <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
                           style="height: 24px;">
                       </button>
@@ -1323,7 +1323,7 @@
                 <!-- Texto informativo -->
                 <span v-if="buscarA.trim() === ''"
                   style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
-                  Realice una búsqueda por nombre, laboratorio, código de barra o código del producto
+                  Realice una búsqueda por nombre, proveedor, código de barra o código del producto
                 </span>
                 <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
                   buscarA = '';

@@ -8,62 +8,70 @@ use App\TipoBajas;
 use Illuminate\Contracts\Logging\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AjusteInventarioExport;
 use FPDF;
 
 class AjusteInventarioController extends Controller
 {
     public function index(Request $request)
     {
-        if (!$request->ajax())
-            return redirect('/');
+        if (!$request->ajax()) return redirect('/');
 
         $buscar = $request->buscar;
         $criterio = $request->criterio;
+        
+        $fechaInicio = $request->fechaInicio;
+        $fechaFin = $request->fechaFin;
+        $idAlmacen = $request->idAlmacen;
 
-        if ($buscar == '') {
-            $ajuste = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
-                ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
-                ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
-                ->select(
-                    'ajuste_invetarios.*',
-                    'articulos.nombre as nombre',
-                    'tipo_bajas.nombre as tipo',
-                    'almacens.nombre_almacen as nombre_almacen',
-                    'articulos.descripcion_fabrica'
-                )
-                ->orderBy('id', 'desc')->paginate(10);
-        } else {
-            $ajuste = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
-                ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
-                ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
-                ->select(
-                    'ajuste_invetarios.*',
-                    'articulos.nombre as nombre',
-                    'tipo_bajas.nombre as tipo',
-                    'almacens.nombre_almacen as nombre_almacen',
-                    'articulos.descripcion_fabrica'
-                )
-                ->when($criterio == '', function ($query) use ($buscar) {
-                    $query->where(function ($q) use ($buscar) {
-                        $q->where('articulos.nombre', 'like', "%$buscar%")
-                            ->orWhere('tipo_bajas.nombre', 'like', "%$buscar%")
-                            ->orWhere('almacens.nombre_almacen', 'like', "%$buscar%")
-                            ->orWhere('ajuste_invetarios.cantidad', 'like', "%$buscar%")
-                            ->orWhere('ajuste_invetarios.created_at', 'like', "%$buscar%");
-                    });
-                }, function ($query) use ($criterio, $buscar) {
-                    $query->where($criterio, 'like', "%$buscar%");
-                })
-                ->orderBy('id', 'desc')->paginate(10);
+        $query = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
+            ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
+            ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
+            ->select(
+                'ajuste_invetarios.*',
+                'articulos.nombre as nombre',
+                'tipo_bajas.nombre as tipo',
+                'almacens.nombre_almacen as nombre_almacen',
+                'articulos.descripcion_fabrica'
+            );
+
+        if (!empty($fechaInicio) && !empty($fechaFin)) {
+            $query->whereBetween('ajuste_invetarios.created_at', [
+                $fechaInicio . ' 00:00:00', 
+                $fechaFin . ' 23:59:59'
+            ]);
         }
+
+        if (!empty($idAlmacen)) {
+            $query->where('ajuste_invetarios.almacen', $idAlmacen);
+        }
+
+        if ($buscar != '') {
+            $query->where(function ($q) use ($buscar, $criterio) {
+                if ($criterio != '') {
+                    $q->where($criterio, 'like', "%$buscar%");
+                } 
+                else {
+                    $q->where('articulos.nombre', 'like', "%$buscar%")
+                    ->orWhere('tipo_bajas.nombre', 'like', "%$buscar%")
+                    ->orWhere('almacens.nombre_almacen', 'like', "%$buscar%")
+                    ->orWhere('ajuste_invetarios.cantidad', 'like', "%$buscar%")
+                    ->orWhere('ajuste_invetarios.created_at', 'like', "%$buscar%");
+                }
+            });
+        }
+
+        $ajuste = $query->orderBy('ajuste_invetarios.id', 'desc')->paginate(10);
+
         return [
             'pagination' => [
-                'total' => $ajuste->total(),
+                'total'        => $ajuste->total(),
                 'current_page' => $ajuste->currentPage(),
-                'per_page' => $ajuste->perPage(),
-                'last_page' => $ajuste->lastPage(),
-                'from' => $ajuste->firstItem(),
-                'to' => $ajuste->lastItem(),
+                'per_page'     => $ajuste->perPage(),
+                'last_page'    => $ajuste->lastPage(),
+                'from'         => $ajuste->firstItem(),
+                'to'           => $ajuste->lastItem(),
             ],
             'ajuste' => $ajuste
         ];
@@ -251,84 +259,106 @@ class AjusteInventarioController extends Controller
         $motivo->save();
     }
 
-    public function exportarPDF(Request $request)
+    public function generarReporte(Request $request, $tipo)
     {
-        $productos = $request->productos;
-        $almacenId = $request->almacen;
-        $motivo = $request->motivo;
-        $fecha = now()->format('d/m/Y H:i');
+        $fechaInicio = $request->fechaInicio;
+        $fechaFin = $request->fechaFin;
+        $idAlmacen = $request->idAlmacen;
+        $buscar = $request->buscar;
 
-        // Obtener el nombre del almacén
-        $nombreAlmacen = \DB::table('almacens')->where('id', $almacenId)->value('nombre_almacen');
+        if ($tipo == 'excel') {
+            return Excel::download(
+                new AjusteInventarioExport($fechaInicio, $fechaFin, $idAlmacen, $buscar), 
+                'Reporte_Ajustes_' . date('d-m-Y') . '.xlsx'
+            );
+        }         
+        if ($tipo == 'pdf') {
+            return $this->exportarPDF($fechaInicio, $fechaFin, $idAlmacen, $buscar);
+        }
+    }
 
-        $pdf = new PDFConFooter('L', 'mm', 'A4');
-        $pdf->AddPage();
-        $pdf->SetAutoPageBreak(true, 20);
-        $pdf->AliasNbPages();
+    public function exportarPDF($fechaInicio, $fechaFin, $idAlmacen, $buscar)
+    {
+        // OBTENER DATOS
+        $query = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
+            ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
+            ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
+            ->select(
+                'ajuste_invetarios.*',
+                'articulos.nombre as nombre_articulo',
+                'articulos.codigo',
+                'tipo_bajas.nombre as justificacion',
+                'almacens.nombre_almacen'
+            );
 
-        $truncarTexto = function ($pdf, $texto, $maxWidth) {
-            $texto = utf8_decode($texto);
-            if ($pdf->GetStringWidth($texto) <= $maxWidth) {
-                return $texto;
-            }
-            while ($pdf->GetStringWidth($texto . '...') > $maxWidth && strlen($texto) > 0) {
-                $texto = substr($texto, 0, -1);
-            }
-            return $texto . '...';
-        };
-
-        // ENCABEZADO
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(0, 8, utf8_decode("REPORTE DE AJUSTE DE INVENTARIO - $nombreAlmacen"), 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, utf8_decode("Generado el $fecha"), 0, 1, 'C');
-        $pdf->Ln(5);
-
-        // FILTROS
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(50, 6, utf8_decode("Almacén: $nombreAlmacen"), 0, 0, 'L');
-        $pdf->Cell(80, 6, utf8_decode("Motivo: $motivo"), 0, 1, 'L');
-        $pdf->Ln(8);
-
-        $pageWidth = $pdf->GetPageWidth() - 40;
-        $startX = ($pdf->GetPageWidth() - $pageWidth) / 2;
-
-        // ENCABEZADO DE TABLA
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(230, 230, 230);
-        $pdf->SetX($startX);
-        $pdf->Cell(10, 8, '#', 1, 0, 'C', true);
-        $pdf->Cell(30, 8, utf8_decode('Código'), 1, 0, 'C', true);
-        $pdf->Cell(70, 8, utf8_decode('Producto'), 1, 0, 'C', true);
-        $pdf->Cell(50, 8, utf8_decode('Proveedor'), 1, 0, 'C', true);
-        $pdf->Cell(25, 8, utf8_decode('Stock Actual'), 1, 0, 'C', true);
-        $pdf->Cell(25, 8, utf8_decode('Stock Real'), 1, 0, 'C', true);
-        $pdf->Cell(25, 8, utf8_decode('Cantidad Ajuste'), 1, 0, 'C', true);
-        $pdf->Cell(25, 8, utf8_decode('Stock Restante'), 1, 1, 'C', true);
-
-        // CUERPO
-        $pdf->SetFont('Arial', '', 8);
-        $contador = 1;
-
-        foreach ($productos as $producto) {
-            // Valida que los campos existan, si no, asigna 0
-            $stockActual = isset($producto['stock_actual']) ? $producto['stock_actual'] : 0;
-            $stockReal = isset($producto['stock_real']) ? $producto['stock_real'] : 0;
-            $cantidadAjuste = $stockActual - $stockReal;
-            $stockRestante = $stockReal; // O calcula según tu lógica
-
-            $pdf->SetX($startX);
-            $pdf->Cell(10, 7, $contador++, 1, 0, 'C');
-            $pdf->Cell(30, 7, $truncarTexto($pdf, $producto['codigo'] ?? '', 28), 1);
-            $pdf->Cell(70, 7, $truncarTexto($pdf, $producto['nombre'] ?? '', 68), 1, 0, 'L');
-            $pdf->Cell(50, 7, $truncarTexto($pdf, $producto['nombre_proveedor'] ?? '', 48), 1, 0, 'L');
-            $pdf->Cell(25, 7, number_format($stockActual, 0, ',', '.'), 1, 0, 'R');
-            $pdf->Cell(25, 7, number_format($stockReal, 0, ',', '.'), 1, 0, 'R');
-            $pdf->Cell(25, 7, number_format($cantidadAjuste, 0, ',', '.'), 1, 0, 'R');
-            $pdf->Cell(25, 7, number_format($stockRestante, 0, ',', '.'), 1, 1, 'R');
+        if ($fechaInicio && $fechaFin) {
+            $query->whereBetween('ajuste_invetarios.created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59']);
+        }
+        if ($idAlmacen) {
+            $query->where('ajuste_invetarios.almacen', $idAlmacen);
         }
 
-        $nombreArchivo = 'Ajuste_Inventario_' . str_replace(' ', '_', $nombreAlmacen) . '_' . now()->format('d-m-Y') . '.pdf';
+        $ajustes = $query->orderBy('ajuste_invetarios.id', 'desc')->get();
+
+        $pdf = new PDFConFooter('P', 'mm', 'A4'); 
+        $pdf->AddPage();
+        $pdf->AliasNbPages();
+
+        $rutaLogo = public_path('img/logoPrincipal.png');
+        if (file_exists($rutaLogo)) {
+            $pdf->Image($rutaLogo, 10, 5, 20);
+        }
+
+        $pdf->SetY(15);
+
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 8, utf8_decode('REPORTE DE AJUSTES DE INVENTARIO'), 0, 1, 'C');
+        
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(0, 5, utf8_decode("Rango de Fecha: $fechaInicio al $fechaFin"), 0, 1, 'C');
+        
+        if ($idAlmacen) {
+            $nombreAlmacen = $ajustes->first() ? $ajustes->first()->nombre_almacen : 'Almacén Seleccionado';
+            $pdf->Cell(0, 5, utf8_decode("Almacén: $nombreAlmacen"), 0, 1, 'C');
+        } else {
+            $pdf->Cell(0, 5, utf8_decode("Almacén: TODOS"), 0, 1, 'C');
+        }
+        $pdf->Ln(5);
+
+        // ENCABEZADOS
+        $pdf->SetFont('Arial', 'B', 7); 
+        $pdf->SetFillColor(220, 220, 220);        
+        
+        $pdf->Cell(25, 7, 'FECHA', 1, 0, 'C', true);
+        $pdf->Cell(30, 7, 'ALMACEN', 1, 0, 'C', true);
+        $pdf->Cell(15, 7, 'TIPO', 1, 0, 'C', true);
+        $pdf->Cell(60, 7, 'ARTICULO', 1, 0, 'C', true);
+        $pdf->Cell(15, 7, 'CANTIDAD', 1, 0, 'C', true);
+        $pdf->Cell(35, 7, 'MOTIVO', 1, 1, 'C', true); 
+
+        // CUERPO
+        $pdf->SetFont('Arial', '', 7); 
+
+        if ($ajustes->count() == 0) {
+            $pdf->Cell(190, 10, utf8_decode('No hay registros para los filtros seleccionados.'), 1, 1, 'C');
+        }
+
+        foreach ($ajustes as $row) {
+            $nombreArt = substr(utf8_decode($row->nombre_articulo), 0, 45); 
+            $motivo = substr(utf8_decode($row->justificacion), 0, 25);
+            $almacenCorto = substr(utf8_decode($row->nombre_almacen), 0, 20);
+            
+            $tipo = strtoupper($row->tipo_movimiento) == 'ENTRADA' ? 'ENTRADA' : 'SALIDA';
+            
+            $pdf->Cell(25, 6, date('d/m/y H:i', strtotime($row->created_at)), 1, 0, 'C');
+            $pdf->Cell(30, 6, $almacenCorto, 1, 0, 'L');
+            $pdf->Cell(15, 6, $tipo, 1, 0, 'C');
+            $pdf->Cell(60, 6, $nombreArt, 1, 0, 'L');
+            $pdf->Cell(15, 6, $row->cantidad, 1, 0, 'R');
+            $pdf->Cell(35, 6, $motivo, 1, 1, 'L');
+        }
+
+        $nombreArchivo = 'Reporte_Ajustes_' . now()->format('Ymd_His') . '.pdf';
         return response($pdf->Output('S'), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");

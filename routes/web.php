@@ -66,6 +66,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post('/ajuste/registrar-multiple', 'AjusteInventarioController@registrarMultiple');
         Route::get('/motivo', 'AjusteInventarioController@listarMotivo');
         Route::post('/motivo/registrar', 'AjusteInventarioController@registrarMotivo');
+        Route::get('/ajusteinv/reporte/{tipo}', 'AjusteInventarioController@generarReporte');
         Route::post('/ajustes-inventario/exportar-pdf', 'AjusteInventarioController@exportarPDF')->name('ajustes.exportar-pdf');
 
 
@@ -793,6 +794,7 @@ Route::group(["middleware" => ["auth"]], function () {
             "/traspaso/obtenerTraspaso",
             "TraspasoController@indexPorID"
         );
+        Route::get('/traspaso/exportar/{id}', 'TraspasoController@exportarPdf');
 
         //Eventos Significativos
         Route::get("/eventos", "EventosSignificativosController@index");
@@ -918,8 +920,12 @@ Route::group(["middleware" => ["auth"]], function () {
         );
         Route::get('/reporte-detalle-movimientos', 'ReportesInventariosController@detalleMovimientosProducto');
         Route::get('/reporte-resumen-general-pdf', 'ReportesInventariosController@exportarPDFResumenGeneral');
+        Route::get('/reporte-resumen-general-excel', 'ReportesInventariosController@exportarExcelResumenGeneral');
+
         Route::get('/reporte-resumen-detallado-pdf', 'ReportesInventariosController@exportarPDFDetallado');
-        Route::get('inventario/exportar-excel', 'InventarioController@exportarExcel')->name('inventario.exportarExcel');
+        Route::get('/reporte-resumen-detallado-excel', 'ReportesInventariosController@exportarExcelDetallado');
+
+        Route::get('inventario/exportar-excel', 'InventarioController@exportarExcelResumenGeneral')->name('inventario.exportarExcelResumenGeneral');
         Route::get('inventario/exportar-pdf', 'InventarioController@exportarPdf')->name('inventario.exportarPdf');
         //RECIVO
         Route::post("/venta/emitirRecibo", "VentaController@emitirRecibo");
