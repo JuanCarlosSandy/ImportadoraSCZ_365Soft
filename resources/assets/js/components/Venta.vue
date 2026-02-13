@@ -2140,46 +2140,45 @@ export default {
       }
     },
 
-    calcularTotal() {
-      let resultado = 0.0;
+calcularTotal() {
+  let resultado = 0.0;
 
-      for (let i = 0; i < this.arrayDetalle.length; i++) {
-        let detalle = this.arrayDetalle[i];
+  for (let i = 0; i < this.arrayDetalle.length; i++) {
+    let detalle = this.arrayDetalle[i];
 
-        // 🔹 Determinar subtotal según modo de venta
-        let subtotal = 0;
+    // 🔹 Convertir a número y asignar valor por defecto (0 si no es válido)
+    const precio = Number(detalle.precioseleccionado) || 0;
+    const cantidad = Number(detalle.cantidad) || 0;
+    const unidadEnvase = Number(detalle.unidad_envase) || 1; // Si no tiene, asumimos 1
+    const descuentoPorcentaje = Number(detalle.descuento) || 0;
 
-        if (detalle.modoVenta === "caja") {
-          subtotal = detalle.precioseleccionado * detalle.cantidad * detalle.unidad_envase;
-        } else if (detalle.modoVenta === "docena") {
-          subtotal = detalle.precioseleccionado * detalle.cantidad * 12;
-        } else {
-          // unidad
-          subtotal = detalle.precioseleccionado * detalle.cantidad;
-        }
+    // 🔹 Subtotal según modo de venta
+    let subtotal = 0;
+    if (detalle.modoVenta === "caja") {
+      subtotal = precio * cantidad * unidadEnvase;
+    } else if (detalle.modoVenta === "docena") {
+      subtotal = precio * cantidad * 12;
+    } else {
+      subtotal = precio * cantidad;
+    }
 
-        // 🔹 Descuento por producto (%)
-        let porcentajeDescuento = parseFloat(detalle.descuento) || 0;
-        if (porcentajeDescuento > 100) porcentajeDescuento = 100;
+    // 🔹 Aplicar descuento del producto
+    let montoDescuento = subtotal * (descuentoPorcentaje / 100);
+    let totalDetalle = subtotal - montoDescuento;
+    if (totalDetalle < 0) totalDetalle = 0;
 
-        let montoDescuento = subtotal * (porcentajeDescuento / 100);
+    resultado += totalDetalle;
+  }
 
-        let totalDetalle = subtotal - montoDescuento;
-        if (totalDetalle < 0) totalDetalle = 0;
+  // 🔹 Descuento adicional sobre el total (si existe)
+  if (this.descuentoAdicional) {
+    let porcentajeAdicional = Number(this.descuentoAdicional) || 0;
+    if (porcentajeAdicional > 100) porcentajeAdicional = 100;
+    resultado -= resultado * (porcentajeAdicional / 100);
+  }
 
-        resultado += totalDetalle;
-      }
-
-      // 🔹 Descuento adicional sobre el total
-      if (this.descuentoAdicional) {
-        let porcentajeAdicional = parseFloat(this.descuentoAdicional) || 0;
-        if (porcentajeAdicional > 100) porcentajeAdicional = 100;
-        resultado -= resultado * (porcentajeAdicional / 100);
-      }
-
-      return resultado;
-    },
-
+  return resultado;
+},
 
     badgeSeverity() {
       if (
@@ -3889,20 +3888,20 @@ export default {
           articulo: this.arraySeleccionado.nombre,
           medida: this.arraySeleccionado.medida,
           unidad_envase: envase,
-          cantidad: cantidad,
+          cantidad: parseInt(this.cantidad) || 1,
           cantidad_paquetes: envase,
           precio: precioUnitario,
-          descuento: this.arraySeleccionado.descuento,
+          descuento: parseFloat(this.arraySeleccionado.descuento) || 0,
           stock: this.arraySeleccionado.saldo_stock,
           stock_cajas: stockEnCajasCalculado,
-          precioseleccionado: precioUnitario,
+          precioseleccionado: parseFloat(this.precioseleccionado) || 0,
           total: total,
           descripcion_fabrica: this.arraySeleccionado.descripcion_fabrica,
           codigo_producto: this.arraySeleccionado.codigo,
           precio_uno: parseFloat(this.arraySeleccionado.precio_uno || 0),
           precio_dos: parseFloat(this.arraySeleccionado.precio_dos || 0),
           precio_tres: parseFloat(this.arraySeleccionado.precio_tres || 0),
-
+          unidad_envase: parseInt(this.arraySeleccionado.unidad_envase) || 1,
           usando_precio: 'uno',
           modoVenta: 'unidad',
           editandoPrecio: false,
