@@ -1042,6 +1042,8 @@ Route::group(["middleware" => ["auth"]], function () {
         
         Route::get("/categoria/servicio/lista", "CategoriaController@indexServicio");
         Route::post("/categoria/servicio/registrar", "CategoriaController@storeServicio");
+
+        Route::get("/reporte/inventariofisicovalorado/{tipo}","ReportesInventariosController@datosInventarioFisicoValorado");
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

@@ -933,6 +933,84 @@ class ReportesInventariosController extends Controller
             $nombreArchivo
         );
     }
+
+    public function datosInventarioFisicoValorado(Request $request)
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
+        }
+
+        $idAlmacen = $request->idAlmacen;
+        $buscar = $request->buscar;
+        $idLaboratorio = $request->idLaboratorio; 
+        $idPresentacion = $request->idPresentacion; // opcional
+
+        $inventarios = Articulo::leftJoin('inventarios', function ($join) use ($idAlmacen) {
+            $join
+                ->on('articulos.id', '=', 'inventarios.idarticulo')
+                ->where('inventarios.idalmacen', '=', $idAlmacen);
+        })
+            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+            ->join('personas', 'proveedores.id', '=', 'personas.id')
+            ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+            ->select(
+                'articulos.nombre as nombre_producto',
+                'articulos.unidad_envase',
+                'categorias.nombre as nombre_categoria',
+                DB::raw('ROUND(articulos.precio_costo_unid, 2) as precio_costo_unid'),
+                'almacens.nombre_almacen',
+                'personas.nombre as nombre_proveedor',
+                'articulos.precio_uno as precio_venta',
+                DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock_total'),
+                DB::raw('FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / articulos.unidad_envase) as stock_en_paquetes'),
+                DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase as unidades_restantes'),
+                DB::raw('ROUND(articulos.precio_costo_unid * IFNULL(SUM(inventarios.saldo_stock), 0), 2) as valor_total')
+            )
+            ->where('articulos.condicion', '=', 1);
+
+        // 🔹 Filtrado por laboratorio (idproveedor)
+        if (!empty($idLaboratorio)) {
+            $inventarios = $inventarios->where('articulos.idproveedor', $idLaboratorio);
+        }
+
+        // 🔹 Filtro de búsqueda general
+        if (!empty($buscar)) {
+            $inventarios = $inventarios->where(function ($query) use ($buscar) {
+                $query
+                    ->where('articulos.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('personas.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('categorias.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('almacens.nombre_almacen', 'like', '%' . $buscar . '%');
+            });
+        }
+
+        $inventarios = $inventarios
+            ->groupBy(
+                'articulos.nombre',
+                'almacens.nombre_almacen',
+                'articulos.unidad_envase',
+                'articulos.precio_costo_unid',
+                'categorias.nombre',
+                'personas.nombre',
+                'articulos.precio_uno',
+            )
+            ->orderBy('articulos.nombre')
+            ->orderBy('almacens.nombre_almacen')
+            ->paginate(10);
+
+        return [
+            'pagination' => [
+                'total' => $inventarios->total(),
+                'current_page' => $inventarios->currentPage(),
+                'per_page' => $inventarios->perPage(),
+                'last_page' => $inventarios->lastPage(),
+                'from' => $inventarios->firstItem(),
+                'to' => $inventarios->lastItem(),
+            ],
+            'inventarios' => $inventarios
+        ];
+    }
 }
 
 class PDFWithPagination extends FPDF
