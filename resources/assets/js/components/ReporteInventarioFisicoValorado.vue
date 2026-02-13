@@ -1,635 +1,255 @@
 <template>
     <main class="main">
-        <ol class="breadcrumb">
-             <li class="breadcrumb-item"><a class="text-decoration-none" href="/">Escritorio</a></li>
-        </ol>
-        <div class="container-fluid">
-            <!-- Ejemplo de tabla Listado -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fa fa-align-justify"></i> Inventario Fisico Valorado
-                    <button type="button" @click="abrirModal('articulo', 'registrar'); listarPrecio()"
-                    class="btn btn-primary">
-                    <i class="fa fa-search"></i>&nbsp;Filtros</button>
-                    <button @click="exportarPDF" class="btn btn-danger">Exportar a PDF</button>
-                    <button @click="exportarExcel" class="btn btn-success">Exportar a EXCEL</button>
-
-
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <label class="mb-1"> MODO VISTA </label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" v-model="tipoSeleccionado" value="item" @change="cambiarTipo">
-                                    <label class="form-check-label ms-2">Por Item</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" v-model="tipoSeleccionado" value="lote" @change="cambiarTipo">
-                                    <label class="form-check-label ms-2">Por Lote</label>
-                                </div>
-                        </div>
-                     </div>
+        <div class="loading-overlay" v-if="isLoading">
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <div class="loading-text">LOADING...</div>
+            </div>
+        </div>
+        <Panel>
+            <template #header>
+                <div class="panel-header">
+                    <div class="panel-title-section">
+                        <i class="pi pi-bars"></i>
+                        <h4 class="panel-title">INFORME INVENTARIO FISICO VALORADO</h4>
+                    </div>
+                    <div class="panel-actions">
+                        <Button :label="mostrarLabel ? 'Pdf' : ''" icon="pi pi-download"
+                            @click="exportarInventarioPdf()" class="p-button-danger p-button-sm"
+                            style="margin-right: 0.5rem;" />
+                        <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-download"
+                            @click="exportarInventarioExcel()" class="p-button-success p-button-sm"
+                            style="margin-right: 0.5rem;" />
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div v-if="tipoSeleccionado == 'item'" class="table-responsive">
-                        <table class="table table-bordered table-striped table-sm">
-                            <thead>
-                                <tr>
-                                    <!-- <th>Opciones</th> -->
-                                    <th>Almacen</th>
-                                    <th>Marca</th>
-                                    <th>Linea</th>
-                                    <th>Industria</th>
-                                    <th>Producto</th>
-                                    <th>Unidad X Paq.</th>                                   
-                                    <th>Saldo_stock_total</th>
-                                    <th>Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="inventario in arrayReporte" :key="inventario.id">
-                                    <!-- <td>
-                                        <button type="button" @click="abrirModal('almacenes','actualizar',inventario)" class="btn btn-warning btn-sm">
-                                        <i class="icon-pencil"></i>
-                                        </button> &nbsp;
-                                    </td> -->
-                                    <td v-text="inventario.nombre_almacen"></td>
-                                    <td v-text="inventario.nombre_marca"></td>
-                                    <td v-text="inventario.nombre_categoria"></td>
-                                    <td v-text="inventario.nombre_industria"></td>
-                                    <td v-text="inventario.nombre_producto"></td>
-                                    <td v-text="inventario.unidad_envase"></td>
-                                    <td v-text="inventario.saldo_stock_total"></td>
-                                    <td v-text="inventario.costo_total"></td>
+            </template>
 
-                                </tr>                                
-                            </tbody>
-                        </table>
+            <!-- FILTROS -->
+            <div class="filters-container">
+                <div class="filter-row">
+                    <!-- SELECTOR DE ALMACÉN -->
+                    <div class="filter-group-almacen">
+                        <label class="filter-label">ALMACÉN DE TRABAJO</label>
+                        <Dropdown v-model="AlmacenSeleccionado" :options="arrayAlmacenes" optionLabel="nombre_almacen"
+                            optionValue="id" placeholder="Seleccione un almacén" @change="getDatosAlmacen"
+                            class="p-dropdown-sm" />
                     </div>
-                    <!--#####################################-LIStADO LOTE-###############-->
-                    <div v-if="tipoSeleccionado == 'lote'" class="table-responsive">
-                        <table class="table table-bordered table-striped table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Almacen</th>
-                                    <th>Fecha Ingreso</th>
-                                    <th>Marca</th>
-                                    <th>Linea</th>
-                                    <th>Industria</th>
-                                    <th>Producto</th>
-                                    <th>Unid.X.Paq</th>
-                                    <th>Costo Unidad</th>
-                                    <th>Fecha Vencimiento</th>
-                                    <th>Saldo Stock</th>
-                                    <th>Valor</th>
 
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="inventario in arrayReporte" :key="inventario.id">
-                                    <td v-text="inventario.nombre_almacen"></td>
-                                    <td v-text="inventario.fecha_ingreso"></td>
-                                    <td v-text="inventario.nombre_marca"></td>
-                                    <td v-text="inventario.nombre_categoria"></td>
-                                    <td v-text="inventario.nombre_industria"></td>
-                                    <td v-text="inventario.nombre_producto"></td>
-                                    <td v-text="inventario.unidad_envase"></td>
-                                    <td v-text="inventario.precio_costo_unid"></td>
-                                    <td v-text="inventario.fecha_vencimiento"></td>
-                                    <td v-text="inventario.saldo_stock"></td>
-                                    <td v-text="inventario.costo_total"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <!--######################################-hasta AQUI#################-->
-                    <nav>
-                        <ul class="pagination">
-                            <li class="page-item" v-if="pagination.current_page > 1">
-                                <a class="page-link" href="#" @click.prevent="cambiarPagina(pagination.current_page - 1,buscar,criterio)">Ant</a>
-                            </li>
-                            <li class="page-item" v-for="page in pagesNumber" :key="page" :class="[page == isActived ? 'active' : '']">
-                                <a class="page-link" href="#" @click.prevent="cambiarPagina(page,buscar,criterio)" v-text="page"></a>
-                            </li>
-                            <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                <a class="page-link" href="#" @click.prevent="cambiarPagina(pagination.current_page + 1,buscar,criterio)">Sig</a>
+                    <!-- BUSCADOR DE LABORATORIO -->
+                    <div class="filter-group-laboratorio" style="margin-left: 0rem; position: relative;">
+                        <label class="filter-label">PROVEEDOR</label>
+                        <input type="text" v-model="buscarLaboratorioTexto" @input="buscarLaboratorios"
+                            @focus="mostrarLista = true" @blur="ocultarListaConRetraso"
+                            placeholder="Escriba para buscar..." class="form-control p-inputtext-sm"
+                            style="width: 220px;" />
+
+                        <!-- Lista de resultados -->
+                        <ul v-if="mostrarLista && arrayLaboratorios.length > 0" class="list-group" style="
+                                position: absolute;
+                                top: 60px;
+                                left: 0;
+                                width: 220px;
+                                max-height: 200px;
+                                overflow-y: auto;
+                                background: white;
+                                border: 1px solid #ccc;
+                                border-radius: 5px;
+                                z-index: 1000;
+                                padding: 0;
+                                margin: 0;
+                                list-style: none;
+                            ">
+                            <li v-for="lab in arrayLaboratorios" :key="lab.id" @mousedown="seleccionarLaboratorio(lab)"
+                                style="
+                                    padding: 6px 10px;
+                                    cursor: pointer;
+                                " @mouseover="hovered = lab.id" :style="{
+                                    backgroundColor: hovered === lab.id ? '#e3f2fd' : 'white',
+                                }">
+                                {{ lab.nombre }}
                             </li>
                         </ul>
-                    </nav>
-                    
-                </div>
-            </div>
-            <!-- Fin ejemplo de tabla Listado -->
-        </div>
-
-        <!--Inicio del modal agregar/actualizar-->
-        <div class="modal" tabindex="-1" :class="{ 'mostrar': modal }" role="dialog" aria-labelledby="myModalLabel"
-            style="display: none;" aria-hidden="true">
-            <div class="modal-dialog modal-primary modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Filtros de reportes</h4>
-                        <button type="button" class="close" @click="cerrarModal()" aria-label="Close">
-                            <span aria-hidden="true">×</span>
-                        </button>
                     </div>
-                    <form @submit.prevent="enviarFormulario">
-                        <div class="modal-body">
-                            <div class="form-group row">
 
-                                <div class="col-md-6">
-                                    <label for="" class="font-weight-bold">Almacen <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input class="form-control" type="text" placeholder="Seleccione un almacen" disabled
-                                            v-model="almacenseleccionada.nombre_almacen" :class="{ 'is-invalid': errores.idAlmacen }" 
-                                            @input="validarCampo('codigo')">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button"
-                                                @click="abrirModal2('Almacen')">...</button>
-                                        </div>
-                                    </div>
-                                    <p class="text-danger" v-if="errores.idcategoria">{{ errores.idcategoria }}</p>
+                    <!-- BUSCADOR DE PRESENTACIÓN -->
+                    <div class="filter-group-presentacion" style="margin-left: 0rem; position: relative;">
+                        <label class="filter-label">CATEGORÍA</label>
+                        <input type="text" v-model="buscarPresentacionTexto" @input="filtrarPresentaciones"
+                            @focus="mostrarListaPresentacion = true" @blur="ocultarListaPresentacionConRetraso"
+                            placeholder="Escriba para buscar..." class="form-control p-inputtext-sm"
+                            style="width: 220px;" />
 
-                                    <label for="" class="font-weight-bold">Marca <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input class="form-control" type="text" placeholder="Seleccione una marca" disabled
-                                            v-model="marcaseleccionada.nombre" :class="{ 'is-invalid': errores.idmarca }"
-                                            @input="validarCampo('idmarca')">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button"
-                                                @click="abrirModal2('Marcas')">...</button>
-                                        </div>
-                                    </div>
-                                    <p class="text-danger" v-if="errores.idmarca">{{ errores.idmarca }}</p>
-
-                                      
-                                    <label for="" class="font-weight-bold">Industria <span
-                                            class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input class="form-control" type="text" placeholder="Seleccione una industria"
-                                            disabled v-model="industriaseleccionada.nombre"
-                                            :class="{ 'is-invalid': errores.idindustria }" @input="validarCampo('codigo')">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button"
-                                                @click="abrirModal2('Industrias')">...</button>
-                                        </div>
-                                    </div>
-                                    <p class="text-danger" v-if="errores.idindustria">{{ errores.idindustria }}</p>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label for="" class="font-weight-bold">Articulo <span class="text-danger">*</span></label>
-                                    <div class="input-group">  
-                                        <input class="form-control" type="text" placeholder="Seleccione un articulo" disabled
-                                        v-model="articuloseleccionada.nombre"
-                                            :class="{ 'is-invalid': errores.idcategoria }" @input="validarCampo('codigo')">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button"
-                                                @click="abrirModal2('Articulo')">...</button>
-                                        </div>
-                                    </div>
-                                    <p class="text-danger" v-if="errores.idcategoria">{{ errores.idcategoria }}</p>
-
-                                    
-                                    <label for="" class="font-weight-bold">Linea <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input class="form-control" type="text" placeholder="Seleccione una linea" disabled
-                                            v-model="lineaseleccionada.nombre"
-                                            :class="{ 'is-invalid': errores.idcategoria }" @input="validarCampo('codigo')">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button"
-                                                @click="abrirModal2('Lineas')">...</button>
-                                        </div>
-                                    </div>
-                                    <p class="text-danger" v-if="errores.idcategoria">{{ errores.idcategoria }}</p>
-                                    
-                                
-                                </div> 
-                                <div class="col-md-6">
-                                    <label for="" class="font-weight-bold">Fecha Inicio: <span class="text-danger">*</span> </label>
-                                    <input class="form-control" type="date" v-model="fechaInicio" >
-                                    
-                                    
-                                </div>
-                                <div class="col-md-6">
-                                    
-                                    <label for="" class="font-weight-bold">Fecha Fin: <span class="text-danger">*</span></label>
-                                    <input class="form-control" type="date" v-model="fechaFin" >
-                                    
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-danger" @click="cerrarModal()">Cerrar</button>
-                            <button type="submit" @click="listaReporte(); cerrarModal()" class="btn btn-primary">Visualizar Reporte</button>
-                        </div>
-                    </form>
-
-                </div>
-                <!-- /.modal-content -->
-            </div>
-
-
-            <!-- /.modal-dialog -->
-        </div>
-
-        <div class="modal " tabindex="-1" :class="{ 'mostrar': modal2 }" role="dialog" aria-labelledby="myModalLabel"
-            style="display: none;" aria-hidden="true">
-            <div class="modal-dialog modal-primary modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title" v-text="tituloModal2"></h4>
-                        <button type="button" class="close" @click="modal2 = false" aria-label="Close">
-                            <span aria-hidden="true">×</span>
-                        </button>
+                        <!-- Lista de resultados -->
+                        <ul v-if="
+                            mostrarListaPresentacion &&
+                            arrayPresentacionesFiltradas.length > 0
+                        " class="list-group" style="
+                                position: absolute;
+                                top: 60px;
+                                left: 0;
+                                width: 220px;
+                                max-height: 200px;
+                                overflow-y: auto;
+                                background: white;
+                                border: 1px solid #ccc;
+                                border-radius: 5px;
+                                z-index: 1000;
+                                padding: 0;
+                                margin: 0;
+                                list-style: none;
+                            ">
+                            <li v-for="pres in arrayPresentacionesFiltradas" :key="pres.id"
+                                @mousedown="seleccionarPresentacion(pres)" style="padding: 6px 10px; cursor: pointer;"
+                                @mouseover="hoveredPresentacion = pres.id" :style="{
+                                    backgroundColor:
+                                        hoveredPresentacion === pres.id ? '#e3f2fd' : 'white',
+                                }">
+                                {{ pres.nombre }}
+                            </li>
+                        </ul>
                     </div>
-                    <div class="modal-body">
-                        <div class="form-group row">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <select class="form-control col-md-3" v-model="criterioA">
-                                        <option v-if="tituloModal2 !== 'Grupos'" value="nombre">Nombre</option>
-                                        <option v-if="tituloModal2 == 'Articulo'" value="descripcion">Descripcion</option>
-                                        <option v-else-if="tituloModal2 == 'Grupos'" value="nombre_grupo">Grupo</option>
-                                        <!-- <option v-if="tituloModal2=='Grupos'" value="nombre_grupo">Nombre_grupo</option> -->
-                                    </select>
-                                    <input v-if="tituloModal2 == 'Marcas'" type="text" v-model="buscarA"
-                                        @keyup="listarMarca(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Industrias'" type="text" v-model="buscarA"
-                                        @keyup="listarIndustria(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Lineas'" type="text" v-model="buscarA"
-                                        @keyup="listarLinea(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Proveedors'" type="text" v-model="buscarA"
-                                        @keyup="listarproveedor(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Grupos'" type="text" v-model="buscarA"
-                                        @keyup="listargrupo(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Almacen'" type="text" v-model="buscarA"
-                                        @keyup="listarAlmacen(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Articulo'" type="text" v-model="buscarA"
-                                        @keyup="listarArticulo(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                    <input v-if="tituloModal2 == 'Cliente'" type="text" v-model="buscarA"
-                                        @keyup="listarPersona(1, buscarA, criterioA)" class="form-control"
-                                        placeholder="Texto a buscar">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped table-sm" v-if="tituloModal2 !== 'Grupos' && tituloModal2 !== 'Almacen'">
-                                <thead>
-                                    <tr>
-                                        <th>Opciones</th>
-                                        <th>Id</th>
 
-                                        <th>Nombre</th>
-                                        <!-- <th>Estado</th> -->
-                                        <th>
-                                            <div v-if="tituloModal2 == 'Proveedors'">
-                                                Nit
-                                            </div>
-                                            <div v-else>
-                                                Estado
-                                            </div>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="arrayelemento in arrayBuscador" :key="arrayelemento.id">
-                                        <td>
-                                            <button type="button" @click="seleccionar(arrayelemento)"
-                                                class="btn btn-success btn-sm">
-                                                <i class="icon-check"></i>
-                                            </button>
-                                        </td>
-                                        <td v-text="arrayelemento.id"></td>
-                                        <!-- <div v-if="tituloModal2=='Grupos'">
-                                            <td  v-text="arrayelemento.nombre_grupo"></td>
-                                        </div> -->
-                                        <td v-text="arrayelemento.nombre"></td>
-                                        <td v-if="tituloModal2 == 'Industrias'">
-                                            <div v-if="arrayelemento.estado">
-                                                <span class="badge badge-success">Activo</span>
-                                            </div>
-                                            <div v-else>
-                                                <span class="badge badge-danger">Desactivado</span>
-                                            </div>
-                                        </td>
-                                        <td v-if="tituloModal2 == 'Marcas' || tituloModal2 == 'Lineas' || tituloModal2 == 'Sucursal' || tituloModal2 == 'Articulo'">
-                                            <div v-if="arrayelemento.condicion">
-                                                <span class="badge badge-success">Activo</span>
-                                            </div>
-                                            <div v-else>
-                                                <span class="badge badge-danger">Desactivado</span>
-                                            </div>
-                                        </td>
-                                        
-                                        <div v-if="tituloModal2 == 'Proveedors'">
-                                            <td v-text="arrayelemento.num_documento"></td>
-                                        </div>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <!--###########################################################-->
-                            <table class="table table-bordered table-striped table-sm" v-else-if="tituloModal2 == 'Grupos'">
-                                <thead>
-                                    <tr>
-                                        <th>Opciones</th>
-                                        <th>Id</th>
-                                        <th>Nombre</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="arrayelemento in arrayBuscador" :key="arrayelemento.id">
-                                        <td>
-                                            <button type="button" @click="seleccionar(arrayelemento)"
-                                                class="btn btn-success btn-sm">
-                                                <i class="icon-check"></i>
-                                            </button>
-                                           
-                                        </td>
-                                        <td v-text="arrayelemento.id"></td>
-                                        <td v-text="arrayelemento.nombre_grupo"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <!--##################################################################3-->
-                            <table class="table table-bordered table-striped table-sm" v-else-if="tituloModal2 == 'Almacen'">
-                                <thead>
-                                    <tr>
-                                        <th>Opciones</th>
-                                        <th>Id</th>
-                                        <th>Nombre Sucursal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="arrayelemento in arrayBuscador" :key="arrayelemento.id">
-                                        <td>
-                                            <button type="button" @click="seleccionar(arrayelemento)"
-                                                class="btn btn-success btn-sm">
-                                                <i class="icon-check"></i>
-                                            </button>
-                                           
-                                        </td>
-                                        <td v-text="arrayelemento.id"></td>
-                                        <td v-text="arrayelemento.nombre_almacen"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <!--##################################################################3-->
-                        </div>
-                        <nav v-if="tituloModal2 == 'Marcas'">
-                            <ul class="pagination">
-                                <li class="page-item" v-if="pagination.current_page > 1">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaMarca(pagination.current_page - 1, buscar, criterio)">Ant</a>
-                                </li>
-                                <li class="page-item" v-for="page in pagesNumber" :key="page"
-                                    :class="[page == isActived ? 'active' : '']">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaMarca(page, buscar, criterio)" v-text="page"></a>
-                                </li>
-                                <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaMarca(pagination.current_page + 1, buscar, criterio)">Sig</a>
-                                </li>
-                            </ul>
-                        </nav>
-                        <nav v-else-if="tituloModal2 == 'Lineas'">
-                            <ul class="pagination">
-                                <li class="page-item" v-if="pagination.current_page > 1">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaLinea(pagination.current_page - 1, buscar, criterio)">Ant</a>
-                                </li>
-                                <li class="page-item" v-for="page in pagesNumber" :key="page"
-                                    :class="[page == isActived ? 'active' : '']">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaLinea(page, buscar, criterio)" v-text="page"></a>
-                                </li>
-                                <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaLinea(pagination.current_page + 1, buscar, criterio)">Sig</a>
-                                </li>
-                            </ul>
-                        </nav>
-                        <nav v-else-if="tituloModal2 == 'Industrias'">
-                            <ul class="pagination">
-                                <li class="page-item" v-if="pagination.current_page > 1">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaIndustria(pagination.current_page - 1, buscar, criterio)">Ant</a>
-                                </li>
-                                <li class="page-item" v-for="page in pagesNumber" :key="page"
-                                    :class="[page == isActivedMar ? 'active' : '']">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaIndustria(page, buscar, criterio)" v-text="page"></a>
-                                </li>
-                                <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaIndustria(pagination.current_page + 1, buscar, criterio)">Sig</a>
-                                </li>
-                            </ul>
-                        </nav>
-                        <nav v-else-if="tituloModal2 == 'Proveedors'">
-                            <ul class="pagination">
-                                <li class="page-item" v-if="pagination.current_page > 1">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaProveedor(pagination.current_page - 1, buscar, criterio)">Ant</a>
-                                </li>
-                                <li class="page-item" v-for="page in pagesNumber" :key="page"
-                                    :class="[page == isActivedMar ? 'active' : '']">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaProveedor(page, buscar, criterio)" v-text="page"></a>
-                                </li>
-                                <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaProveedor(pagination.current_page + 1, buscar, criterio)">Sig</a>
-                                </li>
-                            </ul>
-                        </nav>
-                        <nav v-else-if="tituloModal2 == 'Grupos'">
-                            <ul class="pagination">
-                                <li class="page-item" v-if="pagination.current_page > 1">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaGrupo(pagination.current_page - 1, buscar, criterio)">Ant</a>
-                                </li>
-                                <li class="page-item" v-for="page in pagesNumber" :key="page"
-                                    :class="[page == isActivedMar ? 'active' : '']">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaGrupo(page, buscar, criterio)" v-text="page"></a>
-                                </li>
-                                <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaGrupo(pagination.current_page + 1, buscar, criterio)">Sig</a>
-                                </li>
-                            </ul> 
-                        </nav>
-                        <nav v-else-if="tituloModal2 == 'Almacen'">
-                            <ul class="pagination">
-                                <li class="page-item" v-if="pagination.current_page > 1">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaAlmacen(pagination.current_page - 1, buscar, criterio)">Ant</a>
-                                </li>
-                                <li class="page-item" v-for="page in pagesNumber" :key="page"
-                                    :class="[page == isActivedMar ? 'active' : '']">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaAlmacen(page, buscar, criterio)" v-text="page"></a>
-                                </li>
-                                <li class="page-item" v-if="pagination.current_page < pagination.last_page">
-                                    <a class="page-link" href="#"
-                                        @click.prevent="cambiarPaginaAlmacen(pagination.current_page + 1, buscar, criterio)">Sig</a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="modal2 = false">Cerrar</button>
+                    <div style="margin-top: 1.6rem;">
+                        <Button label="Reset Filtros" icon="pi pi-refresh" class="p-button-help p-button-sm"
+                            @click="resetLaboratorioPresentacion" />
                     </div>
                 </div>
-                <!-- /.modal-content -->
             </div>
-            <!-- /.modal-dialog -->
-        </div>
-        
-        <!--Fin del modal-->
+
+            <!-- BUSCADOR Y TABLA -->
+            <div class="toolbar-container">
+                <div class="search-bar">
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search" />
+                        <InputText v-model="buscar" placeholder="Texto a buscar" class="p-inputtext-sm"
+                            @keyup="buscarInventario" />
+                    </span>
+                </div>
+                <div class="toolbar">
+                    <Button :label="mostrarLabel ? 'Reset' : ''" icon="pi pi-refresh" @click="resetBusqueda"
+                        class="p-button-help p-button-sm" />
+                </div>
+            </div>
+
+            <!-- TABLA -->
+            <DataTable v-if="tipoSeleccionado == 'item'" :value="arrayInventario"
+                class="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">
+                <Column field="nombre_producto" header="ITEM"></Column>
+                <Column field="nombre_proveedor" header="PROVEEDORES"></Column>
+                <Column field="nombre_categoria" header="CATEGORÍA" class="d-none d-md-table-cell">
+                    <template #body="slotProps">
+                        <span v-if="slotProps.data.nombre_categoria">
+                            {{ slotProps.data.nombre_categoria }}
+                        </span>
+                        <span v-else style="color: #999; font-style: italic;">Sin presentación</span>
+                    </template>
+                </Column>
+                <Column field="saldo_stock_total" header="STOCK UNIDADES">
+                    <template #body="slotProps">
+                        <span v-if="parseFloat(slotProps.data.saldo_stock_total) !== 0">
+                            {{ slotProps.data.saldo_stock_total }}
+                        </span>
+                        <span v-else style="color: #e57373; font-weight: 500;">
+                            <i class="pi pi-exclamation-triangle mr-1"></i> Sin Stock
+                        </span>
+                    </template>
+                </Column>
+                <Column field="precio_venta" header="PRECIO VENTA"></Column>
+                <Column field="precio_costo_unid" header="COSTO UNID.">
+                    <template #body="slotProps">
+                        Bs. {{ parseFloat(slotProps.data.precio_costo_unid).toFixed(2) }}
+                    </template>
+                </Column>
+                <Column field="valor_total" header="VALOR TOTAL">
+                    <template #body="slotProps">
+                        Bs. {{ parseFloat(slotProps.data.valor_total).toFixed(2) }}
+                    </template>
+                </Column>
+            </DataTable>
+
+            <!-- PAGINACIÓN -->
+            <Paginator :rows="pagination.per_page" :totalRecords="pagination.total"
+                :first="(pagination.current_page - 1) * pagination.per_page" @page="onPageChange" />
+        </Panel>
     </main>
 </template>
+
 <script>
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx-js-style';
+import Panel from "primevue/panel";
+import Swal from "sweetalert2";
+import Button from "primevue/button";
+import Dropdown from "primevue/dropdown";
+import InputText from "primevue/inputtext";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import RadioButton from "primevue/radiobutton";
+import Paginator from "primevue/paginator";
+import Dialog from "primevue/dialog";
 
-    export default {
-        data (){
-            return {
-                datosFormulario: {
-                    nombre: '',
-                    nombre_almacen: '',
-                    descripcion: '',
-                    nombre_generico: '',
-                    unidad_envase: 0,
-                    precio_costo_unid: 0,
-                    precio_costo_paq: 0,
-                    precio_venta: 0,
-                    precio_uno: 0,
-                    precio_dos: 0,
-                    precio_tres: 0,
-                    precio_cuatro: 0,
-                    stock: 0,
-                    costo_compra: 0,
-                    codigo: '',
-                    codigo_alfanumerico: '',
-                    descripcion_fabrica: '',
-                    idcategoria: null,
-                    idmarca: null,
-                    idindustria: null,
-                    idgrupo: null,
-                    idproveedor: null,
-                    idmedida: null,
-                },
-                arrayInventario: [],
-                //---------------------
-                //arrayAlmacenes: [],
-                //AlmacenSeleccionado: 1,
-                //idalmacen: 0,
-                tipoSeleccionado: 'item',
-                
-                //---------------------
-                // almacen_id:0,
-                // nombre_almacen: '',
-                // ubicacion: '',
-                // encargado: '',
-                // telefono: '',
-                // lugar: '',
-                // observacion: '',
-
-                // modal : 0,
-                // tituloModal : '',
-                // tipoAccion : 0,
-                // errorMostrarMsjIndustria: [],
-                // errorIndustria : 0,
-                pagination: this.createPaginationObject(),
-                paginationMedida: this.createPaginationObject(),
-                offset: {
-                    pagination: 3,
-                    paginationMedida: 3,
-                },
-                criterio : 'nombre',
-                buscar : '',
-
-                //FILTROS
-                tituloModal2: '',
-                modal: 0,
-                modal2: false,
-                errores: {},
-                nombre: '',
-                descripcion: '',
-                nombre_generico: '',
-                criterioA: 'nombre',
-                buscarA: '',
-
-                almacenseleccionada:[],
-                articuloseleccionada : [], 
-                marcaseleccionada: [],
-                industriaseleccionada: [],
-                lineaseleccionada: [],
-
-                arrayBuscador: [],
-                arrayReporte:[],
-
-
-                //fechas
-                fechaInicio:'',
-                fechaFin:'',
-
-
-
-                //Validacion de inputs
-                lineaseleccionadaVacio: false,
-                marcaseleccionadaVacio: false,
-                industriaseleccionadaVacio: false,
-                almacenseleccionadaVacio: false,
-                articuloseleccionadaVacio: false,
-                
-
-            }
-        },
-        computed:{
-            isActived: function () {
+export default {
+    components: {
+        Panel,
+        Button,
+        Dropdown,
+        InputText,
+        DataTable,
+        Column,
+        RadioButton,
+        Paginator,
+        Dialog,
+    },
+    data() {
+        return {
+            buscarPresentacionTexto: "",
+            arrayPresentaciones: [],
+            arrayPresentacionesFiltradas: [],
+            mostrarListaPresentacion: false,
+            hoveredPresentacion: null,
+            PresentacionSeleccionada: "",
+            // Nuevos para laboratorio
+            buscarLaboratorioTexto: "",
+            arrayLaboratorios: [],
+            mostrarLista: false,
+            hovered: null,
+            LaboratorioSeleccionado: "",
+            mostrarLabel: true,
+            isLoading: false,
+            arrayInventario: [],
+            arrayAlmacenes: [],
+            AlmacenSeleccionado: 1,
+            idalmacen: 0,
+            tipoSeleccionado: "item",
+            pagination: {
+                total: 0,
+                current_page: 0,
+                per_page: 0,
+                last_page: 0,
+                from: 0,
+                to: 0,
+            },
+            offset: 3,
+            criterio: "",
+            buscar: "",
+        };
+    },
+    computed: {
+        isActived: function () {
             return this.pagination.current_page;
-            },
-            isActivedM: function () {
-                return this.pagination.current_page;
-            },
-            isActivedMar: function () {
-                return this.pagination.current_page;
-            },
-
-            pagesNumber: function () {
-                return this.calculatePages(this.pagination, this.offset.pagination);
-            },
-            pagesNumberMedida: function () {
-                return this.calculatePages(this.paginationMedida, this.offset.paginationMedida);
         },
-
-        },
-        methods : {
-            calculatePages: function (paginationObject, offset) {
-            if (!paginationObject.to) {
+        //Calcula los elementos de la paginación
+        pagesNumber: function () {
+            if (!this.pagination.to) {
                 return [];
             }
 
-            var from = paginationObject.current_page - offset;
+            var from = this.pagination.current_page - this.offset;
             if (from < 1) {
                 from = 1;
             }
 
-            var to = from + (offset * 2);
-            if (to >= paginationObject.last_page) {
-                to = paginationObject.last_page;
+            var to = from + this.offset * 2;
+            if (to >= this.pagination.last_page) {
+                to = this.pagination.last_page;
             }
 
             var pagesArray = [];
@@ -639,855 +259,863 @@ import * as XLSX from 'xlsx-js-style';
             }
             return pagesArray;
         },
+    },
+    methods: {
+        handleResize() {
+            this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
+        },
+        async resetLaboratorioPresentacion() {
+            this.buscarLaboratorioTexto = "";
+            this.LaboratorioSeleccionado = "";
+            this.buscarPresentacionTexto = "";
+            this.PresentacionSeleccionada = "";
 
-        createPaginationObject() {
-            return {
-                'total': 0,
-                'current_page': 0,
-                'per_page': 0,
-                'last_page': 0,
-                'from': 0,
-                'to': 0,
-            }
+            // Llamar a la función de listado sin laboratorio ni presentación
+            await this.actualizarInventario();
+        },
+        async cambiarLaboratorio() {
+            await this.actualizarInventario();
         },
 
-        async validarCampo(campo) {
-            this.asignarCampos();
+        async cambiarPresentacion() {
+            await this.actualizarInventario();
+        },
+        async obtenerPresentaciones() {
             try {
-                await esquemaArticulos.validateAt(campo, this.datosFormulario);
-                this.errores[campo] = null;
+                const response = await axios.get("/categorianewview");
+                this.arrayPresentaciones = response.data.categorias;
+                this.arrayPresentacionesFiltradas = this.arrayPresentaciones;
             } catch (error) {
-                this.errores[campo] = error.message;
+                console.error("Error al cargar presentaciones:", error);
             }
         },
 
-        calcularPrecioValorMoneda(precio) {
-            console.log(precio)
-            return ((precio * parseFloat(this.monedaPrincipal)).toFixed(2))
-        },
-        convertDolar(precio) {
-            return (precio / parseFloat(this.monedaPrincipal))
-        },
+        // 🔹 Filtrar localmente mientras escribe
+        filtrarPresentaciones() {
+            const texto = this.buscarPresentacionTexto.trim().toLowerCase();
+            if (!texto) {
+                this.arrayPresentacionesFiltradas = this.arrayPresentaciones;
+                return;
+            }
 
-        asignarCampos() {
-            this.datosFormulario.idcategoria = this.lineaseleccionada.id;
-            this.datosFormulario.idmarca = this.marcaseleccionada.id;
-            this.datosFormulario.idproveedor = this.proveedorseleccionada.id;
-            this.datosFormulario.idindustria = this.industriaseleccionada.id;
-            this.datosFormulario.idmedida = this.medidaseleccionada.id;
-            this.datosFormulario.idgrupo = this.gruposeleccionada.id;
-            this.datosFormulario.idAlmacen = this.almacenseleccionada.id;
-            this.datosFormulario.idArticulo = this.articuloseleccionada.id;
-            this.datosFormulario.idCliente = this.clienteseleccionada.id;
-
-
-            this.datosFormulario.precio_costo_unid = this.convertDolar(this.datosFormulario.precio_costo_unid);
-            this.datosFormulario.precio_costo_paq = this.convertDolar(this.datosFormulario.precio_costo_paq);
-            this.datosFormulario.precio_venta = this.convertDolar(this.datosFormulario.precio_venta);
-
-            this.datosFormulario.precio_uno = this.convertDolar(this.precio_uno);
-            this.datosFormulario.precio_dos = this.convertDolar(this.precio_dos);
-            this.datosFormulario.precio_tres = this.convertDolar(this.precio_tres);
-            this.datosFormulario.precio_cuatro = this.convertDolar(this.precio_cuatro);
-            this.datosFormulario.costo_compra = this.convertDolar(this.datosFormulario.costo_compra);
+            this.arrayPresentacionesFiltradas = this.arrayPresentaciones.filter((p) =>
+                p.nombre.toLowerCase().includes(texto)
+            );
+            this.mostrarListaPresentacion = true;
         },
 
-            cambiarPagina(page,buscar,criterio){
-                let me = this;
-                //Actualiza la página actual
+        // 🔹 Seleccionar una presentación
+        seleccionarPresentacion(pres) {
+            this.buscarPresentacionTexto = pres.nombre;
+            this.PresentacionSeleccionada = pres.id;
+            this.mostrarListaPresentacion = false;
+
+            // actualizar inventario
+            this.cambiarPresentacion();
+        },
+
+        // 🔹 Cerrar lista al salir del input
+        ocultarListaPresentacionConRetraso() {
+            setTimeout(() => {
+                this.mostrarListaPresentacion = false;
+            }, 150);
+        },
+        async buscarLaboratorios() {
+            try {
+                const texto = this.buscarLaboratorioTexto.trim();
+                if (texto.length < 2) {
+                    this.arrayLaboratorios = [];
+                    return;
+                }
+
+                const response = await axios.get("/proveedornewview", {
+                    params: { buscar: texto },
+                });
+
+                this.arrayLaboratorios = response.data.personas;
+                this.mostrarLista = true;
+            } catch (error) {
+                console.error("Error al buscar laboratorios:", error);
+            }
+        },
+        seleccionarLaboratorio(lab) {
+            this.buscarLaboratorioTexto = lab.nombre;
+            this.LaboratorioSeleccionado = lab.id;
+            this.mostrarLista = false;
+
+            // actualizar inventario
+            this.cambiarLaboratorio();
+        },
+        ocultarListaConRetraso() {
+            setTimeout(() => {
+                this.mostrarLista = false;
+            }, 150);
+        },
+        async exportarInventarioExcel() {
+            let me = this;
+            try {
+                // Validar que haya un almacén seleccionado
+                if (!me.AlmacenSeleccionado) {
+                    Swal.fire("Error", "Por favor seleccione un almacén", "error");
+                    return;
+                }
+
+                // Obtener el nombre del almacén seleccionado
+                const almacenSeleccionado = me.arrayAlmacenes.find(
+                    (almacen) => almacen.id == me.AlmacenSeleccionado
+                );
+                const nombreAlmacen = almacenSeleccionado
+                    ? almacenSeleccionado.nombre_almacen
+                    : "almacen";
+
+                // Mostrar loading
+                me.isLoading = true;
+
+                // Crear formulario para enviar datos
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = "/reporte/inventarioValoradoExcel";
+                form.style.display = "none";
+
+                // Agregar token CSRF
+                const csrfToken = document.createElement("input");
+                csrfToken.type = "hidden";
+                csrfToken.name = "_token";
+                csrfToken.value = document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute("content");
+                form.appendChild(csrfToken);
+
+                // Agregar ID del almacén
+                const inputAlmacen = document.createElement("input");
+                inputAlmacen.type = "hidden";
+                inputAlmacen.name = "idAlmacen";
+                inputAlmacen.value = me.AlmacenSeleccionado;
+                form.appendChild(inputAlmacen);
+
+                // Agregar nombre del almacén (para el nombre del archivo)
+                const inputNombre = document.createElement("input");
+                inputNombre.type = "hidden";
+                inputNombre.name = "nombreAlmacen";
+                inputNombre.value = nombreAlmacen.replace(/\s+/g, "_");
+                form.appendChild(inputNombre);
+
+                // 🔹 Agregar filtros adicionales (de listarInventario)
+                const camposExtras = {
+                    idLaboratorio: me.LaboratorioSeleccionado || "",
+                    idPresentacion: me.PresentacionSeleccionada || "",
+                    buscar: me.buscar || "",
+                    criterio: me.criterio || "",
+                    page: me.pagination.current_page || 1, // o me.page si lo manejas así
+                    tipoSeleccionado: me.tipoSeleccionado || "",
+                };
+
+                for (const [key, value] of Object.entries(camposExtras)) {
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                // Enviar formulario
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+
+                // Mostrar mensaje de éxito
+                setTimeout(() => {
+                    me.isLoading = false;
+                    Swal.fire("Éxito", "El archivo Excel se está descargando", "success");
+                }, 1000);
+
+            } catch (error) {
+                console.error("Error al exportar:", error);
+                me.isLoading = false;
+                Swal.fire("Error", "No se pudo exportar el inventario", "error");
+            }
+        },
+        async exportarInventarioPdf() {
+
+             let me = this;
+             try {
+                 // Validar que haya un almacén seleccionado
+                 if (!me.AlmacenSeleccionado) {
+                     Swal.fire("Error", "Por favor seleccione un almacén", "error");
+                     return;
+                 }
+ 
+                 // Obtener el nombre del almacén seleccionado
+                 const almacenSeleccionado = me.arrayAlmacenes.find(
+                     (almacen) => almacen.id == me.AlmacenSeleccionado
+                 );
+                 const nombreAlmacen = almacenSeleccionado
+                     ? almacenSeleccionado.nombre_almacen
+                     : "almacen";
+ 
+                 // Mostrar loading
+                 me.isLoading = true;
+ 
+                 // Preparar datos para enviar
+                 const params = {
+                     idAlmacen: me.AlmacenSeleccionado,
+                     nombreAlmacen: nombreAlmacen.replace(/\s+/g, "_"),
+                     idLaboratorio: me.LaboratorioSeleccionado || "",
+                     idPresentacion: me.PresentacionSeleccionada || "",
+                     buscar: me.buscar || "",
+                     criterio: me.criterio || "",
+                     page: (me.pagination && me.pagination.current_page) ? me.pagination.current_page : 1,
+                     tipoSeleccionado: me.tipoSeleccionado || "",
+                 };
+ 
+                 // Realizar petición con axios
+                 const response = await axios.post("/reporte/inventarioValoradoPdf", params, {
+                     responseType: 'blob',
+                     timeout: 600000 // 10 minutos de espera máximo
+                 });
+ 
+                 // Crear URL del blob
+                 const url = window.URL.createObjectURL(new Blob([response.data]));
+                 const link = document.createElement('a');
+                 link.href = url;
+                 
+                 // Intentar obtener nombre del archivo del header
+                 let filename = `ReporteInventarioValorado_${nombreAlmacen.replace(/\s+/g, "_")}.pdf`;
+                 const disposition = response.headers['content-disposition'];
+                 if (disposition && disposition.indexOf('attachment') !== -1) {
+                     const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                     const matches = filenameRegex.exec(disposition);
+                     if (matches != null && matches[1]) { 
+                         filename = matches[1].replace(/['"]/g, '');
+                     }
+                 }
+ 
+                 link.setAttribute('download', filename);
+                 document.body.appendChild(link);
+                 link.click();
+                 document.body.removeChild(link);
+                 window.URL.revokeObjectURL(url);
+ 
+                 // Mostrar mensaje de éxito
+                 Swal.fire("Éxito", "El reporte PDF se ha descargado correctamente", "success");
+ 
+             } catch (error) {
+                 console.error("Error al exportar PDF:", error);
+                 
+                 let mensaje = "No se pudo exportar el inventario a PDF";
+                 
+                 if (error.code === 'ECONNABORTED') {
+                     mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
+                 } else if (error.response && error.response.data instanceof Blob) {
+                     // Intentar leer el error del Blob
+                     const reader = new FileReader();
+                     reader.onload = () => {
+                         try { const json = JSON.parse(reader.result); if(json.error) Swal.fire("Error", json.error, "error"); } catch(e) { Swal.fire("Error", mensaje, "error"); }
+                     };
+                     reader.readAsText(error.response.data);
+                     return; // Salir para que el reader maneje la alerta
+                 }
+                 
+                 Swal.fire("Error", mensaje, "error");
+             } finally {
+                 me.isLoading = false;
+             }
+        },
+
+        async buscarInventario() {
+            try {
+                if (this.searchTimeout) {
+                    clearTimeout(this.searchTimeout);
+                }
+
+                this.searchTimeout = setTimeout(async () => {
+                    this.isLoading = true; // Activar loading
+                    await this.listarInventario(1, this.buscar, this.criterio, this.AlmacenSeleccionado, this.LaboratorioSeleccionado, this.PresentacionSeleccionada);
+                    setTimeout(() => {
+                        this.isLoading = false; // Desactivar loading
+                    }, 500);
+                }, 300);
+            } catch (error) {
+                console.error("Error en la búsqueda:", error);
+                this.isLoading = false;
+            }
+        },
+        resetBusqueda() {
+            this.buscar = ""; // Limpiar input
+            this.listarInventario(1, "", "", this.AlmacenSeleccionado, this.LaboratorioSeleccionado, this.PresentacionSeleccionada); // Llamar con valores vacíos
+        },
+        onPageChange(event) {
+            const page = Math.floor(event.first / event.rows) + 1;
+            this.cambiarPagina(page, this.buscar, this.criterio, this.AlmacenSeleccionado, this.LaboratorioSeleccionado, this.PresentacionSeleccionada);
+        },
+        async cambiarPagina(page, buscar, criterio, alma, lab, presen) {
+            let me = this;
+            try {
                 me.pagination.current_page = page;
-                //Envia la petición para visualizar la data de esa página
-                me.listarInventario(page,buscar,criterio);
-            },
-            //---------------------------------------
-            listarInventario (){
-                let me=this;
-                let url = '/inventarios/itemLote/' + me.tipoSeleccionado + '?&idAlmacen=' + me.almacenSeleccionado + '&buscar=' + me.buscar + '&criterio=' + me.criterio;
-                axios.get(url).then(function (response) {
-                    var respuesta= response.data;
-                    console.log("ARRAy:",respuesta);
-                    me.arrayInventario = respuesta.inventarios;
-                    console.log('LLEGA:',me.arrayInventario);
-                    //me.pagination= respuesta.pagination;
-                })
-                .catch(function (error) {
-                    console.log(error);
-                });
-            },
-            selectAlmacen() {
-                let me = this;
-                var url = '/almacen/selectAlmacen';
-                axios.get(url).then(function (response) {
-                    var respuesta = response.data;
-                    me.arrayAlmacenes = respuesta.almacenes;
-                    console.log('ALMACEN:',me.arrayAlmacenes);
-                })
-                .catch(function (error) {
-                    console.log(error);
-                });
-            },
-            getDatosAlmacen() {
-                let me = this;
-                if (me.AlmacenSeleccionado !== '') {
-                    me.loading = true;
-                    me.almacenSeleccionado = me.AlmacenSeleccionado; // Almacenar el valor seleccionado
-                    me.idalmacen = Number(me.AlmacenSeleccionado);
-                    console.log('IDalmacen: ' + me.idalmacen);
-                    me.listarInventario();
-                }
-            },
-            cambiarTipo() {
-                this.listaReporte(); // Actualizar datos de almacén
-                //this.listarInventario(); // Listar inventario basado en almacén seleccionado
-            },
-            
-            abrirModal(modelo, accion, data = []) {
-                this.almacenseleccionada = false;
-                this.articuloseleccionada = false;
-                this.lineaseleccionada = false;
-                this.marcaseleccionada = false;
-                this.industriaseleccionada = false;
-                this.fechaInicio = '';
-                this.fechaFin ='';
-                switch (modelo) {
-                    case "articulo":
-                        {
-                            switch (accion) {
-
-                                case 'registrar':
-                                    {
-                                        this.modal = 1;
-                                        this.tituloModal = 'Registrar Artículo';
-
-                                        this.tipoAccion = 1;
-                                        this.fotografia = '';
-
-                                        this.datosFormulario = {
-                                            nombre: '',
-                                            descripcion: '',
-                                            nombre_generico: '',
-                                            unidad_envase: 0,
-                                            precio_costo_unid: 0,
-                                            precio_costo_paq: 0,
-                                            precio_venta: 0,
-                                            precio_uno: 0,
-                                            precio_dos: 0,
-                                            precio_tres: 0,
-                                            precio_cuatro: 0,
-                                            stock: 0,
-                                            costo_compra: 0,
-                                            codigo: '',
-                                            codigo_alfanumerico: '',
-                                            descripcion_fabrica: '',
-                                            idcategoria: null,
-                                            idmarca: null,
-                                            idindustria: null,
-                                            idgrupo: null,
-                                            idproveedor: null,
-                                            idmedida: null
-                                        };
-                                        this.errores = {};
-                                        break;
-                                    }
-                                case 'actualizar':
-                                    {
-                                        console.log("datass", data);
-                                        this.modal = 1;
-                                        this.tituloModal = 'Actualizar Artículo';
-                                        this.tipoAccion = 2;
-                                        this.datosFormulario = {
-                                            nombre: data['nombre'],
-                                            descripcion: data['descripcion'],
-                                            nombre_generico: data['nombre_generico'],
-                                            unidad_envase: data['unidad_envase'],
-                                            precio_costo_unid: this.calcularPrecioValorMoneda(data['precio_costo_unid']),
-                                            precio_costo_paq: this.calcularPrecioValorMoneda(data['precio_costo_paq']),
-                                            precio_venta: this.calcularPrecioValorMoneda(data['precio_venta']),
-                                            precio_uno: 0,
-                                            precio_dos: 0,
-                                            precio_tres: 0,
-                                            precio_cuatro: 0,
-                                            stock: data['stock'],
-                                            costo_compra: this.calcularPrecioValorMoneda(data['costo_compra']),
-                                            codigo: data['codigo'],
-                                            codigo_alfanumerico: data['codigo_alfanumerico'],
-                                            descripcion_fabrica: data['descripcion_fabrica'],
-                                            idcategoria: null,
-                                            idmarca: null,
-                                            idindustria: null,
-                                            idgrupo: null,
-                                            idproveedor: null,
-                                            idmedida: data['idmedida'],
-                                            id: data['id']
-                                        };
-                                        this.errores = {};
-                                        this.idmedida = data['idmedida'];
-
-                                        this.fotografia = data['fotografia'];
-                                        this.fotoMuestra = data['fotografia'] ? 'img/articulo/' + data['fotografia'] : null;
-                                        //this.industriaseleccionada = { nombre: data['industriaseleccionada.nombre'] };
-
-                                        //this.industriaseleccionada = {nombre: data['nombre_industria']};
-                                        this.industriaseleccionada = { nombre: data['nombre_industria'], id: data['idindustria'] };
-                                        //this.lineaseleccionada = {nombre: data['nombre_categoria']};
-                                        this.lineaseleccionada = { nombre: data['nombre_categoria'], id: data['idcategoria'] };
-                                        //this.marcaseleccionada = {nombre: data['nombre_marca']};
-                                        this.marcaseleccionada = { nombre: data['nombre_marca'], id: data['idmarca'] };
-                                        this.proveedorseleccionada = { nombre: data['nombre_proveedor'], id: data['idproveedor'] };
-                                        //this.gruposeleccionada = {nombre_grupo: data['nombre_grupo']};
-                                        this.gruposeleccionada = { nombre_grupo: data['nombre_grupo'], id: data['idgrupo'] };
-                                        this.medidaseleccionada = { descripcion_medida: data['descripcion_medida'], id: data['idmedida'] };
-
-                                        this.precio_uno = this.calcularPrecioValorMoneda(data['precio_uno']);
-                                        this.precio_dos = this.calcularPrecioValorMoneda(data['precio_dos']);
-                                        this.precio_tres = this.calcularPrecioValorMoneda(data['precio_tres']);
-                                        this.precio_cuatro = this.calcularPrecioValorMoneda(data['precio_cuatro']);
-                                        // this.precios.forEach((precio) => {
-                                        //     this.calcularPrecio(precio);
-                                        // });
-                                        break;
-
-                                    }
-                                case 'registrarInd':
-                                    {
-                                        this.modal = 1;
-                                        this.tituloModal = 'Registrar Industria';
-                                        this.nombre = '';
-                                        //this.descripcion = '';
-                                        this.tipoAccion = 3;
-                                        break;
-                                    }
-                            }
-                        }
-                }
-            },
-        
-            cerrarModal() {
-            this.modal = 0;
-            this.tituloModal = '';
-            //this.idcategoria = 0;
-            //this.nombre_categoria = '';
-            //validacion para quitar borde rojo en los inputs
-            this.codigoVacio = false;
-            this.nombreProductoVacio = false;
-            this.unidad_envaseVacio = false;
-            this.nombre_genericoVacio = false;
-            this.precio_costo_unidVacio = false;
-            this.precio_costo_paqVacio = false;
-            this.precio_ventaVacio = false;
-            this.costo_compraVacio = false;
-            this.stockVacio = false;
-            this.descripcionVacio = false;
-            this.fotografiaVacio = false;
-            this.lineaseleccionadaVacio = false;
-            this.marcaseleccionadaVacio = false;
-            this.industriaseleccionadaVacio = false;
-            this.proveedorseleccionadaVacio = false;
-            this.gruposeleccionadaVacio = false;
-            this.medidaseleccionadaVacio = false;
-            this.articuloseleccionadaVacio = false;
-            
-
-            //
-            this.codigo = '';
-            this.nombre_producto = '';
-            this.nombre_generico = '';
-            this.precio_venta = 0;
-            this.precio_costo_unid = 0;
-            this.precio_costo_paq = 0;
-            this.stock = 5;
-            this.descripcion = '';
-            this.fotografia = ''; //Pasando el valor limpio de la referencia
-            this.fotoMuestra = null;
-            //this.lineaseleccionada.nombre = '';
-            //this.marcaseleccionada.nombre = '';
-            this.industriaseleccionada.nombre = '';
-            this.proveedorseleccionada.nombre = '';
-            this.gruposeleccionada.nombre_grupo = '';
-            this.medidaseleccionada.descripcion_medida = '';
-            //this.lineaseleccionada.nombre = '';
-            //this.articuloseleccionada.nombre = '';
-            //this.sucursalseleccionada.nombre = '';
-            this.errorArticulo = 0;
-
-            this.idmedida = 0;
-            this.costo_compra = 0;
-
-            this.precio_uno = 0;
-            this.precio_dos = 0;
-            this.precio_tres = 0;
-            this.precio_cuatro = 0;
-            
-            // unidad_envaseVacio: false,
-            // nombre_genericoVacio: false,
-            // precio_costo_unidVacio: false,
-            // precio_costo_paqVacio: false,
-            // precio_ventaVacio: false,
-            // costo_compraVacio: false,
-            // stockVacio: false,
-            // descripcionVacio: false,
-            // fecha_vencimientoVacio: false,
-            // fotografiaVacio: false,
-            // lineaseleccionadaVacio: false,
-            // marcaseleccionadaVacio: false,
-            // industriaseleccionadaVacio: false,
-            // proveedorseleccionadaVacio: false,
-            // gruposeleccionadaVacio: false,
-            // medidaseleccionadaVacio: false,
-        },
-        
-        abrirModal2(titulo) {
-            if (titulo == "Marcas") {
-                this.listarMarca(1, '', 'nombre');
-                this.modal2 = true;
-                this.tituloModal2 = titulo;
-                this.marcaseleccionadaVacio = false;
-
-            } else if (titulo == "Industrias") {
-                this.listarIndustria(1, '', 'nombre');
-                this.modal2 = true;
-                this.tituloModal2 = titulo;
-                this.industriaseleccionadaVacio = false;
-
-            }else if (titulo == "Lineas") {
-                this.listarLinea(1, '', 'nombreLinea');
-                this.modal2 = true;
-                this.tituloModal2 = titulo;
-                this.lineaseleccionadaVacio = false;
-
-            }else if (titulo == "Almacen") {
-                this.listarAlmacen(1, '', 'nombre_almacen');
-                this.modal2 = true;
-                this.tituloModal2 = titulo;
-                this.gruposeleccionadaVacio = false;
-
-            }else if (titulo == "Articulo") {
-                this.listarArticulo(1, '', '');
-                this.modal2 = true;
-                this.tituloModal2 = titulo;
-                this.articuloseleccionadaVacio = false;
+                await me.listarInventario(page, buscar, criterio, alma, lab, presen);
+            } catch (error) {
+                console.error("Error al cambiar de página:", error);
+                Swal.fire("Error", "No se pudo cambiar de página", "error");
             }
         },
 
-        seleccionar(selected) {
-            if (this.tituloModal2 == "Marcas") {
-                this.marcaseleccionadaVacio = false;
-                if (selected.condicion == 1) {
-                    this.marcaseleccionada = selected;
-                    this.validarCampo("idmarca");
+        async listarInventario(page, buscar, criterio, idAlmacen, idLaboratorio, idPresentacion) {
+            try {
+                let url = `/reporte/inventariofisicovalorado/${this.tipoSeleccionado}?idAlmacen=${idAlmacen}&idLaboratorio=${idLaboratorio}&idPresentacion=${idPresentacion}&buscar=${buscar}&criterio=${criterio}&page=${page}`;
 
-                } else if (selected.condicion == 0) {
-                    this.advertenciaInactiva('Marcas');
-                }
-
-            } else if (this.tituloModal2 == "Industrias") {
-                this.industriaseleccionadaVacio = false;
-                if (selected.estado == 1) {
-                    this.industriaseleccionada = selected;
-                    this.validarCampo("idindustria");
-
-                } else if (selected.estado == 0) {
-                    this.advertenciaInactiva('Industrias');
-                }
-            } else if (this.tituloModal2 == "Lineas") {
-                if (selected.condicion == 1) {
-                    this.lineaseleccionada = selected;
-                    this.validarCampo("idcategoria");
-
-                } else if (selected.condicion == 0) {
-                    this.advertenciaInactiva('Lineas');
-                }
-            } else if (this.tituloModal2 == "Proveedors") {
-                // this.proveedorseleccionada.id = selected.id;
-                // this.proveedorseleccionada.nombre = selected.nombre;
-                this.proveedorseleccionada = selected;
-                this.validarCampo("idproveedor");
-
-            } else if (this.tituloModal2 == "Grupos") {
-                this.gruposeleccionada = selected;
-                this.validarCampo("idgrupo");
-
-            }else if (this.tituloModal2 == "Almacen") {
-                    this.almacenseleccionadaVacio = false;
-                    this.almacenseleccionada = selected;
-
-            }else if (this.tituloModal2 == "Articulo") {
-                if (selected.condicion == 1) {
-                    this.articuloseleccionada = selected;
-                    this.validarCampo("idArticulo");
-
-                } else if (selected.condicion == 0) {
-                    this.advertenciaInactiva('Articulo');
-                }
-                
-            } else if (this.tituloModal2 == "Cliente") {
-                this.clienteseleccionadaVacio = false;
-                this.clienteseleccionada = selected;
+                const response = await axios.get(url);
+                let respuesta = response.data;
+                this.arrayInventario = respuesta.inventarios.data;
+                this.pagination = respuesta.pagination;
+            } catch (error) {
+                Swal.fire("Error", "No se pudo cargar el inventario", "error");
             }
-            
-            // if (this.marcaseleccionada.condicion == 1 ){
-            //     console.log("selcciona", selected);
-            // }else if (this.marcaseleccionada.condicion == 0 ){
-            //     console.log("Estado invalido", this.marcaseleccionada.condicion);
-            // }
-            console.log("Seleccionado", selected);
-            this.arrayBuscador = [];
-            this.modal2 = false;
         },
-        
-        listaReporte() {
+        async selectAlmacen() {
             let me = this;
-            var url = '/reporte-inventario-fisico-valorado/'+me.tipoSeleccionado +'?&fecha_vencimiento=2026-01-01 ';
+            try {
+                const url = "/almacen/selectAlmacen";
+                const response = await axios.get(url);
 
-            // Agregar los parámetros obligatorios
-            url += '&idAlmacen=' + this.almacenseleccionada.id + '&idArticulo=' + this.articuloseleccionada.id + '&idMarca=' + this.marcaseleccionada.id + '&idLinea=' + this.lineaseleccionada.id + '&idIndustria=' + this.industriaseleccionada.id ;
+                const respuesta = response.data;
+                me.arrayAlmacenes = respuesta.almacenes;
 
-            // Agregar las fechas de inicio y fin
-            //url += '&fechaInicio=' + me.fechaInicio + '&fechaFin=' + me.fechaFin;
-
-            axios.get(url)
-                .then(function (response) {
-                    var respuesta = response.data;
-                    me.total_saldofisico = respuesta.total_saldo;
-                    me.arrayReporte = respuesta.inventarios_valorado;
-                    console.log("array reporte",me.arrayReporte);
-                })
-                .catch(function (error) {
-                    console.log('ERRORES', error);
-                });
-        },
-
-        listarPrecio() {
-            let me = this;
-            var url = '/precios';
-            axios.get(url).then(function (response) {
-                var respuesta = response.data;
-                me.precios = respuesta.precio.data;
-                console.log('PRECIOS', me.precios);
-                //me.precioCount = me.arrayBuscador.length;
-            }).catch(function (error) {
-                console.log(error);
-            });
-            },
-        
-        listarArticulo(page, buscar, criterio) {
-            let me = this;
-            var url = '/articulo?page=' + page + '&buscar=' + buscar + '&criterio=' + criterio;
-            axios.get(url).then(function (response) {
-                var respuesta = response.data;
-                me.arrayBuscador = respuesta.articulos.data;
-                me.pagination = respuesta.pagination;
-            })
-                .catch(function (error) {
-                    console.log(error);
-                });
-        },
-
-        listarMarca(page, buscar, criterio) {
-            let me = this;
-            console.log("Listano");
-            var url = '/marca?page=' + page + '&buscar=' + buscar + '&criterio=' + criterio;
-
-            axios.get(url).then(function (response) {
-
-                var respuesta = response.data;
-                console.log(respuesta);
-
-                me.arrayBuscador = respuesta.marcas.data;
-                me.pagination = respuesta.pagination;
-                console.log("Listad0");
-
-            })
-                .catch(function (error) {
-                    console.log(error);
-                });
-        },
-
-        listarIndustria(page, buscar, criterio) {
-            let me = this;
-            var url = '/industria?page=' + page + '&buscar=' + buscar + '&criterio=' + criterio;
-            axios.get(url).then(function (response) {
-                var respuesta = response.data;
-                me.arrayBuscador = respuesta.industrias.data;
-                me.pagination = respuesta.pagination;
-            })
-                .catch(function (error) {
-                    console.log(error);
-                });
-        },
-
-        listarLinea(page, buscar, criterio) {
-            let me = this;
-            var url = '/categoria?page=' + page + '&buscar=' + buscar + '&criterio=' + criterio;
-            axios.get(url).then(function (response) {
-                var respuesta = response.data;
-                me.arrayBuscador = respuesta.categorias.data;
-                me.pagination = respuesta.pagination;
-            })
-                .catch(function (error) {
-                    console.log(error);
-                });
-        },
-
-        listarAlmacen(page, buscar, criterio) {
-            let me = this;
-                var url = '/almacen/selectAlmacen';
-                axios.get(url).then(function (response) {
-                    var respuesta = response.data;
-                    me.arrayBuscador = respuesta.almacenes;
-                    console.log('ALMACEN:',me.arrayAlmacenes);
-                    console.log('Buscador:',me.arrayBuscador);
-
-                })
-                .catch(function (error) {
-                    console.log(error);
-                });
-        },
-
-        cambiarPagina(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            //Envia la petición para visualizar la data de esa página
-            me.listarArticulo(page, buscar, criterio);
-        },
-        cambiarPaginaMedida(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.paginationMedida.current_page = page;
-            me.listarMedida(page, buscar, criterio);
-            //Envia la petición para visualizar la data de esa página
-        },
-        cambiarPaginaMarca(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            me.listarMarca(page, buscar, criterio);
-            //Envia la petición para visualizar la data de esa página
-        },
-        cambiarPaginaLinea(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            me.listarLinea(page, buscar, criterio);
-            //Envia la petición para visualizar la data de esa página
-        },
-        cambiarPaginaIndustria(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            me.listarIndustria(page, buscar, criterio);
-            //Envia la petición para visualizar la data de esa página
-        },
-        cambiarPaginaProveedor(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            me.listarproveedor(page, buscar, criterio);
-            //Envia la petición para visualizar la data de esa página
-        },
-        cambiarPaginaGrupo(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            me.listargrupo(page, buscar, criterio);
-            //Envia la petición para visualizar la data de esa página
-        },
-        cambiarPaginaAlmacen(page, buscar, criterio) {
-            let me = this;
-            //Actualiza la página actual
-            me.pagination.current_page = page;
-            //Envia la petición para visualizar la data de esa página
-            me.listarAlmacen(page, buscar, criterio);
-        },
-
-        exportarPDF() {
-            if (this.tipoSeleccionado === 'item') {
-                this.exportarPDFITEM();
-            } else if (this.tipoSeleccionado === 'lote') {
-                this.exportarPDFLOTE();
+                // Selecciona el primer almacén si hay al menos uno
+                if (me.arrayAlmacenes.length > 0) {
+                    me.AlmacenSeleccionado = me.arrayAlmacenes[0].id;
+                    await me.getDatosAlmacen(); // 👈 Dispara manualmente después de asignar
+                }
+            } catch (error) {
+                console.error("Error al cargar almacenes:", error);
+                Swal.fire("Error", "No se pudieron cargar los almacenes", "error");
             }
         },
 
-        exportarExcel() {
-            if (this.tipoSeleccionado === 'item') {
-                this.exportarExcelITEM();
-            } else if (this.tipoSeleccionado === 'lote') {
-                this.exportarExcelLOTE();
+        async getDatosAlmacen() {
+            await this.actualizarInventario();
+        },
+        async actualizarInventario() {
+            try {
+                if (!this.AlmacenSeleccionado) return;
+
+                let idAlmacen = Number(this.AlmacenSeleccionado);
+                let idLaboratorio = this.LaboratorioSeleccionado || "";
+                let idPresentacion = this.PresentacionSeleccionada || "";
+
+                await this.listarInventario(
+                    1,
+                    this.buscar,
+                    "",
+                    idAlmacen,
+                    idLaboratorio,
+                    idPresentacion
+                );
+            } catch (error) {
+                console.error("Error al actualizar inventario:", error);
+                Swal.fire("Error", "No se pudo cargar el inventario", "error");
             }
         },
-
-        exportarPDFITEM() {
-            const pdf = new jsPDF('landscape');
-            
-            const titulo = 'INVENTARIO FISICO VALORADO';
-            const fechaInicio = `Fecha Inicio: ${this.fechaInicio}`;
-            const articulo = `Articulo: ${this.articuloseleccionada.nombre}`;
-            const almacen = `Almacen: ${this.almacenseleccionada.nombre_almacen}`;
-            const linea = `Linea: ${this.lineaseleccionada.nombre}`;
-            const marca = `Marca: ${this.marcaseleccionada.nombre}`;
-            const industria = `Industria: ${this.industriaseleccionada.nombre}`;
-
-
-            pdf.setFont('helvetica');
-            pdf.setFontSize(16); // Tamaño de letra más grande para el título
-            pdf.text(titulo, 100, 10);
-
-            pdf.setFontSize(10); // Tamaño de letra más pequeño para los elementos restantes
-            pdf.text(fechaInicio, 15, 20);
-            pdf.text(almacen, 125, 20);
-            pdf.text(articulo, 240, 20);
-            pdf.text(industria, 15, 30);
-            pdf.text(linea, 125, 30);
-            pdf.text(marca, 240, 30);
-
-            const tableYPosition = 40;
-
-            const columns = ['Almacen', 'Marca', 'Linea','Industria','Producto','Unidad x Paquete','Stock','Valor'];
-            const rows = this.arrayReporte.map(item => [
-                    item.nombre_almacen,
-                    item.nombre_marca,
-                    item.nombre_categoria,
-                    item.nombre_industria,
-                    item.nombre_producto,
-                    item.unidad_envase,
-                    item.saldo_stock_total,
-                    item.costo_total,
-                ]);
-
-
-            pdf.autoTable({ head: [columns], body: rows, startY: tableYPosition });
-
-            pdf.save('resumen_movimientos_fisicos.pdf');
+        async cambiarTipo() {
+            try {
+                this.isLoading = true; // Activar loading
+                await this.getDatosAlmacen();
+            } catch (error) {
+                console.error("Error al cambiar tipo de vista:", error);
+                Swal.fire("Error", "No se pudo cambiar el tipo de vista", "error");
+            } finally {
+                setTimeout(() => {
+                    this.isLoading = false; // Desactivar loading
+                }, 100);
+            }
         },
-
-        exportarPDFLOTE() {
-            const pdf = new jsPDF('landscape');
-            
-            const titulo = 'INVENTARIO FISICO VALORADO';
-            const fechaInicio = `Fecha Inicio: ${this.fechaInicio}`;
-            const articulo = `Articulo: ${this.articuloseleccionada.nombre}`;
-            const almacen = `Almacen: ${this.almacenseleccionada.nombre_almacen}`;
-            const linea = `Linea: ${this.lineaseleccionada.nombre}`;
-            const marca = `Marca: ${this.marcaseleccionada.nombre}`;
-            const industria = `Industria: ${this.industriaseleccionada.nombre}`;
-
-
-            pdf.setFont('helvetica');
-            pdf.setFontSize(16); // Tamaño de letra más grande para el título
-            pdf.text(titulo, 100, 10);
-
-            pdf.setFontSize(10); // Tamaño de letra más pequeño para los elementos restantes
-            pdf.text(fechaInicio, 15, 20);
-            pdf.text(almacen, 125, 20);
-            pdf.text(articulo, 240, 20);
-            pdf.text(industria, 15, 30);
-            pdf.text(linea, 125, 30);
-            pdf.text(marca, 240, 30);
-
-            const tableYPosition = 40;
-
-            const columns = ['Almacen', 'Fecha Ingreso', 'Marca', 'Linea','Industria','Producto','Unidad x Paquete','Costo x Unidad', 'Fecha de Vencimiento', 'Stock','Valor'];
-            const rows = this.arrayReporte.map(item => [
-                    item.nombre_almacen,
-                    item.fecha_ingreso,
-                    item.nombre_marca,
-                    item.nombre_categoria,
-                    item.nombre_industria,
-                    item.nombre_producto,
-                    item.unidad_envase,
-                    item.precio_costo_unid,
-                    item.fecha_vencimiento,
-                    item.saldo_stock,
-                    item.costo_total,
-                ]);
-
-            pdf.autoTable({ head: [columns], body: rows, startY: tableYPosition });
-
-            pdf.save('resumen_movimientos_fisicos.pdf');
-        },
-
-        exportarExcelITEM() {
-            const workbook = XLSX.utils.book_new();
-            const worksheet = XLSX.utils.aoa_to_sheet([]);
-            const startRow = 5;
-            
-            // Merge de celdas para el título
-            worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
-            // Título del reporte
-            worksheet['A1'] = { t: 's', v: 'INVENTARIO FISICO VALORADO', s: { 
-                font: { sz: 16, bold: true, color: { rgb: 'FFFFFF' } },
-                alignment: { horizontal: 'center', vertical: 'center' },
-                fill: { fgColor: { rgb: '3669a8' } } } };
-
-            // Estilo para la fecha
-            const fechaStyle = { font: { bold: true, color: { rgb: '000000' } } };
-            // Fechas de inicio y fin
-            worksheet['A2'] = { t: 's', v: `Fecha inicio: ${this.fechaInicio}`, s: fechaStyle };
-            worksheet['C2'] = { t: 's', v: `Articulo: ${this.articuloseleccionada.nombre}`, s: fechaStyle };
-            worksheet['F2'] = { t: 's', v: `Almacen: ${this.almacenseleccionada.nombre_almacen}`, s: fechaStyle };
-            worksheet['A3'] = { t: 's', v: `Industria: ${this.industriaseleccionada.nombre}`, s: fechaStyle };
-            worksheet['C3'] = { t: 's', v: `Marca: ${this.marcaseleccionada.nombre}`, s: fechaStyle };
-            worksheet['F3'] = { t: 's', v: `Linea: ${this.lineaseleccionada.nombre}`, s: fechaStyle };
-
-
-            // Estilo para los encabezados
-            const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '3669a8' } } };
-            // Cabeceras de las columnas
-            const headers = ['Almacen', 'Marca', 'Linea','Industria','Producto','Unidad x Paquete','Stock','Valor'];
-
-            // Añadir las cabeceras a la hoja de cálculo
-            headers.forEach((header, index) => {
-                worksheet[XLSX.utils.encode_cell({ r: 3, c: index })] = { t: 's', v: header, s: headerStyle };
-            });
-
-            // Añadir los datos al kardex
-            Object.values(this.arrayReporte).forEach((item, rowIndex) => {
-                const rowData = [
-                item.nombre_almacen,
-                    item.nombre_marca,
-                    item.nombre_categoria,
-                    item.nombre_industria,
-                    item.nombre_producto,
-                    item.unidad_envase,
-                    item.saldo_stock_total,
-                    item.costo_total,
-                ];
-
-                // Añadir la fila al kardex
-                XLSX.utils.sheet_add_aoa(worksheet, [rowData], { origin: `A${startRow + rowIndex}` });
-            });
-
-
-            // Establecer el ancho de las columnas
-            const columnWidths = [
-                { wch: 29.33 },
-                { wch: 26.33 },
-                { wch: 29.56 },
-                { wch: 21.11 },
-                { wch: 38.78 },
-                { wch: 19.67 },
-                { wch: 10.22 },
-                { wch: 11.78 },
-            ];
-            worksheet['!cols'] = columnWidths;
-
-            // Añadir la hoja de cálculo al libro
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'HOJA 1');
-
-            // Descargar el archivo
-            XLSX.writeFile(workbook, 'inventario_fisico_valorado.xlsx');
-        },
-
-        exportarExcelLOTE() {
-            const workbook = XLSX.utils.book_new();
-            const worksheet = XLSX.utils.aoa_to_sheet([]);
-            const startRow = 5;
-            
-            // Merge de celdas para el título
-            worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
-            // Título del reporte
-            worksheet['A1'] = { t: 's', v: 'INVENTARIO FISICO VALORADO', s: { 
-                font: { sz: 16, bold: true, color: { rgb: 'FFFFFF' } },
-                alignment: { horizontal: 'center', vertical: 'center' },
-                fill: { fgColor: { rgb: '3669a8' } } } };
-
-            // Estilo para la fecha
-            const fechaStyle = { font: { bold: true, color: { rgb: '000000' } } };
-            // Fechas de inicio y fin
-            worksheet['A2'] = { t: 's', v: `Fecha inicio: ${this.fechaInicio}`, s: fechaStyle };
-            worksheet['C2'] = { t: 's', v: `Articulo: ${this.articuloseleccionada.nombre}`, s: fechaStyle };
-            worksheet['F2'] = { t: 's', v: `Almacen: ${this.almacenseleccionada.nombre_almacen}`, s: fechaStyle };
-            worksheet['A3'] = { t: 's', v: `Industria: ${this.industriaseleccionada.nombre}`, s: fechaStyle };
-            worksheet['C3'] = { t: 's', v: `Marca: ${this.marcaseleccionada.nombre}`, s: fechaStyle };
-            worksheet['F3'] = { t: 's', v: `Linea: ${this.lineaseleccionada.nombre}`, s: fechaStyle };
-
-
-            // Estilo para los encabezados
-            const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '3669a8' } } };
-            // Cabeceras de las columnas
-            const headers = ['Almacen', 'Fecha Ingreso', 'Marca', 'Linea','Industria','Producto','Unidad x Paquete','Costo x Unidad', 'Fecha de Vencimiento', 'Stock','Valor'];
-
-            // Añadir las cabeceras a la hoja de cálculo
-            headers.forEach((header, index) => {
-                worksheet[XLSX.utils.encode_cell({ r: 3, c: index })] = { t: 's', v: header, s: headerStyle };
-            });
-
-            // Añadir los datos al kardex
-            Object.values(this.arrayReporte).forEach((item, rowIndex) => {
-                const rowData = [
-                    item.nombre_almacen,
-                    item.fecha_ingreso,
-                    item.nombre_marca,
-                    item.nombre_categoria,
-                    item.nombre_industria,
-                    item.nombre_producto,
-                    item.unidad_envase,
-                    item.precio_costo_unid,
-                    item.fecha_vencimiento,
-                    item.saldo_stock,
-                    item.costo_total,
-                ];
-
-                // Añadir la fila al kardex
-                XLSX.utils.sheet_add_aoa(worksheet, [rowData], { origin: `A${startRow + rowIndex}` });
-            });
-
-
-            // Establecer el ancho de las columnas
-            const columnWidths = [
-                { wch: 21.11 },
-                { wch: 12.56 },
-                { wch: 17.33 },
-                { wch: 21.56 },
-                { wch: 17.33 },
-                { wch: 37.56 },
-                { wch: 16.67 },
-                { wch: 13.14 },
-                { wch: 23.33 },
-                { wch: 8.78 },
-                { wch: 10.00 },
-            ];
-            worksheet['!cols'] = columnWidths;
-
-            // Añadir la hoja de cálculo al libro
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'HOJA 1');
-
-            // Descargar el archivo
-            XLSX.writeFile(workbook, 'inventario_fisico_valorado.xlsx');
-        },
-
-
-        },
-        mounted() {
-            //this.listarInventario(1,this.buscar,this.criterio);
-            this.getDatosAlmacen();
-            //this.listarInventario(1,this.buscar,this.criterio);
-            this.listarInventario();
-            this.selectAlmacen();
-            this.listarArticulo(1, this.buscar, this.criterio);
-
-
-        },
-    }
+        //--------------------------------------
+    },
+    async mounted() {
+        this.handleResize();
+        window.addEventListener("resize", this.handleResize);
+        try {
+            await Promise.all([this.obtenerPresentaciones(), this.selectAlmacen()]);
+        } catch (error) {
+            console.error("Error en la carga inicial:", error);
+            Swal.fire("Error", "Error al cargar los datos iniciales", "error");
+        }
+    },
+};
 </script>
-<style>    
-    .modal-content{
-        width: 100% !important;
-        position: absolute !important;
+<style scoped>
+/* Arreglar icono de lupa - Centrado perfecto */
+.search-bar .p-input-icon-left {
+    position: relative;
+    width: 100%;
+}
+
+.search-bar .p-input-icon-left i {
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    margin: auto 0;
+    height: 1rem;
+    z-index: 2;
+    color: #6c757d;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.search-bar .p-input-icon-left .p-inputtext {
+    padding-left: 2.5rem !important;
+    width: 100%;
+}
+
+/* Panel Content Spacing */
+>>>.p-panel .p-panel-content {
+    padding: 1rem;
+}
+
+>>>.p-panel .p-panel-header {
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+>>>.p-panel .p-panel-header .p-panel-title {
+    font-weight: 600;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.panel-title-section {
+    display: flex;
+    align-items: center;
+}
+
+.panel-title {
+    margin: 0;
+    padding-left: 5px;
+}
+
+.panel-actions {
+    display: flex;
+    align-items: center;
+}
+
+/* Filters Container */
+.filters-container {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+
+.filter-row {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-end;
+}
+
+.filter-group-almacen {
+    flex: 2;
+    min-width: 200px;
+}
+
+.filter-group-laboratorio {
+    flex: 2;
+    min-width: 200px;
+}
+
+.filter-group-presentacion {
+    flex: 2;
+    min-width: 200px;
+}
+
+.filter-group-modo {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-label {
+    display: block;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-group-almacen .filter-label,
+.filter-group-laboratorio .filter-label,
+.filter-group-presentacion .filter-label,
+.filter-group-modo .filter-label {
+    margin-bottom: 0.4rem;
+}
+
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.p-field-radiobutton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.p-field-radiobutton label {
+    font-size: 0.875rem;
+    color: #495057;
+    cursor: pointer;
+}
+
+/* Toolbar Responsive - Mantener en una línea */
+.toolbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.search-bar {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0;
+    margin-right: 1rem;
+}
+
+/* DataTable Responsive */
+>>>.p-datatable {
+    font-size: 0.9rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+    padding: 0.5rem;
+    word-break: break-word;
+    text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+    >>>.p-datatable {
+        font-size: 0.85rem;
     }
-    .mostrar{
-        display: list-item !important;
-        opacity: 1 !important;
-        position: absolute !important;
-        background-color: #3c29297a !important;
+
+    .filter-row {
+        flex-direction: row;
+        gap: 1rem;
+        align-items: flex-end;
     }
-    .div-error{
-        display: flex;
+
+    .filter-group-almacen,
+    .filter-group-laboratorio,
+    .filter-group-presentacion,
+    .filter-group-modo {
+        min-width: auto;
+        flex: 1;
+    }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .toolbar .p-button .p-button-label {
+        display: none;
+    }
+
+    .toolbar-container {
+        gap: 0.5rem;
+    }
+
+    .filters-container {
+        padding: 0.75rem;
+    }
+
+    .filter-row {
+        flex-direction: row;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .filter-group-almacen {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .filter-group-laboratorio {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .filter-group-presentacion {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .filter-group-modo {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .radio-group {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .p-field-radiobutton {
+        margin: 0;
+    }
+
+    .p-field-radiobutton label {
+        font-size: 0.8rem;
+    }
+
+    >>>.p-datatable {
+        font-size: 0.8rem;
+    }
+
+    >>>.p-datatable .p-datatable-tbody>tr>td {
+        padding: 0.4rem 0.3rem;
+    }
+
+    >>>.p-datatable .p-datatable-thead>tr>th {
+        padding: 0.5rem 0.3rem;
+        font-size: 0.75rem;
+    }
+
+    >>>.p-button-sm {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.5rem !important;
+        min-width: auto !important;
+    }
+
+    .toolbar>>>.p-button-sm {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.5rem !important;
+    }
+
+    .search-bar .p-inputtext-sm {
+        padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    >>>.p-dropdown {
+        font-size: 0.9rem;
+    }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 480px) {
+    .toolbar .p-button .p-button-label {
+        display: none;
+    }
+
+    .toolbar-container {
+        gap: 0.4rem;
+        flex-wrap: nowrap;
+    }
+
+    .toolbar {
+        flex-shrink: 0;
+        min-width: auto;
+    }
+
+    .search-bar {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .filters-container {
+        padding: 0.5rem;
+    }
+
+    .filter-row {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    .filter-group-almacen {
+        flex: none;
+        min-width: auto;
+    }
+
+    .filter-group-laboratorio {
+        flex: none;
+        min-width: auto;
+    }
+
+    .filter-group-presentacion {
+        flex: none;
+        min-width: auto;
+    }
+
+    .filter-group-modo {
+        flex: none;
+        min-width: auto;
+    }
+
+    .filter-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .radio-group {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .p-field-radiobutton label {
+        font-size: 0.75rem;
+    }
+
+    .toolbar>>>.p-button-sm {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.5rem !important;
+    }
+
+    .search-bar .p-inputtext-sm {
+        padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    >>>.p-datatable {
+        font-size: 0.75rem;
+    }
+
+    >>>.p-datatable .p-datatable-tbody>tr>td {
+        padding: 0.3rem 0.2rem;
+    }
+
+    >>>.p-datatable .p-datatable-thead>tr>th {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.7rem;
+    }
+
+    >>>.p-dropdown {
+        font-size: 0.85rem;
+    }
+
+    .p-field-radiobutton label {
+        font-size: 0.8rem;
+    }
+}
+
+/* Paginator Responsive */
+@media (max-width: 768px) {
+    >>>.p-paginator {
+        flex-wrap: wrap !important;
         justify-content: center;
+        font-size: 0.85rem;
+        padding: 0.5rem;
     }
-    .text-error{
-        color: red !important;
-        font-weight: bold;
+
+    >>>.p-paginator .p-paginator-page,
+    >>>.p-paginator .p-paginator-next,
+    >>>.p-paginator .p-paginator-prev,
+    >>>.p-paginator .p-paginator-first,
+    >>>.p-paginator .p-paginator-last {
+        min-width: 32px !important;
+        height: 32px !important;
+        font-size: 0.85rem !important;
+        padding: 0 6px !important;
+        margin: 2px !important;
     }
+}
+
+@media (max-width: 480px) {
+    >>>.p-paginator {
+        font-size: 0.8rem;
+        padding: 0.4rem;
+    }
+
+    >>>.p-paginator .p-paginator-page,
+    >>>.p-paginator .p-paginator-next,
+    >>>.p-paginator .p-paginator-prev,
+    >>>.p-paginator .p-paginator-first,
+    >>>.p-paginator .p-paginator-last {
+        min-width: 28px !important;
+        height: 28px !important;
+        font-size: 0.8rem !important;
+        padding: 0 4px !important;
+        margin: 1px !important;
+    }
+}
+
+/* Estilos del loader */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+    padding: 30px;
+    border-radius: 15px;
+}
+
+.spinner {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    border-top: 4px solid rgba(255, 255, 255, 0.9);
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 20px;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 3px;
+    font-size: 14px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
 </style>

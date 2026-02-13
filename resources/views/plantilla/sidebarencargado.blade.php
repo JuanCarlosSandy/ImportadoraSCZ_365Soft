@@ -136,6 +136,12 @@
                     <li @click="menu=58" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Kardex Fisico de Inventario</a>
                     </li>
+                    <li @click="menu=63" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-archive" style="font-size: 19px;"></i> Inventario Fisico Valorado</a>
+                    </li>
+                    <li @click="menu=64" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-cubes" style="font-size: 19px;"></i> Inventario Fisico</a>
+                    </li>
                 </ul>
             </li>
 
