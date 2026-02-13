@@ -486,286 +486,165 @@
           </div>
         </template>
         <div class="p-fluid">
-          <div v-if="step === 2" class="step-content p-fluid">
-            <div class="p-grid p-formgrid align-items-start">
-              <div :class="tipoAccion2 === 2
-                ? 'p-col-12 d-flex flex-column justify-content-start'
-                : 'p-col-12 p-md-6 d-flex flex-column justify-content-start'">
 
+
+<div v-if="step === 2" class="step-content p-fluid">
+            <div class="p-grid p-formgrid align-items-start">
+              
+              <div :class="tipoAccion2 === 2 ? 'p-col-12' : 'p-col-12 p-md-6 d-flex flex-column justify-content-start'">
+                
                 <h5 class="mb-3" style="font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 1rem;">
                   DATOS DEL CLIENTE
                 </h5>
 
                 <div style="width: 100%; padding-top: 0.5rem;">
-
-                  <!-- ========================================================= -->
-                  <!-- 🟦 MODO EDICIÓN: mostrar todo en una sola fila -->
-                  <!-- ========================================================= -->
-                  <div v-if="tipoAccion2 === 2" class="p-grid">
-
-                    <!-- DOCUMENTO (buscador funcional) -->
-                    <div class="p-col-12 p-md-4" style="position: relative;">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <label class="label-input">Documento *</label>
-
-                        <!-- alternar CI / NIT -->
-                        <button type="button" class="btn btn-sm btn-outline-primary" @click="alternarTipoDocumento"
-                          style="font-size: 0.8rem; padding: 2px 8px; border-radius: 6px;">
-                          {{ tipoDocumentoTexto }}
-                        </button>
-                      </div>
-
-                      <div class="input-con-desplegable">
-                        <div class="p-inputgroup">
-                          <InputText ref="inputDocumentoCliente" id="documento" v-model="documento" class="input-full"
-                            @input="buscarClientePorDocumento" @keydown.down="moverSeleccionCliente('abajo')"
-                            @keydown.up="moverSeleccionCliente('arriba')"
-                            @keydown.enter="seleccionarClienteConEnter($event)"
-                            placeholder="Buscar cliente por documento o nombre" autocomplete="off" />
-                        </div>
-
-                        <!-- 🔽 Lista de clientes (igual que tu versión original) -->
-                        <ul v-if="mostrarDesplegableCliente" class="desplegable-simple" style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc;
-                 width: 100%; max-height: 200px; overflow-y: auto; margin-top: 2px; 
-                 border-radius: 4px; padding: 0;">
-                          <li v-for="(cliente, index) in resultadosClientes" :key="cliente.id"
-                            @click="seleccionarCliente(cliente)"
-                            :class="{ seleccionado: index === indiceSeleccionadoCliente }"
-                            style="padding: 8px; cursor: pointer; list-style: none;">
-                            {{ cliente.nombre }} - {{ cliente.num_documento }} - {{ cliente.direccion }}
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <!-- RAZÓN SOCIAL -->
-                    <div class="p-col-12 p-md-4">
-                      <label class="label-input">Razón Social *</label>
-                      <InputText v-model="nombreCliente" :disabled="!nombreClienteEditable" class="input-full" />
-                    </div>
-
-                    <!-- TELÉFONO -->
-                    <div class="p-col-12 p-md-4">
-                      <label class="label-input">Teléfono</label>
-                      <InputText v-model="telefonoCliente" :disabled="!telefonoClienteEditable" class="input-full" />
-                    </div>
-                    <!-- DIRECCIÓN -->
-                    <div class="p-mb-3">
+                  
+                  <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
                       <label class="label-input">
-                        Ubicación <span class="text-required">*</span>
+                        Documento del Cliente <span class="text-required">*</span>
                       </label>
-
-                      <div class="input-con-desplegable">
-                        <InputText v-model="direccionCliente" :disabled="!direccionClienteEditable" class="input-full"
-                          :class="{ 'p-invalid': errores.direccion }" @input="buscarDireccion"
-                          @keydown.down="moverSeleccionDireccion('abajo')"
-                          @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter" />
-
-                        <ul v-if="mostrarDesplegableDireccion" class="desplegable-simple">
-                          <li v-for="(dir, index) in direccionesFiltradas" :key="dir" @click="seleccionarDireccion(dir)"
-                            :class="{ seleccionado: index === indiceDireccionSeleccionada }">
-                            {{ dir }}
-                          </li>
-                        </ul>
+                      <button type="button" class="btn btn-sm btn-outline-primary" @click="alternarTipoDocumento"
+                        style="font-size: 0.8rem; padding: 2px 8px; border-radius: 6px;">
+                        {{ tipoDocumentoTexto }}
+                      </button>
+                    </div>
+                    <div class="input-con-desplegable">
+                      <div class="p-inputgroup">
+                        <InputText ref="inputDocumentoCliente" id="documento" v-model="documento" class="input-full"
+                          @input="buscarClientePorDocumento" @keydown.down="moverSeleccionCliente('abajo')"
+                          @keydown.up="moverSeleccionCliente('arriba')"
+                          @keydown.enter="seleccionarClienteConEnter($event)"
+                          placeholder="Buscar cliente por documento o nombre" autocomplete="off"
+                          style="margin-top: 2px" />
                       </div>
 
-                      <small v-if="errores.direccion" class="text-error">
-                        {{ errores.direccion }}
-                      </small>
+                      <ul v-if="mostrarDesplegableCliente" class="desplegable-simple"
+                        style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc; width: 100%; max-height: 200px; overflow-y: auto; margin-top: 2px; border-radius: 4px; padding: 0;">
+                        <li v-for="(cliente, index) in resultadosClientes" :key="cliente.id"
+                          @click="seleccionarCliente(cliente)" :class="{ seleccionado: index === indiceSeleccionadoCliente }"
+                          style="padding: 8px; cursor: pointer; list-style: none;">
+                          {{ cliente.nombre }} - {{ cliente.num_documento }}
+                        </li>
+                      </ul>
                     </div>
-
-
                   </div>
-                  <div v-if="tipoAccion2 === 2" class="p-col-3"
-                    style="margin-top: 1rem; display: flex; justify-content: center; align-items: center;">
 
+                  <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
+                    <label class="label-input">
+                      Razón Social <span class="text-required">*</span>
+                    </label>
+                    <span class="p-float-label">
+                      <InputText ref="inputNombreCliente" id="nombreCliente" v-model="nombreCliente" class="input-full"
+                        :disabled="!nombreClienteEditable" @input="mensajeRazonSocial = false" autocomplete="off"
+                        style="margin-top: 2px" />
+                    </span>
+                    <span v-if="nombreClienteEditable && (!nombreCliente || nombreCliente.trim() === '')"
+                      style="color: #FFA500; font-size: 0.75rem; position: absolute; top: 70%; left: 12px; transform: translateY(-50%); pointer-events: none;">
+                      Ingrese la razón social del cliente
+                    </span>
+                  </div>
+
+                  <div class="p-mb-3" style="margin-bottom: 1.5rem;">
+                    <label class="optional-field">
+                      <i class="pi pi-phone optional-icon"></i>
+                      Teléfono <span class="optional-tag">Opcional</span>
+                    </label>
+                    <span class="p-float-label">
+                      <InputText id="telefonoCliente" v-model="telefonoCliente" :disabled="!telefonoClienteEditable"
+                        autocomplete="off" type="tel" maxlength="15" class="input-full" style="margin-top: 2px" />
+                    </span>
+                  </div>
+
+                  <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
+                    <label class="optional-field">
+                      <i class="pi pi-map-marker optional-icon"></i>
+                      Ubicación <span class="optional-tag">Opcional</span>
+                    </label>
+                    
+                    <div class="input-con-desplegable">
+                      <InputText v-model="direccionCliente" :disabled="!direccionClienteEditable" class="input-full"
+                        :class="{ 'p-invalid': errores.direccion }" placeholder="Ej: Av. Heroinas esq. Ayacucho"
+                        @input="buscarDireccion" @keydown.down="moverSeleccionDireccion('abajo')"
+                        @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter" 
+                        style="margin-top: 2px" />
+
+                      <ul v-if="mostrarDesplegableDireccion" class="desplegable-simple"
+                        style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc; width: 100%; max-height: 200px; overflow-y: auto; margin-top: 2px; border-radius: 4px; padding: 0;">
+                        <li v-for="(dir, index) in direccionesFiltradas" :key="dir" @click="seleccionarDireccion(dir)"
+                          :class="{ seleccionado: index === indiceDireccionSeleccionada }"
+                          style="padding: 8px; cursor: pointer; list-style: none;">
+                          {{ dir }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div v-if="tipoAccion2 === 2" class="d-flex justify-content-center mt-3">
                     <Button label="Actualizar Venta" icon="pi pi-check" class="p-button-success p-button-sm"
                       @click="actualizarVenta" />
-                  </div>
-
-
-                  <!-- ========================================================= -->
-                  <!-- 🟩 MODO REGISTRO NORMAL: mantener el diseño original -->
-                  <!-- ========================================================= -->
-                  <div v-else>
-
-                    <!-- DOCUMENTO -->
-                    <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <label for="nombre" class="label-input">
-                          Documento del Cliente <span class="text-required">*</span>
-                        </label>
-
-                        <button type="button" class="btn btn-sm btn-outline-primary" @click="alternarTipoDocumento"
-                          style="font-size: 0.8rem; padding: 2px 8px; border-radius: 6px;">
-                          {{ tipoDocumentoTexto }}
-                        </button>
-                      </div>
-
-                      <div class="input-con-desplegable">
-                        <div class="p-inputgroup">
-                          <InputText ref="inputDocumentoCliente" id="documento" v-model="documento" class="input-full"
-                            @input="buscarClientePorDocumento" @keydown.down="moverSeleccionCliente('abajo')"
-                            @keydown.up="moverSeleccionCliente('arriba')"
-                            @keydown.enter="seleccionarClienteConEnter($event)"
-                            placeholder="Buscar cliente por documento o nombre" autocomplete="off"
-                            style="margin-top: 2px" />
-                        </div>
-
-                        <!-- Lista de clientes -->
-                        <ul v-if="mostrarDesplegableCliente" class="desplegable-simple" style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc;
-              width: 100%; max-height: 200px; overflow-y: auto; margin-top: 2px; border-radius: 4px; padding: 0;">
-                          <li v-for="(cliente, index) in resultadosClientes" :key="cliente.id"
-                            @click="seleccionarCliente(cliente)"
-                            :class="{ seleccionado: index === indiceSeleccionadoCliente }"
-                            style="padding: 8px; cursor: pointer; list-style: none;">
-                            {{ cliente.nombre }} - {{ cliente.num_documento }} - {{ cliente.direccion }}
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <!-- Razón Social -->
-                    <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
-                      <label class="label-input">
-                        Razón Social <span class="text-required">*</span>
-                      </label>
-
-                      <span class="p-float-label">
-                        <InputText ref="inputNombreCliente" id="nombreCliente" v-model="nombreCliente"
-                          class="input-full" :disabled="!nombreClienteEditable" @input="mensajeRazonSocial = false"
-                          autocomplete="off" style="margin-top: 2px" />
-                      </span>
-                    </div>
-
-                    <!-- Teléfono -->
-                    <div class="p-mb-3" style="margin-bottom: 1.5rem;">
-                      <label class="optional-field">
-                        <i class="pi pi-phone optional-icon"></i>
-                        Teléfono <span class="optional-tag">Opcional</span>
-                      </label>
-                      <span class="p-float-label">
-                        <InputText id="telefonoCliente" v-model="telefonoCliente" :disabled="!telefonoClienteEditable"
-                          class="input-full" style="margin-top: 2px" />
-                      </span>
-                    </div>
-                    <!-- DIRECCIÓN -->
-                    <div class="p-mb-3">
-                      <label class="label-input">
-                        <i class="pi pi-map-marker optional-icon"></i> Ubicación <span class="optional-tag">
-                          Opcional</span>
-                      </label>
-
-                      <div class="input-con-desplegable p-input-icon-left" style="width: 100%;">
-
-
-
-                        <InputText v-model="direccionCliente" :disabled="!direccionClienteEditable" class="input-full"
-                          :class="{ 'p-invalid': errores.direccion }" placeholder="Ej: Av. Heroinas esq. Ayacucho"
-                          @input="buscarDireccion" @keydown.down="moverSeleccionDireccion('abajo')"
-                          @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter" />
-
-                        <ul v-if="mostrarDesplegableDireccion" class="desplegable-simple">
-                          <li v-for="(dir, index) in direccionesFiltradas" :key="dir" @click="seleccionarDireccion(dir)"
-                            :class="{ seleccionado: index === indiceDireccionSeleccionada }">
-                            {{ dir }}
-                          </li>
-                        </ul>
-                      </div>
-
-                      <small v-if="errores.direccion" class="text-error">
-                        {{ errores.direccion }}
-                      </small>
-                    </div>
-
-
-                  </div>
-
-                  <!-- ========================================================= -->
-                  <!-- 🔸 Bonificación → siempre debajo -->
-                  <!-- ========================================================= -->
-                  <div v-if="habilitacionpromocion && permitir_bonificacion == 1" class="mensaje-bonificacion-activa"
-                    style="margin-top: 0.5rem; padding: 8px 12px; border-radius: 6px; font-weight: 600; display: inline-block;">
-                    Cliente habilitado para bonificación ✅
                   </div>
 
                 </div>
               </div>
 
               <div v-if="tipoAccion2 !== 2" class="p-col-12 p-md-6 d-flex flex-column justify-content-start">
-                <div class="d-flex justify-content-center mb-3">
-                  <div class="btn-selector">
-                    <!--<button class="btn-selector-btn" :class="{ active: tipoVenta === 'contado' }"
-                      @click="tipoVenta = 'contado'">
-                      <i class="fa fa-money-bill mr-2"></i>
-                      Contado
-                    </button>-->
+                
 
-                    <!--<button class="btn-selector-btn" :class="{ active: tipoVenta === 'credito' }"
-                      @click="tipoVenta = 'credito'">
-                      <i class="fa fa-file-invoice mr-2"></i>
-                      Crédito
-                    </button>-->
-                  </div>
-                </div>
+
                 <div v-if="tipoVenta === 'contado'">
-                  <div class="d-flex justify-content-center mb-3">
-                    <div class="btn-selector">
-                      <button class="btn-selector-btn" :class="{ active: opcionPago === 'efectivo' }"
-                        @click="opcionPago = 'efectivo'">
-                        <i class="fa fa-money mr-2"></i>
-                        Efectivo
-                      </button>
-
-                      <button class="btn-selector-btn" :class="{ active: opcionPago === 'qr' }"
-                        @click="opcionPago = 'qr'">
-                        <i class="fa fa-qrcode mr-2"></i>
-                        QR
-                      </button>
+                  <div class="d-flex justify-content-center mb-1">
+                    <div class="form-group">
+                      <div class="btn-group">
+                        <button class="btn btn-primary" @click="opcionPago = 'efectivo'">
+                          <i class="fa fa-money mr-2" aria-hidden="true"></i>
+                          Efectivo
+                        </button>
+                        <button class="btn btn-primary" @click="opcionPago = 'qr'">
+                          <i class="fa fa-qrcode mr-2" aria-hidden="true"></i>
+                          QR
+                        </button>
+                      </div>
                     </div>
                   </div>
+
                   <div v-if="opcionPago === 'efectivo'" class="mt-2">
-                    <div class="card mb-2" style="font-size: 0.8rem;">
-                      <div class="card-body d-flex flex-column">
-
-                        <!-- 🔹 Descuento al Total -->
-                        <div v-if="permitir_bonificacion == 1 || permitir_descuento == 1" class="form-group mb-3">
-                          <label for="descuentoTotal" class="label-input">
-                            <i class="fa fa-percent mr-1"></i> Descuento al Total
-                          </label>
-
-                          <div class="input-group input-group-sm custom-input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text addon-small">%</span>
-                            </div>
-
-                            <input type="number" id="descuentoTotal" class="form-control input-uniforme"
-                              v-model="descuentoAdicional" :disabled="permitir_descuento != 1 && !habilitacionpromocion"
-                              placeholder="Ingrese el % de descuento" min="0" max="100" />
-                          </div>
-                        </div>
-
-                        <!-- 🔹 Monto Recibido -->
+                    <div class="card mb-2" style="font-size: 0.875rem;">
+                      <div class="card-body">
+                        
                         <div class="form-group mb-3">
-                          <label for="montoEfectivo" class="label-input">
-                            <i class="fa fa-money mr-1"></i> Monto Recibido
+                          <label for="montoEfectivo" class="font-weight-bold">
+                            <i class="fa fa-money mr-2"></i> Monto Recibido:
                           </label>
-                          <div class="input-group input-group-sm custom-input-group">
+                          <div class="input-group">
                             <div class="input-group-prepend">
-                              <span class="input-group-text addon-small">{{ monedaVenta[1] }}</span>
+                              <span class="input-group-text">{{ monedaVenta[1] }}</span>
                             </div>
-                            <input type="number" id="montoEfectivo" class="form-control input-uniforme"
-                              v-model="recibido" placeholder="Ingrese el monto recibido" />
+                            <input type="number" class="form-control" id="montoEfectivo" v-model="recibido"
+                              placeholder="Ingrese el monto recibido" />
                           </div>
                         </div>
 
-                        <!-- 🔹 Cambio a Entregar -->
-                        <div class="form-group mb-0">
-                          <label for="cambioRecibir" class="label-input">
-                            <i class="fa fa-exchange mr-1"></i> Cambio a Entregar
+                        <div class="form-group mb-3">
+                          <label for="descuentoTotal" class="font-weight-bold">
+                            <i class="fa fa-percent mr-2"></i> Descuento al Total:
                           </label>
-                          <input type="text" id="cambioRecibir" class="form-control input-cambio bg-light"
-                            :value="recibido - calcularTotal * parseFloat(monedaVenta[0])" readonly />
+                          <div class="input-group">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text">{{ monedaVenta[1] }}</span>
+                            </div>
+                            <input type="number" class="form-control" id="descuentoTotal" v-model="descuentoAdicional"
+                              placeholder="Ingrese el descuento" :disabled="permitir_descuento != 1 && !habilitacionpromocion"/>
+                          </div>
+                        </div>
+
+                        <div class="form-group">
+                          <label for="cambioRecibir" class="font-weight-bold">
+                            <i class="fa fa-exchange mr-2"></i> Cambio a Entregar:
+                          </label>
+                          <input type="text" class="form-control bg-light" id="cambioRecibir" :value="(
+                            recibido - calcularTotal * parseFloat(monedaVenta[0])
+                          ).toFixed(2)" readonly />
                         </div>
                       </div>
                     </div>
@@ -775,39 +654,76 @@
                         <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
                           Detalle de Venta
                         </h5>
-
-                        <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
-                          style="font-size: 0.8rem;">
-                          <i class="fa fa-gift mr-1"></i>
-                          <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
+                        
+                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-1 mb-2" style="font-size: 0.8rem;">
+                           Saldo a Favor: {{ saldoFavorCliente.toFixed(2) }}
                         </div>
 
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                          <div class="d-flex flex-column">
-                            <div class="d-flex align-items-center">
-                              <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
-                              <span style="font-size: 0.85rem;">Total a Pagar:</span>
-                              <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">{{
-                                Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
-                              }}
-                                {{ monedaVenta[1] }}</span>
-                            </div>
-                            <small v-if="saldoFavorCliente > 0" class="text-muted">
-                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
-                              {{
-                                saldoFavorCliente.toFixed(2) }})
-                            </small>
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
+                            <span style="font-size: 0.85rem;">Total a Pagar:</span>
+                            <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">
+                              {{ (Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente)).toFixed(2) }}
+                              {{ monedaVenta[1] }}
+                            </span>
                           </div>
-                          <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
-                            <button type="button" @click="aplicarDescuentoRecibo(1, 1)" class="btn btn-success">
-                              <i class="fa fa-check mr-2"></i> Registrar Pago
-                            </button>
+                          
+                          <div class="d-flex flex-column flex-md-column mt-2 mt-md-0 text-center">
+                            <div class="d-flex flex-row justify-content-center mb-1">
+                              <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
+                                <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
+                              </button>
+                              <button type="button" @click="aplicarDescuento(1)" class="btn btn-success">
+                                <i class="fa fa-check mr-2"></i> Registrar Pago
+                              </button>
+                            </div>
+                            <small style="color: #777; font-size: 0.75rem;">
+                              Click en el botón verde para Factura o en la imagen para Recibos
+                            </small>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  <div v-else-if="opcionPago === 'qr'" class="mt-2">
+                    <div class="card">
+                      <div class="card-body">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                          <div class="mb-3 mb-md-0">
+                            <h5 class="mb-1" style="font-size: 1rem;">
+                              🧾 Detalle de Venta
+                            </h5>
+                            <label class="mb-0 text-muted">Total a pagar:</label>
+                            <div class="font-weight-bold text-primary" style="font-size: 1.1rem;">
+                              {{ (Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente)).toFixed(2) }} {{ monedaVenta[1] }}
+                            </div>
+                          </div>
+
+                          <button class="btn btn-primary" @click="generarQr">
+                            <i class="fa fa-qrcode mr-2"></i> Generar QR
+                          </button>
+                        </div>
+
+                        <div class="d-flex flex-row flex-md-row mt-2 mt-md-0 justify-content-center">
+                          <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
+                            <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
+                          </button>
+                          <button type="button" @click="aplicarDescuento(7)" class="btn btn-success">
+                            <i class="fa fa-check mr-2"></i> Registrar Pago
+                          </button>
+                        </div>
+                        <div class="text-center mt-1">
+                           <small style="color: #777; font-size: 0.75rem;">
+                            Click en el botón verde para Factura o en la imagen para Recibos
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
 
                   <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
                     <div class="card mb-2">
@@ -816,7 +732,6 @@
                           Detalle de Venta
                         </h5>
 
-                        <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
                         <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
                           style="font-size: 0.8rem;">
                           <i class="fa fa-gift mr-1"></i>
@@ -841,13 +756,9 @@
                       </div>
                     </div>
 
-                    <!--<button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
-                     Contenedor de los botones -->
+
                     <div class="d-flex flex-wrap justify-content-center">
-                      <!--<button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(1, 7)">
-                        <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
-                          style="height: 24px;">
-                      </button>-->
+
                       <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
                         <i class="fa fa-check mr-2"></i> Registrar Pago
                       </button>
@@ -891,7 +802,6 @@
                           </div>
                         </div>
 
-                        <!-- 🔹 Monto Recibido -->
                         <div class="form-group mb-3">
                           <label for="montoEfectivo" class="label-input">
                             <i class="fa fa-money mr-1"></i> Monto Recibido
@@ -6371,10 +6281,9 @@ calcularTotal() {
   margin: 0 auto;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
   animation: fadeIn 0.4s ease;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: "Inter", "Segoe UI", sans-serif;
 }
 
-/* ===== ENCABEZADO ===== */
 .detalle-header-pro {
   display: flex;
   justify-content: space-between;
@@ -6416,27 +6325,20 @@ calcularTotal() {
   margin-top: 0.15rem;
 }
 
-/* ===== CLIENTE ===== */
 .detalle-cliente-pro {
   background: #f9fafb;
   border-radius: 0.2rem;
   padding: 0.05rem 1rem;
-  margin-bottom: 1.0rem;
+  margin-bottom: 1rem;
   border: 1px solid #e5e7eb;
 }
 
-/* ===== TABLA ===== */
 .detalle-tabla-pro .p-datatable {
   border-radius: 0.2rem;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.p-datatable tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-/* ===== RESUMEN ===== */
 .detalle-resumen-pro {
   margin-top: 1.2rem;
   border-top: 1px solid #e5e7eb;
@@ -6461,12 +6363,10 @@ calcularTotal() {
   color: #111827;
 }
 
-/* ===== FOOTER ===== */
 .detalle-footer-pro {
   margin-top: 2rem;
   text-align: right;
 }
-
 /* ===== ANIMACIÓN ===== */
 @keyframes fadeIn {
   from {
