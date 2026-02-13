@@ -1051,33 +1051,15 @@
                           'item-sin-stock': articulo.saldo_stock <= 0 
                       }"
                       style="padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer;">
-                      
                     <div class="item-contenido" style="line-height: 1.4; font-size: 0.85rem;">
-                      
-                      <span style="font-weight: bold; color: #333; font-size: 0.9rem;">
-                        {{ articulo.nombre }}
-                      </span>
-
+                      <span style="font-weight: bold; color: #333; font-size: 0.9rem;">{{ articulo.nombre }}</span>
                       <span style="color: #bbb; margin: 0 5px;">/</span>
-
-                      <span class="text-muted">
-                        {{ articulo.nombre_proveedor || "Sin Lab." }}
-                      </span>
-
+                      <span class="text-muted">{{ articulo.nombre_proveedor || "Sin Lab." }}</span>
                       <span style="color: #bbb; margin: 0 5px;">/</span>
-
-                      <span class="text-muted">
-                        {{ articulo.nombre_categoria || "Sin Cat." }}
-                      </span>
-
+                      <span class="text-muted">{{ articulo.nombre_categoria || "Sin Cat." }}</span>
                       <span style="color: #bbb; margin: 0 5px;">/</span>
-
-                      <span class="text-primary font-weight-bold">
-                        {{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.
-                      </span>
-
+                      <span class="text-primary font-weight-bold">{{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.</span>
                       <span style="color: #bbb; margin: 0 5px;">/</span>
-
                       <span :class="articulo.saldo_stock > 0 ? 'text-success font-weight-bold' : 'text-danger font-weight-bold'">
                         Stock: {{ articulo.saldo_stock }}
                       </span>
@@ -1087,33 +1069,32 @@
               </div>
             </div>
           </div>
-          
 
-          <DataTable :value="arrayDetalle" class="p-mt-3">
+          <div v-if="arrayDetalle.length === 0" class="carrito-vacio-mensaje">
+            <i class="pi pi-shopping-cart"></i>
+            <h4>Carrito de ventas vacío</h4>
+            <p>Agregue productos para comenzar</p>
+          </div>
+
+          <DataTable v-if="arrayDetalle.length > 0" :value="arrayDetalle" class="p-mt-3">
             <Column header="Opciones" style="width: 15%">
               <template #body="slotProps">
-                <!-- Botón borrar -->
                 <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini" @click="
                   slotProps.data.medida != 'KIT'
                     ? eliminarDetalle(slotProps.data.id)
                     : eliminarKit(slotProps.data.idkit)
                   " />
-
-                <!-- Botón cambiar modo venta -->
                 <Button :label="getLabelModoVenta(slotProps.data.modoVenta)" class="p-button-info p-button-sm btn-mini"
                   style="margin-left: 5px" :disabled="slotProps.data.descripcion_fabrica == 1"
                   @click="cambiarModoVenta(slotProps.data)" />
-
               </template>
             </Column>
             <Column field="codigo_producto" header="Codigo" style="width: 30%" />
             <Column field="articulo" header="Producto" style="width: 30%" />
             <Column field="stock" header="Stock Actual" style="width: 15%">
               <template #body="slotProps">
-                <div
-                  style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
+                <div style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
                   <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
-
                   <span v-else>
                     {{
                       slotProps.data.modoVenta === 'caja'
@@ -1126,7 +1107,6 @@
                 </div>
               </template>
             </Column>
-
             <Column field="unidad_envase" header="Cant x Caja" style="width: 10%" class="column-precio-unidad">
               <template #body="slotProps">
                 <input type="text" class="form-control form-control-sm input-precio-unidad"
@@ -1134,14 +1114,12 @@
                   :value="slotProps.data.descripcion_fabrica == 1 ? '-' : slotProps.data.unidad_envase" disabled />
               </template>
             </Column>
-
             <Column field="precioUnidad" header="Precio Unidad" style="width: 12%" class="column-precio-unidad">
               <template #body="slotProps">
                 <div class="precio-wrapper" style="display: flex; gap: 5px; align-items: center;">
                   <input type="text" v-model.number="slotProps.data.precioseleccionado"
                     @input="actualizarDetalle(slotProps.index); guardarCambioPrecio(slotProps.data)" class="form-control form-control-sm input-precio-unidad"
                     :disabled="!slotProps.data.editandoPrecio && (permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1')" />
-
                   <Button 
                     :icon="slotProps.data.editandoPrecio ? 'pi pi-check' : 'pi pi-pencil'" 
                     class="p-button-sm p-button-secondary btn-precio-toggle"
@@ -1151,8 +1129,6 @@
                 </div>
               </template>
             </Column>
-
-
             <Column field="unidades" header="Cantidad a Vender" style="width: 10%" class="column-unidades">
               <template #body="slotProps">
                 <InputNumber v-model="slotProps.data.cantidad" :min="1" @input="actualizarDetalle(slotProps.index)"
@@ -1170,7 +1146,6 @@
             </Column>
             <Column field="total" header="Total" style="width: 15%">
               <template #body="slotProps">
-
                 {{
                   (
                     (
@@ -1186,12 +1161,9 @@
                     * parseFloat(monedaVenta[0])
                   ).toFixed(2)
                 }}
-
                 {{ monedaVenta[1] }}
-
               </template>
             </Column>
-
           </DataTable>
 
           <div class="p-grid p-mt-3">
@@ -1210,7 +1182,7 @@
           <button class="btn btn-primary mr-2" @click="prevStep" :disabled="step === 1">
             Anterior
           </button>
-          <button class="btn btn-primary" @click="validarYAvanzar" :disabled="step === 2">
+          <button class="btn btn-primary" @click="validarYAvanzar" :disabled="step === 2 || arrayDetalle.length === 0">
             Siguiente
           </button>
         </div>
@@ -1220,7 +1192,6 @@
       <Dialog :visible.sync="modalCobro" :modal="true" :closable="true" :blockScroll="true"
         :containerStyle="{ width: '450px' }">
 
-        <!-- EVITA EL ERROR CUANDO ventaSeleccionada ES NULL -->
         <template v-if="ventaSeleccionada">
 
           <template slot="header">
@@ -7818,5 +7789,36 @@ div[class*="swal"] {
 
 .font-weight-bold {
   font-weight: 700;
+}
+.carrito-vacio-mensaje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.carrito-vacio-mensaje i {
+  font-size: 3rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.carrito-vacio-mensaje h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.carrito-vacio-mensaje p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
 }
 </style>
