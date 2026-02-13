@@ -6,13 +6,27 @@ use App\Inventario;
 use App\Articulo;
 use App\Categoria;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Exports\ResumenKardexExport;
 use Maatwebsite\Excel\Facades\Excel;
 use FPDF;
 use App\Exports\KardexDetalladoExport;
-
+use App\Exports\ReporteInventarioValoradoExport;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use Maatwebsite\Excel\Events\AfterSheet;
 
 
 class ReportesInventariosController extends Controller
@@ -934,6 +948,64 @@ class ReportesInventariosController extends Controller
         );
     }
 
+    public function obtenerDatosInventarioValorado(Request $request)
+    {
+        $idAlmacen = $request->idAlmacen;
+        $buscar = $request->buscar;
+        $idLaboratorio = $request->idLaboratorio;
+        $idPresentacion = $request->idPresentacion;
+
+        $inventarios = Articulo::leftJoin('inventarios', function ($join) use ($idAlmacen) {
+            $join->on('articulos.id', '=', 'inventarios.idarticulo')
+                ->where('inventarios.idalmacen', '=', $idAlmacen);
+        })
+            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+            ->join('personas', 'proveedores.id', '=', 'personas.id')
+            ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+            ->select(
+                'articulos.nombre as nombre_producto',
+                'articulos.unidad_envase',
+                'articulos.precio_uno as precio_venta',
+                DB::raw('ROUND(articulos.precio_costo_unid, 2) as precio_costo_unid'),
+                'almacens.nombre_almacen',
+                'personas.nombre as nombre_proveedor',
+                'categorias.nombre as nombre_categoria',
+                DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock_total'),
+                DB::raw('FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / articulos.unidad_envase) as stock_en_paquetes'),
+                DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase as unidades_restantes'),
+                DB::raw('ROUND(articulos.precio_costo_unid * IFNULL(SUM(inventarios.saldo_stock), 0), 2) as valor_total')
+            )
+            ->where('articulos.condicion', '=', 1);
+
+        // 🔹 Filtros opcionales
+        if (!empty($idLaboratorio)) {
+            $inventarios = $inventarios->where('articulos.idproveedor', $idLaboratorio);
+        }
+
+        if (!empty($buscar)) {
+            $inventarios = $inventarios->where(function ($query) use ($buscar) {
+                $query->where('articulos.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('personas.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('almacens.nombre_almacen', 'like', '%' . $buscar . '%');
+            });
+        }
+
+        // 🔹 Agrupamos y ordenamos (sin paginar)
+        return $inventarios->groupBy(
+            'articulos.nombre',
+            'almacens.nombre_almacen',
+            'articulos.unidad_envase',
+            'articulos.precio_costo_unid',
+            'categorias.nombre',
+            'personas.nombre',
+            'articulos.precio_uno',
+        )
+            ->orderBy('articulos.nombre')
+            ->orderBy('almacens.nombre_almacen')
+            ->get();
+    }
+
     public function datosInventarioFisicoValorado(Request $request)
     {
         if (!$request->ajax()) {
@@ -1010,6 +1082,542 @@ class ReportesInventariosController extends Controller
             ],
             'inventarios' => $inventarios
         ];
+    }
+
+    public function exportarInventarioValoradoPdf(Request $request)
+    {
+        // Aumentar tiempo de ejecución y memoria para reportes grandes
+        ini_set('max_execution_time', 600); // 10 minutos
+        ini_set('memory_limit', '1024M');   // 1GB de memoria
+
+        try {
+            $inventarios = $this->obtenerDatosInventarioValorado($request);
+
+            if ($inventarios->isEmpty()) {
+                return response()->json(['error' => 'No se encontraron datos para el reporte.'], 404);
+            }
+
+            // 🔹 Preparar datos de filtros
+            $nombreLaboratorio = 'Todos';
+            if (!empty($request->idLaboratorio)) {
+                $laboratorio = \DB::table('personas')->find($request->idLaboratorio);
+                if ($laboratorio) $nombreLaboratorio = $laboratorio->nombre;
+            }
+
+            $nombrePresentacion = 'Todos';
+            if (!empty($request->idPresentacion)) {
+                $presentacion = \DB::table('categorias')->find($request->idPresentacion);
+                if ($presentacion) $nombrePresentacion = $presentacion->nombre;
+            }
+
+            $nombreAlmacen = $request->nombreAlmacen ?? 'Todos';
+            $buscar = $request->buscar ?? 'Ninguna';
+
+            // 🔹 Generar PDF con FPDF
+            $pdf = new FPDF('L', 'mm', 'A4');
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(true, 15);
+            $pdf->AddPage();
+
+            // --- ENCABEZADO ---
+            $rutaLogo = public_path('img/logoPrincipal.png');
+            if (file_exists($rutaLogo)) {
+                $pdf->Image($rutaLogo, 10, 5, 30);
+            }
+
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->SetTextColor(44, 62, 80);
+            $pdf->Cell(0, 10, utf8_decode('REPORTE DE INVENTARIO FÍSICO VALORADO'), 0, 1, 'C');
+
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 6, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
+            $pdf->Ln(5);
+
+            // Caja de filtros
+            $pdf->SetFillColor(236, 240, 241);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Rect(10, $pdf->GetY(), 277, 16, 'F');
+
+            $pdf->SetX(12);
+            $pdf->Cell(25, 8, utf8_decode('Almacén:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($nombreAlmacen, 0, 50)), 0, 0, 'L');
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(25, 8, utf8_decode('Proveedor:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($nombreLaboratorio, 0, 50)), 0, 1, 'L');
+
+            $pdf->SetX(12);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(25, 8, utf8_decode('Categoría:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($nombrePresentacion, 0, 50)), 0, 0, 'L');
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(25, 8, utf8_decode('Búsqueda:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($buscar, 0, 50)), 0, 1, 'L');
+            $pdf->Ln(5);
+
+            // --- TABLA ---
+            $w = [50, 30, 15, 20, 25, 30, 20, 15, 15, 15, 17];
+            $headers = ['Producto', 'Almacén', 'Envase', 'Costo',  'Categoría', 'Proveedor', 'P.Venta', 'Stock', 'Paq.', 'Rest.', 'Total'];
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(52, 73, 94);
+            $pdf->SetTextColor(255, 255, 255);
+
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($w[$i], 8, utf8_decode($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 7);
+            $pdf->SetTextColor(0, 0, 0);
+            $fill = false;
+
+            foreach ($inventarios as $item) {
+                $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+                
+                $pdf->Cell($w[0], 6, utf8_decode(substr($item->nombre_producto, 0, 35)), 1, 0, 'L', true);
+                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[2], 6, $item->unidad_envase, 1, 0, 'C', true);
+                $pdf->Cell($w[3], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_categoria, 0, 15)), 1, 0, 'L', true);
+                $pdf->Cell($w[5], 6, utf8_decode(substr($item->nombre_proveedor, 0, 18)), 1, 0, 'L', true);
+                $pdf->Cell($w[6], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[7], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[8], 6, number_format($item->stock_en_paquetes, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[9], 6, number_format($item->unidades_restantes, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[10], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
+                
+                $pdf->Ln();
+                $fill = !$fill;
+            }
+
+            $almacenNombre = $request->nombreAlmacen ?? 'General';
+            $almacenClean = str_replace(' ', '_', $almacenNombre);
+            $fechaHoy = now()->format('Y-m-d');
+            $nombreArchivo = "ReporteInventarioValorado_{$almacenClean}_{$fechaHoy}.pdf";
+            
+            return response($pdf->Output('S'))
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', "attachment; filename=\"{$nombreArchivo}\"");
+
+        } catch (\Exception $e) {
+            \Log::error('Error al generar PDF Inventario Valorado: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al generar el PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarInventarioFisicoPdf(Request $request)
+    {
+        // Aumentar tiempo de ejecución y memoria para reportes grandes
+        ini_set('max_execution_time', 600); // 10 minutos
+        ini_set('memory_limit', '1024M');   // 1GB de memoria
+
+        try {
+            $inventarios = $this->obtenerDatosInventarioValorado($request);
+
+            if ($inventarios->isEmpty()) {
+                return response()->json(['error' => 'No se encontraron datos para el reporte.'], 404);
+            }
+
+            // 🔹 Preparar datos de filtros
+            $nombreLaboratorio = 'Todos';
+            if (!empty($request->idLaboratorio)) {
+                $laboratorio = \DB::table('personas')->find($request->idLaboratorio);
+                if ($laboratorio) $nombreLaboratorio = $laboratorio->nombre;
+            }
+
+            $nombrePresentacion = 'Todos';
+            if (!empty($request->idPresentacion)) {
+                $presentacion = \DB::table('categorias')->find($request->idPresentacion);
+                if ($presentacion) $nombrePresentacion = $presentacion->nombre;
+            }
+
+            $nombreAlmacen = $request->nombreAlmacen ?? 'Todos';
+            $buscar = $request->buscar ?? 'Ninguna';
+
+            // 🔹 Generar PDF con FPDF
+            $pdf = new FPDF('L', 'mm', 'A4');
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(true, 15);
+            $pdf->AddPage();
+
+            // --- ENCABEZADO ---
+            $rutaLogo = public_path('img/logoPrincipal.png');
+            if (file_exists($rutaLogo)) {
+                $pdf->Image($rutaLogo, 10, 5, 30);
+            }
+
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->SetTextColor(44, 62, 80);
+            $pdf->Cell(0, 10, utf8_decode('REPORTE DE INVENTARIO FÍSICO'), 0, 1, 'C');
+
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(0, 6, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
+            $pdf->Ln(5);
+
+            // Caja de filtros
+            $pdf->SetFillColor(236, 240, 241);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Rect(10, $pdf->GetY(), 277, 16, 'F');
+
+            $pdf->SetX(12);
+            $pdf->Cell(25, 8, utf8_decode('Almacén:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($nombreAlmacen, 0, 50)), 0, 0, 'L');
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(25, 8, utf8_decode('Proveedor:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($nombreLaboratorio, 0, 50)), 0, 1, 'L');
+
+            $pdf->SetX(12);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(25, 8, utf8_decode('Categorías:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($nombrePresentacion, 0, 50)), 0, 0, 'L');
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(25, 8, utf8_decode('Búsqueda:'), 0, 0, 'L');
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(100, 8, utf8_decode(substr($buscar, 0, 50)), 0, 1, 'L');
+            $pdf->Ln(5);
+
+            // --- TABLA ---
+            $w = [50, 30, 15, 20, 25, 30, 20, 15, 15, 15, 17];
+            $headers = ['Producto', 'Almacén', 'Envase', 'Costo', 'Categoría', 'Proveedor', 'P.Venta', 'Stock', 'Paq.', 'Rest.', 'Total'];
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(52, 73, 94);
+            $pdf->SetTextColor(255, 255, 255);
+
+            foreach ($headers as $i => $header) {
+                $pdf->Cell($w[$i], 8, utf8_decode($header), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+
+            $pdf->SetFont('Arial', '', 7);
+            $pdf->SetTextColor(0, 0, 0);
+            $fill = false;
+
+            foreach ($inventarios as $item) {
+                $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+                
+                $pdf->Cell($w[0], 6, utf8_decode(substr($item->nombre_producto, 0, 35)), 1, 0, 'L', true);
+                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[2], 6, $item->unidad_envase, 1, 0, 'C', true);
+                $pdf->Cell($w[3], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_categoria, 0, 15)), 1, 0, 'L', true);
+                $pdf->Cell($w[5], 6, utf8_decode(substr($item->nombre_proveedor, 0, 18)), 1, 0, 'L', true);
+                $pdf->Cell($w[6], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[7], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[8], 6, number_format($item->stock_en_paquetes, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[9], 6, number_format($item->unidades_restantes, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[10], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
+                
+                $pdf->Ln();
+                $fill = !$fill;
+            }
+
+            $almacenNombre = $request->nombreAlmacen ?? 'General';
+            $almacenClean = str_replace(' ', '_', $almacenNombre);
+            $fechaHoy = now()->format('Y-m-d');
+            $nombreArchivo = "ReporteInventarioFisico_{$almacenClean}_{$fechaHoy}.pdf";
+            
+            return response($pdf->Output('S'))
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', "attachment; filename=\"{$nombreArchivo}\"");
+
+        } catch (\Exception $e) {
+            \Log::error('Error al generar PDF Inventario Físico: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al generar el PDF: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarInventarioValorado(Request $request)
+    {
+
+        try {
+            // 🔹 Capturar todos los parámetros
+            $idAlmacen = $request->idAlmacen;
+            $nombreAlmacen = $request->nombreAlmacen ?? 'almacen';
+            $idLaboratorio = $request->idLaboratorio;
+            $idPresentacion = $request->idPresentacion;
+            $buscar = $request->buscar;
+            $criterio = $request->criterio;
+            $page = $request->page;
+            $tipoSeleccionado = $request->tipoSeleccionado;
+
+            // 🔹 Validar almacén obligatorio
+            if (!$idAlmacen) {
+                Log::error('Error: No se envió idAlmacen');
+                return response()->json(['error' => 'Debe seleccionar un almacén'], 400);
+            }
+
+            // 🔹 Obtener nombres de filtros
+            $nombreLaboratorio = 'Todos';
+            if (!empty($idLaboratorio)) {
+                $lab = DB::table('personas')->find($idLaboratorio);
+                if ($lab) $nombreLaboratorio = $lab->nombre;
+            }
+
+            // 🔹 Generar nombre del archivo
+            $nombreArchivo = 'inventario_valorado_' . $nombreAlmacen . '_' . date('Y-m-d') . '.xlsx';
+    
+            $export = new ReporteInventarioValoradoExport(
+                $idAlmacen,
+                $idLaboratorio,
+                $idPresentacion,
+                $buscar,
+                $criterio,
+                $tipoSeleccionado,
+                $nombreAlmacen,
+                $nombreLaboratorio
+            );
+
+            // 🔹 Descargar Excel
+            return Excel::download($export, $nombreArchivo);
+
+        } catch (\Exception $e) {
+            Log::error('ERROR EN EXPORTAR INVENTARIO VALORADO:', [
+                'mensaje' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Error interno: ' . $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    public function exportarInventarioFisico(Request $request)
+    {
+        Log::info('=== INICIO EXPORTAR INVENTARIO VALORADO ===');
+
+        try {
+            // 🔹 Capturar todos los parámetros
+            $idAlmacen = $request->idAlmacen;
+            $nombreAlmacen = $request->nombreAlmacen ?? 'almacen';
+            $idLaboratorio = $request->idLaboratorio;
+            $idPresentacion = $request->idPresentacion;
+            $buscar = $request->buscar;
+            $criterio = $request->criterio;
+            $page = $request->page;
+            $tipoSeleccionado = $request->tipoSeleccionado;
+
+            // 🔹 Registrar los datos recibidos
+            Log::info('Datos recibidos para exportar inventario valorado:', [
+                'idAlmacen' => $idAlmacen,
+                'nombreAlmacen' => $nombreAlmacen,
+                'idLaboratorio' => $idLaboratorio,
+                'idPresentacion' => $idPresentacion,
+                'buscar' => $buscar,
+                'criterio' => $criterio,
+                'page' => $page,
+                'tipoSeleccionado' => $tipoSeleccionado
+            ]);
+
+            // 🔹 Validar almacén obligatorio
+            if (!$idAlmacen) {
+                Log::error('Error: No se envió idAlmacen');
+                return response()->json(['error' => 'Debe seleccionar un almacén'], 400);
+            }
+
+            Log::info('Validación de almacén OK');
+
+            // 🔹 Generar nombre del archivo
+            $nombreArchivo = 'inventario_fisico_' . $nombreAlmacen . '_' . date('Y-m-d') . '.xlsx';
+            Log::info('Nombre archivo generado: ' . $nombreArchivo);
+
+            // 🔹 Obtener los datos corregidos usando la función que ya arreglamos
+            $datos = $this->obtenerDatosInventarioValorado($request);
+
+            if ($datos->isEmpty()) {
+                return response()->json(['error' => 'No hay datos para exportar'], 404);
+            }
+
+            // 🔹 Preparar datos de filtros para el encabezado
+            $nombreLaboratorio = 'Todos';
+            if (!empty($idLaboratorio)) {
+                $lab = \DB::table('personas')->find($idLaboratorio);
+                if ($lab) $nombreLaboratorio = $lab->nombre;
+            }
+
+            $nombrePresentacion = 'Todos';
+            if (!empty($idPresentacion)) {
+                $pres = \DB::table('categorias')->find($idPresentacion);
+                if ($pres) $nombrePresentacion = $pres->nombre;
+            }
+
+            $textoBuscar = !empty($buscar) ? $buscar : 'Ninguno';
+            $fechaGeneracion = date('d/m/Y H:i:s');
+            $tituloReporte = 'REPORTE DE INVENTARIO FÍSICO';
+
+            // 🔹 Mapear los datos para el Excel
+            $coleccion = $datos->map(function ($item) {
+                return [
+                    'Producto' => $item->nombre_producto,
+                    'Almacén' => $item->nombre_almacen,
+                    'Unidad Envase' => $item->unidad_envase,
+                    'Costo Unitario' => $item->precio_costo_unid,
+                    'Categoría' => $item->nombre_categoria,
+                    'Laboratorio' => $item->nombre_proveedor,
+                    'Precio Venta' => $item->precio_venta,
+                    'Stock Total' => $item->saldo_stock_total,
+                    'Stock Paquetes' => $item->stock_en_paquetes,
+                    'Unidades Restantes' => $item->unidades_restantes,
+                    'Valor Total' => $item->valor_total,
+                ];
+            });
+
+            // 🔹 Crear clase anónima para exportar
+            $export = new class($coleccion, $nombreAlmacen, $nombreLaboratorio, $nombrePresentacion, $textoBuscar, $fechaGeneracion, $tituloReporte) implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithCustomStartCell, WithEvents, WithDrawings {
+                private $data;
+                private $almacen;
+                private $laboratorio;
+                private $presentacion;
+                private $buscar;
+                private $fecha;
+                private $titulo;
+
+                public function __construct($data, $almacen, $laboratorio, $presentacion, $buscar, $fecha, $titulo) {
+                    $this->data = $data;
+                    $this->almacen = $almacen;
+                    $this->laboratorio = $laboratorio;
+                    $this->presentacion = $presentacion;
+                    $this->buscar = $buscar;
+                    $this->fecha = $fecha;
+                    $this->titulo = $titulo;
+                }
+
+                public function collection() {
+                    return $this->data;
+                }
+
+                public function headings(): array {
+                    return array_keys($this->data->first());
+                }
+
+                public function startCell(): string
+                {
+                    return 'A8';
+                }
+
+                public function columnWidths(): array
+                {
+                    return [
+                        'A' => 40, // Producto
+                        'B' => 25, // Almacén
+                        'C' => 15, // Unidad Envase
+                        'D' => 15, // Costo Unitario
+                        'F' => 20, // Categoría
+                        'G' => 25, // Laboratorio
+                        'H' => 15, // Precio Venta
+                        'I' => 15, // Stock Total
+                        'J' => 15, // Stock Paquetes
+                        'K' => 18, // Unidades Restantes
+                        'L' => 15, // Valor Total
+                    ];
+                }
+
+                public function drawings()
+                {
+                    $drawings = [];
+                    $rutaLogo = public_path('img/logoPrincipal.png');
+                    
+                    if (file_exists($rutaLogo)) {
+                        $drawing = new Drawing();
+                        $drawing->setName('Logo');
+                        $drawing->setDescription('Logo Empresa');
+                        $drawing->setPath($rutaLogo);
+                        $drawing->setHeight(70);
+                        $drawing->setCoordinates('A1');
+                        $drawings[] = $drawing;
+                    }
+
+                    return $drawings;
+                }
+
+                public function registerEvents(): array
+                {
+                    return [
+                        AfterSheet::class => function(AfterSheet $event) {
+                            $sheet = $event->sheet;
+
+                            // Título
+                            $sheet->mergeCells('C2:J2');
+                            $sheet->setCellValue('C2', $this->titulo);
+                            $sheet->getStyle('C2')->getFont()->setBold(true)->setSize(16);
+                            $sheet->getStyle('C2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+                            // Fecha
+                            $sheet->mergeCells('C3:J3');
+                            $sheet->setCellValue('C3', 'Fecha de generación: ' . $this->fecha);
+                            $sheet->getStyle('C3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+                            // Filtros
+                            $sheet->setCellValue('A5', 'Almacén: ' . $this->almacen);
+                            $sheet->setCellValue('A6', 'Categoría: ' . $this->presentacion);
+                            $sheet->setCellValue('E5', 'Proveedor: ' . $this->laboratorio);
+                            $sheet->setCellValue('E6', 'Búsqueda: ' . $this->buscar);
+                            
+
+                            $sheet->getStyle('A5:H6')->getFont()->setBold(true);
+                        },
+                    ];
+                }
+
+                public function styles(Worksheet $sheet) {
+                    // Estilo para el encabezado
+                    $sheet->getStyle('A8:L8')->applyFromArray([
+                        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '34495E']],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                    ]);
+
+                    // Estilo para todo el contenido (bordes y alineación vertical)
+                    $sheet->getStyle('A9:L' . $sheet->getHighestRow())->applyFromArray([
+                        'borders' => [
+                            'allBorders' => [
+                                'borderStyle' => Border::BORDER_THIN,
+                                'color' => ['rgb' => '000000'],
+                            ],
+                        ],
+                        'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                    ]);
+
+                    // Alinear columnas numéricas a la derecha
+                    $sheet->getStyle('D9:D' . $sheet->getHighestRow())->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle('H9:L' . $sheet->getHighestRow())->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    
+                    return [];
+                }
+            };
+
+            return Excel::download($export, $nombreArchivo);
+
+        } catch (\Exception $e) {
+            Log::error('ERROR EN EXPORTAR INVENTARIO VALORADO:', [
+                'mensaje' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Error interno: ' . $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 }
 

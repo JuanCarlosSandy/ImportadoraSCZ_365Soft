@@ -1044,6 +1044,11 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post("/categoria/servicio/registrar", "CategoriaController@storeServicio");
 
         Route::get("/reporte/inventariofisicovalorado/{tipo}","ReportesInventariosController@datosInventarioFisicoValorado");
+        Route::post('/reporte/inventarioFisicoPdf', "ReportesInventariosController@exportarInventarioFisicoPdf");
+        Route::post('/reporte/inventarioValoradoPdf', "ReportesInventariosController@exportarInventarioValoradoPdf");
+        Route::post('/reporte/inventarioValoradoExcel', "ReportesInventariosController@exportarInventarioValorado");
+        Route::post('/reporte/inventarioFisicoExcel', "ReportesInventariosController@exportarInventarioFisico");
+
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA
