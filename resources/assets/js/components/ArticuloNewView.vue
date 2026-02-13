@@ -27,6 +27,8 @@
             class="p-button-secondary p-button-sm" @click="abrirModal('articulo', 'registrar')" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm"
             @click="descargarReporteExcel()" />
+            <Button :label="mostrarLabel ? 'PDF' : ''" icon="pi pi-file-pdf" class="p-button-danger p-button-sm"
+            @click="descargarReportePDF()" />
           <Button 
             :label="mostrarLabel ? 'Importar' : ''" 
             icon="pi pi-upload" 
@@ -1633,6 +1635,10 @@ export default {
     async descargarReporteExcel() {
       const fecha = new Date().toISOString().slice(0, 10);
       await this.descargarArchivoReporte('/articulo/reporteExcel', `ProductosBajoStock_${fecha}.xlsx`);
+    },
+    async descargarReportePDF() {
+      const fecha = new Date().toISOString().slice(0, 10);
+      await this.descargarArchivoReporte('/articulo/reportePDF', `ProductosBajoStock_${fecha}.pdf`);
     },
     cambiarPagina(page, buscar, criterio) {
       let me = this;

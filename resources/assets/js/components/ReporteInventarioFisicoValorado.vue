@@ -261,6 +261,16 @@ export default {
         },
     },
     methods: {
+        async listarLaboratorios() {
+            try {
+                const response = await axios.get("/proveedornewview", {
+                    params: { buscar: '' }, 
+                });
+                this.arrayLaboratorios = response.data.personas;
+            } catch (error) {
+                console.error("Error al listar:", error);
+            }
+        },
         handleResize() {
             this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
         },
@@ -634,7 +644,7 @@ export default {
         this.handleResize();
         window.addEventListener("resize", this.handleResize);
         try {
-            await Promise.all([this.obtenerPresentaciones(), this.selectAlmacen()]);
+            await Promise.all([this.obtenerPresentaciones(), this.selectAlmacen(), this.listarLaboratorios()]);
         } catch (error) {
             console.error("Error en la carga inicial:", error);
             Swal.fire("Error", "Error al cargar los datos iniciales", "error");
