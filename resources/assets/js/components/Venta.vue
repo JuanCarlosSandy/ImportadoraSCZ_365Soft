@@ -1280,92 +1280,85 @@
           <h4>{{ tituloModal }}</h4>
         </template>
         <TabView>
-          <TabPanel header="Combos/Ofertas">
-            <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
-              <div class="p-inputgroup" style="width: 100%;">
-                <InputText id="buscarA" v-model="buscarA" placeholder="Texto a buscar"
-                  @input="listarItemCompuesto(buscarA)" class="input-full" />
-                <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
-                  buscarA = '';
+        <TabPanel header="Combos/Ofertas">
+          <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
+            <div class="p-inputgroup" style="width: 100%;">
+              <InputText id="buscarA" v-model="buscarA" placeholder="Texto a buscar"
+                @input="listarItemCompuesto(buscarA)" class="input-full" />
+              <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
+                buscarA = '';
                 listarItemCompuesto('');
                 " type="button" :disabled="!buscarA" :style="{ minWidth: '36px' }" title="Limpiar" />
-              </div>
             </div>
-            <DataTable :value="arrayItemCompuesto" :paginator="true" :rows="10"
-              class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-venta" responsiveLayout="scroll">
-              <Column header="Opciones" style="width: 80px">
-                <template #body="slotProps">
-                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini" @click="
-                    agregarDetalleModal(slotProps.data, 'itemcompuesto')
-                    " />
-                  <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
-                    @click="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />
-                </template>
-              </Column>
-              <Column field="nombre" header="Descripcion" />
-              <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
-              <Column header="Precio de Venta">
-                <template #body="slotProps">
-                  {{
-                    (
-                      slotProps.data.precio_uno * parseFloat(monedaVenta[0])
-                    ).toFixed(2)
-                  }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-            </DataTable>
-          </TabPanel>
-          <TabPanel header="Productos">
-            <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0; position: relative;">
-              <div class="p-inputgroup" style="width: 100%; position: relative;">
-                <InputText id="buscarA" v-model="buscarA" class="p-inputtext-sm" autocomplete="off"
-                  style="width: 100%; margin: 0;" @input="listarArticulo(buscarA)" />
-                <!-- Texto informativo -->
-                <span v-if="buscarA.trim() === ''"
-                  style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
-                  Realice una búsqueda por nombre, proveedor, código de barra o código del producto
-                </span>
-                <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
-                  buscarA = '';
+          </div>
+          <DataTable :value="arrayItemCompuesto" :paginator="true" :rows="10"
+            class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-venta tabla-seleccionable"
+            responsiveLayout="scroll"
+            @row-click="seleccionarItem($event.data, 'itemcompuesto')">
+            <Column header="Opciones" style="width: 80px">
+              <template #body="slotProps">
+                <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                  @click.stop="agregarDetalleModal(slotProps.data, 'itemcompuesto')" />
+                <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
+                  @click.stop="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />
+              </template>
+            </Column>
+            <Column field="nombre" header="Descripcion" />
+            <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
+            <Column header="Precio de Venta">
+              <template #body="slotProps">
+                {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
+              </template>
+            </Column>
+          </DataTable>
+        </TabPanel>
+        <TabPanel header="Productos">
+          <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0; position: relative;">
+            <div class="p-inputgroup" style="width: 100%; position: relative;">
+              <InputText id="buscarA" v-model="buscarA" class="p-inputtext-sm" autocomplete="off"
+                style="width: 100%; margin: 0;" @input="listarArticulo(buscarA)" />
+              <!-- Texto informativo -->
+              <span v-if="buscarA.trim() === ''"
+                style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                Realice una búsqueda por nombre, proveedor, código de barra o código del producto
+              </span>
+              <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
+                buscarA = '';
                 listarArticulo('');
                 " type="button" :disabled="!buscarA" :style="{ minWidth: '36px' }" title="Limpiar" />
-              </div>
             </div>
-            <DataTable :value="arrayArticulo" :paginator="true" :rows="10"
-              class="p-mt-2 p-datatable-gridlines p-datatable-sm" responsiveLayout="scroll">
-              <Column header="Opciones" style="width: 120px">
-                <template #body="slotProps">
-                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
-                    @click="agregarDetalleModalProducto(slotProps.data)" />
-                  <Button icon="pi pi-info-circle" class="p-button-info p-button-sm btn-mini"
-                    @click="verStockPorSucursal(slotProps.data)" />
-                </template>
-              </Column>
-              <Column field="nombre" header="Nombre" />
-              <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
-              <Column field="contacto" header="Proveedor" class="d-none d-lg-table-cell" />
-              <Column header="Precio Venta">
-                <template #body="slotProps">
-                  {{
-                    (
-                      slotProps.data.precio_uno * parseFloat(monedaVenta[0])
-                    ).toFixed(2)
-                  }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-              <Column field="saldo_stock" header="Stock" class="d-none d-md-table-cell">
-                <template #body="slotProps">
-                  <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
-                  <span v-else-if="slotProps.data.saldo_stock == 0" style="color: red; font-weight: bold;">
-                    ⚠️ Sin stock
-                  </span>
-                  <span v-else>{{ slotProps.data.saldo_stock }}</span>
-                </template>
-              </Column>
-            </DataTable>
-          </TabPanel>
+          </div>
+          <DataTable :value="arrayArticulo" :paginator="true" :rows="10"
+            class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-seleccionable"
+            responsiveLayout="scroll"
+            @row-click="seleccionarItem($event.data, 'producto')">
+            <Column header="Opciones" style="width: 120px">
+              <template #body="slotProps">
+                <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                  @click.stop="agregarDetalleModalProducto(slotProps.data)" />
+                <Button icon="pi pi-info-circle" class="p-button-info p-button-sm btn-mini"
+                  @click.stop="verStockPorSucursal(slotProps.data)" />
+              </template>
+            </Column>
+            <Column field="nombre" header="Nombre" />
+            <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
+            <Column field="contacto" header="Proveedor" class="d-none d-lg-table-cell" />
+            <Column header="Precio Venta">
+              <template #body="slotProps">
+                {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
+              </template>
+            </Column>
+            <Column field="saldo_stock" header="Stock" class="d-none d-md-table-cell">
+              <template #body="slotProps">
+                <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
+                <span v-else-if="slotProps.data.saldo_stock == 0" style="color: red; font-weight: bold;">
+                  ⚠️ Sin stock
+                </span>
+                <span v-else>{{ slotProps.data.saldo_stock }}</span>
+              </template>
+            </Column>
+          </DataTable>
+        </TabPanel>
 
         </TabView>
         <template #footer>
@@ -2238,6 +2231,13 @@ export default {
         }
       }, 1000);
     },
+    seleccionarItem(data, tipo) {
+  if (tipo === 'producto') {
+    this.agregarDetalleModalProducto(data);
+  } else if (tipo === 'itemcompuesto') {
+    this.agregarDetalleModal(data, 'itemcompuesto');
+  }
+},
     verCombosOfertas(id) {
       axios.get(`/itemcompuesto/${id}`).then((res) => {
         this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
@@ -8361,10 +8361,17 @@ export default {
   line-height: 1.2;
 }
 
-/* Asegurar que el input de texto ocupe todo el espacio menos el botón */
 .p-inputgroup .p-inputtext {
   flex: 1 1 auto;
   width: 1%;
+}
+
+.tabla-seleccionable tbody tr {
+  cursor: pointer;
+}
+
+.tabla-seleccionable tbody tr:hover {
+  background-color: #f1f5f9 !important;
 }
 
 </style>
