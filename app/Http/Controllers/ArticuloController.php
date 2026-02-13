@@ -498,6 +498,56 @@ class ArticuloController extends Controller
     {
         return Excel::download(new ProductExport, 'articulos.xlsx');
     }
+
+    public function descargarPDF(Request $request)
+    {
+        $buscar = $request->buscar;
+
+        $query = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->join('personas', 'proveedores.id', '=', 'personas.id')
+            ->join('medidas', 'articulos.idmedida', '=', 'medidas.id')
+            ->select(
+                'articulos.id',
+                'articulos.codigo',
+                'articulos.nombre',
+                'articulos.nombre_generico', 
+                'articulos.precio_venta',
+                'articulos.stock',
+                'categorias.nombre as nombre_categoria',
+                'personas.nombre as nombre_proveedor',
+                'medidas.descripcion_medida',
+                'articulos.precio_costo_unid',
+                'articulos.precio_uno',
+                'articulos.precio_dos',
+                'articulos.precio_tres',
+            )
+            ->where('articulos.condicion', '=', 1);
+
+        if (!empty($buscar)) {
+            $palabras = explode(' ', $buscar);
+            $query->where(function ($q) use ($palabras) {
+                foreach ($palabras as $palabra) {
+                    $q->where(function ($sub) use ($palabra) {
+                        $sub->where('articulos.nombre', 'like', '%' . $palabra . '%')
+                            ->orWhere('articulos.descripcion', 'like', '%' . $palabra . '%')
+                            ->orWhere('articulos.codigo', 'like', '%' . $palabra . '%')
+                            ->orWhere('personas.nombre', 'like', '%' . $palabra . '%')
+                            ->orWhere('categorias.nombre', 'like', '%' . $palabra . '%');
+                    });
+                }
+            });
+        }
+
+        $articulos = $query->orderBy('articulos.nombre', 'asc')->get(); 
+
+        $pdf = \PDF::loadView('pdf.productos', ['articulos' => $articulos]);
+        
+        $pdf->setPaper('letter', 'landscape');
+
+        return $pdf->stream('Reporte_Articulos.pdf');
+    }
+
     public function buscarArticulo(Request $request)
     {
         if (!$request->ajax())
