@@ -1,5 +1,11 @@
 <template>
   <main class="main">
+      <div class="loading-overlay" v-if="isLoading">
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <div class="loading-text">LOADING...</div>
+    </div>
+  </div>
     <Panel>
       <template #header>
         <div
@@ -47,18 +53,7 @@
               placeholder="Buscar en la tabla..."
             />
           </span>
-          <div v-if="isLoading" class="custom-loading-overlay">
-            <div class="custom-loading-content">
-              <span
-                class="spinner-border spinner-border-lg"
-                role="status"
-                aria-hidden="true"
-              ></span>
-              <div style="margin-top: 1em; font-size: 1.2em; color: #fff;">
-                Cargando reporte...
-              </div>
-            </div>
-          </div>
+
           <DataTable
             :value="sortedResultados"
             scrollable
@@ -1674,22 +1669,7 @@ export default {
       this.filaSeleccionada = data; 
       this.$refs.menuDescargas.toggle(event); 
     },
-    descargarExcelDetallado(data) {
-      let me = this;
-      if (!me.fechaInicio || !me.fechaFin) {
-        swal("Atención", "Debe seleccionar un rango de fechas", "warning");
-        return;
-      }
 
-      let params = new URLSearchParams();
-      params.append("idArticulo", data.id_articulo);
-      params.append("idAlmacen", data.id_almacen);
-      params.append("fechaInicio", me.fechaInicio);
-      params.append("fechaFin", me.fechaFin);
-
-      let url = "/reporte-resumen-detallado-excel?" + params.toString();
-      window.open(url, "_blank");
-    },
     limpiarFiltro(tipo) {
       switch (tipo) {
         case "sucursal":
@@ -2542,82 +2522,126 @@ export default {
       this.productoSeleccionado = {};
     },
 
-    // Descargar el PDF de la tabla grande (Todos los productos)
-    descargarPdfGeneral() {
-      let me = this;
-      if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
-        swal(
-          "Atención",
-          "Debe seleccionar Sucursal y Fechas primero",
-          "warning",
-        );
-        return;
-      }
+async descargarPdfGeneral() {
+  if (!this.sucursalseleccionada || !this.fechaInicio || !this.fechaFin) {
+    swal("Atención", "Debe seleccionar Sucursal y Fechas primero", "warning");
+    return;
+  }
 
-      // Construir la URL con todos los filtros actuales
-      let params = new URLSearchParams();
-      params.append("sucursal", me.sucursalseleccionada.id);
-      params.append("fechaInicio", me.fechaInicio);
-      params.append("fechaFin", me.fechaFin);
+  const params = new URLSearchParams();
+  params.append("sucursal", this.sucursalseleccionada.id);
+  params.append("fechaInicio", this.fechaInicio);
+  params.append("fechaFin", this.fechaFin);
 
-      // Agregar filtros opcionales solo si están seleccionados
-      if (me.articuloseleccionada && me.articuloseleccionada.id)
-        params.append("articulo", me.articuloseleccionada.id);
-      if (me.marcaseleccionada && me.marcaseleccionada.id)
-        params.append("marca", me.marcaseleccionada.id);
-      if (me.lineaseleccionada && me.lineaseleccionada.id)
-        params.append("linea", me.lineaseleccionada.id);
+  if (this.articuloseleccionada && this.articuloseleccionada.id) {
+    params.append("articulo", this.articuloseleccionada.id);
+  }
+  if (this.marcaseleccionada && this.marcaseleccionada.id) {
+    params.append("marca", this.marcaseleccionada.id);
+  }
+  if (this.lineaseleccionada && this.lineaseleccionada.id) {
+    params.append("linea", this.lineaseleccionada.id);
+  }
 
-      let url = "/reporte-resumen-general-pdf?" + params.toString();
-      window.open(url, "_blank");
-    },
+  const url = "/reporte-resumen-general-pdf?" + params.toString();
+  const nombreArchivo = `Reporte_General_${this.fechaInicio}_a_${this.fechaFin}.pdf`;
 
-    descargarExcelGeneral() {
-      let me = this;
-      if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
-        swal(
-          "Atención",
-          "Debe seleccionar Sucursal y Fechas primero",
-          "warning",
-        );
-        return;
-      }
+  await this.descargarArchivo(url, nombreArchivo);
+},
 
-      // Construir la URL con todos los filtros actuales
-      let params = new URLSearchParams();
-      params.append("sucursal", me.sucursalseleccionada.id);
-      params.append("fechaInicio", me.fechaInicio);
-      params.append("fechaFin", me.fechaFin);
+async descargarExcelGeneral() {
+  if (!this.sucursalseleccionada || !this.fechaInicio || !this.fechaFin) {
+    swal("Atención", "Debe seleccionar Sucursal y Fechas primero", "warning");
+    return;
+  }
 
-      // Agregar filtros opcionales solo si están seleccionados
-      if (me.articuloseleccionada && me.articuloseleccionada.id)
-        params.append("articulo", me.articuloseleccionada.id);
-      if (me.marcaseleccionada && me.marcaseleccionada.id)
-        params.append("marca", me.marcaseleccionada.id);
-      if (me.lineaseleccionada && me.lineaseleccionada.id)
-        params.append("linea", me.lineaseleccionada.id);
+  const params = new URLSearchParams();
+  params.append("sucursal", this.sucursalseleccionada.id);
+  params.append("fechaInicio", this.fechaInicio);
+  params.append("fechaFin", this.fechaFin);
 
-      let url = "/reporte-resumen-general-excel?" + params.toString();
-      window.open(url, "_blank");
-    },
+  if (this.articuloseleccionada && this.articuloseleccionada.id) {
+    params.append("articulo", this.articuloseleccionada.id);
+  }
+  if (this.marcaseleccionada && this.marcaseleccionada.id) {
+    params.append("marca", this.marcaseleccionada.id);
+  }
+  if (this.lineaseleccionada && this.lineaseleccionada.id) {
+    params.append("linea", this.lineaseleccionada.id);
+  }
 
-    // Descargar el PDF de un solo producto (Ventas, Compras, Ajustes)
-    descargarPdfDetallado(data) {
-      let me = this;
-      if (!me.fechaInicio || !me.fechaFin) {
-        swal("Atención", "Debe seleccionar un rango de fechas", "warning");
-        return;
-      }
+  const url = "/reporte-resumen-general-excel?" + params.toString();
+  const nombreArchivo = `Reporte_General_${this.fechaInicio}_a_${this.fechaFin}.xlsx`;
 
-      let params = new URLSearchParams();
-      params.append("idArticulo", data.id_articulo);
-      params.append("idAlmacen", data.id_almacen);
-      params.append("fechaInicio", me.fechaInicio);
-      params.append("fechaFin", me.fechaFin);
+  await this.descargarArchivo(url, nombreArchivo);
+},
 
-      let url = "/reporte-resumen-detallado-pdf?" + params.toString();
-      window.open(url, "_blank");
-    },
+async descargarPdfDetallado(data) {
+  if (!this.fechaInicio || !this.fechaFin) {
+    swal("Atención", "Debe seleccionar un rango de fechas", "warning");
+    return;
+  }
+
+  const params = new URLSearchParams();
+  params.append("idArticulo", data.id_articulo);
+  params.append("idAlmacen", data.id_almacen);
+  params.append("fechaInicio", this.fechaInicio);
+  params.append("fechaFin", this.fechaFin);
+
+  const url = "/reporte-resumen-detallado-pdf?" + params.toString();
+  const nombreArchivo = `Detalle_${data.codigo}_${this.fechaInicio}_a_${this.fechaFin}.pdf`;
+
+  await this.descargarArchivo(url, nombreArchivo);
+},
+
+async descargarExcelDetallado(data) {
+  if (!this.fechaInicio || !this.fechaFin) {
+    swal("Atención", "Debe seleccionar un rango de fechas", "warning");
+    return;
+  }
+
+  const params = new URLSearchParams();
+  params.append("idArticulo", data.id_articulo);
+  params.append("idAlmacen", data.id_almacen);
+  params.append("fechaInicio", this.fechaInicio);
+  params.append("fechaFin", this.fechaFin);
+
+  const url = "/reporte-resumen-detallado-excel?" + params.toString();
+  const nombreArchivo = `Detalle_${data.codigo}_${this.fechaInicio}_a_${this.fechaFin}.xlsx`;
+
+  await this.descargarArchivo(url, nombreArchivo);
+},
+
+// Método auxiliar para descargar archivos con loading
+async descargarArchivo(url, nombreArchivo) {
+  this.isLoading = true;
+  try {
+    const response = await axios.get(url, {
+      responseType: 'blob',
+      timeout: 600000 // 10 minutos
+    });
+
+    const blob = new Blob([response.data]);
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
+
+    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Archivo descargado correctamente', life: 3000 });
+  } catch (error) {
+    console.error('Error al descargar archivo:', error);
+    let mensaje = 'No se pudo generar el archivo';
+    if (error.code === 'ECONNABORTED') {
+      mensaje = 'La solicitud excedió el tiempo de espera. Intente con un rango menor.';
+    }
+    this.$toast.add({ severity: 'error', summary: 'Error', detail: mensaje, life: 5000 });
+  } finally {
+    this.isLoading = false;
+  }
+},
 
     exportarExcel() {
       const workbook = XLSX.utils.book_new();

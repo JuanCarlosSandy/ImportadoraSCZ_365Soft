@@ -86,18 +86,20 @@
             class="p-button-secondary p-button-sm"
             @click="modal = true"
           />
-          <Button
-            icon="pi pi-file-excel"
-            label="EXCEL"
-            class="p-button-success"
-            @click="exportarExcelDialog"
-          />
-          <Button
-            icon="pi pi-file-pdf"
-            label="PDF"
-            class="p-button-danger"
-            @click="descargarPDFDialog"
-          />
+            <Button
+              icon="pi pi-file-excel"
+              label="EXCEL"
+              class="p-button-success"
+              @click="exportarExcelDialog"
+              :disabled="isLoading"
+            />
+            <Button
+              icon="pi pi-file-pdf"
+              label="PDF"
+              class="p-button-danger"
+              @click="descargarPDFDialog"
+              :disabled="isLoading"
+            />
         </div>
       </div>
       <!-- Tabla de Ventas -->
@@ -2529,35 +2531,36 @@ export default {
         });
     },
 
-    async descargarArchivoReporte(url, nombreArchivo) {
-      try {
-        Swal.fire({
-          title: "Generando reporte...",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
+async descargarArchivoReporte(url, nombreArchivo) {
+  this.isLoading = true;
+  try {
+    const response = await axios.get(url, {
+      responseType: 'blob',
+      timeout: 600000 // 10 minutos
+    });
 
-        const response = await axios.get(url, {
-          responseType: "blob",
-        });
+    const blob = new Blob([response.data]);
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
 
-        // Crear un enlace temporal para descargar el archivo
-        const blob = new Blob([response.data]);
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = nombreArchivo;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        Swal.close();
-      } catch (error) {
-        Swal.close();
-        Swal.fire("Error al generar el reporte", "", "error");
-      }
-    },
+    // Opcional: mensaje de éxito (puedes omitirlo o usar un toast)
+    // this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte descargado', life: 3000 });
+  } catch (error) {
+    console.error('Error al descargar archivo:', error);
+    let mensaje = 'No se pudo generar el reporte';
+    if (error.code === 'ECONNABORTED') {
+      mensaje = 'La solicitud excedió el tiempo de espera.';
+    }
+    Swal.fire('Error', mensaje, 'error');
+  } finally {
+    this.isLoading = false;
+  }
+},
 
     cargarSucursalUsuario() {
       console.log("Iniciando carga de sucursal del usuario...");

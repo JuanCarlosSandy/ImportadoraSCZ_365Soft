@@ -26,9 +26,9 @@
           <Button v-if="idrol !== 2" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
             class="p-button-secondary p-button-sm" @click="abrirModal('articulo', 'registrar')" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm"
-            @click="descargarReporteExcel()" />
-            <Button :label="mostrarLabel ? 'PDF' : ''" icon="pi pi-file-pdf" class="p-button-danger p-button-sm"
-            @click="descargarReportePDF()" />
+            @click="descargarReporteExcel()" :disabled="isLoading" />
+          <Button :label="mostrarLabel ? 'PDF' : ''" icon="pi pi-file-pdf" class="p-button-danger p-button-sm"
+            @click="descargarReportePDF()" :disabled="isLoading" />
           <Button 
             :label="mostrarLabel ? 'Importar' : ''" 
             icon="pi pi-upload" 
@@ -1632,14 +1632,65 @@ export default {
         Swal.fire('ERROR AL GENERAR EL REPORTE', '', 'error');
       }
     },
-    async descargarReporteExcel() {
-      const fecha = new Date().toISOString().slice(0, 10);
-      await this.descargarArchivoReporte('/articulo/reporteExcel', `ProductosBajoStock_${fecha}.xlsx`);
-    },
-    async descargarReportePDF() {
-      const fecha = new Date().toISOString().slice(0, 10);
-      await this.descargarArchivoReporte('/articulo/reportePDF', `ProductosBajoStock_${fecha}.pdf`);
-    },
+async descargarReporteExcel() {
+  const fecha = new Date().toISOString().slice(0, 10);
+  const url = '/articulo/reporteExcel';
+  const nombreArchivo = `ProductosBajoStock_${fecha}.xlsx`;
+  
+  this.isLoading = true;
+  try {
+    const response = await axios.get(url, {
+      responseType: 'blob',
+      timeout: 600000 // 10 minutos
+    });
+
+    const blob = new Blob([response.data]);
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
+
+    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
+  } catch (error) {
+    console.error('Error al descargar Excel:', error);
+    this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el reporte Excel', life: 5000 });
+  } finally {
+    this.isLoading = false;
+  }
+},
+
+async descargarReportePDF() {
+  const fecha = new Date().toISOString().slice(0, 10);
+  const url = '/articulo/reportePDF';
+  const nombreArchivo = `ProductosBajoStock_${fecha}.pdf`;
+
+  this.isLoading = true;
+  try {
+    const response = await axios.get(url, {
+      responseType: 'blob',
+      timeout: 600000
+    });
+
+    const blob = new Blob([response.data]);
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
+
+    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
+  } catch (error) {
+    console.error('Error al descargar PDF:', error);
+    this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el reporte PDF', life: 5000 });
+  } finally {
+    this.isLoading = false;
+  }
+},
     cambiarPagina(page, buscar, criterio) {
       let me = this;
       me.pagination.current_page = page;

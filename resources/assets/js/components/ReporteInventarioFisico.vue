@@ -332,7 +332,7 @@ export default {
         async listarLaboratorios() {
             try {
                 const response = await axios.get("/proveedornewview", {
-                    params: { buscar: '' }, // Enviamos vacío explícitamente
+                    params: { buscar: '' }, 
                 });
                 this.arrayLaboratorios = response.data.personas;
             } catch (error) {
@@ -344,7 +344,6 @@ export default {
             this.LaboratorioSeleccionado = lab.id;
             this.mostrarLista = false;
 
-            // actualizar inventario
             this.cambiarLaboratorio();
         },
         ocultarListaConRetraso() {
@@ -352,175 +351,168 @@ export default {
                 this.mostrarLista = false;
             }, 150);
         },
-        async exportarInventarioExcel() {
-            let me = this;
-            try {
-                // Validar que haya un almacén seleccionado
-                if (!me.AlmacenSeleccionado) {
-                    Swal.fire("Error", "Por favor seleccione un almacén", "error");
-                    return;
-                }
+async exportarInventarioExcel() {
+  if (!this.AlmacenSeleccionado) {
+    Swal.fire("Error", "Por favor seleccione un almacén", "error");
+    return;
+  }
 
-                // Obtener el nombre del almacén seleccionado
-                const almacenSeleccionado = me.arrayAlmacenes.find(
-                    (almacen) => almacen.id == me.AlmacenSeleccionado
-                );
-                const nombreAlmacen = almacenSeleccionado
-                    ? almacenSeleccionado.nombre_almacen
-                    : "almacen";
+  const almacenSeleccionado = this.arrayAlmacenes.find(
+    (almacen) => almacen.id == this.AlmacenSeleccionado
+  );
+  const nombreAlmacen = almacenSeleccionado
+    ? almacenSeleccionado.nombre_almacen
+    : "almacen";
 
-                // Mostrar loading
-                me.isLoading = true;
+  this.isLoading = true;
 
-                // Crear formulario para enviar datos
-                const form = document.createElement("form");
-                form.method = "POST";
-                form.action = "/reporte/inventarioFisicoExcel";
-                form.style.display = "none";
+  try {
+    const params = {
+      idAlmacen: this.AlmacenSeleccionado,
+      nombreAlmacen: nombreAlmacen.replace(/\s+/g, "_"),
+      idLaboratorio: this.LaboratorioSeleccionado || "",
+      idPresentacion: this.PresentacionSeleccionada || "",
+      buscar: this.buscar || "",
+      criterio: this.criterio || "",
+      page: this.pagination.current_page || 1,
+      tipoSeleccionado: this.tipoSeleccionado || "",
+    };
 
-                // Agregar token CSRF
-                const csrfToken = document.createElement("input");
-                csrfToken.type = "hidden";
-                csrfToken.name = "_token";
-                csrfToken.value = document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute("content");
-                form.appendChild(csrfToken);
+    const response = await axios.post("/reporte/inventarioFisicoExcel", params, {
+      responseType: 'blob',
+      timeout: 600000 
+    });
 
-                // Agregar ID del almacén
-                const inputAlmacen = document.createElement("input");
-                inputAlmacen.type = "hidden";
-                inputAlmacen.name = "idAlmacen";
-                inputAlmacen.value = me.AlmacenSeleccionado;
-                form.appendChild(inputAlmacen);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
 
-                // Agregar nombre del almacén (para el nombre del archivo)
-                const inputNombre = document.createElement("input");
-                inputNombre.type = "hidden";
-                inputNombre.name = "nombreAlmacen";
-                inputNombre.value = nombreAlmacen.replace(/\s+/g, "_");
-                form.appendChild(inputNombre);
+    let filename = `ReporteInventarioFisico_${nombreAlmacen.replace(/\s+/g, "_")}.xlsx`;
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) { 
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
 
-                // 🔹 Agregar filtros adicionales (de listarInventario)
-                const camposExtras = {
-                    idLaboratorio: me.LaboratorioSeleccionado || "",
-                    idPresentacion: me.PresentacionSeleccionada || "",
-                    buscar: me.buscar || "",
-                    criterio: me.criterio || "",
-                    page: me.pagination.current_page || 1, // o me.page si lo manejas así
-                    tipoSeleccionado: me.tipoSeleccionado || "",
-                };
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
 
-                for (const [key, value] of Object.entries(camposExtras)) {
-                    const input = document.createElement("input");
-                    input.type = "hidden";
-                    input.name = key;
-                    input.value = value;
-                    form.appendChild(input);
-                }
+    Swal.fire("Éxito", "El archivo Excel se ha descargado correctamente", "success");
 
-                // Enviar formulario
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+  } catch (error) {
+    console.error("Error al exportar Excel:", error);
 
-                // Mostrar mensaje de éxito
-                setTimeout(() => {
-                    me.isLoading = false;
-                    Swal.fire("Éxito", "El archivo Excel se está descargando", "success");
-                }, 1000);
+    let mensaje = "No se pudo exportar el inventario a Excel";
 
-            } catch (error) {
-                console.error("Error al exportar:", error);
-                me.isLoading = false;
-                Swal.fire("Error", "No se pudo exportar el inventario", "error");
-            }
-        },
-        async exportarInventarioPdf() {
-            let me = this;
-            try {
-                // Validar que haya un almacén seleccionado
-                if (!me.AlmacenSeleccionado) {
-                    Swal.fire("Error", "Por favor seleccione un almacén", "error");
-                    return;
-                }
+    if (error.code === 'ECONNABORTED') {
+      mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
+    } else if (error.response && error.response.data instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const json = JSON.parse(reader.result);
+          if (json.error) Swal.fire("Error", json.error, "error");
+        } catch (e) { 
+          Swal.fire("Error", mensaje, "error");
+        }
+      };
+      reader.readAsText(error.response.data);
+      return; 
+    }
 
-                // Obtener el nombre del almacén seleccionado
-                const almacenSeleccionado = me.arrayAlmacenes.find(
-                    (almacen) => almacen.id == me.AlmacenSeleccionado
-                );
-                const nombreAlmacen = almacenSeleccionado
-                    ? almacenSeleccionado.nombre_almacen
-                    : "almacen";
+    Swal.fire("Error", mensaje, "error");
+  } finally {
+    this.isLoading = false;
+  }
+},
+async exportarInventarioPdf() {
+  if (!this.AlmacenSeleccionado) {
+    Swal.fire("Error", "Por favor seleccione un almacén", "error");
+    return;
+  }
 
-                // Mostrar loading
-                me.isLoading = true;
+  const almacenSeleccionado = this.arrayAlmacenes.find(
+    (almacen) => almacen.id == this.AlmacenSeleccionado
+  );
+  const nombreAlmacen = almacenSeleccionado
+    ? almacenSeleccionado.nombre_almacen
+    : "almacen";
 
-                // Preparar datos para enviar
-                const params = {
-                    idAlmacen: me.AlmacenSeleccionado,
-                    nombreAlmacen: nombreAlmacen.replace(/\s+/g, "_"),
-                    idLaboratorio: me.LaboratorioSeleccionado || "",
-                    idPresentacion: me.PresentacionSeleccionada || "",
-                    buscar: me.buscar || "",
-                    criterio: me.criterio || "",
-                    page: (me.pagination && me.pagination.current_page) ? me.pagination.current_page : 1,
-                    tipoSeleccionado: me.tipoSeleccionado || "",
-                };
+  this.isLoading = true;
 
-                // Realizar petición con axios
-                const response = await axios.post("/reporte/inventarioFisicoPdf", params, {
-                    responseType: 'blob',
-                    timeout: 600000 // 10 minutos de espera máximo
-                });
+  try {
+    const params = {
+      idAlmacen: this.AlmacenSeleccionado,
+      nombreAlmacen: nombreAlmacen.replace(/\s+/g, "_"),
+      idLaboratorio: this.LaboratorioSeleccionado || "",
+      idPresentacion: this.PresentacionSeleccionada || "",
+      buscar: this.buscar || "",
+      criterio: this.criterio || "",
+      page: (this.pagination && this.pagination.current_page) ? this.pagination.current_page : 1,
+      tipoSeleccionado: this.tipoSeleccionado || "",
+    };
 
-                // Crear URL del blob
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                
-                // Intentar obtener nombre del archivo del header
-                let filename = `ReporteInventarioFisico_${nombreAlmacen.replace(/\s+/g, "_")}.pdf`;
-                const disposition = response.headers['content-disposition'];
-                if (disposition && disposition.indexOf('attachment') !== -1) {
-                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                    const matches = filenameRegex.exec(disposition);
-                    if (matches != null && matches[1]) { 
-                        filename = matches[1].replace(/['"]/g, '');
-                    }
-                }
+    const response = await axios.post("/reporte/inventarioFisicoPdf", params, {
+      responseType: 'blob',
+      timeout: 600000 
+    });
 
-                link.setAttribute('download', filename);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
 
-                // Mostrar mensaje de éxito
-                Swal.fire("Éxito", "El reporte PDF se ha descargado correctamente", "success");
+    let filename = `ReporteInventarioFisico_${nombreAlmacen.replace(/\s+/g, "_")}.pdf`;
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) { 
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
 
-            } catch (error) {
-                console.error("Error al exportar PDF:", error);
-                
-                let mensaje = "No se pudo exportar el inventario a PDF";
-                
-                if (error.code === 'ECONNABORTED') {
-                    mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
-                } else if (error.response && error.response.data instanceof Blob) {
-                    // Intentar leer el error del Blob
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        try { const json = JSON.parse(reader.result); if(json.error) Swal.fire("Error", json.error, "error"); } catch(e) { Swal.fire("Error", mensaje, "error"); }
-                    };
-                    reader.readAsText(error.response.data);
-                    return; // Salir para que el reader maneje la alerta
-                }
-                
-                Swal.fire("Error", mensaje, "error");
-            } finally {
-                me.isLoading = false;
-            }
-        },
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    Swal.fire("Éxito", "El reporte PDF se ha descargado correctamente", "success");
+
+  } catch (error) {
+    console.error("Error al exportar PDF:", error);
+
+    let mensaje = "No se pudo exportar el inventario a PDF";
+
+    if (error.code === 'ECONNABORTED') {
+      mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
+    } else if (error.response && error.response.data instanceof Blob) {
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const json = JSON.parse(reader.result);
+          if (json.error) Swal.fire("Error", json.error, "error");
+        } catch (e) {
+          Swal.fire("Error", mensaje, "error");
+        }
+      };
+      reader.readAsText(error.response.data);
+      return; 
+    }
+
+    Swal.fire("Error", mensaje, "error");
+  } finally {
+    this.isLoading = false;
+  }
+},
+
 
         async buscarInventario() {
             try {

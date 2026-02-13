@@ -14,12 +14,22 @@
                         <h4 class="panel-title">INFORME INVENTARIO FISICO VALORADO</h4>
                     </div>
                     <div class="panel-actions">
-                        <Button :label="mostrarLabel ? 'Pdf' : ''" icon="pi pi-download"
-                            @click="exportarInventarioPdf()" class="p-button-danger p-button-sm"
-                            style="margin-right: 0.5rem;" />
-                        <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-download"
-                            @click="exportarInventarioExcel()" class="p-button-success p-button-sm"
-                            style="margin-right: 0.5rem;" />
+                        <Button 
+                        :label="mostrarLabel ? 'Pdf' : ''" 
+                        icon="pi pi-download"
+                        @click="exportarInventarioPdf()" 
+                        class="p-button-danger p-button-sm"
+                        style="margin-right: 0.5rem;" 
+                        :disabled="isLoading"
+                        />
+                        <Button 
+                        :label="mostrarLabel ? 'Excel' : ''" 
+                        icon="pi pi-download"
+                        @click="exportarInventarioExcel()" 
+                        class="p-button-success p-button-sm"
+                        style="margin-right: 0.5rem;" 
+                        :disabled="isLoading"
+                        />
                     </div>
                 </div>
             </template>
@@ -361,90 +371,82 @@ export default {
                 this.mostrarLista = false;
             }, 150);
         },
-        async exportarInventarioExcel() {
-            let me = this;
-            try {
-                // Validar que haya un almacén seleccionado
-                if (!me.AlmacenSeleccionado) {
-                    Swal.fire("Error", "Por favor seleccione un almacén", "error");
-                    return;
-                }
+async exportarInventarioExcel() {
+  if (!this.AlmacenSeleccionado) {
+    Swal.fire("Error", "Por favor seleccione un almacén", "error");
+    return;
+  }
 
-                // Obtener el nombre del almacén seleccionado
-                const almacenSeleccionado = me.arrayAlmacenes.find(
-                    (almacen) => almacen.id == me.AlmacenSeleccionado
-                );
-                const nombreAlmacen = almacenSeleccionado
-                    ? almacenSeleccionado.nombre_almacen
-                    : "almacen";
+  const almacenSeleccionado = this.arrayAlmacenes.find(
+    (almacen) => almacen.id == this.AlmacenSeleccionado
+  );
+  const nombreAlmacen = almacenSeleccionado
+    ? almacenSeleccionado.nombre_almacen
+    : "almacen";
 
-                // Mostrar loading
-                me.isLoading = true;
+  this.isLoading = true;
 
-                // Crear formulario para enviar datos
-                const form = document.createElement("form");
-                form.method = "POST";
-                form.action = "/reporte/inventarioValoradoExcel";
-                form.style.display = "none";
+  try {
+    const params = {
+      idAlmacen: this.AlmacenSeleccionado,
+      nombreAlmacen: nombreAlmacen.replace(/\s+/g, "_"),
+      idLaboratorio: this.LaboratorioSeleccionado || "",
+      idPresentacion: this.PresentacionSeleccionada || "",
+      buscar: this.buscar || "",
+      criterio: this.criterio || "",
+      page: this.pagination.current_page || 1,
+      tipoSeleccionado: this.tipoSeleccionado || "",
+    };
 
-                // Agregar token CSRF
-                const csrfToken = document.createElement("input");
-                csrfToken.type = "hidden";
-                csrfToken.name = "_token";
-                csrfToken.value = document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute("content");
-                form.appendChild(csrfToken);
+    const response = await axios.post("/reporte/inventarioValoradoExcel", params, {
+      responseType: 'blob',
+      timeout: 600000 // 10 minutos
+    });
 
-                // Agregar ID del almacén
-                const inputAlmacen = document.createElement("input");
-                inputAlmacen.type = "hidden";
-                inputAlmacen.name = "idAlmacen";
-                inputAlmacen.value = me.AlmacenSeleccionado;
-                form.appendChild(inputAlmacen);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
 
-                // Agregar nombre del almacén (para el nombre del archivo)
-                const inputNombre = document.createElement("input");
-                inputNombre.type = "hidden";
-                inputNombre.name = "nombreAlmacen";
-                inputNombre.value = nombreAlmacen.replace(/\s+/g, "_");
-                form.appendChild(inputNombre);
+    let filename = `ReporteInventarioValorado_${nombreAlmacen.replace(/\s+/g, "_")}.xlsx`;
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
 
-                // 🔹 Agregar filtros adicionales (de listarInventario)
-                const camposExtras = {
-                    idLaboratorio: me.LaboratorioSeleccionado || "",
-                    idPresentacion: me.PresentacionSeleccionada || "",
-                    buscar: me.buscar || "",
-                    criterio: me.criterio || "",
-                    page: me.pagination.current_page || 1, // o me.page si lo manejas así
-                    tipoSeleccionado: me.tipoSeleccionado || "",
-                };
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
 
-                for (const [key, value] of Object.entries(camposExtras)) {
-                    const input = document.createElement("input");
-                    input.type = "hidden";
-                    input.name = key;
-                    input.value = value;
-                    form.appendChild(input);
-                }
-
-                // Enviar formulario
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-
-                // Mostrar mensaje de éxito
-                setTimeout(() => {
-                    me.isLoading = false;
-                    Swal.fire("Éxito", "El archivo Excel se está descargando", "success");
-                }, 1000);
-
-            } catch (error) {
-                console.error("Error al exportar:", error);
-                me.isLoading = false;
-                Swal.fire("Error", "No se pudo exportar el inventario", "error");
-            }
-        },
+    Swal.fire("Éxito", "El archivo Excel se ha descargado correctamente", "success");
+  } catch (error) {
+    console.error("Error al exportar Excel:", error);
+    let mensaje = "No se pudo exportar el inventario a Excel";
+    if (error.code === 'ECONNABORTED') {
+      mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
+    } else if (error.response && error.response.data instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const json = JSON.parse(reader.result);
+          if (json.error) Swal.fire("Error", json.error, "error");
+        } catch (e) {
+          Swal.fire("Error", mensaje, "error");
+        }
+      };
+      reader.readAsText(error.response.data);
+      return;
+    }
+    Swal.fire("Error", mensaje, "error");
+  } finally {
+    this.isLoading = false;
+  }
+},
         async exportarInventarioPdf() {
 
              let me = this;

@@ -207,19 +207,11 @@
           </div>
           
           <div style="display: flex; gap: 10px;">
-            <Button 
-              label="PDF" 
-              icon="pi pi-file-pdf" 
-              class="p-button-danger p-button-sm" 
-              @click="generarReporte('pdf')"
+            <Button label="PDF" icon="pi pi-file-pdf" class="p-button-danger p-button-sm" @click="exportarReportePdf()"
               title="Descargar Reporte PDF" 
             />
 
-            <Button 
-              label="Excel" 
-              icon="pi pi-file-excel" 
-              class="p-button-success p-button-sm" 
-              @click="generarReporte('excel')"
+            <Button label="Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarReporteExcel()"
               title="Descargar Reporte Excel" 
             />
 
@@ -1763,47 +1755,113 @@ export default {
       this.rolUsuario = window.userData.rol;
     },
 
-    exportarPDF() {
-      this.isLoading = true;
+async exportarReportePdf() {
+  if (!this.fechaInicio || !this.fechaFin) {
+    swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
+    return;
+  }
+  this.isLoading = true;
+  try {
+    const fInicio = this.formatDate(this.fechaInicio);
+    const fFin = this.formatDate(this.fechaFin);
+    const almacen = this.idAlmacen ? this.idAlmacen : '';
+    const busqueda = this.buscar ? this.buscar : '';
 
-      const productosParaPDF = this.productosSeleccionados.map(producto => {
-        const stockReal = producto.stock_real !== undefined ? parseInt(producto.stock_real) : 0;
-        const stockActual = producto.stock_actual !== undefined ? parseInt(producto.stock_actual) : 0;
-        const cantidadAjuste = stockActual - stockReal;
-        const stockRestante = stockReal;
+    const response = await axios.get(`/ajusteinv/reporte/pdf`, {
+      params: {
+        fechaInicio: fInicio,
+        fechaFin: fFin,
+        idAlmacen: almacen,
+        buscar: busqueda
+      },
+      responseType: 'blob',
+      timeout: 600000 
+    });
 
-        return {
-          ...producto,
-          stock_real: stockReal,
-          cantidad_ajuste: cantidadAjuste,
-          stock_restante: stockRestante,
-        };
-      });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    let filename = 'Reporte_Ajuste.pdf';
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) { 
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
 
-      axios.post('/ajustes-inventario/exportar-pdf', {
-        productos: productosParaPDF,
-        almacen: this.idAlmacenSeleccionado,
-        motivo: this.motivoseleccionado.nombre
-      }, {
-        responseType: 'blob'
-      })
-        .then(response => {
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'ajuste_inventario.pdf');
-          document.body.appendChild(link);
-          link.click();
-          this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'PDF generado correctamente' });
-        })
-        .catch(error => {
-          console.error("Error al generar el PDF:", error);
-          this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el PDF' });
-        })
-        .finally(() => {
-          this.isLoading = false;
-        });
-    },
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
+  } catch (error) {
+    console.error("Error al exportar PDF:", error);
+    let mensaje = "No se pudo exportar el reporte PDF";
+    if (error.code === 'ECONNABORTED') {
+      mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
+    }
+    this.$toast.add({ severity: 'error', summary: 'Error', detail: mensaje, life: 5000 });
+  } finally {
+    this.isLoading = false;
+  }
+},
+
+async exportarReporteExcel() {
+  if (!this.fechaInicio || !this.fechaFin) {
+    swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
+    return;
+  }
+  this.isLoading = true;
+  try {
+    const fInicio = this.formatDate(this.fechaInicio);
+    const fFin = this.formatDate(this.fechaFin);
+    const almacen = this.idAlmacen ? this.idAlmacen : '';
+    const busqueda = this.buscar ? this.buscar : '';
+
+    const response = await axios.get(`/ajusteinv/reporte/excel`, {
+      params: {
+        fechaInicio: fInicio,
+        fechaFin: fFin,
+        idAlmacen: almacen,
+        buscar: busqueda
+      },
+      responseType: 'blob',
+      timeout: 600000
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    let filename = 'Reporte_Ajuste.xlsx';
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) { 
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
+  } catch (error) {
+    console.error("Error al exportar Excel:", error);
+    this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el reporte Excel', life: 5000 });
+  } finally {
+    this.isLoading = false;
+  }
+},
   },
   async mounted() {
     this.handleResize();
