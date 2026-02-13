@@ -1043,17 +1043,51 @@
                   <Button icon="pi pi-search" :disabled="!selectedAlmacen" @click="abrirModal" />
                 </div>
 
-                <ul v-if="mostrarDesplegable" class="desplegable-simple">
+                <ul v-if="mostrarDesplegable" class="desplegable-simple" style="max-height: 300px; overflow-y: auto;">
                   <li v-for="(articulo, index) in resultadosBusqueda" :key="articulo.id"
-                    @click="seleccionarArticulo(articulo)" :class="{ seleccionado: index === indiceSeleccionado }">
-                    {{ articulo.nombre }} / {{ articulo.codigo }} / {{ articulo.nombre_proveedor || 'N/A' }} / {{
-                      articulo.precio_uno ||
-                      '0.00' }}
+                      @click="seleccionarArticulo(articulo)" 
+                      :class="{ 
+                          'seleccionado': index === indiceSeleccionado,
+                          'item-sin-stock': articulo.saldo_stock <= 0 
+                      }"
+                      style="padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer;">
+                      
+                    <div class="item-contenido" style="line-height: 1.4; font-size: 0.85rem;">
+                      
+                      <span style="font-weight: bold; color: #333; font-size: 0.9rem;">
+                        {{ articulo.nombre }}
+                      </span>
+
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+
+                      <span class="text-muted">
+                        {{ articulo.nombre_proveedor || "Sin Lab." }}
+                      </span>
+
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+
+                      <span class="text-muted">
+                        {{ articulo.nombre_categoria || "Sin Cat." }}
+                      </span>
+
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+
+                      <span class="text-primary font-weight-bold">
+                        {{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.
+                      </span>
+
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+
+                      <span :class="articulo.saldo_stock > 0 ? 'text-success font-weight-bold' : 'text-danger font-weight-bold'">
+                        Stock: {{ articulo.saldo_stock }}
+                      </span>
+                    </div>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
+          
 
           <DataTable :value="arrayDetalle" class="p-mt-3">
             <Column header="Opciones" style="width: 15%">
@@ -7748,9 +7782,41 @@ div[class*="swal"] {
   cursor: not-allowed !important;
 }
 
-/* Espaciado entre switch y label */
 .auto-verificar-switch {
   margin: 0 2px !important;
   vertical-align: middle !important;
+}
+
+.item-sin-stock {
+  background-color: #ffe6e6 !important; 
+  color: #a00000;
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.item-sin-stock:hover {
+  background-color: #ffcccc !important;
+}
+
+.item-contenido {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.item-contenido span {
+  white-space: nowrap;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+.text-primary {
+  color: #007bff;
+}
+
+.font-weight-bold {
+  font-weight: 700;
 }
 </style>
