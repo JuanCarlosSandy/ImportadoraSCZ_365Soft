@@ -1317,7 +1317,6 @@
             <div class="p-inputgroup" style="width: 100%; position: relative;">
               <InputText id="buscarA" v-model="buscarA" class="p-inputtext-sm" autocomplete="off"
                 style="width: 100%; margin: 0;" @input="listarArticulo(buscarA)" />
-              <!-- Texto informativo -->
               <span v-if="buscarA.trim() === ''"
                 style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
                 Realice una búsqueda por nombre, proveedor, código de barra o código del producto
@@ -1332,6 +1331,7 @@
             class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-seleccionable"
             responsiveLayout="scroll"
             @row-click="seleccionarItem($event.data, 'producto')">
+
             <Column header="Opciones" style="width: 120px">
               <template #body="slotProps">
                 <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
@@ -1340,19 +1340,26 @@
                   @click.stop="verStockPorSucursal(slotProps.data)" />
               </template>
             </Column>
+
+            <Column field="codigo" header="Código" style="width: 100px" />
+
             <Column field="nombre" header="Nombre" />
+
             <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
+
             <Column field="contacto" header="Proveedor" class="d-none d-lg-table-cell" />
+
             <Column header="Precio Venta">
               <template #body="slotProps">
                 {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
               </template>
             </Column>
+
             <Column field="saldo_stock" header="Stock" class="d-none d-md-table-cell">
               <template #body="slotProps">
                 <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
                 <span v-else-if="slotProps.data.saldo_stock == 0" style="color: red; font-weight: bold;">
-                  ⚠️ Sin stock
+                   Sin stock
                 </span>
                 <span v-else>{{ slotProps.data.saldo_stock }}</span>
               </template>
