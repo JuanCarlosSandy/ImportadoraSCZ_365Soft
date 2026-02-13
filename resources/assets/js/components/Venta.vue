@@ -905,7 +905,6 @@
                           </div>
                         </div>
 
-                        <!-- 🔹 Cambio a Entregar -->
                         <div class="form-group mb-0">
                           <label for="cambioRecibir" class="label-input">
                             <i class="fa fa-exchange mr-1"></i> Saldo Total
@@ -923,7 +922,6 @@
                           Detalle de Venta
                         </h5>
 
-                        <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
                         <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
                           style="font-size: 0.8rem;">
                           <i class="fa fa-gift mr-1"></i>
@@ -947,10 +945,7 @@
                             </small>
                           </div>
                           <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
-                            <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1)">
-                              <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
-                                style="height: 24px;" />
-                            </button>-->
+                        
                             <button type="button" @click="aplicarDescuentoRecibo(2, 1)" class="btn btn-success">
                               <i class="fa fa-check mr-2"></i> Registrar Pago
                             </button>
@@ -967,7 +962,6 @@
                           Detalle de Venta
                         </h5>
 
-                        <!-- 🔹 Mostrar Saldo a Favor del Cliente -->
                         <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
                           style="font-size: 0.8rem;">
                           <i class="fa fa-gift mr-1"></i>
@@ -994,7 +988,6 @@
 
                     <button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
       
-                    <!-- Contenedor de los botones -->
                     <div class="d-flex flex-wrap justify-content-center">
                       <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(2)">
                         <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
@@ -1019,165 +1012,168 @@
         <InputText v-model="num_comprob" type="hidden" disabled />
         </div>
 
-        <div v-if="step === 1" class="step-content">
-          <div class="p-fluid p-grid form-section">
-            <div class="p-col-12 p-md-6">
-              <label for="tipo_documento" class="label-input">
-                Almacén de trabajo <span class="text-required">*</span>
-              </label>
-              <Dropdown v-model="selectedAlmacen" :options="arrayAlmacenes" optionLabel="nombre_almacen"
-                optionValue="id" placeholder="Seleccione un almacén" @change="getAlmacenProductos"
-                class="dropdown-full" />
+<div v-if="step === 1" class="step-content">
+            <div class="p-fluid p-grid">
+              
+
+              <div class="p-col-12 p-md-4 mb-0 pb-0" style="margin-top: -17px !important;">
+                <label for="tipo_documento" class="label-input">
+                  Almacén de trabajo <span class="text-required">*</span>
+                </label>
+                <Dropdown 
+                  v-model="selectedAlmacen" 
+                  :options="arrayAlmacenes" 
+                  optionLabel="nombre_almacen"
+                  optionValue="id" 
+                  placeholder="Seleccione" 
+                  :disabled="arrayDetalle.length > 0"
+                  @change="getAlmacenProductos" 
+                  class="dropdown-full input-height-fix" 
+                />
+              </div>
+
+              <div class="p-col-12 p-md-8 mb-0 pb-0">
+                <label for="nombre" class="label-input">
+                  Buscar Producto
+                </label>
+                <div class="input-con-desplegable">
+                  <div class="p-inputgroup input-height-fix">
+                    <InputText 
+                      ref="inputCodigo" 
+                      v-model="codigo" 
+                      placeholder="Buscar por nombre, código o alfanumérico" 
+                      class="input-full" 
+                      :disabled="!idAlmacen" 
+                      @input="buscarArticulo"
+                      @keydown.down="moverSeleccion('abajo')" 
+                      @keydown.up="moverSeleccion('arriba')"
+                      @keydown.enter="seleccionarConEnter" 
+                    />
+                    <Button icon="pi pi-search" class="btn-search-fix" @click="abrirModal" />
+                  </div>
+
+                  <ul v-if="mostrarDesplegable" class="desplegable-simple" style="max-height: 300px; overflow-y: auto;">
+                    <li v-for="(articulo, index) in resultadosBusqueda" :key="articulo.id"
+                        @click="seleccionarArticulo(articulo)" 
+                        :class="{ 
+                            'seleccionado': index === indiceSeleccionado,
+                            'item-sin-stock': articulo.saldo_stock <= 0 
+                        }"
+                        style="padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer;">
+                            
+                      <div class="item-contenido" style="line-height: 1.4; font-size: 0.85rem;">
+                         <span style="font-weight: bold; color: #333; font-size: 0.9rem;">
+                          {{ articulo.nombre }}
+                        </span>
+                        <span style="color: #bbb; margin: 0 5px;">/</span>
+                        <span class="text-muted">
+                          {{ articulo.nombre_categoria || "Sin Cat." }}
+                        </span>
+                        <span style="color: #bbb; margin: 0 5px;">/</span>
+                        <span class="text-primary font-weight-bold">
+                            {{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.
+                        </span>
+                        <span style="color: #bbb; margin: 0 5px;">/</span>
+                        <span :class="articulo.saldo_stock > 0 ? 'text-success font-weight-bold' : 'text-danger font-weight-bold'">
+                            Stock: {{ articulo.saldo_stock }}
+                        </span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
-            <div class="p-col-12 p-md-6">
-              <label for="nombre" class="label-input">
-                Buscar Producto
-              </label>
-              <div class="input-con-desplegable">
-                <div class="p-inputgroup">
-                  <InputText ref="inputCodigo" v-model="codigo" placeholder="Buscar por nombre, código o alfanumérico"
-                    class="input-full" :disabled="!selectedAlmacen" @input="buscarArticulo"
-                    @keydown.down="moverSeleccion('abajo')" @keydown.up="moverSeleccion('arriba')"
-                    @keydown.enter="seleccionarConEnter" />
-                  <Button icon="pi pi-search" :disabled="!selectedAlmacen" @click="abrirModal" />
-                </div>
+            <div v-if="arrayDetalle.length === 0" 
+              style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; padding: 1rem;">
+              <i class="pi pi-shopping-cart" style="font-size: 2.5rem; color: #ccc; margin-bottom: 0.8rem; opacity: 0.6;"></i>
+              <h4 style="color: #666; font-weight: 500; margin: 0; font-size: 1.1rem;">
+                Carrito de ventas vacío
+              </h4>
+              <p style="color: #999; font-size: 0.9rem; margin-top: 0.5rem;">
+                Agregue productos para comenzar
+              </p>
+            </div>
 
-                <ul v-if="mostrarDesplegable" class="desplegable-simple" style="max-height: 300px; overflow-y: auto;">
-                  <li v-for="(articulo, index) in resultadosBusqueda" :key="articulo.id"
-                      @click="seleccionarArticulo(articulo)" 
-                      :class="{ 
-                          'seleccionado': index === indiceSeleccionado,
-                          'item-sin-stock': articulo.saldo_stock <= 0 
-                      }"
-                      style="padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer;">
-                    <div class="item-contenido" style="line-height: 1.4; font-size: 0.85rem;">
-                      <span style="font-weight: bold; color: #333; font-size: 0.9rem;">{{ articulo.nombre }}</span>
-                      <span style="color: #bbb; margin: 0 5px;">/</span>
-                      <span class="text-muted">{{ articulo.nombre_proveedor || "Sin Lab." }}</span>
-                      <span style="color: #bbb; margin: 0 5px;">/</span>
-                      <span class="text-muted">{{ articulo.nombre_categoria || "Sin Cat." }}</span>
-                      <span style="color: #bbb; margin: 0 5px;">/</span>
-                      <span class="text-primary font-weight-bold">{{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.</span>
-                      <span style="color: #bbb; margin: 0 5px;">/</span>
-                      <span :class="articulo.saldo_stock > 0 ? 'text-success font-weight-bold' : 'text-danger font-weight-bold'">
-                        Stock: {{ articulo.saldo_stock }}
-                      </span>
-                    </div>
-                  </li>
-                </ul>
+            <DataTable v-if="arrayDetalle.length > 0" :value="arrayDetalle" class="p-mt-3" responsiveLayout="scroll">
+              <Column header="Opciones" style="width: 50px">
+                <template #body="slotProps">
+                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini"
+                    @click="slotProps.data.medida != 'KIT' ? eliminarDetalle(slotProps.data.id) : eliminarKit(slotProps.data.idkit)" />
+                </template>
+              </Column>
+              <Column field="articulo" header="Artículo" />
+              <Column header="Stock Disp." style="width: 100px; text-align: center;">
+                <template #body="slotProps">
+                  <div class="d-flex flex-column align-items-center">
+                    <span class="badge badge-info mb-1">{{ slotProps.data.stock }} Unds.</span>
+                  </div>
+                </template>
+              </Column>
+              <Column header="Precio Unitario" style="width: 100px">
+                <template #body="slotProps">
+                  <div class="text-center">
+                    <input type="text" :value="Number(slotProps.data.precioseleccionado).toFixed(2)"
+                      class="form-control form-control-sm text-center font-weight-bold" readonly />
+                  </div>
+                </template>
+              </Column>
+              <Column header="Precio Venta" style="width: 130px; text-align: center;">
+                <template #body="slotProps">
+                  <div v-if="slotProps.data.unidad_envase >= 1" class="d-flex flex-column align-items-center">
+                    <InputSwitch v-model="slotProps.data.es_paquete" @change="cambiarModoVenta(slotProps.data)"
+                      style="transform: scale(0.8);" />
+                    <small :style="{ color: slotProps.data.es_paquete ? '#2196F3' : '#689F38', fontWeight: 'bold' }">
+                      {{ slotProps.data.es_paquete ? 'POR PAQUETE' : 'POR UNIDAD' }}
+                    </small>
+                  </div>
+                  <div v-else>
+                    <span class="badge badge-secondary">Unidad Única</span>
+                  </div>
+                </template>
+              </Column>
+              <Column header="Cantidad" style="width: 100px">
+                <template #body="slotProps">
+                  <InputNumber v-model="slotProps.data.cantidad" :min="1" @input="actualizarDetalle(slotProps.index)"
+                    class="p-inputtext-sm input-unidades" inputClass="text-center" />
+                </template>
+              </Column>
+               <Column header="Descuento (Bs)" style="width: 120px">
+                <template #body="slotProps">
+                  <InputNumber 
+                    v-model="slotProps.data.descuento" 
+                    mode="decimal" 
+                    :minFractionDigits="2" 
+                    :maxFractionDigits="2"
+                    :min="0" 
+                    class="p-inputtext-sm" 
+                    @keydown.native="convertirPuntoComa"
+                    @input="actualizarDetalle(slotProps.index)" 
+                  />
+                </template>
+              </Column>
+              <Column header="Total" style="width: 100px; text-align: right;">
+                <template #body="slotProps">
+                  <span style="font-weight: bold;">
+                    {{ ((slotProps.data.precioseleccionado * slotProps.data.cantidad - (slotProps.data.descuento || 0))
+                      * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  </span>
+                  <small>{{ monedaVenta[1] }}</small>
+                </template>
+              </Column>
+            </DataTable>
+
+            <div v-if="arrayDetalle.length > 0" class="p-grid p-mt-3">
+              <div class="p-col-12 p-md-8"></div>
+              <div class="p-col-12 p-md-4" style="text-align: right;">
+                <h5>
+                  Total Neto:
+                  {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  {{ monedaVenta[1] }}
+                </h5>
               </div>
             </div>
           </div>
-
-          <div v-if="arrayDetalle.length === 0" class="carrito-vacio-mensaje">
-            <i class="pi pi-shopping-cart"></i>
-            <h4>Carrito de ventas vacío</h4>
-            <p>Agregue productos para comenzar</p>
-          </div>
-
-          <DataTable v-if="arrayDetalle.length > 0" :value="arrayDetalle" class="p-mt-3">
-            <Column header="Opciones" style="width: 15%">
-              <template #body="slotProps">
-                <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini" @click="
-                  slotProps.data.medida != 'KIT'
-                    ? eliminarDetalle(slotProps.data.id)
-                    : eliminarKit(slotProps.data.idkit)
-                  " />
-                <Button :label="getLabelModoVenta(slotProps.data.modoVenta)" class="p-button-info p-button-sm btn-mini"
-                  style="margin-left: 5px" :disabled="slotProps.data.descripcion_fabrica == 1"
-                  @click="cambiarModoVenta(slotProps.data)" />
-              </template>
-            </Column>
-            <Column field="codigo_producto" header="Codigo" style="width: 30%" />
-            <Column field="articulo" header="Producto" style="width: 30%" />
-            <Column field="stock" header="Stock Actual" style="width: 15%">
-              <template #body="slotProps">
-                <div style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
-                  <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
-                  <span v-else>
-                    {{
-                      slotProps.data.modoVenta === 'caja'
-                        ? slotProps.data.stock_cajas + ' Cajas'
-                        : slotProps.data.modoVenta === 'docena'
-                          ? (slotProps.data.stock / 12).toFixed(2) + ' Docenas'
-                          : slotProps.data.stock + ' Unidades'
-                    }}
-                  </span>
-                </div>
-              </template>
-            </Column>
-            <Column field="unidad_envase" header="Cant x Caja" style="width: 10%" class="column-precio-unidad">
-              <template #body="slotProps">
-                <input type="text" class="form-control form-control-sm input-precio-unidad"
-                  style="height: 32px; font-size: 0.875rem; padding: 0.25rem 0.3rem; text-align: center; width: 100%;"
-                  :value="slotProps.data.descripcion_fabrica == 1 ? '-' : slotProps.data.unidad_envase" disabled />
-              </template>
-            </Column>
-            <Column field="precioUnidad" header="Precio Unidad" style="width: 12%" class="column-precio-unidad">
-              <template #body="slotProps">
-                <div class="precio-wrapper" style="display: flex; gap: 5px; align-items: center;">
-                  <input type="text" v-model.number="slotProps.data.precioseleccionado"
-                    @input="actualizarDetalle(slotProps.index); guardarCambioPrecio(slotProps.data)" class="form-control form-control-sm input-precio-unidad"
-                    :disabled="!slotProps.data.editandoPrecio && (permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1')" />
-                  <Button 
-                    :icon="slotProps.data.editandoPrecio ? 'pi pi-check' : 'pi pi-pencil'" 
-                    class="p-button-sm p-button-secondary btn-precio-toggle"
-                    :class="slotProps.data.editandoPrecio ? 'p-button-success' : ''"
-                    :title="slotProps.data.editandoPrecio ? 'Guardar precio' : 'Editar precio'" 
-                    @click="toggleEditarPrecio(slotProps.data)" />
-                </div>
-              </template>
-            </Column>
-            <Column field="unidades" header="Cantidad a Vender" style="width: 10%" class="column-unidades">
-              <template #body="slotProps">
-                <InputNumber v-model="slotProps.data.cantidad" :min="1" @input="actualizarDetalle(slotProps.index)"
-                  class="p-inputtext-sm input-unidades" style="height: 32px;"
-                  :ref="'inputCantidad_' + slotProps.index" />
-              </template>
-            </Column>
-            <Column v-if="permitir_ofertas == 1" field="descuento" header="Descuento (%)" style="width: 10%"
-              class="column-descuento">
-              <template #body="slotProps">
-                <span style="margin-left: 12.5%; padding: 5px;">
-                  {{ slotProps.data.descuento }}%
-                </span>
-              </template>
-            </Column>
-            <Column field="total" header="Total" style="width: 15%">
-              <template #body="slotProps">
-                {{
-                  (
-                    (
-                      (
-                        slotProps.data.modoVenta === 'caja'
-                          ? slotProps.data.precioseleccionado * slotProps.data.cantidad * slotProps.data.unidad_envase
-                          : slotProps.data.modoVenta === 'docena'
-                            ? slotProps.data.precioseleccionado * slotProps.data.cantidad * 12
-                            : slotProps.data.precioseleccionado * slotProps.data.cantidad
-                      )
-                      * (1 - (parseFloat(slotProps.data.descuento || 0) / 100))
-                    )
-                    * parseFloat(monedaVenta[0])
-                  ).toFixed(2)
-                }}
-                {{ monedaVenta[1] }}
-              </template>
-            </Column>
-          </DataTable>
-
-          <div class="p-grid p-mt-3">
-            <div class="p-col-12 p-md-8"></div>
-            <div class="p-col-12 p-md-4" style="text-align: right;">
-              <h5>
-                Total Neto:
-                {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }}
-                {{ monedaVenta[1] }}
-              </h5>
-            </div>
-          </div>
-        </div>
-
         <div class="buttons d-flex justify-content-center">
           <button class="btn btn-primary mr-2" @click="prevStep" :disabled="step === 1">
             Anterior
@@ -7147,558 +7143,1114 @@ export default {
 }
 </style>
 
-<style>
-/* SweetAlert v1 (swal) */
-.sweet-alert {
-  z-index: 99999 !important;
+<style scoped>
+/* ==========================================================================
+   ESTANDARIZACIÓN DE ALMACÉN Y BUSCADOR (FIX DE ALINEACIÓN)
+   ========================================================================== */
+
+/* 1. Forzar altura idéntica para Dropdown, InputText y Botón de búsqueda */
+.dropdown-full,
+.input-full,
+.p-inputgroup .p-button {
+  height: 38px !important; /* Altura estándar desktop */
+  min-height: 38px !important;
 }
 
-.sweet-overlay {
-  z-index: 99998 !important;
+/* 2. Ajuste interno del Dropdown de PrimeVue para centrar texto verticalmente */
+.dropdown-full >>> .p-dropdown-label {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
 }
 
-/* SweetAlert v2 (Swal) */
-.swal2-container {
-  z-index: 99999 !important;
+/* 3. Ajuste interno del InputText para alineación */
+.input-full {
+  display: flex;
+  align-items: center;
 }
 
-.swal2-popup {
-  z-index: 99999 !important;
+/* 4. Labels estandarizados */
+.label-input {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem; /* Margen inferior uniforme */
+  white-space: nowrap;
 }
 
-.swal2-backdrop-show {
-  z-index: 99998 !important;
+/* 5. Icono de la lupa centrado */
+.p-inputgroup .p-button .p-button-icon {
+  font-size: 1rem;
 }
 
-/* Clase personalizada para z-index */
-.swal-zindex {
-  z-index: 99999 !important;
+/* ==========================================================================
+   ESTILOS GENERALES Y COMPONENTES
+   ========================================================================== */
+
+.dialog-combo .p-dialog-header {
+  padding: 0;
 }
 
-/* Asegurar que todos los elementos de SweetAlert estén por encima */
-div[class*="swal"] {
-  z-index: 99999 !important;
-}
-</style>
-
-<style>
-/* Estilos para dispositivos móviles */
-@media (max-width: 768px) {
-
-  .p-dropdown,
-  .p-inputtext {
-    height: 32px !important;
-    font-size: 0.875rem !important;
-    padding: 0.25rem 0.5rem !important;
-  }
-
-  /* FORZAR tamaño y centrado del texto seleccionado en el Dropdown */
-  .p-dropdown .p-dropdown-label {
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    font-size: 0.75rem !important;
-    padding: 0 0.4rem !important;
-  }
-
-  .p-dropdown .p-dropdown-label span,
-  .p-dropdown .p-dropdown-label-container {
-    font-size: 0.75rem !important;
-    line-height: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    height: 100% !important;
-  }
-
-  .p-dropdown .p-dropdown-trigger {
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    padding: 0 0.3rem !important;
-  }
-
-  /* Ajustar el panel del dropdown */
-  .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
-    padding: 0.25rem 0.5rem !important;
-    font-size: 0.875rem !important;
-  }
-
-  /* Forzar el tamaño del texto seleccionado */
-  .p-dropdown .p-dropdown-label,
-  .p-dropdown .p-dropdown-label span {
-    font-size: 0.75rem !important;
-    line-height: 1.1 !important;
-  }
-
-  .p-dropdown .p-dropdown-label-container {
-    display: flex !important;
-    align-items: center !important;
-    height: 100% !important;
-  }
-
-  /* Resto de tus estilos */
-  .p-inputgroup .p-inputtext {
-    height: 32px !important;
-  }
-
-  .p-inputgroup .p-button {
-    height: 32px !important;
-    width: 32px !important;
-    padding: 0.25rem !important;
-  }
-
-  #buscarA {
-    height: 32px !important;
-    padding: 0.25rem 0.5rem !important;
-    font-size: 0.875rem !important;
-  }
-
-  .p-float-label .p-inputtext {
-    height: 36px !important;
-    padding: 0.5rem 0.75rem !important;
-    font-size: 0.875rem !important;
-  }
-
-  .p-float-label {
-    margin-bottom: 1rem !important;
-    position: relative !important;
-  }
-
-  .p-float-label label {
-    top: 50% !important;
-    left: 0.75rem !important;
-    transform: translateY(-50%) !important;
-    font-size: 0.875rem !important;
-    transition: all 0.2s ease !important;
-    pointer-events: none !important;
-  }
-
-  .p-float-label .p-inputtext:focus~label,
-  .p-float-label .p-inputtext.p-filled~label,
-  .p-float-label input:not(:placeholder-shown)~label {
-    top: -0.25rem !important;
-    left: 0.75rem !important;
-    font-size: 0.75rem !important;
-    transform: translateY(0) !important;
-    background: white !important;
-    padding: 0 0.25rem !important;
-    z-index: 1 !important;
-  }
-
-  .step-content h5 {
-    margin-bottom: 1rem !important;
-    font-size: 1.25rem !important;
-  }
-
-  .step-content .p-grid {
-    margin-top: 0.5rem !important;
-  }
-
-  .card .form-control,
-  .input-group .form-control {
-    height: 32px !important;
-    font-size: 0.875rem !important;
-    padding: 0.25rem 0.5rem !important;
-  }
-
-  .input-group-text {
-    height: 32px !important;
-    font-size: 0.875rem !important;
-    padding: 0.25rem 0.5rem !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .card-body label {
-    font-size: 0.875rem !important;
-    margin-bottom: 0.25rem !important;
-  }
-
-  .p-datatable .p-inputtext-sm,
-  .p-datatable .input-precio-unidad,
-  .p-datatable .input-unidades input,
-  .p-datatable .input-descuento input {
-    height: 28px !important;
-    font-size: 0.75rem !important;
-    padding: 0.2rem 0.3rem !important;
-  }
-
-  .p-datatable .p-inputnumber input {
-    height: 28px !important;
-    font-size: 0.75rem !important;
-    padding: 0.2rem 0.3rem !important;
-  }
-
-  .p-datatable .p-datatable-tbody>tr>td {
-    padding: 0.3rem !important;
-  }
-
-  .p-datatable .p-button-sm {
-    padding: 0.2rem 0.3rem !important;
-    font-size: 0.7rem !important;
-  }
-
-  .responsive-dialog .p-dialog-content {
-    padding: 0.75rem !important;
-  }
-
-  .step-content {
-    padding: 0.5rem !important;
-  }
-
-  .buttons {
-    margin-top: 1rem !important;
-    gap: 0.5rem !important;
-  }
-
-  .buttons .btn {
-    padding: 0.5rem 1rem !important;
-    font-size: 0.875rem !important;
-  }
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.25rem;
 }
 
-/* Estilos adicionales para mejorar la experiencia móvil */
-@media (max-width: 480px) {
-
-  .p-dropdown,
-  .p-inputtext {
-    height: 30px !important;
-    font-size: 0.8rem !important;
-    padding: 0.2rem 0.4rem !important;
-  }
-
-  /* FORZAR tamaño del texto del Dropdown en pantallas pequeñas */
-  .p-dropdown .p-dropdown-label {
-    font-size: 0.7rem !important;
-    padding: 0 0.3rem !important;
-    height: 30px !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .p-dropdown .p-dropdown-label span,
-  .p-dropdown .p-dropdown-label-container {
-    font-size: 0.7rem !important;
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
-    padding: 0.2rem 0.4rem !important;
-    font-size: 0.8rem !important;
-  }
-
-  .p-float-label .p-inputtext {
-    height: 34px !important;
-    padding: 0.4rem 0.6rem !important;
-    font-size: 0.8rem !important;
-  }
-
-  .p-float-label label {
-    font-size: 0.8rem !important;
-    left: 0.6rem !important;
-  }
-
-  .p-float-label .p-inputtext:focus~label,
-  .p-float-label .p-inputtext.p-filled~label,
-  .p-float-label input:not(:placeholder-shown)~label {
-    top: -0.2rem !important;
-    left: 0.6rem !important;
-    font-size: 0.7rem !important;
-  }
-
-  .step-content h5 {
-    font-size: 1.1rem !important;
-    margin-bottom: 0.75rem !important;
-  }
-
-  .card .form-control,
-  .input-group .form-control {
-    height: 30px !important;
-    font-size: 0.8rem !important;
-    padding: 0.2rem 0.4rem !important;
-  }
-
-  .input-group-text {
-    height: 30px !important;
-    font-size: 0.8rem !important;
-    padding: 0.2rem 0.4rem !important;
-  }
-
-  .p-datatable .p-datatable-tbody>tr>td {
-    padding: 0.25rem !important;
-  }
-
-  .p-datatable .p-inputtext-sm,
-  .p-datatable .input-precio-unidad,
-  .p-datatable .input-unidades input,
-  .p-datatable .input-descuento input,
-  .p-datatable .p-inputnumber input {
-    height: 26px !important;
-    font-size: 0.7rem !important;
-    padding: 0.15rem 0.25rem !important;
-  }
-
-  .text-green {
-    color: green;
-    font-weight: bold;
-  }
-
-  .text-red {
-    color: red;
-    font-weight: bold;
-  }
-
-  .text-orange {
-    color: orange;
-    font-weight: bold;
-  }
-
-  .text-purple {
-    color: purple;
-    font-weight: bold;
-  }
-
-  .text-blue {
-    color: blue;
-    font-weight: bold;
-  }
-
-  .text-yellow {
-    color: brown;
-    font-weight: bold;
-  }
+.icon-header {
+  font-size: 2rem;
+  color: #3f51b5;
 }
 
-/* Contenedor principal del dropdown */
-.dropdown-bancos .p-dropdown {
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.dialog-content {
+  padding: 0 1.25rem 1rem;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1.25rem;
+}
+
+.cantidad-badge {
+  background: #eef2ff;
+  color: #3f51b5;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.precio-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.input-precio-unidad {
+  text-align: center;
+  height: 32px;
+}
+
+.btn-precio-toggle {
+  height: 32px;
+  width: 32px;
+  padding: 0;
+}
+
+.estado-badge {
+  padding: 0.15rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.70rem;
+  display: inline-block;
+  text-align: center;
+}
+
+/* VERDE - PAGADO */
+.estado-verde {
+  background-color: #28a745;
+}
+
+/* ROJO - ANULADA */
+.estado-rojo {
+  background-color: #dc3545;
+}
+
+/* AMARILLO - CRÉDITO */
+.estado-amarillo {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.tabla-venta {
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-venta .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-venta th,
+.tabla-venta td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+/* Inputs generales */
+.input-uniforme {
+  width: 50%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  height: 30px;
+}
+
+.input-cambio {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  height: 30px;
+}
+
+.addon-small {
+  background-color: #f3f4f6;
+  font-size: 0.8rem;
+  color: #374151;
+  border-radius: 6px 0 0 6px;
+  padding: 6px 10px;
+}
+
+.custom-input-group .form-control {
+  border-radius: 0 6px 6px 0;
+  font-size: 0.8rem;
+  height: 33px;
+}
+
+.form-control[readonly],
+.form-control:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+}
+
+/* Campos opcionales */
+.optional-field {
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  align-items: center;
+  gap: 0.4rem;
+  color: #6c757d;
+}
+
+.optional-icon {
+  color: #17a2b8;
+  font-size: 0.5rem;
+}
+
+.optional-tag {
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-size: 0.7rem;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  margin-left: 4px;
+}
+
+.p-inputgroup {
+  display: flex;
+  align-items: stretch;
   width: 100%;
 }
 
-/* OPCIONES */
-.banco-opcion {
+/* Ajustes de width para inputs y dropdowns */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+.input-full >>> .p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+.p-inputgroup .p-button {
+  border-radius: 0 6px 6px 0;
+  font-size: 0.8rem;
   padding: 6px 10px;
-  border-radius: 8px;
-  background: #fafafa;
-  border: 1px solid #eee;
-  margin: 4px 0;
-  transition: all 0.2s ease-in-out;
-  font-size: 0.75rem;
 }
 
-/* Hover */
-.banco-opcion:hover {
-  background: #e3f2fd;
-  border-color: #90caf9;
-  cursor: pointer;
+.text-required {
+  color: #dc2626;
+  font-weight: 700;
 }
 
-/* Título (nombre del banco) */
-.banco-opcion-header {
-  font-weight: 600;
-  font-size: 0.78rem;
-  color: #0d47a1;
-  margin-bottom: 4px;
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
-/* Datos en fila */
-.banco-opcion-detalle {
+.dropdown-full >>> .p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+.dropdown-full >>> .p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full >>> .p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+.dropdown-full >>> .p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+}
+
+.form-section {
+  margin-bottom: 1rem;
+}
+
+.p-error {
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* ===== DETALLE VENTA PRO ===== */
+.detalle-venta-pro {
+  background: #ffffff;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  max-width: 1500px;
+  margin: 0 auto;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.4s ease;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.detalle-header-pro {
   display: flex;
   justify-content: space-between;
-  font-size: 0.72rem;
-  color: #333;
+  align-items: flex-end;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 0.1rem;
+  margin-bottom: 1rem;
 }
 
-/* Valor cuando ya está seleccionado */
-.banco-value {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #0d47a1;
+.detalle-titulo-pro {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
 }
 
-/*Banco*/
-.banco-opcion {
+.detalle-subtitulo-pro {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.detalle-meta-pro {
   display: flex;
-  align-items: center;
-  padding: 10px;
-  gap: 12px;
-  width: 100%;
+  gap: 2rem;
 }
 
-.banco-logo {
-  width: 62px;
-  height: 62px;
-  object-fit: contain;
-  /* para que no se distorsione */
-  border-radius: 6px;
+.label-pro {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.04em;
 }
 
-.banco-detalles {
+.valor-pro {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 0.15rem;
+}
+
+.detalle-cliente-pro {
+  background: #f9fafb;
+  border-radius: 0.2rem;
+  padding: 0.05rem 1rem;
+  margin-bottom: 1.0rem;
+  border: 1px solid #e5e7eb;
+}
+
+.detalle-tabla-pro .p-datatable {
+  border-radius: 0.2rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.p-datatable tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.detalle-resumen-pro {
+  margin-top: 1.2rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.7rem;
   display: flex;
   flex-direction: column;
-  line-height: 1.1rem;
+  gap: 0.1rem;
+  text-align: right;
 }
 
-.banco-detalles .cuenta {
-  font-weight: bold;
-  font-size: 0.90rem;
-}
-
-.banco-detalles .numero,
-.banco-detalles .tipo {
-  font-size: 0.75rem;
-  opacity: 0.8;
-}
-
-.banco-value {
+.resumen-linea-pro {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-height: 28px;
-  /* evita que crezca */
+  justify-content: flex-end;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #374151;
 }
 
-.banco-value img.banco-logo {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
+.total-final-pro {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827;
 }
 
-/* Contenedor */
-.btn-selector {
-  display: inline-flex;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #e9ecef;
-  padding: 4px;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
-}
-
-/* Botón base */
-.btn-selector-btn {
-  padding: 10px 18px;
-  background: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  font-weight: 600;
-  color: #555;
-  font-size: 0.9rem;
-  transition: 0.25s ease all;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-}
-
-/* Hover ligero */
-.btn-selector-btn:hover {
-  background: rgba(0, 123, 255, 0.12);
-  color: #007bff;
-}
-
-/* ACTIVADO: efecto moderno */
-.btn-selector-btn.active {
-  background: #007bff;
-  color: white;
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-  transform: translateY(-1px);
-}
-
-/* Animación sutil */
-.btn-selector-btn.active i {
-  animation: bounce 0.35s ease;
-}
-
-@keyframes bounce {
-  0% {
-    transform: scale(1);
-  }
-
-  40% {
-    transform: scale(1.2);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* === Botones modernos === */
-.pago-buttons .pago-btn {
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 6px 16px;
-  border: 2px solid #007bff;
-  background: white;
-  color: #007bff;
-  transition: 0.25s ease;
-}
-
-.pago-buttons .pago-btn:hover {
-  background: #e9f2ff;
-  transform: translateY(-2px);
-}
-
-/* Estado activo */
-.pago-buttons .active-btn {
-  background: #007bff;
-  color: white;
-  transform: scale(1.04);
-  box-shadow: 0 3px 10px rgba(0, 123, 255, 0.4);
-}
-
-/* Animación al salir el dropdown */
-.fade-in {
-  animation: fadeIn 0.25s ease;
+.detalle-footer-pro {
+  margin-top: 2rem;
+  text-align: right;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-
-.p-dialog .p-dialog-header .p-dialog-header-close {
-  display: none !important;
+/* Desplegable de búsqueda */
+.input-con-desplegable {
+  position: relative;
+  width: 100%;
 }
 
-.badge {
-  padding: 4px 10px;
+.desplegable-simple {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+}
+
+.desplegable-simple li {
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.desplegable-simple li:hover,
+.desplegable-simple li.seleccionado {
+  background-color: #f1f5f9;
+}
+
+/* Panel Content */
+>>>.p-panel .p-panel-content {
+  padding: 1rem;
+}
+
+>>>.p-panel .p-panel-header {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+>>>.p-panel .p-panel-header .p-panel-title {
   font-weight: 600;
 }
 
-.badge-contado {
-  background-color: #28a74520;
-  color: #28a745;
-  border: 1px solid #28a74550;
+/* Barra de búsqueda con icono */
+.search-bar .p-input-icon-left {
+  position: relative;
+  width: 100%;
 }
 
-.badge-credito {
-  background-color: #007bff20;
-  color: #007bff;
-  border: 1px solid #007bff50;
+.search-bar .p-input-icon-left i {
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+  height: 1rem;
+  z-index: 2;
+  color: #6c757d;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
-.descuento-btn {
-  background: #d93025 !important;
-  color: white !important;
+.search-bar .p-input-icon-left .p-inputtext {
+  padding-left: 2.5rem !important;
+  width: 100%;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+}
+
+.panel-title {
+  margin-left: 8px;
+}
+
+/* Responsive Dialog Styles */
+.responsive-dialog>>>.p-dialog {
+  margin: 0.75rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.responsive-dialog>>>.p-dialog-content {
+  overflow-x: auto;
+  padding: 0.8rem;
+}
+
+.responsive-dialog>>>.p-dialog-header {
+  padding: 1rem 0.75rem;
+  font-size: 1.1rem;
+}
+
+.responsive-dialog>>>.p-dialog-footer {
+  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Toolbar */
+.toolbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.search-bar {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  margin-right: 1rem;
+}
+
+/* Datatable inputs */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-inputnumber {
+  height: 32px !important;
+  width: 100% !important;
+}
+
+>>>.p-datatable .p-inputnumber .p-inputtext {
+  height: 32px !important;
+  padding: 0.25rem 0.3rem !important;
+  font-size: 0.875rem !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+>>>.p-datatable .form-control-sm {
+  height: 32px !important;
+  padding: 0.25rem 0.3rem !important;
+  font-size: 0.875rem !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .responsive-dialog>>>.p-dialog {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+  >>>.p-datatable {
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  /* Ajuste de altura para móvil */
+  .dropdown-full,
+  .input-full,
+  .p-inputgroup .p-button {
+    height: 34px !important;
+  }
+
+  .toolbar .p-button .p-button-label {
+    display: none;
+  }
+
+  .responsive-dialog>>>.p-dialog {
+    margin: 0.25rem;
+    max-height: 98vh;
+  }
+
+  .responsive-dialog>>>.p-dialog-content {
+    padding: 0.75rem;
+  }
+
+  .responsive-dialog>>>.p-dialog-header {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .responsive-dialog>>>.p-dialog-footer {
+    padding: 0.5rem 1rem;
+    justify-content: flex-end;
+  }
+
+  .toolbar-container {
+    gap: 0.5rem;
+  }
+
+  >>>.p-datatable {
+    font-size: 0.8rem;
+  }
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
+    padding: 0.4rem 0.3rem;
+  }
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  >>>.p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+    min-width: auto !important;
+  }
+
+  .search-bar .p-inputtext-sm {
+    padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  >>>.p-datatable .p-inputnumber {
+    height: 28px !important;
+    width: 100% !important;
+  }
+
+  >>>.p-datatable .p-inputnumber .p-inputtext {
+    height: 28px !important;
+    padding: 0.2rem 0.25rem !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  >>>.p-datatable .form-control-sm {
+    height: 28px !important;
+    padding: 0.2rem 0.25rem !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .toolbar .p-button .p-button-label {
+    display: none;
+  }
+
+  .responsive-dialog>>>.p-dialog {
+    margin: 0.1rem;
+    max-height: 99vh;
+  }
+
+  .responsive-dialog>>>.p-dialog-content {
+    padding: 0.5rem;
+  }
+
+  .responsive-dialog>>>.p-dialog-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .responsive-dialog>>>.p-dialog-footer {
+    padding: 0.5rem 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .responsive-dialog>>>.p-dialog-footer .p-button {
+    width: auto;
+    margin-bottom: 0.25rem;
+  }
+
+  .toolbar-container {
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+  }
+
+  .toolbar {
+    flex-shrink: 0;
+    min-width: auto;
+  }
+
+  .search-bar {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-bar .p-inputtext-sm {
+    padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  >>>.p-datatable {
+    font-size: 0.75rem;
+  }
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
+    padding: 0.3rem 0.2rem;
+  }
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  >>>.p-datatable .p-inputnumber {
+    height: 26px !important;
+    width: 100% !important;
+  }
+
+  >>>.p-datatable .p-inputnumber .p-inputtext {
+    height: 26px !important;
+    padding: 0.15rem 0.2rem !important;
+    font-size: 0.75rem !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  >>>.p-datatable .form-control-sm {
+    height: 26px !important;
+    padding: 0.15rem 0.2rem !important;
+    font-size: 0.75rem !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+}
+
+/* Paginator */
+@media (max-width: 768px) {
+  >>>.p-paginator {
+    flex-wrap: wrap !important;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
+    min-width: 32px !important;
+    height: 32px !important;
+    font-size: 0.85rem !important;
+    padding: 0 6px !important;
+    margin: 2px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  >>>.p-paginator {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
+    min-width: 28px !important;
+    height: 28px !important;
+    font-size: 0.8rem !important;
+    padding: 0 4px !important;
+    margin: 1px !important;
+  }
+}
+
+>>>.p-datatable .p-button {
+  margin-right: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  >>>.p-datatable .p-button {
+    margin-right: 0.15rem;
+    margin-bottom: 0.15rem;
+  }
+}
+
+/* Loader */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 30px;
+  border-radius: 15px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.step-indicators {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.step {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: bold;
 }
 
-/* === Estilos para Auto-Verificar InputSwitch === */
+.step.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.step.completed {
+  background-color: #28a745;
+  color: white;
+}
+
+.modal-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.5rem 0rem;
+  margin: 0;
+  box-sizing: border-box;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+  flex: 1;
+  text-align: left;
+}
+
+.close-button {
+  border: none;
+  background: #de0000;
+  color: #ffffff;
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.close-button:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: scale(1.05);
+  cursor: pointer;
+}
+
+.p-dialog-mask {
+  z-index: 9990 !important;
+}
+
+.p-dialog {
+  z-index: 9990 !important;
+}
+
+.swal2-zindex-fix {
+  z-index: 100050 !important;
+}
+
+/* Columnas de inputs tabla ventas */
+.column-precio-unidad,
+.column-unidades,
+.column-descuento {
+  min-width: 80px !important;
+  max-width: 120px !important;
+}
+
+.input-precio-unidad,
+.input-unidades,
+.input-descuento {
+  width: 100% !important;
+  min-width: 70px !important;
+  max-width: 110px !important;
+  text-align: center !important;
+  font-size: 0.8rem !important;
+  padding: 0.2rem 0.3rem !important;
+}
+
+@media (max-width: 768px) {
+  .column-precio-unidad,
+  .column-unidades,
+  .column-descuento {
+    min-width: 70px !important;
+    max-width: 90px !important;
+  }
+
+  .input-precio-unidad,
+  .input-unidades,
+  .input-descuento {
+    min-width: 60px !important;
+    max-width: 80px !important;
+    font-size: 0.75rem !important;
+    padding: 0.15rem 0.2rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .column-precio-unidad,
+  .column-unidades,
+  .column-descuento {
+    min-width: 60px !important;
+    max-width: 75px !important;
+  }
+
+  .input-precio-unidad,
+  .input-unidades,
+  .input-descuento {
+    min-width: 55px !important;
+    max-width: 70px !important;
+    font-size: 0.7rem !important;
+    padding: 0.1rem 0.15rem !important;
+  }
+
+  >>>.p-datatable .p-column-header-content {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.2rem !important;
+  }
+
+  >>>.p-datatable .p-datatable-tbody>tr>td.column-precio-unidad,
+  >>>.p-datatable .p-datatable-tbody>tr>td.column-unidades,
+  >>>.p-datatable .p-datatable-tbody>tr>td.column-descuento {
+    padding: 0.2rem 0.1rem !important;
+  }
+}
+
+/* Mensaje cumpleaños */
+.mensaje-cumpleanos-venta {
+  margin-top: 1rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+  border-radius: 8px;
+  font-weight: 700;
+  text-align: center;
+  animation: pulsoVenta 1.5s ease-in-out infinite;
+  box-shadow: 0 4px 15px rgba(67, 233, 123, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 1.1rem;
+}
+
+.mensaje-cumpleanos-venta i {
+  font-size: 1.8rem;
+  animation: rotar 2s linear infinite;
+}
+
+@keyframes pulsoVenta {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.7); }
+  70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(67, 233, 123, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(67, 233, 123, 0); }
+}
+
+@keyframes rotar {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Sin stock */
+.item-sin-stock {
+  background-color: #ffe6e6 !important; 
+  color: #a00000;
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.item-sin-stock:hover {
+  background-color: #ffcccc !important;
+}
+
+.stock-error {
+  color: red;
+  font-weight: bold;
+  font-size: 0.9em;
+  margin-left: 10px;
+}
+
+.stock-ok {
+  color: green;
+  font-weight: bold;
+  font-size: 0.9em;
+  margin-left: 10px;
+}
+
+.item-contenido {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.item-contenido span {
+  white-space: nowrap;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+.text-primary {
+  color: #007bff;
+}
+
+.font-weight-bold {
+  font-weight: 700;
+}
+
+.carrito-vacio-mensaje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #d1d5db;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.carrito-vacio-mensaje i {
+  font-size: 3rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.carrito-vacio-mensaje h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.carrito-vacio-mensaje p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Auto verificar switch */
 .auto-verificar-switch :deep(.p-inputswitch) {
   width: 50px !important;
   height: 26px !important;
@@ -7758,67 +8310,61 @@ div[class*="swal"] {
   vertical-align: middle !important;
 }
 
-.item-sin-stock {
-  background-color: #ffe6e6 !important; 
-  color: #a00000;
-  cursor: not-allowed;
-  opacity: 0.9;
-}
-
-.item-sin-stock:hover {
-  background-color: #ffcccc !important;
-}
-
-.item-contenido {
+.vertical-align-row {
   display: flex;
-  justify-content: space-between;
-  width: 100%;
+  align-items: flex-end; /* Clave para la alineación */
+  flex-wrap: wrap;
 }
 
-.item-contenido span {
-  white-space: nowrap;
+.input-height-fix,
+.input-height-fix .p-inputtext,
+.input-height-fix .p-dropdown,
+.btn-search-fix {
+  height: 40px !important; /* Altura más robusta */
+  line-height: normal;
+  box-sizing: border-box;
 }
 
-.text-muted {
-  color: #6c757d;
-}
-
-.text-primary {
-  color: #007bff;
-}
-
-.font-weight-bold {
-  font-weight: 700;
-}
-.carrito-vacio-mensaje {
+/* Ajuste específico para el Dropdown de PrimeVue */
+.input-height-fix.p-dropdown,
+.dropdown-full {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  width: 100%;
+  padding: 0 !important; /* El padding lo maneja el label interno */
+}
+
+/* Centrar texto dentro del Dropdown */
+.input-height-fix >>> .p-dropdown-label {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-top: 0;
+  padding: 0 10px !important;
+}
+
+/* Ajuste del botón de búsqueda */
+.btn-search-fix {
+  width: 40px !important; /* Cuadrado perfecto */
+  display: flex;
   justify-content: center;
-  padding: 2rem;
-  background-color: #f9fafb;
-  border-radius: 8px;
-  border: 1px dashed #d1d5db;
-  margin-top: 1rem;
-  text-align: center;
+  align-items: center;
 }
 
-.carrito-vacio-mensaje i {
-  font-size: 3rem;
-  color: #9ca3af;
-  margin-bottom: 1rem;
-}
-
-.carrito-vacio-mensaje h4 {
-  font-size: 1.1rem;
+/* Etiquetas uniformes */
+.label-input {
+  display: block;
+  margin-bottom: 6px; /* Espacio fijo entre label e input */
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #374151;
-  margin: 0 0 0.25rem 0;
+  color: #495057;
+  line-height: 1.2;
 }
 
-.carrito-vacio-mensaje p {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin: 0;
+/* Asegurar que el input de texto ocupe todo el espacio menos el botón */
+.p-inputgroup .p-inputtext {
+  flex: 1 1 auto;
+  width: 1%;
 }
+
 </style>
