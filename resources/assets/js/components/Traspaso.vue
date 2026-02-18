@@ -82,12 +82,13 @@
                 title="Ver Detalle"
               />
               
-              <Button
+                <Button
                 icon="pi pi-file-pdf"
                 class="p-button-danger p-button-sm"
                 style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
                 @click="exportarPdfTraspaso(slotProps.data.id)"
                 title="Descargar PDF"
+                :disabled="isLoading"   
               />
             </template>
           </Column>
@@ -994,10 +995,40 @@ export default {
       }
     },
 
-    exportarPdfTraspaso(id) {
-      const url = `/traspaso/exportar/${id}`;
-      window.open(url, '_blank');
-    },
+async exportarPdfTraspaso(id) {
+  this.isLoading = true;
+  try {
+    const response = await axios.get(`/traspaso/exportar/${id}`, {
+      responseType: 'blob',
+      timeout: 600000 
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    let filename = `traspaso_${id}.pdf`;
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error al exportar PDF:', error);
+    swal("Error", "No se pudo generar el PDF del traspaso", "error");
+  } finally {
+    this.isLoading = false;
+  }
+},
     
     //---abrir modal de registro de traspaso--
     abrirModal(modelo, accion, data = []) {

@@ -2708,98 +2708,34 @@ async descargarArchivoReporte(url, nombreArchivo) {
       await this.descargarArchivoReporte(url, "reporte_ventas_general.pdf");
     },
 
-    async descargarVentasDetalladasPDF() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire(
-          "No hay datos del filtro para generar reporte",
-          "",
-          "warning"
-        );
-        return;
-      }
 
-      let url = "/descargar-ventas-detalladas-pdf?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
 
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-      }
+async descargarVentasDetalladasPDF() {
+  if (!this.validarFiltrosExportacion()) {
+    Swal.fire("No hay datos del filtro para generar reporte", "", "warning");
+    return;
+  }
 
-      url += "&estadoVenta=" + this.criterioEstado;
+  let url = "/descargar-ventas-detalladas-pdf?";
+  url += "sucursal=" + this.sucursalseleccionada.id;
+  url += "&tipoReporte=" + this.tipoReporte;
 
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
+  if (this.tipoReporte === "dia") {
+    url += "&fechaSeleccionada=" + this.fechaSeleccionada;
+  } else if (this.tipoReporte === "mes") {
+    url += "&mesSeleccionado=" + this.mesSeleccionado;
+  }
 
-      url += "&moneda=" + this.monedaPrincipal[0];
+  url += "&estadoVenta=" + this.criterioEstado;
 
-      await this.descargarArchivoReporte(url, "reporte_ventas_detalladas.pdf");
-    },
+  if (this.clienteseleccionada && this.clienteseleccionada.id) {
+    url += "&idcliente=" + this.clienteseleccionada.id;
+  }
 
-    async descargarVentasDetalladasPDF() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire(
-          "No hay datos del filtro para generar reporte",
-          "",
-          "warning"
-        );
-        return;
-      }
+  url += "&moneda=" + this.monedaPrincipal[0];
 
-      let url = "/descargar-ventas-detalladas-pdf?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
-
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-      }
-
-      url += "&estadoVenta=" + this.criterioEstado;
-
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
-
-      url += "&moneda=" + this.monedaPrincipal[0];
-
-      await this.descargarArchivoReporte(url, "reporte_ventas_detalladas.pdf");
-    },
-
-    async descargarVentasDetalladasPDF() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire(
-          "No hay datos del filtro para generar reporte",
-          "",
-          "warning"
-        );
-        return;
-      }
-
-      let url = "/descargar-ventas-detalladas-pdf?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
-
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-      }
-
-      url += "&estadoVenta=" + this.criterioEstado;
-
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
-
-      url += "&moneda=" + this.monedaPrincipal[0];
-
-      await this.descargarArchivoReporte(url, "reporte_ventas_detalladas.pdf");
-    },
+  await this.descargarArchivoReporte(url, "reporte_ventas_detalladas.pdf");
+},
 
     async descargarExcelGeneral() {
       if (!this.validarFiltrosExportacion()) {

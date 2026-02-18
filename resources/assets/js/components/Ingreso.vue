@@ -43,8 +43,16 @@
                   v-tooltip="'Ver'" class="p-button-sm p-button-success p-mr-1 btn-mini" v-tooltip.top="'Ver'"/>
                 <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini" v-tooltip="'Editar compra'"
                   @click="editarIngreso(slotProps.data.id)" v-tooltip.top="'Editar'"/>
-                <Button @click="imprimirIngreso(slotProps.data.id)" icon="pi pi-print" severity="warning" size="small"
-                  v-tooltip="'Imprimir PDF'" class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Imprimir'"/>
+                <Button 
+                  @click="imprimirIngreso(slotProps.data.id)" 
+                  icon="pi pi-print" 
+                  severity="warning" 
+                  size="small"
+                  v-tooltip="'Imprimir PDF'" 
+                  class="p-button-sm p-button-primary p-mr-1 btn-mini" 
+                  v-tooltip.top="'Imprimir'"
+                  :disabled="isLoading" 
+                />
                 <Button v-if="slotProps.data.estado == '1'" @click="desactivarIngreso(slotProps.data.id)"
                   icon="pi pi-trash" severity="danger" size="small" v-tooltip="'Eliminar'"
                   class="p-button-sm p-button-danger p-mr-1 btn-mini" v-tooltip.top="'Desactivar'"/>
@@ -313,10 +321,40 @@ export default {
       }
     },
 
-    imprimirIngreso(id) {
-      const url = `/ingreso/imprimir/${id}`;
-      window.open(url, '_blank');
-    },
+async imprimirIngreso(id) {
+  this.isLoading = true;
+  try {
+    const response = await axios.get(`/ingreso/imprimir/${id}`, {
+      responseType: 'blob',
+      timeout: 600000 
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    let filename = `compra_${id}.pdf`;
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error al imprimir:', error);
+    swal("Error", "No se pudo generar el documento", "error");
+  } finally {
+    this.isLoading = false;
+  }
+},
 
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado

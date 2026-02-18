@@ -28,8 +28,13 @@
             class="p-button-help p-button-sm" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
             class="p-button-secondary p-button-sm" />
-          <Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download"
-            @click="cargarReporteUsuariosExcel()" class="p-button-success p-button-sm" />
+<Button 
+  :label="mostrarLabel ? 'Exportar' : ''" 
+  icon="pi pi-cloud-download"
+  @click="cargarReporteUsuariosExcel()" 
+  class="p-button-success p-button-sm"
+  :disabled="isLoading"   
+/>
         </div>
       </div>
 
@@ -773,9 +778,40 @@ export default {
       }
     },
 
-    cargarReporteUsuariosExcel() {
-      window.open("/user/listarReporteUsuariosExcel", "_blank");
-    },
+async cargarReporteUsuariosExcel() {
+  this.isLoading = true;
+  try {
+    const response = await axios.get("/user/listarReporteUsuariosExcel", {
+      responseType: 'blob',
+      timeout: 600000 
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    let filename = 'usuarios.xlsx';
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error al exportar Excel:', error);
+    Swal.fire("Error", "No se pudo exportar el listado de usuarios", "error");
+  } finally {
+    this.isLoading = false;
+  }
+},
   },
   async mounted() {
     this.handleResize();

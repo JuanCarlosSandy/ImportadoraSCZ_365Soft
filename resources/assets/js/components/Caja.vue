@@ -49,8 +49,13 @@
         <Column header="Acciones" style="min-width: 200px; text-align: center;">
           <template #body="slotProps">
             <div v-if="slotProps.data.estado">
-              <Button icon="pi pi-file-pdf" class="p-button-danger p-button-sm btn-mini"
-                  @click="generarReporte(slotProps.data.id)" v-tooltip.top="'Reporte'" />
+                          <Button 
+                icon="pi pi-file-pdf" 
+                class="p-button-danger p-button-sm btn-mini"
+                @click="generarReporte(slotProps.data.id)" 
+                v-tooltip.top="'Reporte'"
+                :disabled="isLoading"  
+              />
               <template v-if="slotProps.data.id !== idCajaBotonesSecundarios">
                 <Button icon="pi pi-plus" class="p-button-primary p-button-sm btn-mini"
                   @click="abrirModal2('cajaDepositar', 'depositar', slotProps.data)" v-tooltip.top="'Depositar'" />
@@ -526,8 +531,8 @@ export default {
     },
   },
   methods: {
-generarReporte(idCaja) {
-  Swal.fire({
+async generarReporte(idCaja) {
+  const result = await Swal.fire({
     title: 'Seleccione el tipo de reporte',
     text: 'Elija una opción para generar el reporte',
     icon: 'question',
@@ -538,20 +543,69 @@ generarReporte(idCaja) {
     denyButtonText: 'QR',
     cancelButtonText: 'Completo',
     reverseButtons: true
-  }).then((result) => {
-    let tipo = 'completo';
-    if (result.isConfirmed) tipo = 'efectivo';
-    else if (result.isDenied) tipo = 'qr';
+  });
 
-    // Descargar PDF automáticamente
-    const url = `/reporte/caja/${idCaja}?tipo=${tipo}`;
+  let tipo = 'completo';
+  if (result.isConfirmed) tipo = 'efectivo';
+  else if (result.isDenied) tipo = 'qr';
+  else if (result.dismiss === Swal.DismissReason.cancel) tipo = 'completo';
+  else return; 
+
+  this.isLoading = true;
+
+  try {
+    const response = await axios.get(`/reporte/caja/${idCaja}?tipo=${tipo}`, {
+      responseType: 'blob',
+      timeout: 600000 
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `reporte_caja_${idCaja}.pdf`; // nombre del archivo
+
+    let filename = `reporte_caja_${idCaja}.pdf`;
+    const disposition = response.headers['content-disposition'];
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+
+    link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  });
+    window.URL.revokeObjectURL(url);
+
+    this.$toast.add({
+      severity: 'success',
+      summary: 'Reporte generado',
+      detail: 'El archivo PDF se descargará automáticamente',
+      life: 2500
+    });
+  } catch (error) {
+    console.error('Error al generar reporte:', error);
+    let mensaje = 'No se pudo generar el reporte';
+    if (error.code === 'ECONNABORTED') {
+      mensaje = 'El reporte es demasiado grande y ha excedido el tiempo de espera.';
+    } else if (error.response && error.response.data instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const json = JSON.parse(reader.result);
+          if (json.error) mensaje = json.error;
+        } catch (e) { }
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: mensaje, life: 5000 });
+      };
+      reader.readAsText(error.response.data);
+      return; 
+    }
+    this.$toast.add({ severity: 'error', summary: 'Error', detail: mensaje, life: 5000 });
+  } finally {
+    this.isLoading = false;
+  }
 },
 
     onBancoSelect(e) {

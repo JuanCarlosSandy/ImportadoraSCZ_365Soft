@@ -19,19 +19,21 @@
           </div>
 
           <div style="display: flex; gap: 0.5rem;">
-            <Button
-              icon="pi pi-file-pdf"
-              label="PDF General"
-              class="p-button-danger p-button-sm"
-              @click="descargarPdfGeneral()"
-            />
+           <Button
+  icon="pi pi-file-pdf"
+  label="PDF General"
+  class="p-button-danger p-button-sm"
+  @click="descargarPdfGeneral()"
+  :disabled="isLoading"    
+/>
 
-            <Button
-              icon="pi pi-file-excel"
-              label="Excel General"
-              class="p-button-success p-button-sm"
-              @click="descargarExcelGeneral()"
-            />
+      <Button
+  icon="pi pi-file-excel"
+  label="Excel General"
+  class="p-button-success p-button-sm"
+  @click="descargarExcelGeneral()"
+  :disabled="isLoading"   
+/>
 
             <Button
               icon="pi pi-filter"
@@ -1589,30 +1591,26 @@ export default {
       filaSeleccionada: null,
       itemsMenu: [
         {
-          label: "Ver Detalle",
-          icon: "pi pi-eye",
-          class: "text-blue-500", 
-          command: () => {
-            
-            this.verDetalleMovimiento(this.filaSeleccionada);
-          },
+           label: "Ver Detalle",
+        icon: "pi pi-eye",
+        class: "text-blue-500",
+        command: () => this.verDetalleMovimiento(this.filaSeleccionada),
+        disabled: this.isLoading
         },
         {
           separator: true, 
         },
         {
-          label: "Descargar PDF",
-          icon: "pi pi-file-pdf",
-          command: () => {
-            this.descargarPdfDetallado(this.filaSeleccionada);
-          },
+           label: "Descargar PDF",
+        icon: "pi pi-file-pdf",
+        command: () => this.descargarPdfDetallado(this.filaSeleccionada),
+        disabled: this.isLoading
         },
         {
-          label: "Descargar Excel",
-          icon: "pi pi-file-excel",
-          command: () => {
-            this.descargarExcelDetallado(this.filaSeleccionada);
-          },
+           label: "Descargar PDF",
+        icon: "pi pi-file-pdf",
+        command: () => this.descargarPdfDetallado(this.filaSeleccionada),
+        disabled: this.isLoading
         },
       ],
     };
@@ -1666,6 +1664,7 @@ export default {
 
   methods: {
     toggleMenu(event, data) {
+       if (this.isLoading) return;
       this.filaSeleccionada = data; 
       this.$refs.menuDescargas.toggle(event); 
     },
