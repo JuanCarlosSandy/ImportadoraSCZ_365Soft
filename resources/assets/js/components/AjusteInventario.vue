@@ -1764,6 +1764,8 @@ async exportarReportePdf() {
   try {
     const fInicio = this.formatDate(this.fechaInicio);
     const fFin = this.formatDate(this.fechaFin);
+    const fechaInicioNombre = (fInicio || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
+    const fechaFinNombre = (fFin || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
     const almacen = this.idAlmacen ? this.idAlmacen : '';
     const busqueda = this.buscar ? this.buscar : '';
 
@@ -1782,7 +1784,7 @@ async exportarReportePdf() {
     const link = document.createElement('a');
     link.href = url;
     
-    let filename = 'Reporte_Ajuste.pdf';
+    let filename = `ReporteAjustes_${fechaInicioNombre}_${fechaFinNombre}.pdf`;
     const disposition = response.headers['content-disposition'];
     if (disposition && disposition.indexOf('attachment') !== -1) {
       const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
@@ -1820,6 +1822,8 @@ async exportarReporteExcel() {
   try {
     const fInicio = this.formatDate(this.fechaInicio);
     const fFin = this.formatDate(this.fechaFin);
+    const fechaInicioNombre = (fInicio || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
+    const fechaFinNombre = (fFin || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
     const almacen = this.idAlmacen ? this.idAlmacen : '';
     const busqueda = this.buscar ? this.buscar : '';
 
@@ -1838,7 +1842,7 @@ async exportarReporteExcel() {
     const link = document.createElement('a');
     link.href = url;
 
-    let filename = 'Reporte_Ajuste.xlsx';
+    let filename = `ReporteAjustes_${fechaInicioNombre}_${fechaFinNombre}.xlsx`;
     const disposition = response.headers['content-disposition'];
     if (disposition && disposition.indexOf('attachment') !== -1) {
       const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
