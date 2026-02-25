@@ -1170,6 +1170,7 @@ class ReportesInventariosController extends Controller
             $pdf->Ln(5);
 
             // --- TABLA ---
+            // Anchos en mm (total = 277, ancho util en A4 horizontal con margenes 10/10)
             $w = [28, 55, 16, 28, 42, 22, 22, 22, 42];
             $headers = ['Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
 
@@ -1295,9 +1296,8 @@ class ReportesInventariosController extends Controller
             $pdf->Cell(100, 8, utf8_decode(substr($buscar, 0, 50)), 0, 1, 'L');
             $pdf->Ln(5);
 
-            // --- TABLA ---
-            $w = [50, 30, 15, 20, 25, 30, 20, 15, 15, 15, 17];
-            $headers = ['Producto', 'Almacén', 'Envase', 'Costo', 'Categoría', 'Proveedor', 'P.Venta', 'Stock', 'Paq.', 'Rest.', 'Total'];
+            $w = [28, 55, 16, 28, 42, 22, 22, 22, 42];
+            $headers = ['Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
 
             $pdf->SetFont('Arial', 'B', 8);
             $pdf->SetFillColor(52, 73, 94);
@@ -1315,17 +1315,15 @@ class ReportesInventariosController extends Controller
             foreach ($inventarios as $item) {
                 $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
                 
-                $pdf->Cell($w[0], 6, utf8_decode(substr($item->nombre_producto, 0, 35)), 1, 0, 'L', true);
-                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[0], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_producto, 0, 38)), 1, 0, 'L', true);
                 $pdf->Cell($w[2], 6, $item->unidad_envase, 1, 0, 'C', true);
-                $pdf->Cell($w[3], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
-                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_categoria, 0, 15)), 1, 0, 'L', true);
-                $pdf->Cell($w[5], 6, utf8_decode(substr($item->nombre_proveedor, 0, 18)), 1, 0, 'L', true);
-                $pdf->Cell($w[6], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[3], 6, utf8_decode(substr($item->nombre_categoria, 0, 18)), 1, 0, 'L', true);
+                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_proveedor, 0, 26)), 1, 0, 'L', true);
+                $pdf->Cell($w[5], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[6], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
                 $pdf->Cell($w[7], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
-                $pdf->Cell($w[8], 6, number_format($item->stock_en_paquetes, 0), 1, 0, 'R', true);
-                $pdf->Cell($w[9], 6, number_format($item->unidades_restantes, 0), 1, 0, 'R', true);
-                $pdf->Cell($w[10], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[8], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
                 
                 $pdf->Ln();
                 $fill = !$fill;
