@@ -983,6 +983,10 @@ class ReportesInventariosController extends Controller
             $inventarios = $inventarios->where('articulos.idproveedor', $idLaboratorio);
         }
 
+        if (!empty($idPresentacion) && $idPresentacion !== 'undefined') {
+            $inventarios = $inventarios->where('articulos.idcategoria', $idPresentacion);
+        }
+
         if (!empty($buscar)) {
             $inventarios = $inventarios->where(function ($query) use ($buscar) {
                 $query->where('articulos.nombre', 'like', '%' . $buscar . '%')
@@ -1044,6 +1048,10 @@ class ReportesInventariosController extends Controller
         // 🔹 Filtrado por laboratorio (idproveedor)
         if (!empty($idLaboratorio)) {
             $inventarios = $inventarios->where('articulos.idproveedor', $idLaboratorio);
+        }
+
+        if (!empty($idPresentacion) && $idPresentacion !== 'undefined') {
+            $inventarios = $inventarios->where('articulos.idcategoria', $idPresentacion);
         }
 
         // 🔹 Filtro de búsqueda general
