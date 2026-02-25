@@ -70,7 +70,14 @@ class CategoriaController extends Controller
                 });
         }
         $categorias = $categorias->get();
-        return ['categorias' => $categorias];
+        
+        $usuario = \Auth::user();
+        $idrol = $usuario ? $usuario->idrol : null;
+        
+        return [
+            'categorias' => $categorias,
+            'idrol' => $idrol
+        ];
     }
     public function selectCategoria(Request $request)
     {
@@ -89,13 +96,22 @@ class CategoriaController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->ajax())
+            return redirect('/');
+
+        // ✅ Validar permiso por rol
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+
         Log::info('Datos REGISTRAR CATEGORIA', [
             'nombre' => $request->nombre,
             'tipo_categoria' => $request->tipo_categoria,
         ]);
-
-        if (!$request->ajax())
-            return redirect('/');
 
         // Convertir a mayúsculas y eliminar acentos
         $nombre = Str::upper(Str::ascii($request->nombre));
@@ -134,6 +150,16 @@ class CategoriaController extends Controller
     {
         if (!$request->ajax())
             return redirect('/');
+
+        // ✅ Validar permiso por rol
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+        
         $nombre = Str::upper(Str::ascii($request->nombre));
 
         $categoria = Categoria::findOrFail($request->id);
@@ -182,13 +208,22 @@ class CategoriaController extends Controller
 
     public function storeServicio(Request $request)
     {
+        if (!$request->ajax())
+            return redirect('/');
+
+        // ✅ Validar permiso por rol
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+
         Log::info('Datos REGISTRAR CATEGORIA', [
             'nombre' => $request->nombre,
             'tipo_categoria' => $request->tipo_categoria,
         ]);
-
-        if (!$request->ajax())
-            return redirect('/');
 
         // Convertir a mayúsculas y eliminar acentos
         $nombre = Str::upper(Str::ascii($request->nombre));
@@ -238,7 +273,14 @@ class CategoriaController extends Controller
         }
 
         $categorias = $categorias->get();
-        return ['categorias' => $categorias];
+        
+        $usuario = \Auth::user();
+        $idrol = $usuario ? $usuario->idrol : null;
+        
+        return [
+            'categorias' => $categorias,
+            'idrol' => $idrol
+        ];
     }
 
 }
