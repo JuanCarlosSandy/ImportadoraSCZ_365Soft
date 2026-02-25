@@ -23,7 +23,7 @@
           </span>
         </div>
         <div class="toolbar">
-          <Button v-if="idrol !== 2" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
+          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
             class="p-button-secondary p-button-sm" @click="abrirModal('articulo', 'registrar')" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm"
             @click="descargarReporteExcel()" :disabled="isLoading" />
@@ -810,12 +810,11 @@ export default {
   methods: {
     validarPermisoVendedor() {
       if (this.idrol === 2) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Acceso Restringido',
-          text: 'Solo el Super Administrador o Administrador puede editar los datos de los productos.',
-          confirmButtonColor: '#3085d6',
-          confirmButtonText: 'Entendido'
+        this.$toast.add({
+          severity: 'warn',
+          summary: 'Acceso Denegado',
+          detail: 'Esta acción solo está permitida para Administradores.',
+          life: 3000
         });
         return false; 
       }
@@ -1633,6 +1632,8 @@ export default {
       }
     },
 async descargarReporteExcel() {
+  if (!this.validarPermisoVendedor()) return;
+  
   const fecha = new Date().toISOString().slice(0, 10);
   const url = '/articulo/reporteExcel';
   const nombreArchivo = `ProductosBajoStock_${fecha}.xlsx`;
@@ -1663,6 +1664,8 @@ async descargarReporteExcel() {
 },
 
 async descargarReportePDF() {
+  if (!this.validarPermisoVendedor()) return;
+  
   const fecha = new Date().toISOString().slice(0, 10);
   const url = '/articulo/reportePDF';
   const nombreArchivo = `ProductosBajoStock_${fecha}.pdf`;
@@ -1961,7 +1964,7 @@ async descargarReportePDF() {
       this.intentoEnviar = false;
     },
    async abrirModal(modelo, accion, data = []) {
-      if (modelo === 'articulo' && accion === 'actualizar') {
+      if (modelo === 'articulo' && (accion === 'actualizar' || accion === 'registrar')) {
         if (!this.validarPermisoVendedor()) return;
       }
 

@@ -496,11 +496,27 @@ class ArticuloController extends Controller
 
     public function descargarExcel()
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+        
         return Excel::download(new ProductExport, 'articulos.xlsx');
     }
 
     public function descargarPDF(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+        
         $buscar = $request->buscar;
 
         $query = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
@@ -652,6 +668,14 @@ class ArticuloController extends Controller
     {
         if (!$request->ajax()) return redirect('/');
 
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+
         $articuloExistente = Articulo::where('codigo', $request->codigo)->first();
         if ($articuloExistente) {
             return response()->json([
@@ -715,6 +739,14 @@ class ArticuloController extends Controller
     public function update(Request $request)
     {
         if (!$request->ajax()) return redirect('/');
+
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
 
         try {
             DB::beginTransaction();
@@ -799,6 +831,15 @@ class ArticuloController extends Controller
     {
         if (!$request->ajax())
             return redirect('/');
+        
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+        
         $articulo = Articulo::findOrFail($request->id);
         $articulo->condicion = '0';
         $articulo->save();
@@ -808,6 +849,15 @@ class ArticuloController extends Controller
     {
         if (!$request->ajax())
             return redirect('/');
+        
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
+            ], 403);
+        }
+        
         $articulo = Articulo::findOrFail($request->id);
         $articulo->condicion = '1';
         $articulo->save();
