@@ -6,6 +6,8 @@
         <div class="loading-text">LOADING...</div>
       </div>
     </div>
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
     <Panel>
       <template #header>
         <div class="panel-header">
@@ -251,6 +253,8 @@ import Column from "primevue/column";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
 import InputNumber from "primevue/inputnumber";
+import Toast from "primevue/toast";
+import ToastService from "primevue/toastservice";
 import Tooltip from 'primevue/tooltip';
 export default {
   components: {
@@ -262,6 +266,8 @@ export default {
     Dialog,
     Dropdown,
     InputNumber,
+    Toast,
+    ToastService,
   },
   directives: {
     'tooltip': Tooltip
@@ -314,6 +320,7 @@ export default {
       buscar: "",
       modalImportar: false,
       esVendedor: false, // Nueva propiedad para controlar visibilidad
+      idrol: 0,
     };
   },
   computed: {
@@ -502,6 +509,10 @@ export default {
         case "persona":
           switch (accion) {
             case "registrar":
+              if (this.idrol == 2) {
+                this.toastWarning("Esta acción solo está permitida para Administradores.");
+                return;
+              }
               this.modal = true;
               this.tituloModal = "REGISTRAR PROVEEDOR";
               this.tipoAccion = 1;
@@ -515,6 +526,10 @@ export default {
               };
               break;
             case "actualizar":
+              if (this.idrol == 2) {
+                this.toastWarning("Esta acción solo está permitida para Administradores.");
+                return;
+              }
               this.modal = true;
               this.tituloModal = "ACTUALIZAR PROVEEDOR";
               this.tipoAccion = 2;
@@ -528,6 +543,7 @@ export default {
     verificarRolUsuario() {
       // Verificar el rol del usuario logueado
       if (window.userData && window.userData.rol) {
+        this.idrol = window.userData.rol;
         this.esVendedor = window.userData.rol === 2;
       }
     },
