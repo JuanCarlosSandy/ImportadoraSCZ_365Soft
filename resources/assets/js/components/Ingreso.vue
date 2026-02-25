@@ -1,8 +1,8 @@
 <template>
   <div class="main">
-    <div v-if="isLoading" class="loading-overlay">
+    <div class="loading-overlay" v-if="isLoading">
       <div class="loading-container">
-        <ProgressSpinner style="width: 80px; height: 80px" strokeWidth="4" />
+        <div class="spinner"></div>
         <div class="loading-text">LOADING...</div>
       </div>
     </div>
@@ -44,7 +44,7 @@
                 <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini" v-tooltip="'Editar compra'"
                   @click="editarIngreso(slotProps.data.id)" v-tooltip.top="'Editar'"/>
                 <Button 
-                  @click="imprimirIngreso(slotProps.data.id)" 
+                  @click="imprimirIngreso(slotProps.data)" 
                   icon="pi pi-print" 
                   severity="warning" 
                   size="small"
@@ -321,10 +321,10 @@ export default {
       }
     },
 
-async imprimirIngreso(id) {
+async imprimirIngreso(ingreso) {
   this.isLoading = true;
   try {
-    const response = await axios.get(`/ingreso/imprimir/${id}`, {
+    const response = await axios.get(`/ingreso/imprimir/${ingreso.id}`, {
       responseType: 'blob',
       timeout: 600000 
     });
@@ -333,15 +333,12 @@ async imprimirIngreso(id) {
     const link = document.createElement('a');
     link.href = url;
 
-    let filename = `compra_${id}.pdf`;
-    const disposition = response.headers['content-disposition'];
-    if (disposition && disposition.indexOf('attachment') !== -1) {
-      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-      const matches = filenameRegex.exec(disposition);
-      if (matches != null && matches[1]) {
-        filename = matches[1].replace(/['"]/g, '');
-      }
-    }
+    const fecha = new Date(ingreso.fecha_hora);
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    const fechaFormateada = `${year}${month}${day}`;
+    const filename = `NotaCompra_${ingreso.num_comprobante}_${fechaFormateada}.pdf`;
 
     link.setAttribute('download', filename);
     document.body.appendChild(link);
@@ -1414,6 +1411,7 @@ async imprimirIngreso(id) {
 >>>.p-dialog .p-dialog-content {
   padding: 0 1.5rem 1.5rem 1.5rem;
 }
+
 
 /* Estilos del loader */
 .loading-overlay {
