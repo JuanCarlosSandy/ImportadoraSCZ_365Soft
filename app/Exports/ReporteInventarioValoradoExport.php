@@ -113,13 +113,13 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function headings(): array
     {
         return [
+            'Almacén',
             'Producto',
             'Categoría',
             'Proveedor',
-            'Almacén',
-            'Stock Total',
             'Precio Venta',
             'Precio Costo (Unid)',
+            'Stock Total',
             'Valor Total',
         ];
     }
@@ -127,13 +127,13 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function map($row): array
     {
         return [
-            $row->nombre_producto,
-            $row->nombre_presentacion ?? $row->nombre_categoria,
-            $row->nombre_proveedor,
             $row->nombre_almacen,
-            $row->saldo_stock_total,
+            $row->nombre_producto,
+            $row->nombre_categoria,  
+            $row->nombre_proveedor,
             $row->precio_venta,
             $row->precio_costo_unid,
+            $row->saldo_stock_total,
             $row->valor_total,
         ];
     }
@@ -141,17 +141,16 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function columnWidths(): array
     {
         return [
-            'A' => 40,
-            'B' => 20,
-            'C' => 25,
-            'D' => 25,
-            'E' => 15,
-            'F' => 18,
-            'G' => 15,
-            'H' => 15,
+            'A' => 25,  
+            'B' => 40,  
+            'C' => 25,  
+            'D' => 30,  
+            'E' => 15,  
+            'F' => 18,  
+            'G' => 15,  
+            'H' => 18,  
         ];
     }
-
     public function startCell(): string
     {
         return 'A8';
