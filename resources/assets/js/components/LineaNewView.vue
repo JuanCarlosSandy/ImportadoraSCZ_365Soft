@@ -154,6 +154,7 @@ export default {
       arrayProductoServicio: [],
       arrayActividadEconomica: [],
       codigoActividadEconomica: "",
+      idrol: null,
     };
   },
   computed: {
@@ -174,20 +175,36 @@ export default {
   },
   methods: {
     toastSuccess(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 50px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `.<br>
-    </div>`,
-        {
-          type: "success",
-          position: "bottom-right",
-          duration: 2000,
-        }
-      );
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastInfo(mensaje) {
+      this.$toast.add({
+        severity: "info",
+        summary: "Información",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
@@ -302,23 +319,13 @@ export default {
         await me.listarCategoria(1, "", "nombre");
 
         // 🟢 TOAST DE ÉXITO
-        this.$toast.add({
-          severity: "success",
-          summary: "Registro exitoso",
-          detail: "La categoría fue registrada correctamente.",
-          life: 2500,
-        });
+        this.toastSuccess("La categoría fue registrada correctamente.");
 
       } catch (error) {
         console.error(error);
 
         // 🔴 TOAST DE ERROR
-        this.$toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: "No se pudo registrar la categoría.",
-          life: 3500,
-        });
+        this.toastError("No se pudo registrar la categoría.");
 
       } finally {
         this.isLoading = false;
@@ -355,12 +362,7 @@ export default {
 
       // 🔥 Si hay cualquier error → mostrar toast GENERAL una sola vez
       if (hasError) {
-        this.$toast.add({
-          severity: "warn",
-          summary: "Formulario incompleto",
-          detail: "Por favor verifique los campos marcados en rojo.",
-          life: 3000,
-        });
+        this.toastWarning("Por favor verifique los campos marcados en rojo.");
       }
 
       return hasError;
@@ -386,23 +388,13 @@ export default {
         await me.listarCategoria(1, "", "nombre");
 
         // 🟢 TOAST DE ÉXITO
-        this.$toast.add({
-          severity: "success",
-          summary: "Actualización exitosa",
-          detail: "La categoría fue actualizada correctamente.",
-          life: 2500,
-        });
+        this.toastSuccess("La categoría fue actualizada correctamente.");
 
       } catch (error) {
         console.error(error);
 
         // 🔴 TOAST DE ERROR
-        this.$toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: "No se pudo actualizar la categoría.",
-          life: 3500,
-        });
+        this.toastError("No se pudo actualizar la categoría.");
 
       } finally {
         this.isLoading = false;
@@ -425,6 +417,10 @@ export default {
           //consol.log('Linea',respuesta);
           me.arrayCategoria = respuesta.categorias;
           me.pagination = respuesta.pagination;
+          // Obtener idrol del usuario
+          if (respuesta.idrol !== undefined) {
+            me.idrol = respuesta.idrol;
+          }
         })
         .catch(function (error) {
           console.log(error);
@@ -524,6 +520,14 @@ export default {
       }
     },
     abrirModal(modelo, accion, data = []) {
+      // ✅ Validar restricción por rol (Vendedor ID 2)
+      if (accion === "registrar" || accion === "actualizar") {
+        if (this.idrol == 2) {
+          this.toastWarning("Esta acción solo está permitida para Administradores.");
+          return;
+        }
+      }
+
       switch (modelo) {
         case "categoria": {
           switch (accion) {
