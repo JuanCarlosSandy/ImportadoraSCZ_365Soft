@@ -93,7 +93,7 @@
         <div class="col-md-6 mb-4">
           <TopClientes :fechaInicio="fechaInicio" :fechaFin="fechaFin" :moneda="monedaPrincipal" />
         </div>
-        <div class="col-md-12">
+        <div class="col-md-12" v-if="idrol != 2">
           <TopVendedores :fechaInicio="fechaInicio" :fechaFin="fechaFin" :moneda="monedaPrincipal" />
         </div>
       </div>
