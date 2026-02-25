@@ -1466,20 +1466,16 @@ class ReportesInventariosController extends Controller
             $fechaGeneracion = date('d/m/Y H:i:s');
             $tituloReporte = 'REPORTE DE INVENTARIO FÍSICO';
 
-            // 🔹 Mapear los datos para el Excel
             $coleccion = $datos->map(function ($item) {
                 return [
-                    'Producto' => $item->nombre_producto,
-                    'Almacén' => $item->nombre_almacen,
-                    'Unidad Envase' => $item->unidad_envase,
-                    'Costo Unitario' => $item->precio_costo_unid,
-                    'Categoría' => $item->nombre_categoria,
-                    'Laboratorio' => $item->nombre_proveedor,
-                    'Precio Venta' => $item->precio_venta,
-                    'Stock Total' => $item->saldo_stock_total,
-                    'Stock Paquetes' => $item->stock_en_paquetes,
-                    'Unidades Restantes' => $item->unidades_restantes,
-                    'Valor Total' => $item->valor_total,
+                    'Almacén'        => $item->nombre_almacen,
+                    'Producto'       => $item->nombre_producto,
+                    'Unidad Envase'  => $item->unidad_envase,
+                    'Categoría'      => $item->nombre_categoria,
+                    'Proveedor'      => $item->nombre_proveedor,
+                    'Costo unitario' => $item->precio_costo_unid,
+                    'Precio ventas'  => $item->precio_venta,
+                    'Stock total'    => $item->saldo_stock_total,
                 ];
             });
 
@@ -1507,8 +1503,18 @@ class ReportesInventariosController extends Controller
                     return $this->data;
                 }
 
-                public function headings(): array {
-                    return array_keys($this->data->first());
+                public function headings(): array
+                {
+                    return [
+                        'Almacén',
+                        'Producto',
+                        'Unidad Envase',
+                        'Categoría',
+                        'Proveedor',
+                        'Costo unitario',
+                        'Precio ventas',
+                        'Stock total',
+                    ];
                 }
 
                 public function startCell(): string
@@ -1519,17 +1525,14 @@ class ReportesInventariosController extends Controller
                 public function columnWidths(): array
                 {
                     return [
-                        'A' => 40, // Producto
-                        'B' => 25, // Almacén
+                        'A' => 25, // Almacén
+                        'B' => 40, // Producto
                         'C' => 15, // Unidad Envase
-                        'D' => 15, // Costo Unitario
-                        'F' => 20, // Categoría
-                        'G' => 25, // Laboratorio
-                        'H' => 15, // Precio Venta
-                        'I' => 15, // Stock Total
-                        'J' => 15, // Stock Paquetes
-                        'K' => 18, // Unidades Restantes
-                        'L' => 15, // Valor Total
+                        'D' => 25, // Categoría
+                        'E' => 30, // Proveedor
+                        'F' => 15, // Costo unitario
+                        'G' => 15, // Precio ventas
+                        'H' => 15, // Stock total
                     ];
                 }
 
@@ -1557,23 +1560,19 @@ class ReportesInventariosController extends Controller
                         AfterSheet::class => function(AfterSheet $event) {
                             $sheet = $event->sheet;
 
-                            // Título
-                            $sheet->mergeCells('C2:J2');
+                             $sheet->mergeCells('C2:H2');
                             $sheet->setCellValue('C2', $this->titulo);
                             $sheet->getStyle('C2')->getFont()->setBold(true)->setSize(16);
                             $sheet->getStyle('C2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
-                            // Fecha
-                            $sheet->mergeCells('C3:J3');
+                             $sheet->mergeCells('C3:H3');
                             $sheet->setCellValue('C3', 'Fecha de generación: ' . $this->fecha);
                             $sheet->getStyle('C3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
-                            // Filtros
-                            $sheet->setCellValue('A5', 'Almacén: ' . $this->almacen);
+                             $sheet->setCellValue('A5', 'Almacén: ' . $this->almacen);
                             $sheet->setCellValue('A6', 'Categoría: ' . $this->presentacion);
                             $sheet->setCellValue('E5', 'Proveedor: ' . $this->laboratorio);
                             $sheet->setCellValue('E6', 'Búsqueda: ' . $this->buscar);
-                            
 
                             $sheet->getStyle('A5:H6')->getFont()->setBold(true);
                         },
@@ -1581,15 +1580,15 @@ class ReportesInventariosController extends Controller
                 }
 
                 public function styles(Worksheet $sheet) {
-                    // Estilo para el encabezado
-                    $sheet->getStyle('A8:L8')->applyFromArray([
+                    $highestRow = $sheet->getHighestRow();
+
+                     $sheet->getStyle('A8:H8')->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '34495E']],
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                     ]);
 
-                    // Estilo para todo el contenido (bordes y alineación vertical)
-                    $sheet->getStyle('A9:L' . $sheet->getHighestRow())->applyFromArray([
+                     $sheet->getStyle('A9:H' . $highestRow)->applyFromArray([
                         'borders' => [
                             'allBorders' => [
                                 'borderStyle' => Border::BORDER_THIN,
@@ -1599,10 +1598,10 @@ class ReportesInventariosController extends Controller
                         'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
                     ]);
 
-                    // Alinear columnas numéricas a la derecha
-                    $sheet->getStyle('D9:D' . $sheet->getHighestRow())->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                    $sheet->getStyle('H9:L' . $sheet->getHighestRow())->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                    
+                     $sheet->getStyle('F9:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+                     $sheet->getStyle('C9:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
                     return [];
                 }
             };
