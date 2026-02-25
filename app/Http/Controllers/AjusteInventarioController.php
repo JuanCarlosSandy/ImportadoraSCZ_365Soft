@@ -266,10 +266,14 @@ class AjusteInventarioController extends Controller
         $idAlmacen = $request->idAlmacen;
         $buscar = $request->buscar;
 
+        $fechaInicioNombre = $this->formatearFechaParaNombre($fechaInicio);
+        $fechaFinNombre = $this->formatearFechaParaNombre($fechaFin);
+        $nombreBase = "ReporteAjustes_{$fechaInicioNombre}_{$fechaFinNombre}";
+
         if ($tipo == 'excel') {
             return Excel::download(
                 new AjusteInventarioExport($fechaInicio, $fechaFin, $idAlmacen, $buscar), 
-                'Reporte_Ajustes_' . date('d-m-Y') . '.xlsx'
+                $nombreBase . '.xlsx'
             );
         }         
         if ($tipo == 'pdf') {
@@ -358,10 +362,26 @@ class AjusteInventarioController extends Controller
             $pdf->Cell(35, 6, $motivo, 1, 1, 'L');
         }
 
-        $nombreArchivo = 'Reporte_Ajustes_' . now()->format('Ymd_His') . '.pdf';
+        $fechaInicioNombre = $this->formatearFechaParaNombre($fechaInicio);
+        $fechaFinNombre = $this->formatearFechaParaNombre($fechaFin);
+        $nombreArchivo = "ReporteAjustes_{$fechaInicioNombre}_{$fechaFinNombre}.pdf";
         return response($pdf->Output('S'), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
+    }
+
+    private function formatearFechaParaNombre($fecha)
+    {
+        if (empty($fecha)) {
+            return now()->format('Ymd');
+        }
+
+        $timestamp = strtotime($fecha);
+        if ($timestamp === false) {
+            return now()->format('Ymd');
+        }
+
+        return date('Ymd', $timestamp);
     }
 }
 
