@@ -3,8 +3,8 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
@@ -12,56 +12,67 @@ class ProductosBajoStockExport implements FromArray, WithHeadings, WithColumnWid
 {
     protected $datos;
 
-    // Recibimos el array (la parte "data" de tu JSON)
-    public function __construct(array $datos)
+    public function __construct($datos)
     {
         $this->datos = $datos;
     }
 
-    /**
-     * Aquí convertimos tu array JSON en las filas del Excel
-     */
     public function array(): array
     {
-        // Usamos array_map para devolver SOLO los campos que queremos en el orden de los encabezados
+        $filas = is_array($this->datos) ? $this->datos : $this->datos->toArray();
+
         return array_map(function ($item) {
-            // $item representa cada objeto dentro de "data"
+            $row = (array) $item;
+
             return [
-                $item['codigo'],              // Columna A: Código
-                $item['nombre_producto'],     // Columna B: Producto
-                $item['nombre_almacen'],      // Columna C: Almacen
-                $item['stock'],               // Columna D: Saldo Stock (Nota: en tu JSON es "stock", no "saldo_stock")
-                $item['nombre_proveedor'],    // Columna E: Proveedor
+                $this->toAscii($row['nombre_almacen'] ?? ''),
+                $this->toAscii($row['nombre_producto'] ?? ''),
+                $this->toAscii($row['nombre_categoria'] ?? ''),
+                $this->toAscii($row['nombre_proveedor'] ?? ''),
+                isset($row['stock_actual']) ? (int) round($row['stock_actual']) : 0,
+                isset($row['stock_minimo']) ? (int) round($row['stock_minimo']) : 0,
             ];
-        }, $this->datos);
+        }, $filas);
+    }
+
+    private function toAscii($text): string
+    {
+        $text = (string) $text;
+        $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+        return $converted !== false ? $converted : $text;
     }
 
     public function headings(): array
     {
         return [
-            'Código',
-            'Producto',
             'Almacen',
-            'Saldo Stock',
+            'Producto',
+            'Categoria',
             'Proveedor',
+            'Stock actual',
+            'Stock minimo',
         ];
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 15,
-            'B' => 25,
-            'C' => 20,
-            'D' => 15,
-            'E' => 20,
+            'A' => 24,
+            'B' => 34,
+            'C' => 24,
+            'D' => 30,
+            'E' => 14,
+            'F' => 14,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
+        $sheet->getStyle('A1:F1')->getFont()->setBold(true)->setSize(11);
+        $sheet->getStyle('E:F')->getNumberFormat()->setFormatCode('#,##0');
+
         return [
-            1 => ['font' => ['bold' => true, 'size' => 12]],
+            1 => ['font' => ['bold' => true]],
         ];
     }
 }

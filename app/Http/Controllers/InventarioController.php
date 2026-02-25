@@ -33,7 +33,7 @@ class InventarioController extends Controller
                 $articulo = Articulo::find($inventario['idarticulo']);
 
                 if (!$articulo) {
-                    Log::warning("Artículo no encontrado: " . $inventario['idarticulo']);
+                    Log::warning("ArtÃƒÆ’Ã‚Â­culo no encontrado: " . $inventario['idarticulo']);
                     continue;
                 }
 
@@ -185,12 +185,12 @@ class InventarioController extends Controller
             ->whereRaw('DATEDIFF(inventarios.fecha_vencimiento, "' . $fechaActual . '") <= 30')
             ->orderBy('inventarios.id', 'desc');
 
-        // ✅ Filtrar por sucursal si el usuario no es rol 4
+        // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Filtrar por sucursal si el usuario no es rol 4
         if ($usuario->idrol != 4) {
             $inventarios->where('almacens.sucursal', $usuario->idsucursal);
         }
 
-        // ✅ Aplicar búsqueda si corresponde
+        // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Aplicar bÃƒÆ’Ã‚Âºsqueda si corresponde
         if (!empty($buscar)) {
             $inventarios->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
         }
@@ -291,69 +291,20 @@ class InventarioController extends Controller
     }
     public function productosBajoStock(Request $request)
     {
-        if (!$request->ajax())
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta accion solo esta permitida para Administrador y SuperAdministrador.'
+            ], 403);
+        }
+
+        if (!$request->ajax()) {
             return redirect('/');
-
-        $usuario = \Auth::user();
-        $buscar = $request->buscar;
-        $criterio = $request->criterio;
-
-        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-            ->join('personas', 'proveedores.id', '=', 'personas.id')
-            ->select(
-                'inventarios.idarticulo',
-                'almacens.nombre_almacen',
-                'almacens.ubicacion',
-                'articulos.codigo',
-                'articulos.nombre as nombre_producto',
-                'articulos.unidad_envase',
-                'articulos.stock',
-                'articulos.precio_costo_unid',
-                'personas.nombre as nombre_proveedor',
-                'articulos.descripcion_fabrica',
-
-
-                // SUMA del stock total real del artículo (en unidades)
-                DB::raw('SUM(inventarios.saldo_stock) as saldo_total_unidades'),
-
-                // STOCK TOTAL EN CAJAS
-                DB::raw('ROUND(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0), 2) as saldo_total_cajas')
-            )
-
-            // ✅ Solo artículos activos
-            ->where('articulos.condicion', '=', 1)
-
-            ->groupBy(
-                'inventarios.idarticulo',
-                'almacens.nombre_almacen',
-                'almacens.ubicacion',
-                'articulos.codigo',
-                'articulos.nombre',
-                'articulos.unidad_envase',
-                'articulos.stock',
-                'articulos.precio_costo_unid',
-                'personas.nombre',
-                'articulos.descripcion_fabrica',
-            )
-
-            // 🔥 Bajo stock comparando CAJAS TOTALES de inventario vs stock mínimo configurado
-            ->havingRaw('ROUND(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0), 2) <= articulos.stock');
-
-        // Filtrar por sucursal (si no es rol 4)
-        if ($usuario->idrol != 4) {
-            $query->where('almacens.sucursal', $usuario->idsucursal);
         }
 
-        // Filtro de búsqueda
-        if ($buscar != '') {
-            $query->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
-        }
-
-        $inventarios = $query
-            ->orderBy('almacens.nombre_almacen', 'asc')
-            ->paginate(6);
+        [$query, $filtros] = $this->construirQueryBajoStock($request);
+        $inventarios = $query->paginate(10);
 
         return [
             'pagination' => [
@@ -364,7 +315,8 @@ class InventarioController extends Controller
                 'from' => $inventarios->firstItem(),
                 'to' => $inventarios->lastItem(),
             ],
-            'inventarios' => $inventarios
+            'inventarios' => $inventarios,
+            'filtros' => $filtros,
         ];
     }
 
@@ -372,11 +324,170 @@ class InventarioController extends Controller
 
     public function listarReporteBajoStockExcel(Request $request)
     {
-        $datos = $request->lista; 
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta accion solo esta permitida para Administrador y SuperAdministrador.'
+            ], 403);
+        }
 
-        return Excel::download(new ProductosBajoStockExport($datos), 'articulosBajoStock.xlsx');
+        [$query, $filtros] = $this->construirQueryBajoStock($request);
+        $datos = $query->get();
+        $nombreArchivo = 'ReporteProductosBajoStock_' . date('Ymd_His') . '.xlsx';
+
+        return Excel::download(new ProductosBajoStockExport($datos), $nombreArchivo);
     }
-    //-------------------aumente el listado mejorado------
+
+    public function exportarProductosBajoStockPdf(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !in_array($user->idrol, [1, 4])) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Acceso denegado. Esta accion solo esta permitida para Administrador y SuperAdministrador.'
+            ], 403);
+        }
+
+        [$query, $filtros] = $this->construirQueryBajoStock($request);
+        $datos = $query->get();
+
+        $pdf = new PDFInventario('L', 'mm', 'A4');
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->AddPage();
+        $toAscii = function ($text) {
+            $text = (string) $text;
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+            return $converted !== false ? $converted : $text;
+        };
+
+        $pdf->SetFont('Arial', 'B', 14);
+        $pdf->Cell(0, 8, 'REPORTE DE PRODUCTOS CON BAJO STOCK', 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(0, 5, 'Fecha de generacion: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
+        $pdf->Ln(3);
+
+        $txtFiltros = [
+            'Almacen: ' . $toAscii($filtros['nombre_almacen'] ?? 'Todos'),
+            'Proveedor: ' . $toAscii($filtros['proveedor'] ?: 'Todos'),
+            'Productos: ' . $toAscii($filtros['productos'] ?: 'Todos'),
+            'Categoria: ' . $toAscii($filtros['nombre_categoria'] ?? 'Todas'),
+        ];
+        if ($filtros['stock_desde'] !== null || $filtros['stock_hasta'] !== null) {
+            $txtFiltros[] = 'Rango stock: ' .
+                ($filtros['stock_desde'] !== null ? $filtros['stock_desde'] : '-') .
+                ' a ' .
+                ($filtros['stock_hasta'] !== null ? $filtros['stock_hasta'] : '-');
+        }
+
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->MultiCell(0, 5, implode(' | ', $txtFiltros));
+        $pdf->Ln(2);
+
+        $w = [36, 76, 46, 58, 28, 28];
+        $headers = ['Almacen', 'Producto', 'Categoria', 'Proveedor', 'Stock Actual', 'Stock Minimo'];
+
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(220, 220, 220);
+        foreach ($headers as $i => $header) {
+            $pdf->Cell($w[$i], 7, $header, 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 8);
+        $fill = false;
+        foreach ($datos as $row) {
+            $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+            $pdf->Cell($w[0], 6, substr($toAscii($row->nombre_almacen), 0, 22), 1, 0, 'L', true);
+            $pdf->Cell($w[1], 6, substr($toAscii($row->nombre_producto), 0, 42), 1, 0, 'L', true);
+            $pdf->Cell($w[2], 6, substr($toAscii($row->nombre_categoria), 0, 26), 1, 0, 'L', true);
+            $pdf->Cell($w[3], 6, substr($toAscii($row->nombre_proveedor), 0, 30), 1, 0, 'L', true);
+            $pdf->Cell($w[4], 6, number_format($row->stock_actual, 0), 1, 0, 'R', true);
+            $pdf->Cell($w[5], 6, number_format($row->stock_minimo, 0), 1, 1, 'R', true);
+            $fill = !$fill;
+        }
+
+        if ($datos->isEmpty()) {
+            $pdf->Cell(array_sum($w), 8, 'No hay registros para los filtros seleccionados.', 1, 1, 'C');
+        }
+
+        $nombreArchivo = 'ReporteProductosBajoStock_' . date('Ymd_His') . '.pdf';
+        return response($pdf->Output('S'), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+    }
+
+    private function construirQueryBajoStock(Request $request)
+    {
+        $usuario = \Auth::user();
+        $almacenId = $request->input('idAlmacen', $request->input('almacen_id'));
+        $proveedor = trim($request->input('proveedor', ''));
+        $productos = trim($request->input('productos', $request->input('producto', '')));
+        $idCategoria = $request->input('idCategoria', $request->input('categoria_id'));
+        $stockExpr = 'SUM(inventarios.saldo_stock)';
+
+        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
+            ->leftJoin('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+            ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
+            ->select(
+                'almacens.id as id_almacen',
+                'almacens.nombre_almacen',
+                'articulos.id as id_producto',
+                'articulos.nombre as nombre_producto',
+                DB::raw('COALESCE(categorias.nombre, "SIN CATEGORIA") as nombre_categoria'),
+                DB::raw('COALESCE(personas.nombre, "SIN PROVEEDOR") as nombre_proveedor'),
+                DB::raw($stockExpr . ' as stock_actual'),
+                DB::raw($stockExpr . ' as saldo_stock'),
+                'articulos.stock as stock_minimo'
+            )
+            ->where('articulos.condicion', '=', 1)
+            ->groupBy(
+                'almacens.id',
+                'almacens.nombre_almacen',
+                'articulos.id',
+                'articulos.nombre',
+                'categorias.nombre',
+                'personas.nombre',
+                'articulos.stock'
+            )
+            ->havingRaw('(' . $stockExpr . ') <= articulos.stock');
+
+        if ($usuario && $usuario->idrol != 4 && !empty($usuario->idsucursal)) {
+            $query->where('almacens.sucursal', $usuario->idsucursal);
+        }
+        if (!empty($almacenId)) {
+            $query->where('inventarios.idalmacen', $almacenId);
+        }
+        if ($proveedor !== '') {
+            $query->whereRaw('COALESCE(personas.nombre, "") like ?', ['%' . $proveedor . '%']);
+        }
+        if ($productos !== '') {
+            $query->where('articulos.nombre', 'like', '%' . $productos . '%');
+        }
+        if (!empty($idCategoria)) {
+            $query->where('articulos.idcategoria', $idCategoria);
+        }
+
+        $query->orderBy('almacens.nombre_almacen')->orderBy('articulos.nombre');
+
+        $filtros = [
+            'id_almacen' => $almacenId,
+            'nombre_almacen' => !empty($almacenId) ? DB::table('almacens')->where('id', $almacenId)->value('nombre_almacen') : null,
+            'proveedor' => $proveedor,
+            'productos' => $productos,
+            'id_categoria' => $idCategoria,
+            'nombre_categoria' => !empty($idCategoria) ? DB::table('categorias')->where('id', $idCategoria)->value('nombre') : null,
+            'stock_desde' => null,
+            'stock_hasta' => null,
+        ];
+
+        return [$query, $filtros];
+    }
+
     public function indextraspaso(Request $request)
     {
         if (!$request->ajax()) {
@@ -392,7 +503,7 @@ class InventarioController extends Controller
         $buscar = $request->buscar;
         $idAlmacen = $request->idAlmacen;
 
-        // Construcción de la consulta base con joins y groupBy
+        // ConstrucciÃƒÆ’Ã‚Â³n de la consulta base con joins y groupBy
         $inventarios = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
             ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
             ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
@@ -424,7 +535,7 @@ class InventarioController extends Controller
             );
 
         if (!empty($buscar)) {
-            $palabras = explode(' ', $buscar); // Dividir la búsqueda en palabras
+            $palabras = explode(' ', $buscar); // Dividir la bÃƒÆ’Ã‚Âºsqueda en palabras
             $inventarios = $inventarios->where(function ($q) use ($palabras) {
                 foreach ($palabras as $palabra) {
                     $q->where(function ($sub) use ($palabra) {
@@ -596,7 +707,7 @@ class InventarioController extends Controller
 
             return ['invenstock' => $invenstock];
         } else {
-            // Si falta alguno de los valores, regresar respuesta vacía
+            // Si falta alguno de los valores, regresar respuesta vacÃƒÆ’Ã‚Â­a
             return ['invenstock' => []];
         }
     }
@@ -649,12 +760,12 @@ class InventarioController extends Controller
             if (!empty($errors)) {
                 return response()->json(['errors' => $errors], 422);
             } else {
-                return response()->json(['mensaje' => 'Importación exitosa'], 200);
+                return response()->json(['mensaje' => 'ImportaciÃƒÆ’Ã‚Â³n exitosa'], 200);
             }
         } catch (Exception $e) {
-            Log::error('Error en la importación: ' . $e->getMessage());
+            Log::error('Error en la importaciÃƒÆ’Ã‚Â³n: ' . $e->getMessage());
 
-            return response()->json(['error' => 'Error en la importación', 'mensaje' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error en la importaciÃƒÆ’Ã‚Â³n', 'mensaje' => $e->getMessage()], 500);
         }
     }
 
@@ -666,7 +777,7 @@ class InventarioController extends Controller
         $buscar = $request->buscar;
         $criterio = $request->criterio;
 
-        // Obtener la fecha de hace 7 días
+        // Obtener la fecha de hace 7 dÃƒÆ’Ã‚Â­as
         $fechaInicio = now()->subDays(7)->toDateTimeString();
         $fechaActual = now()->toDateTimeString();
 
@@ -729,11 +840,11 @@ class InventarioController extends Controller
         $modo = $request->input('modo', 'item');
         $idAlmacen = $request->input('idAlmacen');
 
-        // Obtener nombre de almacén
+        // Obtener nombre de almacÃƒÆ’Ã‚Â©n
         $almacen = \DB::table('almacens')->where('id', $idAlmacen)->first();
         $nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Desconocido';
 
-        // Obtener inventario según modo - MEJORADO CON CATEGORÍA
+        // Obtener inventario segÃƒÆ’Ã‚Âºn modo - MEJORADO CON CATEGORÃƒÆ’Ã‚ÂA
         if ($modo === 'item') {
             $inventarios = \DB::table('articulos')
                 ->join('inventarios', 'articulos.id', '=', 'inventarios.idarticulo')
@@ -806,7 +917,7 @@ class InventarioController extends Controller
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetXY(50, 26);
         
-        $pdf->Cell(140, 6, utf8_decode('Almacén: ' . $nombreAlmacen), 0, 1, 'L');
+        $pdf->Cell(140, 6, utf8_decode('AlmacÃƒÆ’Ã‚Â©n: ' . $nombreAlmacen), 0, 1, 'L');
         
         $pdf->SetXY(50, 33);
         $pdf->Cell(140, 6, 'Fecha: ' . date('d/m/Y H:i'), 0, 1, 'L');
@@ -814,7 +925,7 @@ class InventarioController extends Controller
         $pdf->Ln(8);
 
         if ($modo === 'item') {
-            // Agrupar por categoría
+            // Agrupar por categorÃƒÆ’Ã‚Â­a
             $agrupado = [];
             foreach ($inventarios as $inv) {
                 if (!isset($agrupado[$inv->categoria])) {
@@ -824,11 +935,11 @@ class InventarioController extends Controller
             }
 
             foreach ($agrupado as $categoria => $items) {
-                // Encabezado de categoría con color corporativo
+                // Encabezado de categorÃƒÆ’Ã‚Â­a con color corporativo
                 $pdf->SetFont('Arial', 'B', 10);
                 $pdf->SetFillColor(47, 50, 107); // Color #21234a
                 $pdf->SetTextColor(255, 255, 255); // Blanco
-                $pdf->Cell(188, 7, utf8_decode("CATEGORÍA: " . strtoupper($categoria)), 0, 1, 'L', true);
+                $pdf->Cell(188, 7, utf8_decode("CATEGORÃƒÆ’Ã‚ÂA: " . strtoupper($categoria)), 0, 1, 'L', true);
 
                 // Cabecera de tabla con colores corporativos
                 $pdf->SetFillColor(72, 75, 138); // Color #21234a
@@ -927,7 +1038,7 @@ class InventarioController extends Controller
         $modo = $request->input('modo', 'item');
         $idAlmacen = $request->input('idAlmacen');
 
-        // Obtener nombre de almacén
+        // Obtener nombre de almacÃƒÆ’Ã‚Â©n
         $almacen = \DB::table('almacens')->where('id', $idAlmacen)->first();
         $nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Desconocido';
 
@@ -945,9 +1056,10 @@ class PDFInventario extends FPDF
 {
     public function Footer()
     {
-        // Posiciona el pie de página a 1.5 cm del final
+        // Posiciona el pie de pÃƒÆ’Ã‚Â¡gina a 1.5 cm del final
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, utf8_decode('Página ') . $this->PageNo() . '/{nb}', 0, 0, 'C');
+        $this->Cell(0, 10, 'Pagina ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
     }
 }
+

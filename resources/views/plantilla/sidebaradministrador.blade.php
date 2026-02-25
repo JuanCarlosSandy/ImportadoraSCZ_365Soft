@@ -151,6 +151,9 @@
                     <li @click="menu=58" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Resumen de Inventario</a>
                     </li>
+                    <li @click="menu=85" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Productos Bajo Stock</a>
+                    </li>
                     <!--<li @click="menu=60" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-exchange" style="font-size: 19px;"></i> Detallado Fisico de Movimientos</a>
                     </li>

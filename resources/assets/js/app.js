@@ -211,7 +211,7 @@ Vue.component(
   "reportekardexfisico",
   require("./components/ReporteKardexFisico.vue"),
 );
-
+Vue.component('productosbajostock', require('./components/dashboard/ProductosBajoStock.vue').default);
 Vue.component(
   "resumenclientes",
   require("./components/ReporteResumenClientes.vue"),
