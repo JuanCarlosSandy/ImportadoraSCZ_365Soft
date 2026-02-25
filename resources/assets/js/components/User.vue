@@ -790,7 +790,10 @@ async cargarReporteUsuariosExcel() {
     const link = document.createElement('a');
     link.href = url;
 
-    let filename = 'usuarios.xlsx';
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const fechaGeneracion = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    let filename = `MisUsuarios_${fechaGeneracion}.xlsx`;
     const disposition = response.headers['content-disposition'];
     if (disposition && disposition.indexOf('attachment') !== -1) {
       const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;

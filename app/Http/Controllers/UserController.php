@@ -237,7 +237,10 @@ class UserController extends Controller
 
     public function listarReporteUsuariosExcel()
     {
-        return Excel::download(new UserExport, 'usuarios.xlsx');
+        $fechaGeneracion = now()->format('Ymd_His');
+        $nombreArchivo = "MisUsuarios_{$fechaGeneracion}.xlsx";
+
+        return Excel::download(new UserExport, $nombreArchivo);
     }
 
     public function editarPersona(Request $request)
