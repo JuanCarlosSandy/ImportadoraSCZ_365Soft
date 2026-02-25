@@ -1,5 +1,7 @@
 <template>
   <main class="main">
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
     <div class="loading-overlay" v-if="isLoading">
       <div class="loading-container">
         <div class="spinner"></div>
@@ -148,6 +150,8 @@
 </template>
 
 <script>
+import Toast from "primevue/toast";
+import ToastService from 'primevue/toastservice';
 import Panel from "primevue/panel";
 import Swal from "sweetalert2";
 import Button from "primevue/button";
@@ -168,6 +172,8 @@ export default {
     Column,
     RadioButton,
     Paginator,
+    ToastService,
+    Toast
   },
   data() {
     return {
@@ -190,6 +196,7 @@ export default {
       offset: 3,
       criterio: "nombre",
       buscar: "",
+      idrol: null,
     };
   },
   computed: {
@@ -221,6 +228,38 @@ export default {
     },
   },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastInfo(mensaje) {
+      this.$toast.add({
+        severity: "info",
+        summary: "Información",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     async descargarArchivoReporte(url, nombreArchivo) {
       try {
         Swal.fire({
@@ -250,6 +289,10 @@ export default {
       }
     },
     async exportarInventario() {
+      if (this.idrol == 2) {
+        this.toastWarning("Esta acción solo está permitida para Administradores.");
+        return;
+      }
       const result = await Swal.fire({
         title: 'En qué formato desea exportar',
         icon: 'question',
@@ -318,6 +361,10 @@ export default {
       this.cambiarPagina(page, this.buscar, this.criterio);
     },
     abrirModalImportar() {
+      if (this.idrol == 2) {
+        this.toastWarning("Esta acción solo está permitida para Administradores.");
+        return;
+      }
       this.modalImportar = 1;
     },
     cerrarModalImportar() {
@@ -356,6 +403,11 @@ export default {
         me.pagination = respuesta.pagination;
       } catch (error) {
         Swal.fire("Error", "No se pudo cargar el inventario", "error");
+      }
+    },
+    obtenerIdrol() {
+      if (window.userData && window.userData.rol !== undefined) {
+        this.idrol = window.userData.rol;
       }
     },
     async selectAlmacen() {
@@ -414,7 +466,8 @@ export default {
     window.addEventListener("resize", this.handleResize);
     try {
       this.isLoading = true; // Activar loading al iniciar
-      await Promise.all([this.selectAlmacen()]);
+      this.obtenerIdrol(); // Llamar síncronamente
+      await this.selectAlmacen(); // Esperar selectAlmacen que es async
     } catch (error) {
       console.error("Error en la carga inicial:", error);
       Swal.fire("Error", "Error al cargar los datos iniciales", "error");
