@@ -8279,5 +8279,9 @@ calcularTotal() {
 .tabla-seleccionable tbody tr:hover {
   background-color: #f1f5f9 !important;
 }
-
+.tabla-seleccionable >>> .p-datatable-tbody > tr:hover {
+  background-color: #f1f5f9 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease;
+}
 </style>
