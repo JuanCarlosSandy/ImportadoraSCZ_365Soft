@@ -428,8 +428,17 @@ if ($item['tipo'] === 'transaccion') {
 
 $pdf = Pdf::loadView('pdf.caja', compact('caja', 'historial', 'tipo'))
           ->setPaper('letter', 'portrait'); // carta, vertical
-          
-return $pdf->download("reporte_caja_{$caja->id}.pdf");}
+
+$tipoReporte = [
+    'completo' => 'Completo',
+    'qr' => 'QR',
+    'efectivo' => 'Efectivo',
+][$tipo] ?? 'Completo';
+
+$fechaGeneracion = date('Ymd_His');
+$nombreArchivo = "ReporteCaja_{$tipoReporte}_{$fechaGeneracion}.pdf";
+
+return $pdf->download($nombreArchivo);}
 
 
 
