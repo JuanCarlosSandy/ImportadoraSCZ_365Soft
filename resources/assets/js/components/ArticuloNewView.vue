@@ -1645,7 +1645,23 @@ async descargarReporteExcel() {
       timeout: 600000 // 10 minutos
     });
 
-    const blob = new Blob([response.data]);
+    // Verificar si la respuesta es realmente un Excel y no un error JSON
+    const contentType = response.headers['content-type'];
+    if (contentType && contentType.includes('application/json')) {
+      // El blob contiene JSON de error
+      const text = await new Response(response.data).text();
+      const error = JSON.parse(text);
+      this.$toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'No se pudo generar el reporte Excel', 
+        life: 5000 
+      });
+      this.isLoading = false;
+      return;
+    }
+
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
     link.download = nombreArchivo;
@@ -1657,7 +1673,42 @@ async descargarReporteExcel() {
     this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
   } catch (error) {
     console.error('Error al descargar Excel:', error);
-    this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el reporte Excel', life: 5000 });
+    
+    // Detectar errores de permiso específicamente
+    if (error.response && error.response.status === 403) {
+      this.$toast.add({ 
+        severity: 'warn', 
+        summary: 'Acceso Denegado', 
+        detail: 'Esta acción solo está permitida para Administradores.', 
+        life: 5000 
+      });
+    } else if (error.response && error.response.data) {
+      // Intenta obtener mensaje de error del servidor
+      try {
+        const text = await new Response(error.response.data).text();
+        const errorData = JSON.parse(text);
+        this.$toast.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: errorData.message || 'No se pudo generar el reporte Excel', 
+          life: 5000 
+        });
+      } catch (error){
+        this.$toast.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: 'No se pudo generar el reporte Excel', 
+          life: 5000 
+        });
+      }
+    } else {
+      this.$toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'No se pudo generar el reporte Excel', 
+        life: 5000 
+      });
+    }
   } finally {
     this.isLoading = false;
   }
@@ -1677,7 +1728,23 @@ async descargarReportePDF() {
       timeout: 600000
     });
 
-    const blob = new Blob([response.data]);
+    // Verificar si la respuesta es realmente un PDF y no un error JSON
+    const contentType = response.headers['content-type'];
+    if (contentType && contentType.includes('application/json')) {
+      // El blob contiene JSON de error
+      const text = await new Response(response.data).text();
+      const error = JSON.parse(text);
+      this.$toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'No se pudo generar el reporte PDF', 
+        life: 5000 
+      });
+      this.isLoading = false;
+      return;
+    }
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
     link.download = nombreArchivo;
@@ -1689,7 +1756,42 @@ async descargarReportePDF() {
     this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
   } catch (error) {
     console.error('Error al descargar PDF:', error);
-    this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el reporte PDF', life: 5000 });
+    
+    // Detectar errores de permiso específicamente
+    if (error.response && error.response.status === 403) {
+      this.$toast.add({ 
+        severity: 'warn', 
+        summary: 'Acceso Denegado', 
+        detail: 'Esta acción solo está permitida para Administradores.', 
+        life: 5000 
+      });
+    } else if (error.response && error.response.data) {
+      // Intenta obtener mensaje de error del servidor
+      try {
+        const text = await new Response(error.response.data).text();
+        const errorData = JSON.parse(text);
+        this.$toast.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: errorData.message || 'No se pudo generar el reporte PDF', 
+          life: 5000 
+        });
+      } catch (error) {
+        this.$toast.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: 'No se pudo generar el reporte PDF', 
+          life: 5000 
+        });
+      }
+    } else {
+      this.$toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.message || 'No se pudo generar el reporte PDF', 
+        life: 5000 
+      });
+    }
   } finally {
     this.isLoading = false;
   }

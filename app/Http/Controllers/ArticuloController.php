@@ -561,7 +561,7 @@ class ArticuloController extends Controller
         
         $pdf->setPaper('letter', 'landscape');
 
-        return $pdf->stream('Reporte_Articulos.pdf');
+        return $pdf->download('Reporte_Articulos.pdf');
     }
 
     public function buscarArticulo(Request $request)
