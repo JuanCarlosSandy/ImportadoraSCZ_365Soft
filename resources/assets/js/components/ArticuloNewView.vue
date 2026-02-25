@@ -1349,7 +1349,7 @@ export default {
     },
     asignarCamposInventario() {
       this.datosFormularioInventario.AlmacenSeleccionado = this.almacenSeleccionado.id;
-      this.datosFormularioInventario.unidadStock = this.unidadStock * this.datosFormulario.unidad_envase;
+      this.datosFormularioInventario.unidadStock = this.unidadStock;
       this.datosFormularioInventario.fechaVencimientoAlmacen = this.fechaVencimientoAlmacen;
     },
     convertDolar(precio) {

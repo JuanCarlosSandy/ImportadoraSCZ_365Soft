@@ -100,11 +100,6 @@ class InventarioController extends Controller
                         $cantidadReal = $cantidadIngresada;
                     }
 
-                    // 👉 Calcular cantidad multiplicada por unidad_envase
-                    $cantidadReal = isset($inventario['cantidad'])
-                        ? $inventario['cantidad'] * $articulo->unidad_envase
-                        : 0;
-
                     Log::info("Cantidad real calculada: " . $cantidadReal);
 
                     // Buscar inventario existente
