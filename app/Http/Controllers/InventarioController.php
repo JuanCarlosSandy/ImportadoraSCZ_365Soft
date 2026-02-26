@@ -377,14 +377,19 @@ class InventarioController extends Controller
     }
 
 
-    public function listarReporteBajoStockExcel(Request $request)
+   public function listarReporteBajoStockExcel(Request $request)
     {
+        $fechaGeneracion = date('Y-m-d');
+        $nombreArchivo = "Productos_bajo_stock_{$fechaGeneracion}.xlsx";
 
-        return Excel::download(new ProductosBajoStockExport(
-            $request->almacen_id, 
-            $request->medicamento, 
-            $request->laboratorio
-        ), 'Producto_Bajo_Stock.xlsx');
+        return Excel::download(
+            new ProductosBajoStockExport(
+                $request->almacen_id, 
+                $request->medicamento, 
+                $request->laboratorio
+            ),
+            $nombreArchivo
+        );
     }
 
     public function exportarProductosBajoStockPdf(Request $request)
@@ -1204,7 +1209,10 @@ class InventarioController extends Controller
 
         $this->addFooter($pdf);
 
-        $pdf->Output('D', 'Productos_bajo_stock_' . date('Y-m-d') . '.pdf');
+        $fechaGeneracion = date('Y-m-d');
+        $nombreArchivo = "Productos_bajo_stock_{$fechaGeneracion}.pdf";
+
+        $pdf->Output('D', $nombreArchivo);
         exit;
     }
      private function addHeader($pdf)
