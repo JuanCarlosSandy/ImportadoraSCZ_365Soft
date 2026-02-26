@@ -22,7 +22,7 @@ class ReportesVentas extends Controller
         $fechaInicio = $request->fechaInicio . ' 00:00:00';
         $fechaFin = $request->fechaFin . ' 23:59:59';
         $moneda = $request->moneda;
-        
+
         $ventas = Venta::join('personas', 'ventas.idcliente', '=', 'personas.id')
             ->join('users', 'ventas.idusuario', '=', 'users.id')
             ->join('tipo_ventas', 'ventas.idtipo_venta', '=', 'tipo_ventas.id')
@@ -64,7 +64,7 @@ class ReportesVentas extends Controller
 
         if ($request->has('estadoVenta') && $request->estadoVenta !== 'Todos') {
             $estado_venta = $request->estadoVenta;
-            
+
             // Convertir texto a número
             if ($estado_venta === 'Registrado') {
                 $ventas->where('ventas.estado', '=', 1);
@@ -75,7 +75,7 @@ class ReportesVentas extends Controller
 
         if ($request->has('sucursal') && $request->sucursal !== 'undefined') {
             $sucursal = $request->sucursal;
-            $ventas->where('ventas.idsucursal', '=', $sucursal); 
+            $ventas->where('ventas.idsucursal', '=', $sucursal);
         }
 
         if ($request->has('ejecutivoCuentas') && $request->ejecutivoCuentas !== 'undefined') {
@@ -92,7 +92,7 @@ class ReportesVentas extends Controller
 
         $total_importeBs = 0;
         $total_importeUSD = 0;
-        
+
         foreach ($ventas as $venta) {
             // Solo sumar ventas registradas (estado = 1)
             if ($venta->estado == 1) {
@@ -100,7 +100,7 @@ class ReportesVentas extends Controller
                 $total_importeUSD += $venta->importe_usd;
             }
         }
-        
+
         return [
             'ventas' => $ventas,
             'total_BS' => number_format($total_importeBs, 2, '.', ''),
@@ -324,443 +324,477 @@ class ReportesVentas extends Controller
     }
 
     public function descargarReporteGeneralPDF(Request $request)
-{
-    // ---------------- CONSULTA ----------------
-    $query = Venta::join('personas', 'ventas.idcliente', '=', 'personas.id')
-        ->join('users', 'ventas.idusuario', '=', 'users.id')
-        ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
+    {
+        // ---------------- CONSULTA ----------------
+        $query = Venta::join('personas', 'ventas.idcliente', '=', 'personas.id')
+            ->join('users', 'ventas.idusuario', '=', 'users.id')
+            ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
 
-        // Última cuota por venta
-        ->leftJoin(DB::raw('(
-            SELECT c1.idcredito, c1.saldo_restante
-            FROM cuotas_credito c1
-            INNER JOIN (
-                SELECT idcredito, MAX(numero_cuota) AS max_cuota
-                FROM cuotas_credito
-                GROUP BY idcredito
-            ) c2
-            ON c1.idcredito = c2.idcredito
-            AND c1.numero_cuota = c2.max_cuota
-        ) AS cc'), 'cc.idcredito', '=', 'ventas.id')
+            // Última cuota por venta
+            ->leftJoin(DB::raw('(
+                SELECT c1.idcredito, c1.saldo_restante
+                FROM cuotas_credito c1
+                INNER JOIN (
+                    SELECT idcredito, MAX(numero_cuota) AS max_cuota
+                    FROM cuotas_credito
+                    GROUP BY idcredito
+                ) c2
+                ON c1.idcredito = c2.idcredito
+                AND c1.numero_cuota = c2.max_cuota
+            ) AS cc'), 'cc.idcredito', '=', 'ventas.id')
 
-        ->select(
-            'ventas.id',
-            'ventas.num_comprobante',
-            'ventas.fecha_hora',
-            'personas.nombre as cliente',
-            'ventas.total',
-            'users.usuario as vendedor',
-            'ventas.estado',
-            'ventas.idtipo_venta',
-            'cc.saldo_restante',
-            'sucursales.nombre as sucursal_nombre'
-        );
+            ->select(
+                'ventas.id',
+                'ventas.num_comprobante',
+                'ventas.fecha_hora',
+                'personas.nombre as cliente',
+                'ventas.total',
+                'users.usuario as vendedor',
+                'ventas.estado',
+                'ventas.idtipo_venta',
+                'cc.saldo_restante',
+                'sucursales.nombre as sucursal_nombre'
+            );
 
-    // ---------------- FILTROS ----------------
-    $filtros = [];
+        // ---------------- FILTROS ----------------
+        $filtros = [];
 
-    if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
-        $query->where('users.idsucursal', $request->sucursal);
-        $sucursal = Sucursales::find($request->sucursal);
-        $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
-    }
-
-    if ($request->filled('tipoReporte')) {
-        if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
-            $query->whereBetween('ventas.fecha_hora', [
-                $request->fechaSeleccionada . ' 00:00:00',
-                $request->fechaSeleccionada . ' 23:59:59'
-            ]);
-            $filtros[] = 'Fecha: ' . $request->fechaSeleccionada;
-        } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
-            $mes = $request->mesSeleccionado;
-            $query->whereBetween('ventas.fecha_hora', [
-                $mes . '-01 00:00:00',
-                date('Y-m-t', strtotime($mes . '-01')) . ' 23:59:59'
-            ]);
-            $filtros[] = 'Mes: ' . date('F Y', strtotime($mes . '-01'));
+        if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
+            $query->where('users.idsucursal', $request->sucursal);
+            $sucursal = Sucursales::find($request->sucursal);
+            $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
         }
-    }
 
-    if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
-        $query->where('ventas.estado', $request->estadoVenta);
-        $filtros[] = 'Estado: ' . $request->estadoVenta;
-    }
-
-    if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
-        $query->where('ventas.idcliente', $request->idcliente);
-        $filtros[] = 'Cliente ID: ' . $request->idcliente;
-    }
-
-    
-    if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
-        $query->where('ventas.idusuario', $request->idusuario);
-        $vendedorObj = User::find($request->idusuario); 
-        $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
-    }
-
-    $ventas = $query->orderBy('ventas.fecha_hora', 'asc')->get();
-
-    // ---------------- PDF ----------------
-$pdf = new PDFVentas();
-$pdf->AliasNbPages();
-$pdf->AddPage();
-
-/* ========= HEADER ÚNICO ========= */
-$pdf->SetFillColor(11, 79, 119);
-$pdf->SetTextColor(255);
-
-// Altura total del header
-$headerHeight = 22;
-
-// 1️⃣ Fondo azul (UN SOLO BLOQUE)
-$pdf->Cell(0, $headerHeight, '', 0, 1, 'L', true);
-
-// 2️⃣ Volver arriba del header
-$pdf->SetY($pdf->GetY() - $headerHeight);
-$pdf->SetX(10);
-
-// 3️⃣ Título (izquierda)
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->Cell(120, 10, utf8_decode('REPORTE GENERAL DE VENTAS'), 0, 0, 'L');
-
-// 4️⃣ Logo (derecha, DENTRO del header)
-$pdf->Image(
-    public_path('img/logoPrincipal.png'),
-    165,                  // X (derecha)
-    $pdf->GetY() + 1,     // Y alineado
-    28                    // ancho
-);
-
-// 5️⃣ Segunda línea dentro del mismo header
-$pdf->Ln(10);
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(120, 10, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i')), 0, 1, 'L');
-
-// 6️⃣ Salir del header
-$pdf->Ln(4);
-
-// Separador inferior
-$pdf->SetDrawColor(11, 79, 119);
-$pdf->SetLineWidth(0.6);
-$pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
-$pdf->Ln(6);
-
-
-    /* ========= FILTROS ========= */
-    if (count($filtros) > 0) {
-        $pdf->SetTextColor(0);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 5, utf8_decode('Filtros aplicados:'), 0, 1);
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(0, 5, utf8_decode(implode(' | ', $filtros)), 0, 1);
-        $pdf->Ln(4);
-    }
-
-    /* ========= CABECERA TABLA ========= */
-    $pdf->SetFillColor(11, 79, 119);
-    $pdf->SetTextColor(255);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell(22, 8, 'Nro Comp.', 1, 0, 'C', true);
-    $pdf->Cell(30, 8, 'Fecha y Hora', 1, 0, 'C', true);
-    $pdf->Cell(38, 8, 'Cliente', 1, 0, 'C', true);
-    $pdf->Cell(22, 8, 'Total', 1, 0, 'C', true);
-    $pdf->Cell(28, 8, 'Vendedor', 1, 0, 'C', true);
-    $pdf->Cell(20, 8, 'Tipo Venta', 1, 0, 'C', true);
-    $pdf->Cell(30, 8, 'Estado', 1, 1, 'C', true);
-
-    /* ========= DATOS ========= */
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->SetTextColor(0);
-    $totalVentasRegistradas = 0;
-
-    foreach ($ventas as $venta) {
-
-        $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
-        $fill = false;
-
-        if ($venta->estado == 0) {
-            $pdf->SetTextColor(217, 48, 37);
-            $estadoTexto = 'Anulado';
-        } else {
-            if ($venta->idtipo_venta == 2 && $venta->saldo_restante !== null && (float)$venta->saldo_restante > 0) {
-                $pdf->SetTextColor(0);
-                $pdf->SetFillColor(255, 243, 176);
-                $estadoTexto = 'Pendiente Bs' . number_format((float)$venta->saldo_restante, 2);
-                $fill = true;
-            } else {
-                $pdf->SetTextColor(11, 122, 59);
-                $estadoTexto = 'Registrado';
-                $totalVentasRegistradas += $venta->total;
+        if ($request->filled('tipoReporte')) {
+            if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
+                $query->whereBetween('ventas.fecha_hora', [
+                    $request->fechaSeleccionada . ' 00:00:00',
+                    $request->fechaSeleccionada . ' 23:59:59'
+                ]);
+                $filtros[] = 'Fecha: ' . $request->fechaSeleccionada;
+            } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
+                $mes = $request->mesSeleccionado;
+                $query->whereBetween('ventas.fecha_hora', [
+                    $mes . '-01 00:00:00',
+                    date('Y-m-t', strtotime($mes . '-01')) . ' 23:59:59'
+                ]);
+                $filtros[] = 'Mes: ' . date('F Y', strtotime($mes . '-01'));
             }
         }
 
-        $pdf->Cell(22, 8, $venta->num_comprobante, 1, 0, 'L', $fill);
-        $pdf->Cell(30, 8, date('d/m/Y H:i', strtotime($venta->fecha_hora)), 1, 0, 'L', $fill);
-        $pdf->Cell(38, 8, utf8_decode(mb_strimwidth($venta->cliente ?? '-', 0, 25, '...')), 1, 0, 'L', $fill);
-        $pdf->Cell(22, 8, number_format($venta->total, 2), 1, 0, 'R', $fill);
-        $pdf->Cell(28, 8, utf8_decode(mb_strimwidth($venta->vendedor ?? '-', 0, 20, '...')), 1, 0, 'L', $fill);
-       $pdf->Cell(20, 8, utf8_decode($tipoVenta), 1, 0, 'L', $fill);
-
-
-        $pdf->Cell(30, 8, utf8_decode($estadoTexto), 1, 1, 'C', $fill);
-
-        $pdf->SetTextColor(0);
-        $pdf->SetFillColor(255);
-    }
-
-    /* ========= TOTAL ========= */
-    $pdf->Ln(4);
-    $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 8, 'Total de ventas registradas: ' . number_format($totalVentasRegistradas, 2), 0, 1, 'R');
-
-    // Descargar
-    $pdf->Output('D', 'reporte_general_ventas_' . date('Ymd_His') . '.pdf');
-    exit;
-}
-
-
-
-    public function descargarVentasDetalladasPDF(Request $request)
-{
-    $query = Venta::with(['detalles.producto', 'sucursal', 'usuario.persona', 'cliente'])
-        ->join('users', 'ventas.idusuario', '=', 'users.id')
-        ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
-        ->leftJoin(DB::raw('(
-            SELECT c1.idcredito, c1.saldo_restante
-            FROM cuotas_credito c1
-            INNER JOIN (
-                SELECT idcredito, MAX(numero_cuota) AS max_cuota
-                FROM cuotas_credito
-                GROUP BY idcredito
-            ) c2
-            ON c1.idcredito = c2.idcredito
-            AND c1.numero_cuota = c2.max_cuota
-        ) AS cc'), 'cc.idcredito', '=', 'ventas.id')
-        ->select(
-            'ventas.*',
-            'ventas.idtipo_venta',
-            'cc.saldo_restante',
-            'sucursales.nombre as sucursal_nombre'
-        );
-
-    $filtros = [];
-
-    // Filtro Sucursal
-    if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
-        $query->where('users.idsucursal', $request->sucursal);
-        $sucursal = Sucursales::find($request->sucursal);
-        $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
-    }
-
-    // Filtro FECHA (Este es el que hace que funcione por día)
-    if ($request->filled('tipoReporte')) {
-        if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
-            $query->whereBetween('ventas.fecha_hora', [
-                $request->fechaSeleccionada . ' 00:00:00',
-                $request->fechaSeleccionada . ' 23:59:59'
-            ]);
-            $filtros[] = 'Fecha: ' . $request->fechaSeleccionada;
-        } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
-            $mes = $request->mesSeleccionado;
-            $query->whereBetween('ventas.fecha_hora', [
-                $mes . '-01 00:00:00',
-                date('Y-m-t', strtotime($mes . '-01')) . ' 23:59:59'
-            ]);
-            $filtros[] = 'Mes: ' . date('F Y', strtotime($mes . '-01'));
-        }
-    }
-
-    // Filtro Estado
-    if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
-        $query->where('ventas.estado', $request->estadoVenta);
-        $filtros[] = 'Estado: ' . $request->estadoVenta;
-    }
-
-    // Filtro Cliente
-    if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
-        $query->where('ventas.idcliente', $request->idcliente);
-        $filtros[] = 'Cliente ID: ' . $request->idcliente;
-    }
-
-    if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
-        $query->where('ventas.idusuario', $request->idusuario);
-        $vendedorObj = User::find($request->idusuario); 
-        $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
-    }
-
-    $ventas = $query->orderBy('ventas.fecha_hora', 'desc')->get();
-
-    $pdf = new PDFDetalleVentas(); // Asegúrate de tener importada esta clase o usar FPDF
-    $pdf->AliasNbPages();
-    $pdf->AddPage();
-
-    /* ========= HEADER AZUL (SE MANTIENE IGUAL) ========= */
-    $pdf->SetFillColor(11, 79, 119);
-    $pdf->SetTextColor(255);
-    $pdf->SetFont('Arial', 'B', 14);
-    $pdf->Cell(0, 14, '', 0, 1, 'L', true);
-    $pdf->SetY($pdf->GetY() - 14);
-    $pdf->SetX(10);
-    $pdf->Cell(130, 14, utf8_decode('REPORTE DETALLADO DE VENTAS'), 0, 0, 'L');
-    
-    // Logo
-    $headerY = $pdf->GetY();
-    // Ajusta la ruta si es necesario
-    if(file_exists(public_path('img/logoPrincipal.png'))){
-        $pdf->Image(public_path('img/logoPrincipal.png'), 165, $headerY + 2, 20);
-    }
-    $pdf->Ln(14);
-
-    // Fecha
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(0, 8, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i')), 0, 1, 'L', true);
-    $pdf->Ln(4);
-    $pdf->SetDrawColor(11, 79, 119);
-    $pdf->SetLineWidth(0.6);
-    $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
-    $pdf->Ln(6);
-    $pdf->SetTextColor(0);
-
-    // Imprimir filtros si existen...
-    if (isset($filtros) && count($filtros) > 0) {
-        $pdf->SetFont('Arial', '', 9);
-        foreach ($filtros as $filtro) {
-            $pdf->Cell(0, 5, utf8_decode($filtro), 0, 1);
-        }
-        $pdf->Ln(3);
-    }
-
-    $totalVentasRegistradas = 0; 
-
-    foreach ($ventas as $venta) {
-
-        // -------- DATOS GENERALES DE LA VENTA --------
-        $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
-        $clienteNombre = $venta->cliente->nombre ?? 'S/N';
-        $clienteRecortado = mb_strimwidth(utf8_decode($clienteNombre), 0, 30, '...');
-        $saldoRestante = $venta->saldo_restante;
-
-        $estadoTexto = 'Registrado';
-        if ($venta->estado == 0) {
-            $pdf->SetTextColor(255, 0, 0); 
-            $estadoTexto = 'Anulado';
-        } else {
-            $pdf->SetTextColor(0);
-            if ($venta->idtipo_venta == 2 && $saldoRestante !== null && (float)$saldoRestante > 0) {
-                $estadoTexto = 'Saldo Faltante Bs ' . number_format((float)$saldoRestante, 2);
-            }
+        if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
+            $query->where('ventas.estado', $request->estadoVenta);
+            $filtros[] = 'Estado: ' . $request->estadoVenta;
         }
 
-        // CABECERA DE LA VENTA (GRIS)
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->SetFillColor(230, 230, 230);
-        $pdf->Cell(0, 7, utf8_decode("Venta Nro: {$venta->num_comprobante}"), 0, 1, 'L', true);
+        if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
+            $query->where('ventas.idcliente', $request->idcliente);
+            $filtros[] = 'Cliente ID: ' . $request->idcliente;
+        }
 
-        // DATOS DE LA VENTA
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(60, 6, 'Fecha: ' . date('d/m/Y H:i', strtotime($venta->fecha_hora)), 0, 0);
-        $pdf->Cell(60, 6, 'Vendedor: ' . ($venta->usuario->persona->nombre ?? ''), 0, 1);
-        $pdf->Cell(60, 6, 'Sucursal: ' . utf8_decode($venta->sucursal_nombre), 0, 1);
-        $pdf->Cell(60, 6, 'Cliente: ' . $clienteRecortado, 0, 1);
-        $pdf->Cell(60, 6, 'Importe Total: ' . number_format($venta->total, 2), 0, 1);
-        $pdf->Cell(60, 6, 'Tipo de venta: ' . utf8_decode($tipoVenta), 0, 1);
-        $pdf->Cell(60, 6, 'Estado: ' . utf8_decode($estadoTexto), 0, 1);
-        $pdf->Ln(2);
 
-        // TABLA DE DETALLES
-        $w_cant = 25;
-        $w_cod  = 25;
-        $w_prod = 80;
-        $w_caja = 20;
-        $w_prec = 30;
-        $w_sub  = 30;
+        if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
+            $query->where('ventas.idusuario', $request->idusuario);
+            $vendedorObj = User::find($request->idusuario);
+            $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
+        }
 
-        $pdf->SetFont('Arial', 'B', 8);
+        $ventas = $query->orderBy('ventas.fecha_hora', 'asc')->get();
+
+        // ---------------- PDF ----------------
+        $pdf = new PDFVentas();
+        $pdf->AliasNbPages();
+        $pdf->AddPage();
+
+        /* ========= HEADER ÚNICO ========= */
         $pdf->SetFillColor(11, 79, 119);
         $pdf->SetTextColor(255);
 
-        $pdf->Cell($w_cant, 7, 'Cant.', 1, 0, 'C', true);
-        $pdf->Cell($w_cod, 7, utf8_decode('Código'), 1, 0, 'C', true);
-        $pdf->Cell($w_prod, 7, 'Producto', 1, 0, 'C', true);
-        $pdf->Cell($w_prec, 7, 'P. Unitario', 1, 0, 'C', true);
-        $pdf->Cell($w_sub, 7, 'Subtotal', 1, 1, 'C', true);
+        // Altura total del header
+        $headerHeight = 22;
 
-        $pdf->SetFont('Arial', '', 8);
+        // 1️⃣ Fondo azul (UN SOLO BLOQUE)
+        $pdf->Cell(0, $headerHeight, '', 0, 1, 'L', true);
+
+        // 2️⃣ Volver arriba del header
+        $pdf->SetY($pdf->GetY() - $headerHeight);
+        $pdf->SetX(10);
+
+        // 3️⃣ Título (izquierda)
+        $pdf->SetFont('Arial', 'B', 14);
+        $pdf->Cell(120, 10, utf8_decode('REPORTE GENERAL DE VENTAS'), 0, 0, 'L');
+
+        // 4️⃣ Logo (derecha, DENTRO del header)
+        $pdf->Image(
+            public_path('img/logoPrincipal.png'),
+            178,                  // X (derecha)
+            $pdf->GetY() + 2,     // Y alineado
+            18                    // ancho
+        );
+
+        // 5️⃣ Segunda línea dentro del mismo header
+        $pdf->Ln(10);
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(120, 10, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i')), 0, 1, 'L');
+
+        // 6️⃣ Salir del header
+        $pdf->Ln(4);
+
+        // Separador inferior
+        $pdf->SetDrawColor(11, 79, 119);
+        $pdf->SetLineWidth(0.6);
+        $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+        $pdf->Ln(6);
+
+
+        /* ========= FILTROS ========= */
+        if (count($filtros) > 0) {
+            $pdf->SetTextColor(0);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(0, 5, utf8_decode('Filtros aplicados:'), 0, 1);
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(0, 5, utf8_decode(implode(' | ', $filtros)), 0, 1);
+            $pdf->Ln(4);
+        }
+
+        /* ========= CABECERA TABLA ========= */
+        $pdf->SetFillColor(11, 79, 119);
+        $pdf->SetTextColor(255);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(22, 8, 'Nro Comp.', 1, 0, 'C', true);
+        $pdf->Cell(30, 8, 'Fecha y Hora', 1, 0, 'C', true);
+        $pdf->Cell(38, 8, 'Cliente', 1, 0, 'C', true);
+        $pdf->Cell(22, 8, 'Total', 1, 0, 'C', true);
+        $pdf->Cell(28, 8, 'Vendedor', 1, 0, 'C', true);
+        $pdf->Cell(20, 8, 'Tipo Venta', 1, 0, 'C', true);
+        $pdf->Cell(30, 8, 'Estado', 1, 1, 'C', true);
+
+        /* ========= DATOS ========= */
+        $pdf->SetFont('Arial', '', 9);
         $pdf->SetTextColor(0);
+        $totalVentasRegistradas = 0;
 
-        $sumaSubtotalesVenta = 0;
+        foreach ($ventas as $venta) {
 
-        foreach ($venta->detalles as $d) {
-            
-            // 1. Obtener Modo
-            $modo = strtolower($d->modo_venta ?? 'unidad'); 
+            $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
+            $fill = false;
 
-            // 2. Texto Cantidad (Visual)
-            $plural = ($d->cantidad > 1 && substr($modo, -1) != 's') ? 's' : '';
-            $textoCantidad = $d->cantidad . ' ' . $modo . $plural;
-
-            // 3. Datos Producto
-            $producto = $d->producto; 
-            $codigoProducto  = $producto->codigo ?? '-';
-            $nombreProducto  = $producto->nombre ?? 'Artículo ' . $d->idarticulo;
-            $nombreRecortado = mb_strimwidth(utf8_decode($nombreProducto), 0, 35, '...');
-            
-            // Obtener unidades por caja (por seguridad, si es 0 o null, poner 1)
-            $unidadesPorCaja = (isset($producto->unidad_envase) && $producto->unidad_envase > 0) 
-                                ? $producto->unidad_envase 
-                                : 1;
-
-            // ============================================================
-            // 🔹 LÓGICA DE CÁLCULO DE SUBTOTAL MODIFICADA
-            // ============================================================
-            
-            $subtotalLinea = 0;
-            $precioUnitario = $d->precio; // Asumimos que en BD guardas el precio unitario
-
-            if ($modo == 'caja') {
-                // FÓRMULA: Cantidad(cajas) * Unidades_por_caja * Precio_unitario
-                $subtotalLinea = $d->cantidad * $unidadesPorCaja * $precioUnitario;
-
-            } elseif ($modo == 'docena') {
-                // FÓRMULA: Cantidad(docenas) * 12 * Precio_unitario
-                $subtotalLinea = $d->cantidad * 12 * $precioUnitario;
-
+            if ($venta->estado == 0) {
+                $pdf->SetTextColor(217, 48, 37);
+                $estadoTexto = 'Anulado';
             } else {
-                // CASO UNIDAD (u otros): Cantidad * Precio_unitario
-                $subtotalLinea = $d->cantidad * $precioUnitario;
+                if ($venta->idtipo_venta == 2 && $venta->saldo_restante !== null && (float) $venta->saldo_restante > 0) {
+                    $pdf->SetTextColor(0);
+                    $pdf->SetFillColor(255, 243, 176);
+                    $estadoTexto = 'Pendiente Bs' . number_format((float) $venta->saldo_restante, 2);
+                    $fill = true;
+                } else {
+                    $pdf->SetTextColor(11, 122, 59);
+                    $estadoTexto = 'Registrado';
+                    $totalVentasRegistradas += $venta->total;
+                }
             }
 
-            // ============================================================
+            $pdf->Cell(22, 8, $venta->num_comprobante, 1, 0, 'L', $fill);
+            $pdf->Cell(30, 8, date('d/m/Y H:i', strtotime($venta->fecha_hora)), 1, 0, 'L', $fill);
+            $pdf->Cell(38, 8, utf8_decode(mb_strimwidth($venta->cliente ?? '-', 0, 25, '...')), 1, 0, 'L', $fill);
+            $pdf->Cell(22, 8, number_format($venta->total, 2), 1, 0, 'R', $fill);
+            $pdf->Cell(28, 8, utf8_decode(mb_strimwidth($venta->vendedor ?? '-', 0, 20, '...')), 1, 0, 'L', $fill);
+            $pdf->Cell(20, 8, utf8_decode($tipoVenta), 1, 0, 'L', $fill);
 
-            $sumaSubtotalesVenta += $subtotalLinea;
 
-            // 5. Imprimir Fila
-            $pdf->Cell($w_cant, 6, utf8_decode($textoCantidad), 1, 0, 'C');
-            $pdf->Cell($w_cod, 6, utf8_decode($codigoProducto), 1, 0, 'C');
-            $pdf->Cell($w_prod, 6, $nombreRecortado, 1, 0, 'L');
-            
+            $pdf->Cell(30, 8, utf8_decode($estadoTexto), 1, 1, 'C', $fill);
 
-            $pdf->Cell($w_prec, 6, number_format($precioUnitario, 2), 1, 0, 'R');
-            $pdf->Cell($w_sub, 6, number_format($subtotalLinea, 2), 1, 1, 'R');
+            $pdf->SetTextColor(0);
+            $pdf->SetFillColor(255);
         }
 
-        if ($venta->estado != 0) {
-            $totalVentasRegistradas += $sumaSubtotalesVenta;
+        /* ========= TOTAL ========= */
+        $pdf->Ln(4);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(0, 8, 'Total de ventas registradas: ' . number_format($totalVentasRegistradas, 2), 0, 1, 'R');
+
+        // ================= NOMBRE DINÁMICO =================
+
+        // 1️⃣ Tipo
+        $tipo = 'General';
+
+        if ($request->tipoReporte === 'dia') {
+            $tipo = 'Dia';
+        } elseif ($request->tipoReporte === 'mes') {
+            $tipo = 'Mes';
         }
 
-        $pdf->Ln(5);
-        $pdf->SetTextColor(0); 
+        // 2️⃣ Fecha del filtro
+        $fechaFiltro = date('Y-m-d'); // por defecto hoy
+
+        if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
+            $fechaFiltro = $request->fechaSeleccionada;
+        }
+
+        if ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
+            $fechaFiltro = $request->mesSeleccionado;
+        }
+
+        // 3️⃣ Nombre sucursal
+        $nombreSucursal = 'Todas';
+
+        if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
+            $sucursalObj = Sucursales::find($request->sucursal);
+            $nombreSucursal = $sucursalObj ? $sucursalObj->nombre : 'Desconocida';
+        }
+
+        // Limpiar espacios y caracteres raros para nombre de archivo
+        $nombreSucursal = str_replace([' ', '/', '\\'], '_', $nombreSucursal);
+
+        // 4️⃣ Construir nombre final
+        $nombreArchivo = "ReporteGeneralVentas_{$tipo}_{$fechaFiltro}_{$nombreSucursal}.pdf";
+
+        // Descargar
+        $pdf->Output('D', $nombreArchivo);
+        exit;
     }
 
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Line(150, $pdf->GetY(), 200, $pdf->GetY()); 
-    $pdf->Ln(2);
-    $pdf->Cell(0, 8, utf8_decode('Total de ventas: ' . number_format($totalVentasRegistradas, 2)), 0, 1, 'R');
+    public function descargarVentasDetalladasPDF(Request $request)
+    {
+        $query = Venta::with(['detalles.producto', 'sucursal', 'usuario.persona', 'cliente'])
+            ->join('users', 'ventas.idusuario', '=', 'users.id')
+            ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
+            ->leftJoin(DB::raw('(
+            SELECT c1.idcredito, c1.saldo_restante
+            FROM cuotas_credito c1
+            INNER JOIN (
+                SELECT idcredito, MAX(numero_cuota) AS max_cuota
+                FROM cuotas_credito
+                GROUP BY idcredito
+            ) c2
+            ON c1.idcredito = c2.idcredito
+            AND c1.numero_cuota = c2.max_cuota
+        ) AS cc'), 'cc.idcredito', '=', 'ventas.id')
+            ->select(
+                'ventas.*',
+                'ventas.idtipo_venta',
+                'cc.saldo_restante',
+                'sucursales.nombre as sucursal_nombre'
+            );
 
-    $pdf->Output('D', 'ventas_detalladas_' . date('Ymd_His') . '.pdf');
-    exit;
-}
+        $filtros = [];
+
+        // Filtro Sucursal
+        if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
+            $query->where('users.idsucursal', $request->sucursal);
+            $sucursal = Sucursales::find($request->sucursal);
+            $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
+        }
+
+        // Filtro FECHA (Este es el que hace que funcione por día)
+        if ($request->filled('tipoReporte')) {
+            if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
+                $query->whereBetween('ventas.fecha_hora', [
+                    $request->fechaSeleccionada . ' 00:00:00',
+                    $request->fechaSeleccionada . ' 23:59:59'
+                ]);
+                $filtros[] = 'Fecha: ' . $request->fechaSeleccionada;
+            } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
+                $mes = $request->mesSeleccionado;
+                $query->whereBetween('ventas.fecha_hora', [
+                    $mes . '-01 00:00:00',
+                    date('Y-m-t', strtotime($mes . '-01')) . ' 23:59:59'
+                ]);
+                $filtros[] = 'Mes: ' . date('F Y', strtotime($mes . '-01'));
+            }
+        }
+
+        // Filtro Estado
+        if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
+            $query->where('ventas.estado', $request->estadoVenta);
+            $filtros[] = 'Estado: ' . $request->estadoVenta;
+        }
+
+        // Filtro Cliente
+        if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
+            $query->where('ventas.idcliente', $request->idcliente);
+            $filtros[] = 'Cliente ID: ' . $request->idcliente;
+        }
+
+        if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
+            $query->where('ventas.idusuario', $request->idusuario);
+            $vendedorObj = User::find($request->idusuario);
+            $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
+        }
+
+        $ventas = $query->orderBy('ventas.fecha_hora', 'desc')->get();
+
+        $pdf = new PDFDetalleVentas(); // Asegúrate de tener importada esta clase o usar FPDF
+        $pdf->AliasNbPages();
+        $pdf->AddPage();
+
+        /* ========= HEADER AZUL (SE MANTIENE IGUAL) ========= */
+        $pdf->SetFillColor(11, 79, 119);
+        $pdf->SetTextColor(255);
+        $pdf->SetFont('Arial', 'B', 14);
+        $pdf->Cell(0, 14, '', 0, 1, 'L', true);
+        $pdf->SetY($pdf->GetY() - 14);
+        $pdf->SetX(10);
+        $pdf->Cell(130, 14, utf8_decode('REPORTE DETALLADO DE VENTAS'), 0, 0, 'L');
+
+        // Logo
+        $headerY = $pdf->GetY();
+        // Ajusta la ruta si es necesario
+        if (file_exists(public_path('img/logoPrincipal.png'))) {
+            $pdf->Image(public_path('img/logoPrincipal.png'), 178, $headerY + 2, 10);
+        }
+        $pdf->Ln(14);
+
+        // Fecha
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 8, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i')), 0, 1, 'L', true);
+        $pdf->Ln(4);
+        $pdf->SetDrawColor(11, 79, 119);
+        $pdf->SetLineWidth(0.6);
+        $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+        $pdf->Ln(6);
+        $pdf->SetTextColor(0);
+
+        // Imprimir filtros si existen...
+        if (isset($filtros) && count($filtros) > 0) {
+            $pdf->SetFont('Arial', '', 9);
+            foreach ($filtros as $filtro) {
+                $pdf->Cell(0, 5, utf8_decode($filtro), 0, 1);
+            }
+            $pdf->Ln(3);
+        }
+
+        $totalVentasRegistradas = 0;
+
+        foreach ($ventas as $venta) {
+
+            // -------- DATOS GENERALES DE LA VENTA --------
+            $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
+            $clienteNombre = $venta->cliente->nombre ?? 'S/N';
+            $clienteRecortado = mb_strimwidth(utf8_decode($clienteNombre), 0, 30, '...');
+            $saldoRestante = $venta->saldo_restante;
+
+            $estadoTexto = 'Registrado';
+            if ($venta->estado == 0) {
+                $pdf->SetTextColor(255, 0, 0);
+                $estadoTexto = 'Anulado';
+            } else {
+                $pdf->SetTextColor(0);
+                if ($venta->idtipo_venta == 2 && $saldoRestante !== null && (float) $saldoRestante > 0) {
+                    $estadoTexto = 'Saldo Faltante Bs ' . number_format((float) $saldoRestante, 2);
+                }
+            }
+
+            // CABECERA DE LA VENTA (GRIS)
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->SetFillColor(230, 230, 230);
+            $pdf->Cell(0, 7, utf8_decode("Venta Nro: {$venta->num_comprobante}"), 0, 1, 'L', true);
+
+            // DATOS DE LA VENTA
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(60, 6, 'Fecha: ' . date('d/m/Y H:i', strtotime($venta->fecha_hora)), 0, 0);
+            $pdf->Cell(60, 6, 'Vendedor: ' . ($venta->usuario->persona->nombre ?? ''), 0, 1);
+            $pdf->Cell(60, 6, 'Sucursal: ' . utf8_decode($venta->sucursal_nombre), 0, 1);
+            $pdf->Cell(60, 6, 'Cliente: ' . $clienteRecortado, 0, 1);
+            $pdf->Cell(60, 6, 'Importe Total: ' . number_format($venta->total, 2), 0, 1);
+            $pdf->Cell(60, 6, 'Tipo de venta: ' . utf8_decode($tipoVenta), 0, 1);
+            $pdf->Cell(60, 6, 'Estado: ' . utf8_decode($estadoTexto), 0, 1);
+            $pdf->Ln(2);
+
+            // TABLA DE DETALLES
+            $w_cant = 25;
+            $w_cod = 25;
+            $w_prod = 80;
+            $w_caja = 20;
+            $w_prec = 30;
+            $w_sub = 30;
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(11, 79, 119);
+            $pdf->SetTextColor(255);
+
+            $pdf->Cell($w_cant, 7, 'Cant.', 1, 0, 'C', true);
+            $pdf->Cell($w_cod, 7, utf8_decode('Código'), 1, 0, 'C', true);
+            $pdf->Cell($w_prod, 7, 'Producto', 1, 0, 'C', true);
+            $pdf->Cell($w_prec, 7, 'P. Unitario', 1, 0, 'C', true);
+            $pdf->Cell($w_sub, 7, 'Subtotal', 1, 1, 'C', true);
+
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->SetTextColor(0);
+
+            $sumaSubtotalesVenta = 0;
+
+            foreach ($venta->detalles as $d) {
+
+                // 1. Obtener Modo
+                $modo = strtolower($d->modo_venta ?? 'unidad');
+
+                // 2. Texto Cantidad (Visual)
+                $plural = ($d->cantidad > 1 && substr($modo, -1) != 's') ? 's' : '';
+                $textoCantidad = $d->cantidad . ' ' . $modo . $plural;
+
+                // 3. Datos Producto
+                $producto = $d->producto;
+                $codigoProducto = $producto->codigo ?? '-';
+                $nombreProducto = $producto->nombre ?? 'Artículo ' . $d->idarticulo;
+                $nombreRecortado = mb_strimwidth(utf8_decode($nombreProducto), 0, 35, '...');
+
+                // Obtener unidades por caja (por seguridad, si es 0 o null, poner 1)
+                $unidadesPorCaja = (isset($producto->unidad_envase) && $producto->unidad_envase > 0)
+                    ? $producto->unidad_envase
+                    : 1;
+
+                // ============================================================
+                // 🔹 LÓGICA DE CÁLCULO DE SUBTOTAL MODIFICADA
+                // ============================================================
+
+                $subtotalLinea = 0;
+                $precioUnitario = $d->precio; // Asumimos que en BD guardas el precio unitario
+
+                if ($modo == 'caja') {
+                    // FÓRMULA: Cantidad(cajas) * Unidades_por_caja * Precio_unitario
+                    $subtotalLinea = $d->cantidad * $unidadesPorCaja * $precioUnitario;
+
+                } elseif ($modo == 'docena') {
+                    // FÓRMULA: Cantidad(docenas) * 12 * Precio_unitario
+                    $subtotalLinea = $d->cantidad * 12 * $precioUnitario;
+
+                } else {
+                    // CASO UNIDAD (u otros): Cantidad * Precio_unitario
+                    $subtotalLinea = $d->cantidad * $precioUnitario;
+                }
+
+                // ============================================================
+
+                $sumaSubtotalesVenta += $subtotalLinea;
+
+                // 5. Imprimir Fila
+                $pdf->Cell($w_cant, 6, utf8_decode($textoCantidad), 1, 0, 'C');
+                $pdf->Cell($w_cod, 6, utf8_decode($codigoProducto), 1, 0, 'C');
+                $pdf->Cell($w_prod, 6, $nombreRecortado, 1, 0, 'L');
+
+
+                $pdf->Cell($w_prec, 6, number_format($precioUnitario, 2), 1, 0, 'R');
+                $pdf->Cell($w_sub, 6, number_format($subtotalLinea, 2), 1, 1, 'R');
+            }
+
+            if ($venta->estado != 0) {
+                $totalVentasRegistradas += $sumaSubtotalesVenta;
+            }
+
+            $pdf->Ln(5);
+            $pdf->SetTextColor(0);
+        }
+
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Line(150, $pdf->GetY(), 200, $pdf->GetY());
+        $pdf->Ln(2);
+        $pdf->Cell(0, 8, utf8_decode('Total de ventas: ' . number_format($totalVentasRegistradas, 2)), 0, 1, 'R');
+
+        $pdf->Output('D', 'ventas_detalladas_' . date('Ymd_His') . '.pdf');
+        exit;
+    }
 
     public function exportarVentasGeneralExcel(Request $request)
     {

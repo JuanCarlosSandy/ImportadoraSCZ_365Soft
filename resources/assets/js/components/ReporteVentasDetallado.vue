@@ -2702,10 +2702,17 @@ async descargarArchivoReporte(url, nombreArchivo) {
       url += "sucursal=" + this.sucursalseleccionada.id;
       url += "&tipoReporte=" + this.tipoReporte;
 
+      let tipo = "General";
+      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
+
       if (this.tipoReporte === "dia") {
         url += "&fechaSeleccionada=" + this.fechaSeleccionada;
+        tipo = "Dia";
+        fecha = this.fechaSeleccionada;
       } else if (this.tipoReporte === "mes") {
         url += "&mesSeleccionado=" + this.mesSeleccionado;
+        tipo = "Mes";
+        fecha = this.mesSeleccionado;
       }
 
       url += "&estadoVenta=" + this.criterioEstado;
@@ -2716,39 +2723,82 @@ async descargarArchivoReporte(url, nombreArchivo) {
 
       url += "&moneda=" + this.monedaPrincipal[0];
 
-      await this.descargarArchivoReporte(url, "reporte_ventas_general.pdf");
+      // 🔹 Nombre sucursal sin optional chaining
+      let nombreSucursal = "Todas";
+      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
+        nombreSucursal = this.sucursalseleccionada.nombre;
+      }
+
+      // Limpiar caracteres problemáticos
+      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
+
+      // 🔹 Nombre final
+      let nombreArchivo =
+        "ReporteVentasGeneral_" +
+        tipo +
+        "_" +
+        fecha +
+        "_" +
+        nombreSucursal +
+        ".pdf";
+
+      await this.descargarArchivoReporte(url, nombreArchivo);
     },
 
+    async descargarVentasDetalladasPDF() {
+      if (!this.validarFiltrosExportacion()) {
+        Swal.fire("No hay datos del filtro para generar reporte", "", "warning");
+        return;
+      }
 
+      let url = "/descargar-ventas-detalladas-pdf?";
+      url += "sucursal=" + this.sucursalseleccionada.id;
+      url += "&tipoReporte=" + this.tipoReporte;
 
-async descargarVentasDetalladasPDF() {
-  if (!this.validarFiltrosExportacion()) {
-    Swal.fire("No hay datos del filtro para generar reporte", "", "warning");
-    return;
-  }
+      let tipo = "General";
+      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
 
-  let url = "/descargar-ventas-detalladas-pdf?";
-  url += "sucursal=" + this.sucursalseleccionada.id;
-  url += "&tipoReporte=" + this.tipoReporte;
+      if (this.tipoReporte === "dia") {
+        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
+        tipo = "Dia";
+        fecha = this.fechaSeleccionada;
+      } else if (this.tipoReporte === "mes") {
+        url += "&mesSeleccionado=" + this.mesSeleccionado;
+        tipo = "Mes";
+        fecha = this.mesSeleccionado;
+      }
 
-  if (this.tipoReporte === "dia") {
-    url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-  } else if (this.tipoReporte === "mes") {
-    url += "&mesSeleccionado=" + this.mesSeleccionado;
-  }
+      url += "&estadoVenta=" + this.criterioEstado;
 
-  url += "&estadoVenta=" + this.criterioEstado;
+      if (this.clienteseleccionada && this.clienteseleccionada.id) {
+        url += "&idcliente=" + this.clienteseleccionada.id;
+      }
 
-  if (this.clienteseleccionada && this.clienteseleccionada.id) {
-    url += "&idcliente=" + this.clienteseleccionada.id;
-  }
+      url += "&moneda=" + this.monedaPrincipal[0];
 
-  url += "&moneda=" + this.monedaPrincipal[0];
+      // 🔹 Nombre sucursal seguro para Vue 2
+      let nombreSucursal = "Todas";
+      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
+        nombreSucursal = this.sucursalseleccionada.nombre;
+      }
 
-  await this.descargarArchivoReporte(url, "reporte_ventas_detalladas.pdf");
-},
+      // Limpiar caracteres problemáticos
+      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
 
-    async descargarExcelGeneral() {
+      // 🔹 Nombre final
+      let nombreArchivo =
+        "ReporteVentasDetalladas_" +
+        tipo +
+        "_" +
+        fecha +
+        "_" +
+        nombreSucursal +
+        ".pdf";
+
+      await this.descargarArchivoReporte(url, nombreArchivo);
+    },
+
+   async descargarExcelGeneral() {
       if (!this.validarFiltrosExportacion()) {
         Swal.fire(
           "No hay datos del filtro para generar reporte",
@@ -2762,10 +2812,17 @@ async descargarVentasDetalladasPDF() {
       url += "sucursal=" + this.sucursalseleccionada.id;
       url += "&tipoReporte=" + this.tipoReporte;
 
+      let tipo = "General";
+      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
+
       if (this.tipoReporte === "dia") {
         url += "&fechaSeleccionada=" + this.fechaSeleccionada;
+        tipo = "Dia";
+        fecha = this.fechaSeleccionada;
       } else if (this.tipoReporte === "mes") {
         url += "&mesSeleccionado=" + this.mesSeleccionado;
+        tipo = "Mes";
+        fecha = this.mesSeleccionado;
       }
 
       url += "&estadoVenta=" + this.criterioEstado;
@@ -2776,7 +2833,26 @@ async descargarVentasDetalladasPDF() {
 
       url += "&moneda=" + this.monedaPrincipal[0];
 
-      await this.descargarArchivoReporte(url, "reporte_ventas_general.xlsx");
+      // 🔹 Nombre sucursal compatible con Vue 2
+      let nombreSucursal = "Todas";
+      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
+        nombreSucursal = this.sucursalseleccionada.nombre;
+      }
+
+      // Limpiar caracteres problemáticos
+      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
+
+      // 🔹 Nombre final
+      let nombreArchivo =
+        "ReporteVentasGeneral_" +
+        tipo +
+        "_" +
+        fecha +
+        "_" +
+        nombreSucursal +
+        ".xlsx";
+
+      await this.descargarArchivoReporte(url, nombreArchivo);
     },
 
     async exportarExcelDetallado() {
@@ -2793,10 +2869,17 @@ async descargarVentasDetalladasPDF() {
       url += "sucursal=" + this.sucursalseleccionada.id;
       url += "&tipoReporte=" + this.tipoReporte;
 
+      let tipo = "General";
+      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
+
       if (this.tipoReporte === "dia") {
         url += "&fechaSeleccionada=" + this.fechaSeleccionada;
+        tipo = "Dia";
+        fecha = this.fechaSeleccionada;
       } else if (this.tipoReporte === "mes") {
         url += "&mesSeleccionado=" + this.mesSeleccionado;
+        tipo = "Mes";
+        fecha = this.mesSeleccionado;
       }
 
       url += "&estadoVenta=" + this.criterioEstado;
@@ -2807,7 +2890,26 @@ async descargarVentasDetalladasPDF() {
 
       url += "&moneda=" + this.monedaPrincipal[0];
 
-      await this.descargarArchivoReporte(url, "reporte_ventas_detalladas.xlsx");
+      // 🔹 Nombre sucursal compatible con Vue 2
+      let nombreSucursal = "Todas";
+      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
+        nombreSucursal = this.sucursalseleccionada.nombre;
+      }
+
+      // Limpiar caracteres problemáticos
+      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
+
+      // 🔹 Nombre final
+      let nombreArchivo =
+        "ReporteVentasDetalladas_" +
+        tipo +
+        "_" +
+        fecha +
+        "_" +
+        nombreSucursal +
+        ".xlsx";
+
+      await this.descargarArchivoReporte(url, nombreArchivo);
     },
 
     formateaKardex() {
