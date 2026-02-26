@@ -671,7 +671,7 @@ $pdf->Ln(6);
         // TABLA DE DETALLES
         $w_cant = 25;
         $w_cod  = 25;
-        $w_prod = 60;
+        $w_prod = 80;
         $w_caja = 20;
         $w_prec = 30;
         $w_sub  = 30;
@@ -683,7 +683,6 @@ $pdf->Ln(6);
         $pdf->Cell($w_cant, 7, 'Cant.', 1, 0, 'C', true);
         $pdf->Cell($w_cod, 7, utf8_decode('Código'), 1, 0, 'C', true);
         $pdf->Cell($w_prod, 7, 'Producto', 1, 0, 'C', true);
-        $pdf->Cell($w_caja, 7, 'U. x Caja', 1, 0, 'C', true);
         $pdf->Cell($w_prec, 7, 'P. Unitario', 1, 0, 'C', true);
         $pdf->Cell($w_sub, 7, 'Subtotal', 1, 1, 'C', true);
 
@@ -741,9 +740,6 @@ $pdf->Ln(6);
             $pdf->Cell($w_cod, 6, utf8_decode($codigoProducto), 1, 0, 'C');
             $pdf->Cell($w_prod, 6, $nombreRecortado, 1, 0, 'L');
             
-            // Columna "U. x Caja": Solo mostrar número si es caja, sino guion
-            $textoUnidadCaja = ($modo == 'caja') ? $unidadesPorCaja : '-';
-            $pdf->Cell($w_caja, 6, $textoUnidadCaja, 1, 0, 'C');
 
             $pdf->Cell($w_prec, 6, number_format($precioUnitario, 2), 1, 0, 'R');
             $pdf->Cell($w_sub, 6, number_format($subtotalLinea, 2), 1, 1, 'R');

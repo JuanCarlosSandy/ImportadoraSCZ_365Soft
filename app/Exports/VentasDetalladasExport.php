@@ -103,7 +103,7 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
             $infoEconomica = "Total: " . number_format($venta->total, 2) . " (" . ($venta->idtipo_venta == 1 ? 'Contado' : 'Crédito') . ")";
 
             $rows->push([
-                $infoVenta, '', '', '', '', $infoEconomica, $estadoTexto
+                $infoVenta, '', '', '', $infoEconomica, $estadoTexto
             ]);
 
             $sumaSubtotalesVenta = 0;
@@ -154,7 +154,6 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
                     $textoCantidad,
                     $codigo,
                     $nombreProducto,
-                    $textoUnidadCajaVisual, // Ahora muestra guion si no es caja
                     number_format($d->precio, 2),
                     number_format($subtotalLinea, 2),
                     '' 
@@ -176,7 +175,7 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
         return [
             ['REPORTE DETALLADO DE VENTAS'],
             ['Fecha de generación: ' . date('d/m/Y H:i')],
-            ['Cant.', 'Código', 'Producto', 'U. x Caja', 'P. Unitario', 'Subtotal', 'Datos de Venta / Estado']
+            ['Cant.', 'Código', 'Producto', 'P. Unitario', 'Subtotal', 'Datos de Venta / Estado']
         ];
     }
 
@@ -185,11 +184,10 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
         return [
             'A' => 25,
             'B' => 25,
-            'C' => 60,
-            'D' => 15,
+            'C' => 75,
+            'D' => 22,
             'E' => 22,
-            'F' => 22,
-            'G' => 30,
+            'F' => 30,
         ];
     }
 
@@ -206,7 +204,7 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
                 $sheet->setShowGridlines(false);
 
                 // --- HEADER PRINCIPAL ---
-                $sheet->mergeCells('A1:G1');
+                $sheet->mergeCells('A1:F1');
                 $sheet->setCellValue('A1', 'REPORTE DETALLADO DE VENTAS');
                 $sheet->getStyle('A1')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
@@ -215,7 +213,7 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
                 ]);
                 $sheet->getRowDimension(1)->setRowHeight(32);
 
-                $sheet->mergeCells('A2:G2');
+                $sheet->mergeCells('A2:F2');
                 $sheet->setCellValue('A2', 'Fecha de generación: ' . date('d/m/Y H:i'));
                 $sheet->getStyle('A2')->applyFromArray([
                     'font' => ['size' => 9, 'color' => ['rgb' => 'E6EEF3']],
@@ -229,14 +227,14 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
                     $drawing->setName('Logo');
                     $drawing->setPath(public_path('img/logoPrincipal.png'));
                     $drawing->setHeight(45);
-                    $drawing->setCoordinates('G1');
+                    $drawing->setCoordinates('F1');
                     $drawing->setOffsetX(10);
                     $drawing->setOffsetY(8);
                     $drawing->setWorksheet($sheet);
                 }
 
                 // --- CABECERAS DE TABLA (FILA 3) ---
-                $sheet->getStyle('A3:G3')->applyFromArray([
+                $sheet->getStyle('A3:F3')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0B4F77']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
@@ -251,14 +249,14 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
 
                     // ¿ES FILA DE SEPARACIÓN (VENTA)?
                     if (is_string($valA) && str_contains($valA, 'VENTA #')) {
-                        $sheet->mergeCells("A{$row}:E{$row}");
-                        $estado = $sheet->getCell("G{$row}")->getValue();
+                        $sheet->mergeCells("A{$row}:D{$row}");
+                        $estado = $sheet->getCell("F{$row}")->getValue();
                         
                         $bgColor = 'E0E0E0'; $textColor = '000000';
                         if ($estado == 'Anulado') { $bgColor = 'F4CCCC'; $textColor = 'CC0000'; } 
                         elseif (str_contains($estado ?? '', 'Saldo')) { $bgColor = 'FFF2CC'; }
 
-                        $sheet->getStyle("A{$row}:G{$row}")->applyFromArray([
+                        $sheet->getStyle("A{$row}:F{$row}")->applyFromArray([
                             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bgColor]],
                             'font' => ['bold' => true, 'color' => ['rgb' => $textColor]],
                             'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
@@ -272,8 +270,7 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
                     // ¿ES FILA DE PRODUCTO?
                     else {
                         $sheet->getStyle("A{$row}:B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        $sheet->getStyle("E{$row}:F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                        $sheet->getStyle("D{$row}:F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
                         $sheet->getStyle("C{$row}")->getAlignment()->setWrapText(true);
 
                         $sheet->getStyle("A{$row}:F{$row}")->applyFromArray([
@@ -291,10 +288,10 @@ class VentasDetalladasExport implements FromCollection, WithHeadings, WithColumn
 
                 // TOTAL GENERAL
                 $row = $sheet->getHighestRow() + 1;
-                $sheet->setCellValue('E' . $row, 'TOTAL GENERAL:');
-                $sheet->setCellValue('F' . $row, number_format($this->totalVentasRegistradas, 2));
+                $sheet->setCellValue('D' . $row, 'TOTAL GENERAL:');
+                $sheet->setCellValue('E' . $row, number_format($this->totalVentasRegistradas, 2));
                 
-                $sheet->getStyle("E{$row}:F{$row}")->applyFromArray([
+                $sheet->getStyle("D{$row}:E{$row}")->applyFromArray([
                     'font' => ['bold' => true, 'size' => 12],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DDEBF7']],

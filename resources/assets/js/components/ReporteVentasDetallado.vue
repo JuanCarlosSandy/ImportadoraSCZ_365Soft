@@ -296,15 +296,6 @@
               </Column>
               <Column field="codigo" header="Codigo"></Column>
               <Column field="articulo" header="Producto"></Column>
-              <Column field="unidad_envase" header="Cant x Caja">
-                <template #body="slotProps">
-                  <span v-if="slotProps.data.modo_venta === 'caja'">
-                    {{ slotProps.data.unidad_envase }}
-                  </span>
-
-                  <span v-else>-</span>
-                </template>
-              </Column>
 
               <Column header="Precio Unit.">
                 <template #body="slotProps">
@@ -595,20 +586,27 @@
             <div class="modal-body">
               <div class="form-group row">
                 <div class="col-md-6">
-                  <label class="font-weight-bold"
-                    >Sucursal <span class="text-danger">*</span></label
-                  >
+                  <label class="font-weight-bold">
+                    Sucursal <span class="text-danger">*</span>
+                  </label>
+
                   <div class="input-group">
-                    <input
+                    <select
                       class="form-control"
-                      type="text"
-                      placeholder="Sucursal del usuario"
-                      disabled
-                      v-model="sucursalseleccionada.nombre"
-                    />
+                      v-model="sucursalseleccionada"
+                    >
+                      <option value="" disabled>Seleccione una sucursal</option>
+
+                      <option
+                        v-for="sucursal in arraySucursal"
+                        :key="sucursal.id"
+                        :value="sucursal"
+                      >
+                        {{ sucursal.nombre }}
+                      </option>
+                    </select>
                   </div>
                 </div>
-
                 <div class="col-md-6">
                   <label class="font-weight-bold"
                     >Estado Venta <span class="text-danger">*</span></label
@@ -1530,7 +1528,7 @@ export default {
 
       //Sucursal
       arraySucursal: [],
-      sucursalseleccionada: { id: 1, nombre: "" },
+      sucursalseleccionada: null,
 
       //articulo
       articuloseleccionada: [],
@@ -1632,6 +1630,19 @@ export default {
     previewCsv: "parseCsv", // Llama a parseCsv cuando previewCsv cambie
   },
   methods: {
+  selectSucursal() {
+      let me = this;
+      var url = "/sucursal/selectSucursal";
+      axios
+        .get(url)
+        .then(function (response) {
+          var respuesta = response.data;
+          me.arraySucursal = respuesta.sucursales;
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
     // Función para determinar el color según el modo de venta
     obtenerColorModo(modo) {
       if (!modo) return "#6c757d"; // Gris si no hay modo
@@ -3572,6 +3583,7 @@ async descargarVentasDetalladasPDF() {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     this.recuperarIdRol();
+    this.selectSucursal(),
     this.datosConfiguracion();
     this.obtenerConfiguracionTrabajo();
     this.listarPrecio(); //aumenTe 6julio

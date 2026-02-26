@@ -1,12 +1,18 @@
 <template>
   <Panel>
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">LOADING...</div>
+      </div>
+    </div>
     <template #header>
       <div
         style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
       >
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <i class="pi pi-bars panel-icon"></i>
-          <h4 class="panel-title" style="margin: 0;">MEDICAMENTOS CON BAJO STOCK</h4>
+          <h4 class="panel-title" style="margin: 0;">PRODUCTOS CON BAJO STOCK</h4>
         </div>
         <div class="botones-export">
           <Button
@@ -192,6 +198,8 @@ export default {
   },
   data() {
     return {
+            isLoading: false,
+
       mostrarLabel: true,
       arrayInventario: [],
       pagination: { total: 0, current_page: 1, per_page: 10, last_page: 0 },
@@ -251,23 +259,74 @@ export default {
     },
 
     async exportarPDF() {
-      const query = new URLSearchParams(this.filtros).toString();
-      window.open(`/inventarios/exportproductosbajostock?${query}`, "_blank");
-    },
-    cargarExcel() {
-      
-      const filtrosLimpios = {
-        almacen_id: this.filtros.almacen_id || "",
-        medicamento: this.filtros.medicamento || "",
-        laboratorio: this.filtros.laboratorio || "",
-      };
+      try {
+        this.isLoading = true;
 
-      const query = new URLSearchParams(filtrosLimpios).toString();
-      
-      window.open(
-        `/inventarios/listarReporteBajoStockExcel?${query}`,
-        "_blank",
-      );
+        const response = await axios.get(
+          '/inventarios/exportproductosbajostock',
+          {
+            params: this.filtros,
+            responseType: 'blob'
+          }
+        );
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'Productos_bajo_stock.pdf');
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async cargarExcel() {
+      try {
+        this.isLoading = true;
+
+        const filtrosLimpios = {
+          almacen_id: this.filtros.almacen_id || "",
+          medicamento: this.filtros.medicamento || "",
+          laboratorio: this.filtros.laboratorio || "",
+        };
+
+        const response = await axios.get(
+          "/inventarios/listarReporteBajoStockExcel",
+          {
+            params: filtrosLimpios,
+            responseType: "blob",
+          }
+        );
+
+        const blob = new Blob(
+          [response.data],
+          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+        );
+
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "Productos_bajo_stock.xlsx");
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+      }
     },
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768;
