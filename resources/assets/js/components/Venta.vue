@@ -138,20 +138,20 @@
 
               </template>
             </Column>
-            <Column field="num_comprobante" header="N° de Factura" class="d-none d-md-table-cell"></Column>
+            <Column field="nombre_sucursal" header="Sucursal"></Column>
+            <Column field="usuario" header="Vendedor"></Column>
+            <Column field="fecha_hora" header="Fecha y Hora" class="d-none d-md-table-cell"></Column>
+            <Column field="num_comprobante" header="N° de Comprobante" class="d-none d-md-table-cell"></Column>
             <Column field="razonSocial" header="Cliente"></Column>
             <Column field="documentoid" header="Documento" class="d-none d-md-table-cell"></Column>
             <Column header="Total">
               <template #body="slotProps">
-                {{
-                  (slotProps.data.total * parseFloat(monedaVenta[0])).toFixed(2)
-                }}
-                {{ monedaVenta[1] }}
+                <span class="font-weight-bold text-primary">
+                  {{ (slotProps.data.total * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  {{ monedaVenta[1] }}
+                </span>
               </template>
             </Column>
-            <Column field="fecha_hora" header="Fecha y Hora" class="d-none d-md-table-cell"></Column>
-            <Column field="usuario" header="Vendedor"></Column>
-            <Column field="nombre_sucursal" header="Sucursal"></Column>
             <Column field="estado" header="Estado">
               <template #body="slotProps">
                 <span v-if="slotProps.data.estado == 1"
@@ -169,14 +169,6 @@
                 </span>
               </template>
             </Column>
-            <!--<Column header="Tipo Venta" field="idtipo_venta" class="d-none d-md-table-cell">
-              <template #body="slotProps">
-                <span class="badge"
-                  :class="Number(slotProps.data.idtipo_venta) === 1 ? 'badge-contado' : 'badge-credito'">
-                  {{ Number(slotProps.data.idtipo_venta) === 1 ? 'Contado' : 'Crédito' }}
-                </span>
-              </template>
-            </Column>-->
 
           </DataTable>
           <!--<Paginator :rows="10" :totalRecords="pagination.total" :first="(pagination.current_page - 1) * 10"
@@ -212,6 +204,24 @@
           <!-- TABLA DE ARTÍCULOS -->
           <div class="detalle-tabla-pro">
             <DataTable :value="arrayDetalle" class="p-datatable-sm p-datatable-gridlines">
+              <Column field="codigo" header="Codigo"></Column>
+              <Column field="articulo" header="Producto"></Column>
+              <!--<Column field="unidad_envase" header="Cant x Caja">
+                <template #body="slotProps">
+                  <span v-if="slotProps.data.modo_venta === 'caja'">
+                    {{ slotProps.data.unidad_envase }}
+                  </span>
+
+                  <span v-else>-</span>
+                </template>
+</Column>-->
+
+              <Column header="Precio Unit.">
+                <template #body="slotProps">
+                  {{ (slotProps.data.precio * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  {{ monedaVenta[1] }}
+                </template>
+              </Column>
               <Column field="cantidad" header="Cant Vendida">
                 <template #body="slotProps">
                   <span :style="{
@@ -239,28 +249,6 @@
                   </span>
                 </template>
               </Column>
-
-              <Column field="codigo" header="Codigo"></Column>
-              <Column field="articulo" header="Producto"></Column>
-              <Column field="unidad_envase" header="Cant x Caja">
-                <template #body="slotProps">
-                  <span v-if="slotProps.data.modo_venta === 'caja'">
-                    {{ slotProps.data.unidad_envase }}
-                  </span>
-
-                  <span v-else>-</span>
-                </template>
-              </Column>
-
-              <Column header="Precio Unit.">
-                <template #body="slotProps">
-                  {{ (slotProps.data.precio * parseFloat(monedaVenta[0])).toFixed(2) }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-
-
-
               <Column header="Subtotal sin Descuento">
                 <template #body="slotProps">
                   {{ (slotProps.data.subtotal_sin_descuento * parseFloat(monedaVenta[0])).toFixed(2) }}
@@ -268,10 +256,16 @@
                 </template>
               </Column>
 
-              <Column header="Descuento">
+              <Column header="Descuento por Producto">
                 <template #body="slotProps">
-                  {{ slotProps.data.descuento }}% =
-                  {{ (slotProps.data.descuento_monto * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  {{ slotProps.data.descuento }}
+                  {{ monedaVenta[1] }}
+                </template>
+              </Column>
+
+              <Column header="Descuento Total">
+                <template #body="slotProps">
+                  {{ slotProps.data.descuento_total_producto }}
                   {{ monedaVenta[1] }}
                 </template>
               </Column>
@@ -488,17 +482,17 @@
         <div class="p-fluid">
 
 
-<div v-if="step === 2" class="step-content p-fluid">
+          <div v-if="step === 2" class="step-content p-fluid">
             <div class="p-grid p-formgrid align-items-start">
-              
+
               <div :class="tipoAccion2 === 2 ? 'p-col-12' : 'p-col-12 p-md-6 d-flex flex-column justify-content-start'">
-                
+
                 <h5 class="mb-3" style="font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 1rem;">
                   DATOS DEL CLIENTE
                 </h5>
 
                 <div style="width: 100%; padding-top: 0.5rem;">
-                  
+
                   <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                       <label class="label-input">
@@ -522,7 +516,8 @@
                       <ul v-if="mostrarDesplegableCliente" class="desplegable-simple"
                         style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc; width: 100%; max-height: 200px; overflow-y: auto; margin-top: 2px; border-radius: 4px; padding: 0;">
                         <li v-for="(cliente, index) in resultadosClientes" :key="cliente.id"
-                          @click="seleccionarCliente(cliente)" :class="{ seleccionado: index === indiceSeleccionadoCliente }"
+                          @click="seleccionarCliente(cliente)"
+                          :class="{ seleccionado: index === indiceSeleccionadoCliente }"
                           style="padding: 8px; cursor: pointer; list-style: none;">
                           {{ cliente.nombre }} - {{ cliente.num_documento }}
                         </li>
@@ -561,12 +556,12 @@
                       <i class="pi pi-map-marker optional-icon"></i>
                       Ubicación <span class="optional-tag">Opcional</span>
                     </label>
-                    
+
                     <div class="input-con-desplegable">
                       <InputText v-model="direccionCliente" :disabled="!direccionClienteEditable" class="input-full"
                         :class="{ 'p-invalid': errores.direccion }" placeholder="Ej: Av. Heroinas esq. Ayacucho"
                         @input="buscarDireccion" @keydown.down="moverSeleccionDireccion('abajo')"
-                        @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter" 
+                        @keydown.up="moverSeleccionDireccion('arriba')" @keydown.enter="seleccionarDireccionEnter"
                         style="margin-top: 2px" />
 
                       <ul v-if="mostrarDesplegableDireccion" class="desplegable-simple"
@@ -589,7 +584,7 @@
               </div>
 
               <div v-if="tipoAccion2 !== 2" class="p-col-12 p-md-6 d-flex flex-column justify-content-start">
-                
+
 
 
                 <div v-if="tipoVenta === 'contado'">
@@ -611,7 +606,20 @@
                   <div v-if="opcionPago === 'efectivo'" class="mt-2">
                     <div class="card mb-2" style="font-size: 0.875rem;">
                       <div class="card-body">
-                        
+                        <div class="form-group mb-3">
+                          <label for="descuentoTotal" class="font-weight-bold">
+                            <span class="mr-2">Bs</span> Descuento al Total:
+                          </label>
+                          <div class="input-group">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text">{{ monedaVenta[1] }}</span>
+                            </div>
+                            <input type="number" class="form-control" id="descuentoTotal" v-model="descuentoAdicional"
+                              placeholder="Ingrese el descuento"
+                              :disabled="permitir_descuento != 1 && !habilitacionpromocion" />
+                          </div>
+                        </div>
+
                         <div class="form-group mb-3">
                           <label for="montoEfectivo" class="font-weight-bold">
                             <i class="fa fa-money mr-2"></i> Monto Recibido:
@@ -622,19 +630,6 @@
                             </div>
                             <input type="number" class="form-control" id="montoEfectivo" v-model="recibido"
                               placeholder="Ingrese el monto recibido" />
-                          </div>
-                        </div>
-
-                        <div class="form-group mb-3">
-                          <label for="descuentoTotal" class="font-weight-bold">
-                            <i class="fa fa-percent mr-2"></i> Descuento al Total:
-                          </label>
-                          <div class="input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text">{{ monedaVenta[1] }}</span>
-                            </div>
-                            <input type="number" class="form-control" id="descuentoTotal" v-model="descuentoAdicional"
-                              placeholder="Ingrese el descuento" :disabled="permitir_descuento != 1 && !habilitacionpromocion"/>
                           </div>
                         </div>
 
@@ -654,9 +649,10 @@
                         <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
                           Detalle de Venta
                         </h5>
-                        
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-1 mb-2" style="font-size: 0.8rem;">
-                           Saldo a Favor: {{ saldoFavorCliente.toFixed(2) }}
+
+                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-1 mb-2"
+                          style="font-size: 0.8rem;">
+                          Saldo a Favor: {{ saldoFavorCliente.toFixed(2) }}
                         </div>
 
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
@@ -664,11 +660,12 @@
                             <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
                             <span style="font-size: 0.85rem;">Total a Pagar:</span>
                             <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">
-                              {{ (Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente)).toFixed(2) }}
+                              {{ (Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) -
+                                saldoFavorCliente)).toFixed(2) }}
                               {{ monedaVenta[1] }}
                             </span>
                           </div>
-                          
+
                           <div class="d-flex flex-column flex-md-column mt-2 mt-md-0 text-center">
                             <div class="d-flex flex-row justify-content-center mb-1">
                               <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
@@ -678,9 +675,9 @@
                                 <i class="fa fa-check mr-2"></i> Registrar Pago
                               </button>
                             </div>
-                            <small style="color: #777; font-size: 0.75rem;">
+                            <!--<small style="color: #777; font-size: 0.75rem;">
                               Click en el botón verde para Factura o en la imagen para Recibos
-                            </small>
+                            </small>-->
                           </div>
                         </div>
                       </div>
@@ -697,7 +694,9 @@
                             </h5>
                             <label class="mb-0 text-muted">Total a pagar:</label>
                             <div class="font-weight-bold text-primary" style="font-size: 1.1rem;">
-                              {{ (Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente)).toFixed(2) }} {{ monedaVenta[1] }}
+                              {{ (Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) -
+                                saldoFavorCliente)).toFixed(2) }}
+                              {{ monedaVenta[1] }}
                             </div>
                           </div>
 
@@ -715,9 +714,9 @@
                           </button>
                         </div>
                         <div class="text-center mt-1">
-                           <small style="color: #777; font-size: 0.75rem;">
+                          <!--<small style="color: #777; font-size: 0.75rem;">
                             Click en el botón verde para Factura o en la imagen para Recibos
-                          </small>
+                          </small>-->
                         </div>
                       </div>
                     </div>
@@ -725,24 +724,125 @@
 
                 </div>
 
-                  <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
-                    <div class="card mb-2">
-                      <div class="card-body">
-                        <h5 class="mb-3" style="font-size: 0.95rem;">
-                          Detalle de Venta
-                        </h5>
+                <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
+                  <div class="card mb-2">
+                    <div class="card-body">
+                      <h5 class="mb-3" style="font-size: 0.95rem;">
+                        Detalle de Venta
+                      </h5>
 
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
-                          style="font-size: 0.8rem;">
-                          <i class="fa fa-gift mr-1"></i>
-                          <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
+                      <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                        style="font-size: 0.8rem;">
+                        <i class="fa fa-gift mr-1"></i>
+                        <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
+                      </div>
+
+                      <div class="d-flex flex-column">
+                        <div class="d-flex align-items-center">
+                          <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
+                          <span style="font-size: 0.85rem;">Total a Pagar:</span>
+                          <span class="font-weight-bold ml-2" style="font-size: 0.95rem;">{{
+                            Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
+                          }}
+                            {{ monedaVenta[1] }}</span>
                         </div>
+                        <small v-if="saldoFavorCliente > 0" class="text-muted">
+                          (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                          {{
+                            saldoFavorCliente.toFixed(2) }})
+                        </small>
+                      </div>
+                    </div>
+                  </div>
 
+
+                  <div class="d-flex flex-wrap justify-content-center">
+
+                    <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
+                      <i class="fa fa-check mr-2"></i> Registrar Pago
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-if="tipoVenta === 'credito'">
+                <div class="d-flex justify-content-center mb-3">
+                  <div class="btn-selector">
+                    <button class="btn-selector-btn" :class="{ active: opcionPago === 'efectivo' }"
+                      @click="opcionPago = 'efectivo'">
+                      <i class="fa fa-money mr-2"></i>
+                      Efectivo
+                    </button>
+
+                    <button class="btn-selector-btn" :class="{ active: opcionPago === 'qr' }"
+                      @click="opcionPago = 'qr'">
+                      <i class="fa fa-qrcode mr-2"></i>
+                      Banco
+                    </button>
+                  </div>
+                </div>
+                <div v-if="opcionPago === 'efectivo'" class="mt-2">
+                  <div class="card mb-2" style="font-size: 0.8rem;">
+                    <div class="card-body d-flex flex-column">
+
+                      <!-- 🔹 Descuento al Total -->
+                      <div v-if="permitir_bonificacion == 1 || permitir_descuento == 1" class="form-group mb-3">
+                        <label for="descuentoTotal" class="label-input">
+                          <i class="fa fa-percent mr-1"></i> Descuento al Total
+                        </label>
+
+                        <div class="input-group input-group-sm custom-input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text addon-small">%</span>
+                          </div>
+
+                          <input type="number" id="descuentoTotal" class="form-control input-uniforme"
+                            v-model="descuentoAdicional" :disabled="permitir_descuento != 1 && !habilitacionpromocion"
+                            placeholder="Ingrese el % de descuento" min="0" max="100" />
+                        </div>
+                      </div>
+
+                      <div class="form-group mb-3">
+                        <label for="montoEfectivo" class="label-input">
+                          <i class="fa fa-money mr-1"></i> Monto Recibido
+                        </label>
+                        <div class="input-group input-group-sm custom-input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text addon-small">{{ monedaVenta[1] }}</span>
+                          </div>
+                          <input type="number" id="montoEfectivo" class="form-control input-uniforme" v-model="recibido"
+                            placeholder="Ingrese el monto recibido" />
+                        </div>
+                      </div>
+
+                      <div class="form-group mb-0">
+                        <label for="cambioRecibir" class="label-input">
+                          <i class="fa fa-exchange mr-1"></i> Saldo Total
+                        </label>
+                        <input type="text" id="cambioRecibir" class="form-control input-cambio bg-light"
+                          :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido"
+                          readonly />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card" style="font-size: 0.75rem;">
+                    <div class="card-body">
+                      <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
+                        Detalle de Venta
+                      </h5>
+
+                      <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                        style="font-size: 0.8rem;">
+                        <i class="fa fa-gift mr-1"></i>
+                        <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
+                      </div>
+
+                      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                         <div class="d-flex flex-column">
                           <div class="d-flex align-items-center">
                             <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
                             <span style="font-size: 0.85rem;">Total a Pagar:</span>
-                            <span class="font-weight-bold ml-2" style="font-size: 0.95rem;">{{
+                            <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">{{
                               Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
                             }}
                               {{ monedaVenta[1] }}</span>
@@ -753,165 +853,63 @@
                               saldoFavorCliente.toFixed(2) }})
                           </small>
                         </div>
+                        <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
+
+                          <button type="button" @click="aplicarDescuentoRecibo(2, 1)" class="btn btn-success">
+                            <i class="fa fa-check mr-2"></i> Registrar Pago
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-
-                    <div class="d-flex flex-wrap justify-content-center">
-
-                      <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
-                        <i class="fa fa-check mr-2"></i> Registrar Pago
-                      </button>
                     </div>
                   </div>
                 </div>
-                <div v-if="tipoVenta === 'credito'">
-                  <div class="d-flex justify-content-center mb-3">
-                    <div class="btn-selector">
-                      <button class="btn-selector-btn" :class="{ active: opcionPago === 'efectivo' }"
-                        @click="opcionPago = 'efectivo'">
-                        <i class="fa fa-money mr-2"></i>
-                        Efectivo
-                      </button>
 
-                      <button class="btn-selector-btn" :class="{ active: opcionPago === 'qr' }"
-                        @click="opcionPago = 'qr'">
-                        <i class="fa fa-qrcode mr-2"></i>
-                        Banco
-                      </button>
-                    </div>
-                  </div>
-                  <div v-if="opcionPago === 'efectivo'" class="mt-2">
-                    <div class="card mb-2" style="font-size: 0.8rem;">
-                      <div class="card-body d-flex flex-column">
+                <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
+                  <div class="card mb-2">
+                    <div class="card-body">
+                      <h5 class="mb-3" style="font-size: 0.95rem;">
+                        Detalle de Venta
+                      </h5>
 
-                        <!-- 🔹 Descuento al Total -->
-                        <div v-if="permitir_bonificacion == 1 || permitir_descuento == 1" class="form-group mb-3">
-                          <label for="descuentoTotal" class="label-input">
-                            <i class="fa fa-percent mr-1"></i> Descuento al Total
-                          </label>
-
-                          <div class="input-group input-group-sm custom-input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text addon-small">%</span>
-                            </div>
-
-                            <input type="number" id="descuentoTotal" class="form-control input-uniforme"
-                              v-model="descuentoAdicional" :disabled="permitir_descuento != 1 && !habilitacionpromocion"
-                              placeholder="Ingrese el % de descuento" min="0" max="100" />
-                          </div>
-                        </div>
-
-                        <div class="form-group mb-3">
-                          <label for="montoEfectivo" class="label-input">
-                            <i class="fa fa-money mr-1"></i> Monto Recibido
-                          </label>
-                          <div class="input-group input-group-sm custom-input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text addon-small">{{ monedaVenta[1] }}</span>
-                            </div>
-                            <input type="number" id="montoEfectivo" class="form-control input-uniforme"
-                              v-model="recibido" placeholder="Ingrese el monto recibido" />
-                          </div>
-                        </div>
-
-                        <div class="form-group mb-0">
-                          <label for="cambioRecibir" class="label-input">
-                            <i class="fa fa-exchange mr-1"></i> Saldo Total
-                          </label>
-                          <input type="text" id="cambioRecibir" class="form-control input-cambio bg-light"
-                            :value="Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente) - recibido"
-                            readonly />
-                        </div>
+                      <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
+                        style="font-size: 0.8rem;">
+                        <i class="fa fa-gift mr-1"></i>
+                        <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
                       </div>
-                    </div>
 
-                    <div class="card" style="font-size: 0.75rem;">
-                      <div class="card-body">
-                        <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
-                          Detalle de Venta
-                        </h5>
-
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
-                          style="font-size: 0.8rem;">
-                          <i class="fa fa-gift mr-1"></i>
-                          <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
+                      <div class="d-flex flex-column">
+                        <div class="d-flex align-items-center">
+                          <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
+                          <span style="font-size: 0.85rem;">Total a Pagar:</span>
+                          <span class="font-weight-bold ml-2" style="font-size: 0.95rem;">{{
+                            Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
+                          }}
+                            {{ monedaVenta[1] }}</span>
                         </div>
-
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                          <div class="d-flex flex-column">
-                            <div class="d-flex align-items-center">
-                              <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
-                              <span style="font-size: 0.85rem;">Total a Pagar:</span>
-                              <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">{{
-                                Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
-                              }}
-                                {{ monedaVenta[1] }}</span>
-                            </div>
-                            <small v-if="saldoFavorCliente > 0" class="text-muted">
-                              (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
-                              {{
-                                saldoFavorCliente.toFixed(2) }})
-                            </small>
-                          </div>
-                          <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
-                        
-                            <button type="button" @click="aplicarDescuentoRecibo(2, 1)" class="btn btn-success">
-                              <i class="fa fa-check mr-2"></i> Registrar Pago
-                            </button>
-                          </div>
-                        </div>
+                        <small v-if="saldoFavorCliente > 0" class="text-muted">
+                          (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
+                          {{
+                            saldoFavorCliente.toFixed(2) }})
+                        </small>
                       </div>
                     </div>
                   </div>
 
-                  <div v-else-if="opcionPago === 'qr'" style="margin-top: -5px;">
-                    <div class="card mb-2">
-                      <div class="card-body">
-                        <h5 class="mb-3" style="font-size: 0.95rem;">
-                          Detalle de Venta
-                        </h5>
+                  <!--<button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>-->
 
-                        <div v-if="saldoFavorCliente > 0" class="alert alert-success py-2 mb-2"
-                          style="font-size: 0.8rem;">
-                          <i class="fa fa-gift mr-1"></i>
-                          <strong>Saldo a Favor:</strong> {{ saldoFavorCliente.toFixed(2) }} {{ monedaVenta[1] }}
-                        </div>
-
-                        <div class="d-flex flex-column">
-                          <div class="d-flex align-items-center">
-                            <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
-                            <span style="font-size: 0.85rem;">Total a Pagar:</span>
-                            <span class="font-weight-bold ml-2" style="font-size: 0.95rem;">{{
-                              Math.max(0, (calcularTotal * parseFloat(monedaVenta[0])) - saldoFavorCliente).toFixed(2)
-                            }}
-                              {{ monedaVenta[1] }}</span>
-                          </div>
-                          <small v-if="saldoFavorCliente > 0" class="text-muted">
-                            (Subtotal: {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }} - Saldo a favor:
-                            {{
-                              saldoFavorCliente.toFixed(2) }})
-                          </small>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button class="btn btn-primary mb-2" @click="generarQr">Generar QR</button>
-      
-                    <div class="d-flex flex-wrap justify-content-center">
-                      <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(2)">
-                        <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
-                          style="height: 24px;">
-                      </button>
-                      <button type="button" @click="aplicarDescuentoRecibo(2, 7)" class="btn btn-success">
-                        <i class="fa fa-check mr-2"></i> Registrar Pago
-                      </button>
-                    </div>
+                  <div class="d-flex flex-wrap justify-content-center">
+                    <button class="btn btn-light mr-2 mb-2 mb-md-0" @click="aplicarDescuentoRecibo(2)">
+                      <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid" style="height: 24px;">
+                    </button>
+                    <button type="button" @click="aplicarDescuentoRecibo(2, 7)" class="btn btn-success">
+                      <i class="fa fa-check mr-2"></i> Registrar Pago
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
         </div>
         <InputText v-model="idcliente" type="hidden" />
         <InputText v-model="tipo_documento" type="hidden" />
@@ -922,113 +920,132 @@
         <InputText v-model="num_comprob" type="hidden" disabled />
         </div>
 
-<div v-if="step === 1" class="step-content">
-            <div class="p-fluid p-grid">
-              
+        <div v-if="step === 1" class="step-content">
+          <div class="p-fluid p-grid">
 
-              <div class="p-col-12 p-md-4 mb-0 pb-0" style="margin-top: -17px !important;">
-                <label for="tipo_documento" class="label-input">
-                  Almacén de trabajo <span class="text-required">*</span>
-                </label>
-                <Dropdown 
-                  v-model="selectedAlmacen" 
-                  :options="arrayAlmacenes" 
-                  optionLabel="nombre_almacen"
-                  optionValue="id" 
-                  placeholder="Seleccione" 
-                  :disabled="arrayDetalle.length > 0"
-                  @change="getAlmacenProductos" 
-                  class="dropdown-full input-height-fix" 
-                />
-              </div>
 
-              <div class="p-col-12 p-md-8 mb-0 pb-0">
-                <label for="nombre" class="label-input">
-                  Buscar Producto
-                </label>
-                <div class="input-con-desplegable">
-                  <div class="p-inputgroup input-height-fix">
-                    <InputText 
-                      ref="inputCodigo" 
-                      v-model="codigo" 
-                      placeholder="Buscar por nombre, código o alfanumérico" 
-                      class="input-full" 
-                      :disabled="!idAlmacen" 
-                      @input="buscarArticulo"
-                      @keydown.down="moverSeleccion('abajo')" 
-                      @keydown.up="moverSeleccion('arriba')"
-                      @keydown.enter="seleccionarConEnter" 
-                    />
-                    <Button icon="pi pi-search" class="btn-search-fix" @click="abrirModal" />
-                  </div>
+            <div class="p-col-12 p-md-4 mb-0 pb-0" style="margin-top: -17px !important;">
+              <label for="tipo_documento" class="label-input">
+                Almacén de trabajo <span class="text-required">*</span>
+              </label>
+              <Dropdown v-model="selectedAlmacen" :options="arrayAlmacenes" optionLabel="nombre_almacen"
+                optionValue="id" placeholder="Seleccione" :disabled="arrayDetalle.length > 0"
+                @change="getAlmacenProductos" class="dropdown-full input-height-fix" />
+            </div>
 
-                  <ul v-if="mostrarDesplegable" class="desplegable-simple" style="max-height: 300px; overflow-y: auto;">
-                    <li v-for="(articulo, index) in resultadosBusqueda" :key="articulo.id"
-                        @click="seleccionarArticulo(articulo)" 
-                        :class="{ 
-                            'seleccionado': index === indiceSeleccionado,
-                            'item-sin-stock': articulo.saldo_stock <= 0 
-                        }"
-                        style="padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer;">
-                            
-                      <div class="item-contenido" style="line-height: 1.4; font-size: 0.85rem;">
-                         <span style="font-weight: bold; color: #333; font-size: 0.9rem;">
-                          {{ articulo.nombre }}
-                        </span>
-                        <span style="color: #bbb; margin: 0 5px;">/</span>
-                        <span class="text-muted">
-                          {{ articulo.nombre_categoria || "Sin Cat." }}
-                        </span>
-                        <span style="color: #bbb; margin: 0 5px;">/</span>
-                        <span class="text-primary font-weight-bold">
-                            {{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.
-                        </span>
-                        <span style="color: #bbb; margin: 0 5px;">/</span>
-                        <span :class="articulo.saldo_stock > 0 ? 'text-success font-weight-bold' : 'text-danger font-weight-bold'">
-                            Stock: {{ articulo.saldo_stock }}
-                        </span>
-                      </div>
-                    </li>
-                  </ul>
+            <div class="p-col-12 p-md-8 mb-0 pb-0">
+              <label for="nombre" class="label-input"
+                style="display: flex; justify-content: space-between; align-items: center;">
+                Buscar Producto
+                <span style="font-size: 0.85rem; color: #0d6efd;">
+                  Combos/Ofertas Botón azul
+                </span>
+              </label>
+              <div class="input-con-desplegable">
+                <div class="p-inputgroup input-height-fix">
+                  <InputText ref="inputCodigo" v-model="codigo" placeholder="Buscar por nombre, código o alfanumérico"
+                    class="input-full" :disabled="!idAlmacen" @input="buscarArticulo"
+                    @keydown.down="moverSeleccion('abajo')" @keydown.up="moverSeleccion('arriba')"
+                    @keydown.enter="seleccionarConEnter" />
+                  <Button icon="pi pi-search" class="btn-search-fix" @click="abrirModal" />
                 </div>
+
+                <ul v-if="mostrarDesplegable" class="desplegable-simple" style="max-height: 300px; overflow-y: auto;">
+                  <li v-for="(articulo, index) in resultadosBusqueda" :key="articulo.id"
+                    @click="seleccionarArticulo(articulo)" :class="{
+                      'seleccionado': index === indiceSeleccionado,
+                      'item-sin-stock': articulo.saldo_stock <= 0
+                    }" style="padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer;">
+
+                    <div class="item-contenido" style="line-height: 1.4; font-size: 0.85rem;">
+                      <span style="font-weight: bold; color: #333; font-size: 0.9rem;">
+                        {{ articulo.nombre }}
+                      </span>
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+                      <span class="text-muted">
+                        {{ articulo.nombre_categoria || "Sin Cat." }}
+                      </span>
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+                      <span class="text-primary font-weight-bold">
+                        {{ Number(parseFloat(articulo.precio_uno).toFixed(2)) }} Bs.
+                      </span>
+                      <span style="color: #bbb; margin: 0 5px;">/</span>
+                      <span
+                        :class="articulo.saldo_stock > 0 ? 'text-success font-weight-bold' : 'text-danger font-weight-bold'">
+                        Stock: {{ articulo.saldo_stock }}
+                      </span>
+                    </div>
+                  </li>
+                </ul>
               </div>
             </div>
+          </div>
 
-            <div v-if="arrayDetalle.length === 0" 
-              style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; padding: 1rem;">
-              <i class="pi pi-shopping-cart" style="font-size: 2.5rem; color: #ccc; margin-bottom: 0.8rem; opacity: 0.6;"></i>
-              <h4 style="color: #666; font-weight: 500; margin: 0; font-size: 1.1rem;">
-                Carrito de ventas vacío
-              </h4>
-              <p style="color: #999; font-size: 0.9rem; margin-top: 0.5rem;">
-                Agregue productos para comenzar
-              </p>
-            </div>
+          <div v-if="arrayDetalle.length === 0"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; padding: 1rem;">
+            <i class="pi pi-shopping-cart"
+              style="font-size: 2.5rem; color: #ccc; margin-bottom: 0.8rem; opacity: 0.6;"></i>
+            <h4 style="color: #666; font-weight: 500; margin: 0; font-size: 1.1rem;">
+              Carrito de ventas vacío
+            </h4>
+            <p style="color: #999; font-size: 0.9rem; margin-top: 0.5rem;">
+              Agregue productos para comenzar
+            </p>
+          </div>
 
-            <DataTable v-if="arrayDetalle.length > 0" :value="arrayDetalle" class="p-mt-3" responsiveLayout="scroll">
-              <Column header="Opciones" style="width: 50px">
-                <template #body="slotProps">
-                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini"
-                    @click="slotProps.data.medida != 'KIT' ? eliminarDetalle(slotProps.data.id) : eliminarKit(slotProps.data.idkit)" />
-                </template>
-              </Column>
-              <Column field="articulo" header="Artículo" />
-              <Column header="Stock Disp." style="width: 100px; text-align: center;">
-                <template #body="slotProps">
-                  <div class="d-flex flex-column align-items-center">
-                    <span class="badge badge-info mb-1">{{ slotProps.data.stock }} Unds.</span>
-                  </div>
-                </template>
-              </Column>
-              <Column header="Precio Unitario" style="width: 100px">
-                <template #body="slotProps">
-                  <div class="text-center">
-                    <input type="text" :value="Number(slotProps.data.precioseleccionado).toFixed(2)"
-                      class="form-control form-control-sm text-center font-weight-bold" readonly />
-                  </div>
-                </template>
-              </Column>
-              <Column header="Precio Venta" style="width: 130px; text-align: center;">
+          <DataTable v-if="arrayDetalle.length > 0" :value="arrayDetalle" class="p-mt-3" responsiveLayout="scroll">
+            <Column header="Opciones" style="width: 15%">
+              <template #body="slotProps">
+                <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini" @click="
+                  slotProps.data.medida != 'KIT'
+                    ? eliminarDetalle(slotProps.data.id)
+                    : eliminarKit(slotProps.data.idkit)
+                  " />
+                <Button :label="getLabelModoVenta(slotProps.data.modoVenta)" class="p-button-info p-button-sm btn-mini"
+                  style="margin-left: 5px" :disabled="slotProps.data.descripcion_fabrica == 1"
+                  @click="cambiarModoVenta(slotProps.data)" />
+              </template>
+            </Column>
+            <Column field="articulo" header="Artículo" />
+            <Column field="stock" header="Stock Actual" style="width: 15%">
+              <template #body="slotProps">
+                <div style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
+                  <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
+                  <span v-else>
+                    {{
+                      slotProps.data.modoVenta === 'caja'
+                        ? slotProps.data.stock_cajas + ' Cajas'
+                        : slotProps.data.modoVenta === 'docena'
+                          ? (slotProps.data.stock / 12).toFixed(2) + ' Docenas'
+                          : slotProps.data.stock + ' Unidades'
+                    }}
+                  </span>
+                </div>
+              </template>
+            </Column>
+            <Column field="unidad_envase" header="Cant x Caja" style="width: 10%" class="column-precio-unidad">
+              <template #body="slotProps">
+                <input type="text" class="form-control form-control-sm input-precio-unidad"
+                  style="height: 32px; font-size: 0.875rem; padding: 0.25rem 0.3rem; text-align: center; width: 100%;"
+                  :value="slotProps.data.descripcion_fabrica == 1 ? '-' : slotProps.data.unidad_envase" disabled />
+              </template>
+            </Column>
+            <Column field="precioUnidad" header="Precio Unidad" style="width: 12%" class="column-precio-unidad">
+              <template #body="slotProps">
+                <div class="precio-wrapper" style="display: flex; gap: 5px; align-items: center;">
+                  <input type="text" v-model.number="slotProps.data.precioseleccionado"
+                    @input="actualizarDetalle(slotProps.index); guardarCambioPrecio(slotProps.data)" class="form-control form-control-sm input-precio-unidad"
+                    :disabled="!slotProps.data.editandoPrecio && (permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1')" />
+                  <Button 
+                    :icon="slotProps.data.editandoPrecio ? 'pi pi-check' : 'pi pi-pencil'" 
+                    class="p-button-sm p-button-secondary btn-precio-toggle"
+                    :class="slotProps.data.editandoPrecio ? 'p-button-success' : ''"
+                    :title="slotProps.data.editandoPrecio ? 'Guardar precio' : 'Editar precio'" 
+                    @click="toggleEditarPrecio(slotProps.data)" />
+                </div>
+              </template>
+            </Column>
+            <!--<Column header="Precio Venta" style="width: 130px; text-align: center;">
                 <template #body="slotProps">
                   <div v-if="slotProps.data.unidad_envase >= 1" class="d-flex flex-column align-items-center">
                     <InputSwitch v-model="slotProps.data.es_paquete" @change="cambiarModoVenta(slotProps.data)"
@@ -1041,49 +1058,53 @@
                     <span class="badge badge-secondary">Unidad Única</span>
                   </div>
                 </template>
-              </Column>
-              <Column header="Cantidad" style="width: 100px">
-                <template #body="slotProps">
-                  <InputNumber v-model="slotProps.data.cantidad" :min="1" @input="actualizarDetalle(slotProps.index)"
-                    class="p-inputtext-sm input-unidades" inputClass="text-center" />
-                </template>
-              </Column>
-               <Column header="Descuento (Bs)" style="width: 120px">
-                <template #body="slotProps">
-                  <InputNumber 
-                    v-model="slotProps.data.descuento" 
-                    mode="decimal" 
-                    :minFractionDigits="2" 
-                    :maxFractionDigits="2"
-                    :min="0" 
-                    class="p-inputtext-sm" 
-                    @keydown.native="convertirPuntoComa"
-                    @input="actualizarDetalle(slotProps.index)" 
-                  />
-                </template>
-              </Column>
-              <Column header="Total" style="width: 100px; text-align: right;">
-                <template #body="slotProps">
-                  <span style="font-weight: bold;">
-                    {{ ((slotProps.data.precioseleccionado * slotProps.data.cantidad - (slotProps.data.descuento || 0))
-                      * parseFloat(monedaVenta[0])).toFixed(2) }}
-                  </span>
-                  <small>{{ monedaVenta[1] }}</small>
-                </template>
-              </Column>
-            </DataTable>
+              </Column>-->
+            <Column field="unidades" header="Cantidad a Vender" style="width: 10%" class="column-unidades">
+              <template #body="slotProps">
+                <InputNumber v-model="slotProps.data.cantidad" :min="1" @input="actualizarDetalle(slotProps.index)"
+                  class="p-inputtext-sm input-unidades" style="height: 32px;"
+                  :ref="'inputCantidad_' + slotProps.index" />
+              </template>
+            </Column>
+               <Column v-if="permitir_ofertas == 1" field="descuento" header="cuento por Cantidad (Bs)" style="width: 10%"
+              class="column-descuento">
+              <template #body="slotProps">
+                <InputNumber v-model="slotProps.data.descuento" mode="decimal" :minFractionDigits="2"
+                  :maxFractionDigits="2" :min="0" class="p-inputtext-sm" @keydown.native="convertirPuntoComa"
+                  @input="actualizarDetalle(slotProps.index)" />
+              </template>
+            </Column>
 
-            <div v-if="arrayDetalle.length > 0" class="p-grid p-mt-3">
-              <div class="p-col-12 p-md-8"></div>
-              <div class="p-col-12 p-md-4" style="text-align: right;">
-                <h5>
-                  Total Neto:
-                  {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }}
-                  {{ monedaVenta[1] }}
-                </h5>
-              </div>
+            <Column field="total" header="Total" style="width: 15%">
+              <template #body="slotProps">
+                {{
+                  (
+                    (
+                      slotProps.data.modoVenta === 'caja'
+                        ? slotProps.data.precioseleccionado * slotProps.data.cantidad * slotProps.data.unidad_envase
+                        : slotProps.data.modoVenta === 'docena'
+                          ? slotProps.data.precioseleccionado * slotProps.data.cantidad * 12
+                          : slotProps.data.precioseleccionado * slotProps.data.cantidad
+                    ) - (parseFloat(slotProps.data.descuento || 0) * slotProps.data.cantidad)
+                  * parseFloat(monedaVenta[0])
+                  ).toFixed(2)
+                }}
+                {{ monedaVenta[1] }}
+              </template>
+            </Column>
+          </DataTable>
+
+          <div v-if="arrayDetalle.length > 0" class="p-grid p-mt-3">
+            <div class="p-col-12 p-md-8"></div>
+            <div class="p-col-12 p-md-4" style="text-align: right;">
+              <h5>
+                Total Neto:
+                {{ (calcularTotal * parseFloat(monedaVenta[0])).toFixed(2) }}
+                {{ monedaVenta[1] }}
+              </h5>
             </div>
           </div>
+        </div>
         <div class="buttons d-flex justify-content-center">
           <button class="btn btn-primary mr-2" @click="prevStep" :disabled="step === 1">
             Anterior
@@ -1165,7 +1186,7 @@
 
                 </Dropdown>
                 -->
-                
+
               </div>
             </div>
             <div class="p-mb-3">
@@ -1190,92 +1211,90 @@
           <h4>{{ tituloModal }}</h4>
         </template>
         <TabView>
-        <TabPanel header="Combos/Ofertas">
-          <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
-            <div class="p-inputgroup" style="width: 100%;">
-              <InputText id="buscarA" v-model="buscarA" placeholder="Texto a buscar"
-                @input="listarItemCompuesto(buscarA)" class="input-full" />
-              <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
-                buscarA = '';
+          <TabPanel header="Combos/Ofertas">
+            <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
+              <div class="p-inputgroup" style="width: 100%;">
+                <InputText id="buscarA" v-model="buscarA" placeholder="Texto a buscar"
+                  @input="listarItemCompuesto(buscarA)" class="input-full" />
+                <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
+                  buscarA = '';
                 listarItemCompuesto('');
                 " type="button" :disabled="!buscarA" :style="{ minWidth: '36px' }" title="Limpiar" />
+              </div>
             </div>
-          </div>
-          <DataTable :value="arrayItemCompuesto" :paginator="true" :rows="10"
-            class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-venta tabla-seleccionable"
-            responsiveLayout="scroll"
-            @row-click="seleccionarItem($event.data, 'itemcompuesto')">
-            <Column header="Opciones" style="width: 80px">
-              <template #body="slotProps">
-                <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
-                  @click.stop="agregarDetalleModal(slotProps.data, 'itemcompuesto')" />
-                <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
-                  @click.stop="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />
-              </template>
-            </Column>
-            <Column field="nombre" header="Descripcion" />
-            <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
-            <Column header="Precio de Venta">
-              <template #body="slotProps">
-                {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
-              </template>
-            </Column>
-          </DataTable>
-        </TabPanel>
-        <TabPanel header="Productos">
-          <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0; position: relative;">
-            <div class="p-inputgroup" style="width: 100%; position: relative;">
-              <InputText id="buscarA" v-model="buscarA" class="p-inputtext-sm" autocomplete="off"
-                style="width: 100%; margin: 0;" @input="listarArticulo(buscarA)" />
-              <span v-if="buscarA.trim() === ''"
-                style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
-                Realice una búsqueda por nombre, proveedor, código de barra o código del producto
-              </span>
-              <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
-                buscarA = '';
+            <DataTable :value="arrayItemCompuesto" :paginator="true" :rows="10"
+              class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-venta tabla-seleccionable"
+              responsiveLayout="scroll" @row-click="seleccionarItem($event.data, 'itemcompuesto')">
+              <Column header="Opciones" style="width: 80px">
+                <template #body="slotProps">
+                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                    @click.stop="agregarDetalleModal(slotProps.data, 'itemcompuesto')" />
+                  <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
+                    @click.stop="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />
+                </template>
+              </Column>
+              <Column field="nombre" header="Descripcion" />
+              <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
+              <Column header="Precio de Venta">
+                <template #body="slotProps">
+                  {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
+                </template>
+              </Column>
+            </DataTable>
+          </TabPanel>
+          <TabPanel header="Productos">
+            <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0; position: relative;">
+              <div class="p-inputgroup" style="width: 100%; position: relative;">
+                <InputText id="buscarA" v-model="buscarA" class="p-inputtext-sm" autocomplete="off"
+                  style="width: 100%; margin: 0;" @input="listarArticulo(buscarA)" />
+                <span v-if="buscarA.trim() === ''"
+                  style="color: #FFA500; font-size: 0.75rem; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                  Realice una búsqueda por nombre, proveedor, código de barra o código del producto
+                </span>
+                <Button icon="pi pi-refresh" class="p-button-secondary p-button-sm" @click="
+                  buscarA = '';
                 listarArticulo('');
                 " type="button" :disabled="!buscarA" :style="{ minWidth: '36px' }" title="Limpiar" />
+              </div>
             </div>
-          </div>
-          <DataTable :value="arrayArticulo" :paginator="true" :rows="10"
-            class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-seleccionable"
-            responsiveLayout="scroll"
-            @row-click="seleccionarItem($event.data, 'producto')">
+            <DataTable :value="arrayArticulo" :paginator="true" :rows="10"
+              class="p-mt-2 p-datatable-gridlines p-datatable-sm tabla-seleccionable" responsiveLayout="scroll"
+              @row-click="seleccionarItem($event.data, 'producto')">
 
-            <Column header="Opciones" style="width: 120px">
-              <template #body="slotProps">
-                <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
-                  @click.stop="agregarDetalleModalProducto(slotProps.data)" />
-                <Button icon="pi pi-info-circle" class="p-button-info p-button-sm btn-mini"
-                  @click.stop="verStockPorSucursal(slotProps.data)" />
-              </template>
-            </Column>
+              <Column header="Opciones" style="width: 120px">
+                <template #body="slotProps">
+                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                    @click.stop="agregarDetalleModalProducto(slotProps.data)" />
+                  <Button icon="pi pi-info-circle" class="p-button-info p-button-sm btn-mini"
+                    @click.stop="verStockPorSucursal(slotProps.data)" />
+                </template>
+              </Column>
 
-            <Column field="codigo" header="Código" style="width: 100px" />
+              <Column field="codigo" header="Código" style="width: 100px" />
 
-            <Column field="nombre" header="Nombre" />
+              <Column field="nombre" header="Nombre" />
 
-            <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
+              <Column field="nombre_categoria" header="Categoría" class="d-none d-md-table-cell" />
 
-            <Column field="contacto" header="Proveedor" class="d-none d-lg-table-cell" />
+              <Column field="contacto" header="Proveedor" class="d-none d-lg-table-cell" />
 
-            <Column header="Precio Venta">
-              <template #body="slotProps">
-                {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
-              </template>
-            </Column>
+              <Column header="Precio Venta">
+                <template #body="slotProps">
+                  {{ (slotProps.data.precio_uno * parseFloat(monedaVenta[0])).toFixed(2) }} {{ monedaVenta[1] }}
+                </template>
+              </Column>
 
-            <Column field="saldo_stock" header="Stock" class="d-none d-md-table-cell">
-              <template #body="slotProps">
-                <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
-                <span v-else-if="slotProps.data.saldo_stock == 0" style="color: red; font-weight: bold;">
-                   Sin stock
-                </span>
-                <span v-else>{{ slotProps.data.saldo_stock }}</span>
-              </template>
-            </Column>
-          </DataTable>
-        </TabPanel>
+              <Column field="saldo_stock" header="Stock" class="d-none d-md-table-cell">
+                <template #body="slotProps">
+                  <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
+                  <span v-else-if="slotProps.data.saldo_stock == 0" style="color: red; font-weight: bold;">
+                    Sin stock
+                  </span>
+                  <span v-else>{{ slotProps.data.saldo_stock }}</span>
+                </template>
+              </Column>
+            </DataTable>
+          </TabPanel>
 
         </TabView>
         <template #footer>
@@ -1532,23 +1551,17 @@
             <Button label="Verificar Estado de Pago" icon="pi pi-sync" class="p-button-info w-100"
               @click="verificarEstado" />
             <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-              <InputSwitch 
-                v-model="autoVerificarQR" 
-                :true-value="true"
-                :false-value="false" 
-                :aria-label="'Auto-verificar'"
-                :style="{
+              <InputSwitch v-model="autoVerificarQR" :true-value="true" :false-value="false"
+                :aria-label="'Auto-verificar'" :style="{
                   zoom: '1.2'
-                }"
-                class="auto-verificar-switch" />
-              <span 
-                style="font-size: 0.9em; font-weight: 500; color: #495057;">
+                }" class="auto-verificar-switch" />
+              <span style="font-size: 0.9em; font-weight: 500; color: #495057;">
                 Auto
               </span>
             </div>
           </div>
 
-          
+
 
           <div v-if="estadoTransaccion" class="card w-100 p-3 text-left border shadow-sm" style="background: #f8f9fa;">
             <div class="text-muted font-weight-bold mb-1">Estado actual:</div>
@@ -1991,7 +2004,7 @@ export default {
         this.stopAutoVerificarQR();
       }
     },
-    
+
     estadoTransaccion(newVal) {
       if (newVal && newVal.objeto && newVal.objeto.estadoActual === "PAGADO") {
         this.autoVerificarQR = false;
@@ -2057,45 +2070,43 @@ export default {
       }
     },
 
-calcularTotal() {
-  let resultado = 0.0;
+    calcularTotal() {
+      let resultado = 0.0;
 
-  for (let i = 0; i < this.arrayDetalle.length; i++) {
-    let detalle = this.arrayDetalle[i];
+      for (let i = 0; i < this.arrayDetalle.length; i++) {
+        let detalle = this.arrayDetalle[i];
 
-    // 🔹 Convertir a número y asignar valor por defecto (0 si no es válido)
-    const precio = Number(detalle.precioseleccionado) || 0;
-    const cantidad = Number(detalle.cantidad) || 0;
-    const unidadEnvase = Number(detalle.unidad_envase) || 1; // Si no tiene, asumimos 1
-    const descuentoPorcentaje = Number(detalle.descuento) || 0;
+        // 🔹 Convertir a número y asignar valor por defecto
+        const precio = Number(detalle.precioseleccionado) || 0;
+        const cantidad = Number(detalle.cantidad) || 0;
+        const unidadEnvase = Number(detalle.unidad_envase) || 1; // Si no tiene, asumimos 1
+        const descuento = Number(detalle.descuento) || 0; // En Bs
 
-    // 🔹 Subtotal según modo de venta
-    let subtotal = 0;
-    if (detalle.modoVenta === "caja") {
-      subtotal = precio * cantidad * unidadEnvase;
-    } else if (detalle.modoVenta === "docena") {
-      subtotal = precio * cantidad * 12;
-    } else {
-      subtotal = precio * cantidad;
-    }
+        let totalDetalle = 0;
 
-    // 🔹 Aplicar descuento del producto
-    let montoDescuento = subtotal * (descuentoPorcentaje / 100);
-    let totalDetalle = subtotal - montoDescuento;
-    if (totalDetalle < 0) totalDetalle = 0;
+        if (detalle.modoVenta === "caja") {
+          totalDetalle = (precio - descuento) * cantidad * unidadEnvase;
+        } else if (detalle.modoVenta === "docena") {
+          totalDetalle = (precio - descuento) * cantidad * 12;
+        } else {
+          totalDetalle = (precio - descuento) * cantidad;
+        }
 
-    resultado += totalDetalle;
-  }
+        // Evitar negativo
+        if (totalDetalle < 0) totalDetalle = 0;
 
-  // 🔹 Descuento adicional sobre el total (si existe)
-  if (this.descuentoAdicional) {
-    let porcentajeAdicional = Number(this.descuentoAdicional) || 0;
-    if (porcentajeAdicional > 100) porcentajeAdicional = 100;
-    resultado -= resultado * (porcentajeAdicional / 100);
-  }
+        resultado += totalDetalle;
+      }
 
-  return resultado;
-},
+      // 🔹 Descuento adicional en Bs
+      const descuentoAdicionalBs = Number(this.descuentoAdicional) || 0;
+      resultado -= descuentoAdicionalBs;
+
+      // 🔹 Evitar resultado negativo
+      if (resultado < 0) resultado = 0;
+
+      return resultado;
+    },
 
     badgeSeverity() {
       if (
@@ -2115,7 +2126,7 @@ calcularTotal() {
   },
 
   methods: {
-     toastSuccess(mensaje) {
+    toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
         summary: "Éxito",
@@ -2160,10 +2171,10 @@ calcularTotal() {
     },
     startAutoVerificarQR() {
       if (this.autoVerificarQRInterval) return;
-      
+
       // Inicializar el contador
       this.verificacionCountdown = 8;
-      
+
       // Interval para verificar cada 8 segundos
       this.autoVerificarQRInterval = setInterval(() => {
         if (this.autoVerificarQR && this.showQrDialog) {
@@ -2171,7 +2182,7 @@ calcularTotal() {
           this.verificacionCountdown = 8; // Reiniciar countdown
         }
       }, 8000);
-      
+
       // Interval para actualizar el countdown cada segundo
       this.countdownInterval = setInterval(() => {
         if (this.autoVerificarQR && this.showQrDialog && this.verificacionCountdown > 0) {
@@ -2180,12 +2191,12 @@ calcularTotal() {
       }, 1000);
     },
     seleccionarItem(data, tipo) {
-  if (tipo === 'producto') {
-    this.agregarDetalleModalProducto(data);
-  } else if (tipo === 'itemcompuesto') {
-    this.agregarDetalleModal(data, 'itemcompuesto');
-  }
-},
+      if (tipo === 'producto') {
+        this.agregarDetalleModalProducto(data);
+      } else if (tipo === 'itemcompuesto') {
+        this.agregarDetalleModal(data, 'itemcompuesto');
+      }
+    },
     verCombosOfertas(id) {
       axios.get(`/itemcompuesto/${id}`).then((res) => {
         this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
@@ -3343,12 +3354,9 @@ calcularTotal() {
       prod.cantidad = det.cantidad;
       prod.precioUnitario = det.precioseleccionado;
 
-      // Calcular subtotal
-      const subtotal = det.cantidad * det.precioseleccionado;
-      const desc = subtotal * (det.descuento / 100);
-      const total = subtotal - desc;
+      const subtotal = det.cantidad * (det.precioseleccionado - det.descuento); // Descuento por unidad
+      const total = subtotal > 0 ? subtotal : 0; // Evitar negativo
 
-      // Actualizar subtotal en producto y en detalle
       prod.subTotal = total;
       det.total = total;
 
@@ -3816,15 +3824,18 @@ calcularTotal() {
       }
 
       const precioUnitario = parseFloat(this.precioseleccionado);
-      const descuento = (precioUnitario * cantidad * (this.arraySeleccionado.descuento / 100)).toFixed(2);
-      const total = (precioUnitario * cantidad - descuento).toFixed(2);
-
+      const descuento = (parseFloat(this.arraySeleccionado.descuento) || 0) * cantidad;
+      const total = (precioUnitario * cantidad - ((parseFloat(this.arraySeleccionado.descuento) || 0) * cantidad)).toFixed(2);
       const existente = this.arrayDetalle.find((item) => item.idarticulo === this.arraySeleccionado.id);
 
       if (existente) {
         existente.cantidad += cantidad;
-        const nuevoDescuento = (precioUnitario * existente.cantidad * (existente.descuento / 100)).toFixed(2);
-        existente.total = (precioUnitario * existente.cantidad - nuevoDescuento).toFixed(2);
+
+        // Descuento por unidad * cantidad total
+        const nuevoDescuento = (parseFloat(existente.descuento) / existente.cantidad) * existente.cantidad;
+        // Mejor: guardar descuento por unidad aparte, y calcular total = (precio - descuentoPorUnidad) * cantidad
+
+        existente.total = ((precioUnitario * existente.cantidad) - ((parseFloat(this.arraySeleccionado.descuento) || 0) * existente.cantidad)).toFixed(2);
       } else {
         const nuevoDetalle = {
           id: Date.now(),
@@ -3836,7 +3847,7 @@ calcularTotal() {
           cantidad: parseInt(this.cantidad) || 1,
           cantidad_paquetes: envase,
           precio: precioUnitario,
-          descuento: parseFloat(this.arraySeleccionado.descuento) || 0,
+          descuento: (parseFloat(this.arraySeleccionado.descuento) || 0) * this.cantidad,
           stock: this.arraySeleccionado.saldo_stock,
           stock_cajas: stockEnCajasCalculado,
           precioseleccionado: parseFloat(this.precioseleccionado) || 0,
@@ -3855,6 +3866,7 @@ calcularTotal() {
         this.asignarPrecioPorModo(nuevoDetalle);
 
         this.arrayDetalle.push(nuevoDetalle);
+        console.log("Detalle agregado:", this.arrayDetalle);
       }
 
       const productoExistente = this.arrayProductos.find((p) => p.codigoProducto === this.arraySeleccionado.codigo);
@@ -4894,34 +4906,20 @@ calcularTotal() {
 
     calcularDescuentoTotal() {
       let descuentoPorItems = 0.0;
-      let subtotal = 0.0;
 
       // 🔹 Recorrer detalles
       for (let i = 0; i < this.arrayDetalle.length; i++) {
         let detalle = this.arrayDetalle[i];
 
-        let subtotalDetalle = detalle.precioseleccionado * detalle.cantidad;
-        subtotal += subtotalDetalle;
+        // Descuento del ítem en Bs **por unidad**
+        const cantidad = Number(detalle.cantidad) || 1;
+        const montoDescontado = (parseFloat(detalle.descuento) || 0) * cantidad;
 
-        // Descuento del ítem (porcentaje)
-        let porcentaje = parseFloat(detalle.descuento) || 0;
-        if (porcentaje > 100) porcentaje = 100;
-
-        let montoDescontado = subtotalDetalle * (porcentaje / 100);
         descuentoPorItems += montoDescontado;
       }
 
-      // 🔹 Subtotal restante después de los descuentos de ítem
-      let subtotalRestante = subtotal - descuentoPorItems;
-
-      // 🔹 Descuento adicional en porcentaje sobre lo que queda
-      let descuentoAdicionalMonto = 0.0;
-      if (this.descuentoAdicional) {
-        let porcentajeAdicional = parseFloat(this.descuentoAdicional) || 0;
-        if (porcentajeAdicional > 100) porcentajeAdicional = 100;
-
-        descuentoAdicionalMonto = subtotalRestante * (porcentajeAdicional / 100);
-      }
+      // 🔹 Descuento adicional en Bs
+      let descuentoAdicionalMonto = parseFloat(this.descuentoAdicional) || 0;
 
       // 🔹 Total de todos los descuentos (ítems + adicional)
       let descuentoTotal = descuentoPorItems + descuentoAdicionalMonto;
@@ -5673,9 +5671,11 @@ calcularTotal() {
 
           me.arrayDetalle = response.data.detalles;
 
-          // Sumar descuentos del detalle
+          // Sumar descuentos del detalle considerando cantidad
           me.descuentoTotalDetalle = me.arrayDetalle.reduce((acc, item) => {
-            return acc + (parseFloat(item.descuento_monto) || 0);
+            const cantidad = parseFloat(item.cantidad) || 1;
+            const descuentoUnidad = parseFloat(item.descuento_monto) || 0; // monto por unidad
+            return acc + (descuentoUnidad * cantidad);
           }, 0);
 
           me.descuentoAdicionalvista =
@@ -6383,6 +6383,7 @@ calcularTotal() {
   margin-top: 2rem;
   text-align: right;
 }
+
 /* ===== ANIMACIÓN ===== */
 @keyframes fadeIn {
   from {
@@ -7074,12 +7075,13 @@ calcularTotal() {
 .dropdown-full,
 .input-full,
 .p-inputgroup .p-button {
-  height: 38px !important; /* Altura estándar desktop */
+  height: 38px !important;
+  /* Altura estándar desktop */
   min-height: 38px !important;
 }
 
 /* 2. Ajuste interno del Dropdown de PrimeVue para centrar texto verticalmente */
-.dropdown-full >>> .p-dropdown-label {
+.dropdown-full>>>.p-dropdown-label {
   display: flex;
   align-items: center;
   height: 100%;
@@ -7100,7 +7102,8 @@ calcularTotal() {
   font-size: 0.85rem;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 0.5rem; /* Margen inferior uniforme */
+  margin-bottom: 0.5rem;
+  /* Margen inferior uniforme */
   white-space: nowrap;
 }
 
@@ -7298,7 +7301,7 @@ calcularTotal() {
   box-sizing: border-box;
 }
 
-.input-full >>> .p-inputtext {
+.input-full>>>.p-inputtext {
   width: 100% !important;
   font-size: 0.8rem;
   padding: 6px 8px;
@@ -7323,21 +7326,21 @@ calcularTotal() {
   box-sizing: border-box;
 }
 
-.dropdown-full >>> .p-dropdown-trigger {
+.dropdown-full>>>.p-dropdown-trigger {
   width: 2rem !important;
 }
 
-.dropdown-full >>> .p-dropdown {
+.dropdown-full>>>.p-dropdown {
   border: 1px solid #ccc;
   transition: border 0.2s;
 }
 
-.dropdown-full >>> .p-dropdown.p-focus {
+.dropdown-full>>>.p-dropdown.p-focus {
   border-color: #0ea5e9;
   box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
 }
 
-.dropdown-full >>> .p-dropdown-panel .p-dropdown-item {
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
   font-size: 0.8rem !important;
   padding: 6px 10px !important;
   min-height: auto !important;
@@ -7453,8 +7456,15 @@ calcularTotal() {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Desplegable de búsqueda */
@@ -7636,6 +7646,7 @@ calcularTotal() {
     margin: 0.5rem;
     max-height: 95vh;
   }
+
   >>>.p-datatable {
     font-size: 0.85rem;
   }
@@ -7643,6 +7654,7 @@ calcularTotal() {
 
 /* Mobile */
 @media (max-width: 768px) {
+
   /* Ajuste de altura para móvil */
   .dropdown-full,
   .input-full,
@@ -7901,8 +7913,13 @@ calcularTotal() {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .step-indicators {
@@ -8010,6 +8027,7 @@ calcularTotal() {
 }
 
 @media (max-width: 768px) {
+
   .column-precio-unidad,
   .column-unidades,
   .column-descuento {
@@ -8028,6 +8046,7 @@ calcularTotal() {
 }
 
 @media (max-width: 480px) {
+
   .column-precio-unidad,
   .column-unidades,
   .column-descuento {
@@ -8080,21 +8099,43 @@ calcularTotal() {
 }
 
 @keyframes pulsoVenta {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.7); }
-  70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(67, 233, 123, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(67, 233, 123, 0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.7);
+  }
+
+  70% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(67, 233, 123, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(67, 233, 123, 0);
+  }
 }
 
 @keyframes rotar {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-10deg); }
-  75% { transform: rotate(10deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-10deg);
+  }
+
+  75% {
+    transform: rotate(10deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 /* Sin stock */
 .item-sin-stock {
-  background-color: #ffe6e6 !important; 
+  background-color: #ffe6e6 !important;
   color: #a00000;
   cursor: not-allowed;
   opacity: 0.9;
@@ -8234,7 +8275,8 @@ calcularTotal() {
 
 .vertical-align-row {
   display: flex;
-  align-items: flex-end; /* Clave para la alineación */
+  align-items: flex-end;
+  /* Clave para la alineación */
   flex-wrap: wrap;
 }
 
@@ -8242,7 +8284,8 @@ calcularTotal() {
 .input-height-fix .p-inputtext,
 .input-height-fix .p-dropdown,
 .btn-search-fix {
-  height: 40px !important; /* Altura más robusta */
+  height: 40px !important;
+  /* Altura más robusta */
   line-height: normal;
   box-sizing: border-box;
 }
@@ -8253,11 +8296,12 @@ calcularTotal() {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0 !important; /* El padding lo maneja el label interno */
+  padding: 0 !important;
+  /* El padding lo maneja el label interno */
 }
 
 /* Centrar texto dentro del Dropdown */
-.input-height-fix >>> .p-dropdown-label {
+.input-height-fix>>>.p-dropdown-label {
   display: flex;
   align-items: center;
   height: 100%;
@@ -8267,7 +8311,8 @@ calcularTotal() {
 
 /* Ajuste del botón de búsqueda */
 .btn-search-fix {
-  width: 40px !important; /* Cuadrado perfecto */
+  width: 40px !important;
+  /* Cuadrado perfecto */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -8276,7 +8321,8 @@ calcularTotal() {
 /* Etiquetas uniformes */
 .label-input {
   display: block;
-  margin-bottom: 6px; /* Espacio fijo entre label e input */
+  margin-bottom: 6px;
+  /* Espacio fijo entre label e input */
   font-size: 0.85rem;
   font-weight: 600;
   color: #495057;
@@ -8295,7 +8341,8 @@ calcularTotal() {
 .tabla-seleccionable tbody tr:hover {
   background-color: #f1f5f9 !important;
 }
-.tabla-seleccionable >>> .p-datatable-tbody > tr:hover {
+
+.tabla-seleccionable>>>.p-datatable-tbody>tr:hover {
   background-color: #f1f5f9 !important;
   cursor: pointer !important;
   transition: background-color 0.2s ease;

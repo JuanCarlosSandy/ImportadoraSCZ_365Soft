@@ -668,6 +668,16 @@ class ReportesVentas extends Controller
         $totalVentasRegistradas = 0;
 
         foreach ($ventas as $venta) {
+            // 🔹 Calcular descuento total por detalle
+            $descuentoTotalDetalle = 0;
+
+            foreach ($venta->detalles as $d) {
+                $descuentoUnitario = $d->descuento ?? 0;
+                $descuentoTotalDetalle += $descuentoUnitario * $d->cantidad;
+            }
+
+            // 🔹 Descuento adicional real aplicado
+            $descuentoAdicionalAplicado = max(0, ($venta->descuento_total ?? 0) - $descuentoTotalDetalle);
 
             // -------- DATOS GENERALES DE LA VENTA --------
             $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
@@ -697,18 +707,19 @@ class ReportesVentas extends Controller
             $pdf->Cell(60, 6, 'Vendedor: ' . ($venta->usuario->persona->nombre ?? ''), 0, 1);
             $pdf->Cell(60, 6, 'Sucursal: ' . utf8_decode($venta->sucursal_nombre), 0, 1);
             $pdf->Cell(60, 6, 'Cliente: ' . $clienteRecortado, 0, 1);
+            $pdf->Cell(60, 6, 'Desc. Adicional: ' . number_format($descuentoAdicionalAplicado, 2), 0, 1);
             $pdf->Cell(60, 6, 'Importe Total: ' . number_format($venta->total, 2), 0, 1);
-            $pdf->Cell(60, 6, 'Tipo de venta: ' . utf8_decode($tipoVenta), 0, 1);
             $pdf->Cell(60, 6, 'Estado: ' . utf8_decode($estadoTexto), 0, 1);
             $pdf->Ln(2);
 
             // TABLA DE DETALLES
             $w_cant = 25;
             $w_cod = 25;
-            $w_prod = 80;
+            $w_prod = 65;
             $w_caja = 20;
-            $w_prec = 30;
-            $w_sub = 30;
+            $w_prec = 25;
+            $w_desc = 25;   // 🔹 NUEVA COLUMNA
+            $w_sub = 25;
 
             $pdf->SetFont('Arial', 'B', 8);
             $pdf->SetFillColor(11, 79, 119);
@@ -718,6 +729,7 @@ class ReportesVentas extends Controller
             $pdf->Cell($w_cod, 7, utf8_decode('Código'), 1, 0, 'C', true);
             $pdf->Cell($w_prod, 7, 'Producto', 1, 0, 'C', true);
             $pdf->Cell($w_prec, 7, 'P. Unitario', 1, 0, 'C', true);
+            $pdf->Cell($w_desc, 7, 'Desc.', 1, 0, 'C', true);     // 🔹 NUEVO
             $pdf->Cell($w_sub, 7, 'Subtotal', 1, 1, 'C', true);
 
             $pdf->SetFont('Arial', '', 8);
@@ -750,7 +762,28 @@ class ReportesVentas extends Controller
                 // ============================================================
 
                 $subtotalLinea = 0;
-                $precioUnitario = $d->precio; // Asumimos que en BD guardas el precio unitario
+                $precioUnitario = $d->precio;
+
+                // 🔹 Calcular subtotal base según modo
+                if ($modo == 'caja') {
+                    $subtotalLinea = $d->cantidad * $unidadesPorCaja * $precioUnitario;
+
+                } elseif ($modo == 'docena') {
+                    $subtotalLinea = $d->cantidad * 12 * $precioUnitario;
+
+                } else {
+                    $subtotalLinea = $d->cantidad * $precioUnitario;
+                }
+
+                // 🔹 DESCUENTO POR PRODUCTO (monto fijo por unidad)
+                $descuentoUnitario = $d->descuento ?? 0;
+                $descuentoTotalProducto = $descuentoUnitario * $d->cantidad;
+
+                // 🔹 TOTAL FINAL DE LA LÍNEA
+                $totalLinea = $subtotalLinea - $descuentoTotalProducto;
+
+                // 🔹 Acumular el total real
+                $sumaSubtotalesVenta += $totalLinea;
 
                 if ($modo == 'caja') {
                     // FÓRMULA: Cantidad(cajas) * Unidades_por_caja * Precio_unitario
@@ -773,10 +806,13 @@ class ReportesVentas extends Controller
                 $pdf->Cell($w_cant, 6, utf8_decode($textoCantidad), 1, 0, 'C');
                 $pdf->Cell($w_cod, 6, utf8_decode($codigoProducto), 1, 0, 'C');
                 $pdf->Cell($w_prod, 6, $nombreRecortado, 1, 0, 'L');
-
-
                 $pdf->Cell($w_prec, 6, number_format($precioUnitario, 2), 1, 0, 'R');
-                $pdf->Cell($w_sub, 6, number_format($subtotalLinea, 2), 1, 1, 'R');
+
+                // 🔹 Mostrar descuento total del producto
+                $pdf->Cell($w_desc, 6, number_format($descuentoTotalProducto, 2), 1, 0, 'R');
+
+                // 🔹 Mostrar total ya con descuento aplicado
+                $pdf->Cell($w_sub, 6, number_format($totalLinea, 2), 1, 1, 'R');
             }
 
             if ($venta->estado != 0) {

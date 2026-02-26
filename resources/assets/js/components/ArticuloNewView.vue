@@ -325,10 +325,10 @@
             <!-- fila: descuento (6) + fecha (6) -->
             <div class="form-group row align-items-center">
               <div class="col-12 col-md-6">
-                <label for="descuento">Descuento (%)</label>
+                <label for="descuento">Descuento (BS)</label>
                 <InputNumber id="descuento" ref="descuentoInput" v-model="datosFormulario.descuento"
-                  mode="decimal" :min="0" :max="100" :minFractionDigits="2" :maxFractionDigits="2" suffix="%"
-                  :allowEmpty="true" :useGrouping="false" placeholder="Ingrese descuento (%)"
+                  mode="decimal" :min="0" :max="100" :minFractionDigits="2" :maxFractionDigits="2" suffix="Bs"
+                  :allowEmpty="true" :useGrouping="false" placeholder="Ingrese descuento (Bs)"
                   class="w-100" @input="validarDescuento" />
               </div>
 

@@ -62,72 +62,72 @@ class VentaController extends Controller
     {
         session_start();
     }
-public function index(Request $request)
-{
-    if (!$request->ajax()) {
-        return redirect('/');
-    }
-
-    $buscar = $request->buscar;
-    $usuario = \Auth::user();
-    $idrol = $usuario->idrol;
-    $idsucursal = $usuario->idsucursal;
-
-    // Obtener codigoPuntoVenta
-    $codigoPuntoVenta = '';
-    if (!empty($usuario->idpuntoventa)) {
-        $puntoVenta = PuntoVenta::find($usuario->idpuntoventa);
-        if ($puntoVenta) {
-            $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
+    public function index(Request $request)
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
         }
-    }
 
-    // Obtener codigoSucursal
-    $codigoSucursal = '';
-    $sucursal = Sucursales::find($idsucursal);
-    if ($sucursal) {
-        $codigoSucursal = $sucursal->codigoSucursal;
-    }
+        $buscar = $request->buscar;
+        $usuario = \Auth::user();
+        $idrol = $usuario->idrol;
+        $idsucursal = $usuario->idsucursal;
 
-    // =====================================
-    // CONSULTA PRINCIPAL INCLUYENDO TODOS LOS CLIENTES
-    // =====================================
-$query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
-    ->leftJoin('users', 'ventas.idusuario', '=', 'users.id')
-    ->leftJoin('sucursales', 'users.idsucursal', '=', 'sucursales.id')
-    ->leftJoin('facturas', 'ventas.id', '=', 'facturas.idventa')
+        // Obtener codigoPuntoVenta
+        $codigoPuntoVenta = '';
+        if (!empty($usuario->idpuntoventa)) {
+            $puntoVenta = PuntoVenta::find($usuario->idpuntoventa);
+            if ($puntoVenta) {
+                $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
+            }
+        }
 
-    // 🔴 JOIN para excluir proveedores
-    ->leftJoin('proveedores', 'proveedores.id', '=', 'personas.id')
+        // Obtener codigoSucursal
+        $codigoSucursal = '';
+        $sucursal = Sucursales::find($idsucursal);
+        if ($sucursal) {
+            $codigoSucursal = $sucursal->codigoSucursal;
+        }
 
-    // 🔴 JOIN para excluir usuarios
-    ->leftJoin('users as u2', 'u2.id', '=', 'personas.id')
+        // =====================================
+        // CONSULTA PRINCIPAL INCLUYENDO TODOS LOS CLIENTES
+        // =====================================
+        $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
+            ->leftJoin('users', 'ventas.idusuario', '=', 'users.id')
+            ->leftJoin('sucursales', 'users.idsucursal', '=', 'sucursales.id')
+            ->leftJoin('facturas', 'ventas.id', '=', 'facturas.idventa')
 
-    ->select(
-        'ventas.tipo_comprobante',
-        DB::raw('COALESCE(ventas.idcliente, personas.id) as idcliente'),
-        'ventas.idtipo_venta',
-        'ventas.id',
-        'ventas.serie_comprobante',
-        'ventas.num_comprobante',
-        'ventas.fecha_hora',
-        'ventas.impuesto',
-        'ventas.total',
-        'ventas.descuento_total',
-        'ventas.estado',
-        'users.usuario',
-        'personas.nombre as razonSocial',
-        'personas.num_documento as documentoid',
-        'facturas.id as idFactura',
-        'facturas.numeroFactura',
-        'facturas.cuf',
-        'facturas.cufd',
-        'facturas.codigoControl',
-        'facturas.correo',
-        'facturas.fechaEmision',
-        'sucursales.nombre as nombre_sucursal'
-    )
-    ->selectRaw("
+            // 🔴 JOIN para excluir proveedores
+            ->leftJoin('proveedores', 'proveedores.id', '=', 'personas.id')
+
+            // 🔴 JOIN para excluir usuarios
+            ->leftJoin('users as u2', 'u2.id', '=', 'personas.id')
+
+            ->select(
+                'ventas.tipo_comprobante',
+                DB::raw('COALESCE(ventas.idcliente, personas.id) as idcliente'),
+                'ventas.idtipo_venta',
+                'ventas.id',
+                'ventas.serie_comprobante',
+                'ventas.num_comprobante',
+                'ventas.fecha_hora',
+                'ventas.impuesto',
+                'ventas.total',
+                'ventas.descuento_total',
+                'ventas.estado',
+                'users.usuario',
+                'personas.nombre as razonSocial',
+                'personas.num_documento as documentoid',
+                'facturas.id as idFactura',
+                'facturas.numeroFactura',
+                'facturas.cuf',
+                'facturas.cufd',
+                'facturas.codigoControl',
+                'facturas.correo',
+                'facturas.fechaEmision',
+                'sucursales.nombre as nombre_sucursal'
+            )
+            ->selectRaw("
         CASE 
         WHEN ventas.idtipo_venta = 2 THEN 
             COALESCE(
@@ -144,57 +144,52 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
     END as saldo_restante
     ")
 
-    // ✅ AQUÍ SE EXCLUYEN
-    ->whereNull('proveedores.id')
-    ->whereNull('u2.id')
-// ->where(function ($q) {
-//     $q->where('ventas.estado', '<>', 0)
-//       ->orWhereNull('ventas.id');
-// })
-->where(function ($q) {
-    $q->whereNotNull('ventas.id') // Si hay venta, la muestra (sea estado 1 o 0)
-      ->orWhereNull('ventas.id'); // Si no hay venta (null), también (por tu estructura actual)
-})
-    ->orderBy('ventas.fecha_hora', 'desc');
+            // ✅ AQUÍ SE EXCLUYEN
+            ->whereNull('proveedores.id')
+            ->whereNull('u2.id')
+            ->where(function ($q) {
+                $q->whereNotNull('ventas.id') // Si hay venta, la muestra (sea estado 1 o 0)
+                    ->orWhereNull('ventas.id'); // Si no hay venta (null), también (por tu estructura actual)
+            })
+            ->orderBy('ventas.fecha_hora', 'desc');
 
-    // 🔹 FILTROS POR ROL
-    if ($idrol == 4) {
-        // ve todo
-    } elseif ($idrol == 1) {
-        $query->where('users.idsucursal', $idsucursal);
-    } else {
-        $query->where('ventas.idusuario', $usuario->id);
+        // 🔹 FILTROS POR ROL
+        if ($idrol == 4) {
+            // ve todo
+        } elseif ($idrol == 1) {
+            $query->where('users.idsucursal', $idsucursal);
+        } elseif ($idrol == 2) {
+            // Solo ventas del día actual
+            $query->whereDate('ventas.fecha_hora', \Carbon\Carbon::today());
+        } else {
+            $query->where('ventas.idusuario', $usuario->id);
+        }
+
+        // 🔍 FILTRO BÚSQUEDA
+        if (!empty($buscar)) {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('ventas.num_comprobante', 'like', "%$buscar%")
+                    ->orWhere('personas.num_documento', 'like', "%$buscar%")
+                    ->orWhere('personas.nombre', 'like', "%$buscar%")
+                    ->orWhere('ventas.fecha_hora', 'like', "%$buscar%")
+                    ->orWhere('users.usuario', 'like', "%$buscar%");
+            });
+        }
+
+        if ($request->filled('tipo_venta')) {
+            $query->where('ventas.idtipo_venta', $request->tipo_venta);
+        }
+
+        // ✅ SIN PAGINACIÓN
+        $ventas = $query->get();
+
+        return [
+            'ventas' => $ventas,
+            'usuario' => $usuario,
+            'codigoPuntoVenta' => $codigoPuntoVenta,
+            'codigoSucursal' => $codigoSucursal,
+        ];
     }
-
-    // 🔍 FILTRO BÚSQUEDA
-    if (!empty($buscar)) {
-        $query->where(function ($q) use ($buscar) {
-            $q->where('ventas.num_comprobante', 'like', "%$buscar%")
-              ->orWhere('personas.num_documento', 'like', "%$buscar%")
-              ->orWhere('personas.nombre', 'like', "%$buscar%")
-              ->orWhere('ventas.fecha_hora', 'like', "%$buscar%")
-              ->orWhere('users.usuario', 'like', "%$buscar%");
-        });
-    }
-
-    if ($request->filled('tipo_venta')) {
-        $query->where('ventas.idtipo_venta', $request->tipo_venta);
-    }
-
-    // ✅ SIN PAGINACIÓN
-    $ventas = $query->get();
-
-    return [
-        'ventas' => $ventas,
-        'usuario' => $usuario,
-        'codigoPuntoVenta' => $codigoPuntoVenta,
-        'codigoSucursal' => $codigoSucursal,
-    ];
-}
-
-
-
-
     public function indexFactura(Request $request)
     {
         if (!$request->ajax()) {
@@ -634,34 +629,45 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
                         END
                     , 2) as subtotal_sin_descuento
                 "),
-                                // 🔹 Descuento en monto (2 decimales)
+                // 🔹 Descuento en monto (2 decimales)
                 DB::raw("
                     ROUND(
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
-                                THEN (detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100)
+                                THEN detalle_ventas.descuento
                             WHEN detalle_ventas.modo_venta = 'docena'
-                                THEN (detalle_ventas.precio * 12 * detalle_ventas.cantidad) 
-                                    * (detalle_ventas.descuento / 100)
+                                THEN detalle_ventas.descuento
                             ELSE 
-                                (detalle_ventas.precio * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100)
+                                detalle_ventas.descuento
                         END
                     , 2) as descuento_monto
                 "),
-                                // 🔹 Subtotal con descuento aplicado (2 decimales)
+                // 🔹 Descuento total por producto (descuento por unidad * cantidad)
+                DB::raw("
+                    ROUND(
+                        CASE 
+                            WHEN detalle_ventas.modo_venta = 'caja' 
+                                THEN detalle_ventas.descuento * detalle_ventas.cantidad
+                            WHEN detalle_ventas.modo_venta = 'docena'
+                                THEN detalle_ventas.descuento * detalle_ventas.cantidad
+                            ELSE 
+                                detalle_ventas.descuento * detalle_ventas.cantidad
+                        END
+                    , 2) as descuento_total_producto
+                "),
+                // 🔹 Subtotal con descuento aplicado (2 decimales)
                 DB::raw("
                     ROUND(
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
                                 THEN (detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad) 
-                                    - ((detalle_ventas.precio * articulos.unidad_envase * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100))
+                                    - (detalle_ventas.descuento * detalle_ventas.cantidad)
                             WHEN detalle_ventas.modo_venta = 'docena'
-                                THEN (detalle_ventas.precio * 12 * detalle_ventas.cantidad)
-                                    - ((detalle_ventas.precio * 12 * detalle_ventas.cantidad)
-                                        * (detalle_ventas.descuento / 100))
+                                THEN (detalle_ventas.precio * 12 * detalle_ventas.cantidad) 
+                                    - (detalle_ventas.descuento * detalle_ventas.cantidad)
                             ELSE 
                                 (detalle_ventas.precio * detalle_ventas.cantidad) 
-                                    - ((detalle_ventas.precio * detalle_ventas.cantidad) * (detalle_ventas.descuento / 100))
+                                    - (detalle_ventas.descuento * detalle_ventas.cantidad)
                         END
                     , 2) as subtotal
                 ")
@@ -729,7 +735,7 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
             if (!$this->validarCajaAbierta()) {
                 return ['id' => -1, 'caja_validado' => 'Debe tener una caja abierta'];
             }
-            
+
             if ($request->tipo_comprobante === "RESIVO") {
                 $venta = $this->crearVentaResivo($request);
             } else {
@@ -752,9 +758,9 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                'id'      => 0,
+                'id' => 0,
                 'message' => 'Error al registrar venta',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -769,11 +775,11 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
         $primeraCuota = $cuotas[0];
         $usuario = \Auth::user();
 
-        $montoPagado   = $primeraCuota['precio_cuota'] ?? 0;
+        $montoPagado = $primeraCuota['precio_cuota'] ?? 0;
         $saldoRestante = $primeraCuota['saldo_restante'] ?? 0;
-        $idcobrador    = $usuario->id;
-        $numeroCuota   = $primeraCuota['numero_cuota'] ?? 1;
-        $idtipo_pago   = $primeraCuota['idtipo_pago'] ?? $venta->idtipo_pago;
+        $idcobrador = $usuario->id;
+        $numeroCuota = $primeraCuota['numero_cuota'] ?? 1;
+        $idtipo_pago = $primeraCuota['idtipo_pago'] ?? $venta->idtipo_pago;
         $idbanco = $request->idbanco ?? null;
         if ($montoPagado <= 0) {
             return;
@@ -797,10 +803,10 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
 
         // 🔥 REGISTRAR LA CUOTA
         CuotasCredito::create([
-            'idcredito'       => $venta->id,
-            'idcaja'          => $ultimaCaja->id,
-            'idcobrador'      => $idcobrador,
-            'numero_cuota'    => $numeroCuota,
+            'idcredito' => $venta->id,
+            'idcaja' => $ultimaCaja->id,
+            'idcobrador' => $idcobrador,
+            'numero_cuota' => $numeroCuota,
             'fecha_pago' => isset($primeraCuota['fecha_pago'])
                 ? Carbon::parse($primeraCuota['fecha_pago'])
                     ->setTimeFrom(Carbon::now())
@@ -810,11 +816,11 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
                 ? Carbon::parse($primeraCuota['fecha_cancelado'])
                     ->setTimeFrom(Carbon::now())
                 : now(),
-            'precio_cuota'    => $montoPagado,
-            'saldo_restante'  => $saldoRestante,
-            'estado'          => $primeraCuota['estado'] ?? 'Pagado',
-            'idtipo_pago'     => $idtipo_pago,
-            'idbanco'         => $idbanco, 
+            'precio_cuota' => $montoPagado,
+            'saldo_restante' => $saldoRestante,
+            'estado' => $primeraCuota['estado'] ?? 'Pagado',
+            'idtipo_pago' => $idtipo_pago,
+            'idbanco' => $idbanco,
         ]);
         if ($saldoRestante <= 0) {
             $venta->estado = 1;
@@ -826,216 +832,215 @@ $query = Persona::leftJoin('ventas', 'personas.id', '=', 'ventas.idcliente')
     }
 
 
-public function abonarCuota(Request $request)
-{
-    DB::beginTransaction();
+    public function abonarCuota(Request $request)
+    {
+        DB::beginTransaction();
 
-    try {
-        $venta = Venta::find($request->idventa);
-        $usuario = \Auth::user();
-        $montoIngresado = floatval($request->monto);
-        $tipoPago = intval($request->idtipo_pago);
-        // caja actual
-        $caja = Caja::where('idsucursal', $usuario->idsucursal)->latest()->first();
-        if (!$caja) {
-            throw new \Exception("No existe caja abierta.");
-        }
-        if ($tipoPago === 7 && empty($request->idbanco)) {
-            return ['error' => 'Debe seleccionar un banco antes de registrar el pago.'];
-        }
-
-        $idbanco = ($tipoPago === 7) ? ($request->idbanco ?: null) : null;
-
-        // Si no existe venta, registrar directamente como saldo a favor del cliente
-        if (!$venta) {
-            $persona = Persona::where('num_documento', $request->idcliente)->first();
-
-            if (!$persona) {
-                return ['error' => 'Cliente no encontrado.'];
+        try {
+            $venta = Venta::find($request->idventa);
+            $usuario = \Auth::user();
+            $montoIngresado = floatval($request->monto);
+            $tipoPago = intval($request->idtipo_pago);
+            // caja actual
+            $caja = Caja::where('idsucursal', $usuario->idsucursal)->latest()->first();
+            if (!$caja) {
+                throw new \Exception("No existe caja abierta.");
+            }
+            if ($tipoPago === 7 && empty($request->idbanco)) {
+                return ['error' => 'Debe seleccionar un banco antes de registrar el pago.'];
             }
 
-            // Registrar saldo a favor en persona
-            $persona->saldo_favor = ($persona->saldo_favor ?? 0) + $request->monto;
-            $persona->save();
+            $idbanco = ($tipoPago === 7) ? ($request->idbanco ?: null) : null;
 
-            // Registrar en CuotasCredito con idcredito nulo
+            // Si no existe venta, registrar directamente como saldo a favor del cliente
+            if (!$venta) {
+                $persona = Persona::where('num_documento', $request->idcliente)->first();
+
+                if (!$persona) {
+                    return ['error' => 'Cliente no encontrado.'];
+                }
+
+                // Registrar saldo a favor en persona
+                $persona->saldo_favor = ($persona->saldo_favor ?? 0) + $request->monto;
+                $persona->save();
+
+                // Registrar en CuotasCredito con idcredito nulo
+                CuotasCredito::create([
+                    'idcredito' => null,
+                    'idcaja' => $caja->id, // si quieres puedes asignar caja abierta, o dejar null
+                    'idcobrador' => $usuario->id,
+                    'numero_cuota' => 0,
+                    'fecha_pago' => now(),
+                    'fecha_cancelado' => now(),
+                    'precio_cuota' => $request->monto,
+                    'descuento' => 0,
+                    'saldo_restante' => 0 - $request->monto,
+                    'estado' => 'Saldo a Favor',
+                    'idtipo_pago' => $tipoPago,
+                    'idbanco' => ($tipoPago === 7) ? ($request->idbanco ?: null) : null,
+                    'idcliente' => $persona->id,
+                ]);
+                // Actualizar caja
+                if ($tipoPago == 1) {
+                    $caja->ventasContado += $request->monto;
+                    $caja->saldototalventas += $request->monto;
+                    $caja->saldoCaja += $request->monto;
+                }
+                if ($tipoPago == 7) {
+                    $caja->ventasQR += $request->monto;
+                    $caja->saldototalventas += $request->monto;
+                }
+                $caja->save();
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'tipo' => 'saldo_favor',
+                    'montoRegistrado' => $request->monto,
+                    'mensaje' => 'Monto registrado directamente como saldo a favor del cliente y en CuotasCredito.'
+                ];
+            }
+
+
+            // ============================
+            // Si la venta existe, se mantiene la lógica original
+            // ============================
+
+
+            $ultimaCuota = CuotasCredito::where('idcredito', $venta->id)
+                ->orderByDesc('numero_cuota')
+                ->first();
+
+            $saldoActual = $ultimaCuota ? floatval($ultimaCuota->saldo_restante) : floatval($venta->total);
+            $numeroCuota = $ultimaCuota ? $ultimaCuota->numero_cuota + 1 : 1;
+
+            $montoRegistrado = $montoIngresado;
+            $nuevoSaldo = $saldoActual - $montoRegistrado;
+            $estadoCuota = ($nuevoSaldo < 0) ? 'Saldo a Favor' : 'Cancelado';
+
+            if ($tipoPago === 5) { // descuento
+                CuotasCredito::create([
+                    'idcredito' => $venta->id,
+                    'idcaja' => $caja->id,
+                    'idcobrador' => $usuario->id,
+                    'numero_cuota' => $numeroCuota,
+                    'fecha_pago' => now(),
+                    'fecha_cancelado' => now(),
+                    'precio_cuota' => 0,
+                    'descuento' => $montoRegistrado,
+                    'saldo_restante' => $nuevoSaldo,
+                    'estado' => $estadoCuota,
+                    'idtipo_pago' => 5,
+                    'idbanco' => null,
+                ]);
+
+                $venta->descuento_total = ($venta->descuento_total ?? 0) + $montoRegistrado;
+                $venta->total = max(($venta->total - $montoRegistrado), 0);
+                $venta->estado = ($nuevoSaldo == 0) ? 1 : 2;
+                $venta->save();
+
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'tipo' => 'descuento',
+                    'montoRegistrado' => $montoRegistrado,
+                    'nuevoSaldo' => $nuevoSaldo
+                ];
+            }
+
+            // Cuota normal
             CuotasCredito::create([
-                'idcredito'       => null,
-                'idcaja'          => $caja->id, // si quieres puedes asignar caja abierta, o dejar null
-                'idcobrador'      => $usuario->id,
-                'numero_cuota'    => 0,
-                'fecha_pago'      => now(),
+                'idcredito' => $venta->id,
+                'idcaja' => $caja->id,
+                'idcobrador' => $usuario->id,
+                'numero_cuota' => $numeroCuota,
+                'fecha_pago' => now(),
                 'fecha_cancelado' => now(),
-                'precio_cuota'    => $request->monto,
-                'descuento'       => 0,
-                'saldo_restante'  => 0 - $request->monto,
-                'estado'          => 'Saldo a Favor',
-                'idtipo_pago'     => $tipoPago,
-                'idbanco'         => ($tipoPago === 7) ? ($request->idbanco ?: null) : null,
-                'idcliente'       => $persona->id,
-            ]);
- // Actualizar caja
-        if ($tipoPago == 1) {
-            $caja->ventasContado += $request->monto;
-            $caja->saldototalventas += $request->monto;
-            $caja->saldoCaja += $request->monto;
-        }
-        if ($tipoPago == 7) {
-            $caja->ventasQR += $request->monto;
-            $caja->saldototalventas += $request->monto;
-        }
-        $caja->save();
-            DB::commit();
-
-            return [
-                'success' => true,
-                'tipo' => 'saldo_favor',
-                'montoRegistrado' => $request->monto,
-                'mensaje' => 'Monto registrado directamente como saldo a favor del cliente y en CuotasCredito.'
-            ];
-        }
-
-
-        // ============================
-        // Si la venta existe, se mantiene la lógica original
-        // ============================
-
-
-        $ultimaCuota = CuotasCredito::where('idcredito', $venta->id)
-            ->orderByDesc('numero_cuota')
-            ->first();
-
-        $saldoActual = $ultimaCuota ? floatval($ultimaCuota->saldo_restante) : floatval($venta->total);
-        $numeroCuota = $ultimaCuota ? $ultimaCuota->numero_cuota + 1 : 1;
-
-        $montoRegistrado = $montoIngresado;
-        $nuevoSaldo = $saldoActual - $montoRegistrado;
-        $estadoCuota = ($nuevoSaldo < 0) ? 'Saldo a Favor' : 'Cancelado';
-
-        if ($tipoPago === 5) { // descuento
-            CuotasCredito::create([
-                'idcredito'       => $venta->id,
-                'idcaja'          => $caja->id,
-                'idcobrador'      => $usuario->id,
-                'numero_cuota'    => $numeroCuota,
-                'fecha_pago'      => now(),
-                'fecha_cancelado' => now(),
-                'precio_cuota'    => 0,
-                'descuento'       => $montoRegistrado,
-                'saldo_restante'  => $nuevoSaldo,
-                'estado'          => $estadoCuota,
-                'idtipo_pago'     => 5,
-                'idbanco'         => null,
+                'precio_cuota' => $montoRegistrado,
+                'descuento' => 0,
+                'saldo_restante' => $nuevoSaldo,
+                'estado' => $estadoCuota,
+                'idtipo_pago' => $tipoPago,
+                'idbanco' => $idbanco,
             ]);
 
-            $venta->descuento_total = ($venta->descuento_total ?? 0) + $montoRegistrado;
-            $venta->total = max(($venta->total - $montoRegistrado), 0);
+            // Actualizar caja
+            if ($tipoPago == 1) {
+                $caja->ventasContado += $montoRegistrado;
+                $caja->saldototalventas += $montoRegistrado;
+                $caja->saldoCaja += $montoRegistrado;
+            }
+            if ($tipoPago == 7) {
+                $caja->ventasQR += $montoRegistrado;
+                $caja->saldototalventas += $montoRegistrado;
+            }
+            $caja->save();
+
             $venta->estado = ($nuevoSaldo == 0) ? 1 : 2;
             $venta->save();
+            $this->actualizarSaldoFavorPersona($venta, $nuevoSaldo);
 
             DB::commit();
 
-            return [
-                'success' => true,
-                'tipo' => 'descuento',
-                'montoRegistrado' => $montoRegistrado,
-                'nuevoSaldo' => $nuevoSaldo
-            ];
-        }
+            return ['success' => true];
 
-        // Cuota normal
-        CuotasCredito::create([
-            'idcredito'       => $venta->id,
-            'idcaja'          => $caja->id,
-            'idcobrador'      => $usuario->id,
-            'numero_cuota'    => $numeroCuota,
-            'fecha_pago'      => now(),
-            'fecha_cancelado' => now(),
-            'precio_cuota'    => $montoRegistrado,
-            'descuento'       => 0,
-            'saldo_restante'  => $nuevoSaldo,
-            'estado'          => $estadoCuota,
-            'idtipo_pago'     => $tipoPago,
-            'idbanco'         => $idbanco,
-        ]);
-
-        // Actualizar caja
-        if ($tipoPago == 1) {
-            $caja->ventasContado += $montoRegistrado;
-            $caja->saldototalventas += $montoRegistrado;
-            $caja->saldoCaja += $montoRegistrado;
-        }
-        if ($tipoPago == 7) {
-            $caja->ventasQR += $montoRegistrado;
-            $caja->saldototalventas += $montoRegistrado;
-        }
-        $caja->save();
-
-        $venta->estado = ($nuevoSaldo == 0) ? 1 : 2;
-        $venta->save();
-        $this->actualizarSaldoFavorPersona($venta, $nuevoSaldo);
-
-        DB::commit();
-
-        return ['success' => true];
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return ['error' => $e->getMessage()];
-    }
-}
-
-private function actualizarSaldoFavorPersona($venta, $saldo)
-{
-    if ($saldo < 0) {
-        $persona = Persona::find($venta->idcliente);
-        if ($persona) {
-            $persona->saldo_favor = ($persona->saldo_favor ?? 0) + abs($saldo);
-            $persona->save();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ['error' => $e->getMessage()];
         }
     }
-}
 
-
-
-public function indexFiltrar(Request $request)
-{
-    $buscar = $request->buscar;
-    $criterio = $request->criterio;
-
-    $tipoVenta = $request->tipo_venta;  // 👈 llega desde Vue
-
-    $query = Venta::join('clientes','ventas.idcliente','=','clientes.id')
-        ->select('ventas.*', 'clientes.nombre')
-        ->orderBy('ventas.id', 'desc');
-
-    // 🔥 FILTRO DE TIPO DE VENTA
-    if ($tipoVenta == 1) {
-        $query->where('ventas.idtipo_venta', 1); // Contado
-    } 
-    else if ($tipoVenta == 2) {
-        $query->where('ventas.idtipo_venta', 2); // Crédito
+    private function actualizarSaldoFavorPersona($venta, $saldo)
+    {
+        if ($saldo < 0) {
+            $persona = Persona::find($venta->idcliente);
+            if ($persona) {
+                $persona->saldo_favor = ($persona->saldo_favor ?? 0) + abs($saldo);
+                $persona->save();
+            }
+        }
     }
 
-    // tu filtro normal
-    if ($buscar != '') {
-        $query->where("ventas.$criterio", 'like', "%$buscar%");
+
+
+    public function indexFiltrar(Request $request)
+    {
+        $buscar = $request->buscar;
+        $criterio = $request->criterio;
+
+        $tipoVenta = $request->tipo_venta;  // 👈 llega desde Vue
+
+        $query = Venta::join('clientes', 'ventas.idcliente', '=', 'clientes.id')
+            ->select('ventas.*', 'clientes.nombre')
+            ->orderBy('ventas.id', 'desc');
+
+        // 🔥 FILTRO DE TIPO DE VENTA
+        if ($tipoVenta == 1) {
+            $query->where('ventas.idtipo_venta', 1); // Contado
+        } else if ($tipoVenta == 2) {
+            $query->where('ventas.idtipo_venta', 2); // Crédito
+        }
+
+        // tu filtro normal
+        if ($buscar != '') {
+            $query->where("ventas.$criterio", 'like', "%$buscar%");
+        }
+
+        $ventas = $query->paginate(10);
+
+        return [
+            'pagination' => [
+                'total' => $ventas->total(),
+                'current_page' => $ventas->currentPage(),
+                'per_page' => $ventas->perPage(),
+                'last_page' => $ventas->lastPage(),
+                'from' => $ventas->firstItem(),
+                'to' => $ventas->lastItem(),
+            ],
+            'ventas' => $ventas
+        ];
     }
-
-    $ventas = $query->paginate(10);
-
-    return [
-        'pagination' => [
-            'total'        => $ventas->total(),
-            'current_page' => $ventas->currentPage(),
-            'per_page'     => $ventas->perPage(),
-            'last_page'    => $ventas->lastPage(),
-            'from'         => $ventas->firstItem(),
-            'to'           => $ventas->lastItem(),
-        ],
-        'ventas' => $ventas
-    ];
-}
 
 
 
@@ -1194,12 +1199,12 @@ public function indexFiltrar(Request $request)
                 $persona->save();
             }
         }
-/*
-        // Si es crédito, registrar crédito y cuotas
-        if ($request->idtipo_venta == 2) {
-            $creditoventa = $this->crearCreditoVenta($venta, $request);
-            $this->registrarCuotasCredito($creditoventa, $request->cuotaspago);
-        }*/
+        /*
+                // Si es crédito, registrar crédito y cuotas
+                if ($request->idtipo_venta == 2) {
+                    $creditoventa = $this->crearCreditoVenta($venta, $request);
+                    $this->registrarCuotasCredito($creditoventa, $request->cuotaspago);
+                }*/
 
         return $venta;
     }
@@ -1296,7 +1301,7 @@ public function indexFiltrar(Request $request)
         $ultimaCaja->save();
     }
 
-     private function registrarDetallesVenta($venta, $detalles, $idAlmacen)
+    private function registrarDetallesVenta($venta, $detalles, $idAlmacen)
     {
         $detallesAgrupados = [];
 
@@ -1344,8 +1349,8 @@ public function indexFiltrar(Request $request)
                     $this->actualizarInventario($idAlmacen, [
                         'idarticulo' => $itemHijo->iditem,
                         'cantidad' => $det['cantidad'] * ($itemHijo->cantidad ?? 1),
-                                            'modoVenta' => $det['modoVenta'],
-                                        'tipo' => $det['tipo'],
+                        'modoVenta' => $det['modoVenta'],
+                        'tipo' => $det['tipo'],
                         // Si manejas lotes, puedes agregar lógica para lotes aquí
                     ]);
                 }
@@ -1358,7 +1363,7 @@ public function indexFiltrar(Request $request)
                     'modoVenta' => $det['modoVenta'],
 
                     'lote_id' => isset($det['lote_id']) ? $det['lote_id'] : null,
-                                    'unidad_envase' => $det['unidad_envase']
+                    'unidad_envase' => $det['unidad_envase']
                 ]);
             }
         }
@@ -1368,75 +1373,76 @@ public function indexFiltrar(Request $request)
     }
 
 
- private function actualizarInventario($idAlmacen, $detalle)
-{
-    /*
-        $detalle debe traer:
-        - idarticulo
-        - cantidad
-        - modoVenta (opcional)
-        - unidad_envase (opcional)
-        - lote_id (opcional)
-    */
+    private function actualizarInventario($idAlmacen, $detalle)
+    {
+        /*
+            $detalle debe traer:
+            - idarticulo
+            - cantidad
+            - modoVenta (opcional)
+            - unidad_envase (opcional)
+            - lote_id (opcional)
+        */
 
-    // ===============================
-    // 1️⃣ CALCULAR CANTIDAD REAL
-    // ===============================
-    $modoVenta = $detalle['modoVenta'] ?? 'unidad';
+        // ===============================
+        // 1️⃣ CALCULAR CANTIDAD REAL
+        // ===============================
+        $modoVenta = $detalle['modoVenta'] ?? 'unidad';
 
-    if ($modoVenta === 'caja') {
-        $cantidadReal = $detalle['cantidad'] * ($detalle['unidad_envase'] ?? 1);
-    } elseif ($modoVenta === 'docena') {
-        $cantidadReal = $detalle['cantidad'] * 12;
-    } else {
-        // unidad
-        $cantidadReal = $detalle['cantidad'];
-    }
+        if ($modoVenta === 'caja') {
+            $cantidadReal = $detalle['cantidad'] * ($detalle['unidad_envase'] ?? 1);
+        } elseif ($modoVenta === 'docena') {
+            $cantidadReal = $detalle['cantidad'] * 12;
+        } else {
+            // unidad
+            $cantidadReal = $detalle['cantidad'];
+        }
 
-    $cantidadRestante = $cantidadReal;
+        $cantidadRestante = $cantidadReal;
 
-    // ===============================
-    // 2️⃣ DESCONTAR POR LOTE (SI VIENE)
-    // ===============================
-    if (!empty($detalle['lote_id'])) {
+        // ===============================
+        // 2️⃣ DESCONTAR POR LOTE (SI VIENE)
+        // ===============================
+        if (!empty($detalle['lote_id'])) {
 
-        $inventario = Inventario::where('id', $detalle['lote_id'])
-            ->where('idalmacen', $idAlmacen)
+            $inventario = Inventario::where('id', $detalle['lote_id'])
+                ->where('idalmacen', $idAlmacen)
+                ->where('idarticulo', $detalle['idarticulo'])
+                ->first();
+
+            if ($inventario) {
+                $descontar = min($inventario->saldo_stock, $cantidadRestante);
+                $inventario->saldo_stock -= $descontar;
+                $inventario->save();
+            }
+
+            return;
+        }
+
+        // ===============================
+        // 3️⃣ FIFO POR FECHA VENCIMIENTO
+        // ===============================
+        $inventarios = Inventario::where('idalmacen', $idAlmacen)
             ->where('idarticulo', $detalle['idarticulo'])
-            ->first();
+            ->orderBy('fecha_vencimiento', 'asc')
+            ->get();
 
-        if ($inventario) {
-            $descontar = min($inventario->saldo_stock, $cantidadRestante);
-            $inventario->saldo_stock -= $descontar;
+        foreach ($inventarios as $inventario) {
+
+            if ($cantidadRestante <= 0)
+                break;
+
+            if ($inventario->saldo_stock >= $cantidadRestante) {
+                $inventario->saldo_stock -= $cantidadRestante;
+                $cantidadRestante = 0;
+            } else {
+                $cantidadRestante -= $inventario->saldo_stock;
+                $inventario->saldo_stock = 0;
+            }
+
             $inventario->save();
         }
-
-        return;
     }
-
-    // ===============================
-    // 3️⃣ FIFO POR FECHA VENCIMIENTO
-    // ===============================
-    $inventarios = Inventario::where('idalmacen', $idAlmacen)
-        ->where('idarticulo', $detalle['idarticulo'])
-        ->orderBy('fecha_vencimiento', 'asc')
-        ->get();
-
-    foreach ($inventarios as $inventario) {
-
-        if ($cantidadRestante <= 0) break;
-
-        if ($inventario->saldo_stock >= $cantidadRestante) {
-            $inventario->saldo_stock -= $cantidadRestante;
-            $cantidadRestante = 0;
-        } else {
-            $cantidadRestante -= $inventario->saldo_stock;
-            $inventario->saldo_stock = 0;
-        }
-
-        $inventario->save();
-    }
-}
 
 
 
@@ -1449,7 +1455,7 @@ public function indexFiltrar(Request $request)
             $inventario = Inventario::where('idalmacen', $idAlmacen)
                 ->where('idarticulo', $detalle['idarticulo'])
                 ->firstOrFail();
-            
+
             // Calcular cantidad real según modo de venta
             if ($detalle['modoVenta'] === 'caja') {
                 $cantidadReal = $detalle['cantidad'] * $detalle['unidad_envase'];
@@ -1458,7 +1464,7 @@ public function indexFiltrar(Request $request)
             } else {
                 $cantidadReal = $detalle['cantidad'];
             }
-            
+
             $inventario->saldo_stock += $cantidadReal;
             $inventario->save();
         }
@@ -1525,7 +1531,7 @@ public function indexFiltrar(Request $request)
                     ->where('inventarios.idalmacen', $idAlmacen)
                     ->where('articulos.id', $det['idarticulo'])
                     ->firstOrFail();
-                
+
                 // Calcular cantidad real según modo de venta
                 if ($det['modoVenta'] === 'caja') {
                     $cantidadReal = $det['cantidad'] * $det['unidad_envase'];
@@ -1534,7 +1540,7 @@ public function indexFiltrar(Request $request)
                 } else {
                     $cantidadReal = $det['cantidad'];
                 }
-                
+
                 $disminuirStock->saldo_stock += $cantidadReal;
                 $disminuirStock->save();
             }
@@ -1688,9 +1694,7 @@ public function indexFiltrar(Request $request)
 
                             $ultimaCaja->ventasContado -= $cuota->precio_cuota;
 
-                        }
-
-                        elseif ($cuota->idtipo_pago == 7) {
+                        } elseif ($cuota->idtipo_pago == 7) {
                             $montoQR += $cuota->precio_cuota;
 
                             $ultimaCaja->ventasQR -= $cuota->precio_cuota;
@@ -1708,17 +1712,17 @@ public function indexFiltrar(Request $request)
                         $ultimaCaja->saldoCaja -= $montoEfectivo;
 
                         TransaccionesCaja::create([
-                            'idcaja'      => $ultimaCaja->id,
-                            'idusuario'   => $usuario->id,
-                            'fecha'       => now()->setTimezone('America/La_Paz'),
+                            'idcaja' => $ultimaCaja->id,
+                            'idusuario' => $usuario->id,
+                            'fecha' => now()->setTimezone('America/La_Paz'),
                             'transaccion' => 'Anulación de venta crédito',
-                            'importe'     => $totalPagado
+                            'importe' => $totalPagado
                         ]);
                     }
-                }else {
+                } else {
 
                     $ultimaCaja->saldototalventas -= $venta->total;
-                    
+
                     // Restar según el tipo de pago
                     if ($venta->idtipo_pago == 1) {
                         // Tipo pago 1 = Efectivo: restar de ventasContado
@@ -1728,19 +1732,19 @@ public function indexFiltrar(Request $request)
                         // Tipo pago 7 = QR/Banco: restar de ventasQR
                         $ultimaCaja->ventasQR -= $venta->total;
                     }
-                    
+
                     // Actualizar saldo de caja
                     $ultimaCaja->saldoCaja -= $venta->total;
 
                     TransaccionesCaja::create([
-                        'idcaja'      => $ultimaCaja->id,
-                        'idusuario'   => $usuario->id,
-                        'fecha'       => now()->setTimezone('America/La_Paz'),
+                        'idcaja' => $ultimaCaja->id,
+                        'idusuario' => $usuario->id,
+                        'fecha' => now()->setTimezone('America/La_Paz'),
                         'transaccion' => 'Anulación de venta',
-                        'importe'     => $venta->total
+                        'importe' => $venta->total
                     ]);
                 }
-                
+
                 $ultimaCaja->save();
             }
 
@@ -2537,7 +2541,7 @@ public function indexFiltrar(Request $request)
             $creditoventa = $this->crearCreditoVenta($ventaResivo, $request);
             $this->registrarCuotasCredito($creditoventa, $request->cuotaspago);
         }*/
-        
+
         return $ventaResivo;
     }
 
@@ -2855,7 +2859,7 @@ public function indexFiltrar(Request $request)
         return response()->json(['url' => url('docs/facturaRollo.pdf')]);
     }
 
-      public function imprimirResivoRollo($id)
+    public function imprimirResivoRollo($id)
     {
         try {
             $venta = Venta::with('detalles.producto')->find($id);
@@ -2880,7 +2884,7 @@ public function indexFiltrar(Request $request)
                 $pdf->SetMargins(5, 10, 5);
                 $pdf->AddPage();
 
-               // LOGO FIJO DESDE PUBLIC/IMG/logoPrincipal.png
+                // LOGO FIJO DESDE PUBLIC/IMG/logoPrincipal.png
                 $logoPath = public_path('img/logoPrincipal.png');
 
                 if (file_exists($logoPath)) {
@@ -2941,26 +2945,43 @@ public function indexFiltrar(Request $request)
                 $pdf->Cell(15, 5, 'Subtotal', 0, 1, 'R');
                 $pdf->SetFont('Arial', '', 8);
 
-               $total = 0;
+                // 🔹 1. Calcular descuento total de detalles
+                $descuentoTotalDetalle = $venta->detalles->sum(function ($detalle) {
+                    $descuentoUnidad = $detalle->descuento ?? 0; // monto en Bs por unidad
+                    return $descuentoUnidad * $detalle->cantidad; // multiplicamos por cantidad
+                });
 
+                // 🔹 2. Calcular descuento adicional que realmente se puede aplicar
+                $descuentoAdicional = $venta->descuento_total ?? 0; // descuento adicional de la venta
+                $descuentoAdicionalAplicado = $descuentoAdicional - $descuentoTotalDetalle;
+                if ($descuentoAdicionalAplicado < 0) {
+                    $descuentoAdicionalAplicado = 0; // no puede ser negativo
+                }
+
+                // 🔹 3. Inicializar total
+                $total = 0;
                 foreach ($venta->detalles as $detalle) {
 
-                   if ($detalle->modo_venta === 'caja') {
+                    if ($detalle->modo_venta === 'caja') {
                         $montoBase = $detalle->cantidad * $detalle->producto->unidad_envase * $detalle->precio;
                     } elseif ($detalle->modo_venta === 'docena') {
                         $montoBase = $detalle->cantidad * 12 * $detalle->precio;
                     } else {
                         $montoBase = $detalle->cantidad * $detalle->precio;
                     }
-                    $porcentajeDescuento = $detalle->descuento ?? 0; // ej: 10
-                    $montoDescuento = $montoBase * ($porcentajeDescuento / 100);
+
+                    // 🔹 Descuento total por detalle
+                    $descuentoUnidad = $detalle->descuento ?? 0;
+                    $montoDescuento = $descuentoUnidad * $detalle->cantidad;
+
+                    // 🔹 Subtotal por detalle
                     $subtotal = $montoBase - $montoDescuento;
                     $total += $subtotal;
-                    
+
                     $pdf->SetFont('Arial', 'B', 8);
 
                     $modo = strtolower($detalle->modo_venta);
-                    $etiqueta = 'Unidad'; 
+                    $etiqueta = 'Unidad';
 
                     if ($modo === 'caja') {
                         $etiqueta = 'Caja';
@@ -2972,7 +2993,7 @@ public function indexFiltrar(Request $request)
 
                     $pdf->SetFont('Arial', 'B', 8);
                     // Usamos ancho 15 (igual que en el encabezado)
-                    $pdf->Cell(15, 5, $cantidadTexto, 0, 0, 'L'); 
+                    $pdf->Cell(15, 5, $cantidadTexto, 0, 0, 'L');
 
                     // Preparar nombre y código
                     $nombre = strtoupper(substr($detalle->producto->nombre, 0, 28)); // 28 chars para que quepa en 40mm
@@ -3000,7 +3021,7 @@ public function indexFiltrar(Request $request)
                     // ---------------------------
                     // LÍNEA 2: Cant x Precio | Subtotal
                     // ---------------------------
-                   $pdf->SetFont('Arial', '', 8);
+                    $pdf->SetFont('Arial', '', 8);
 
                     if ($detalle->modo_venta === 'caja') {
                         $linea2 = $detalle->producto->unidad_envase . ' x ' . number_format($detalle->precio, 2);
@@ -3011,18 +3032,31 @@ public function indexFiltrar(Request $request)
                     }
 
                     // Agregar descuento SOLO si existe
-                    if ($porcentajeDescuento > 0) {
-                        $linea2 .= '  -  ' . $porcentajeDescuento . '% (Bs ' . number_format($montoDescuento, 2) . ')';
+                    if ($descuentoUnidad > 0) {
+                        $linea2 .= '  -  Bs ' . number_format($montoDescuento, 2);
                     }
 
                     $pdf->Cell(50, 5, $linea2, 0, 0, 'L');
                     $pdf->Cell(20, 5, number_format($subtotal, 2), 0, 1, 'R');
                 }
+                // 🔹 Subtotal antes del descuento adicional
+                $subtotalSinDescuentoAdicional = $total;
+                // 🔹 Aplicar descuento adicional restante al total
+                $total -= $descuentoAdicionalAplicado;
+                if ($total < 0)
+                    $total = 0;
 
                 $pdf->Cell(0, 2, '', 'T', 1);
-                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Ln(2);
+                $pdf->SetFont('Arial', 'B', 8);
+                // Subtotal antes del descuento adicional
+                $pdf->Cell(50, 5, 'SUBTOTAL:', 0, 0);
+                $pdf->Cell(20, 5, number_format($subtotalSinDescuentoAdicional, 2), 0, 1, 'R');
+                $pdf->Cell(50, 5, 'DESCUENTO ADICIONAL:', 0, 0);
+                $pdf->Cell(20, 5, number_format($descuentoAdicionalAplicado, 2), 0, 1, 'R');
+
                 $pdf->Cell(50, 6, utf8_decode(strtoupper('TOTAL')), 0, 0);
-                $pdf->Cell(20, 6, utf8_decode(number_format($total, 2)), 0, 1, 'R');
+                $pdf->Cell(20, 6, number_format($total, 2), 0, 1, 'R');
 
                 $formatter = new NumberFormatter("es", NumberFormatter::SPELLOUT);
                 $totalTexto = strtoupper($formatter->format($total)) . ' BOLIVIANOS';
@@ -3052,238 +3086,250 @@ public function indexFiltrar(Request $request)
     }
 
     public function imprimirResivoCarta($id)
-{
-    try {
-        $venta = Venta::with('detalles.producto')->find($id);
-        if (!$venta) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
-        }
-
-        $persona = Persona::find($venta->idcliente);
-        if (!$persona) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
-        }
-
-        $empresa = Empresa::first();
-        if (!$empresa) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
-        }
-
-        if ($venta->detalles->isNotEmpty()) {
-            $pdf = new FPDF('P', 'mm', 'Letter');
-            $pdf->SetMargins(10, 10, 10);
-            $pdf->SetAutoPageBreak(true, 15);
-            $pdf->AddPage();
-
-            // ================= CONFIGURACIÓN PÁGINA =================
-            $pageWidth = $pdf->GetPageWidth();
-            $margin = 10;
-            $usableWidth = $pageWidth - ($margin * 2);
-
-            // ================= HEADER =================
-            $pdf->SetDrawColor(0, 0, 0);
-            $pdf->SetLineWidth(0.8);
-            $pdf->Line($margin, 8, $pageWidth - $margin, 8);
-
-            $logoPath = public_path('img/logoPrincipal.png');
-            $logoWidth = 20; 
-
-            if (file_exists($logoPath)) {
-                $pdf->Image($logoPath, $margin, 10, $logoWidth);
+    {
+        try {
+            $venta = Venta::with('detalles.producto')->find($id);
+            if (!$venta) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
             }
 
-            $pdf->SetXY($margin, 12); 
-            $pdf->SetFont('Arial', 'B', 12);
-            $pdf->Cell($usableWidth, 5, 'NOTA DE VENTA', 0, 1, 'C');
-
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
-            $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
-            $pdf->Cell($usableWidth, 4, utf8_decode('DIRECCIÓN: ' . $empresa->direccion), 0, 1, 'C');
-
-            // ================= FECHAS =================
-            $fecha = date('d/m/Y', strtotime($venta->created_at));
-            $hora  = date('H:i:s', strtotime($venta->created_at));
-
-            $posY_Fila = 32; 
-            $pdf->SetY($posY_Fila);
-
-            $pdf->SetDrawColor(150, 150, 150);
-            $pdf->SetLineWidth(0.3);
-            $pdf->Line($margin, $posY_Fila, $pageWidth - $margin, $posY_Fila); 
-            $pdf->Line($margin, $posY_Fila + 7, $pageWidth - $margin, $posY_Fila + 7);
-
-            $anchoCol = $usableWidth / 3;
-
-            // FECHA
-            $pdf->SetXY($margin, $posY_Fila + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(12, 4, 'FECHA:', 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell($anchoCol - 12, 4, $fecha, 0, 0, 'L');
-
-            // HORA
-            $pdf->SetXY($margin + $anchoCol, $posY_Fila + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(12, 4, 'HORA:', 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell($anchoCol - 12, 4, $hora, 0, 0, 'L');
-
-            // NUMERO
-            $pdf->SetXY($margin + ($anchoCol * 2), $posY_Fila + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(20, 4, utf8_decode('N° COMPR:'), 0, 0, 'L'); 
-            $pdf->SetFont('Arial', 'B', 10);
-            $pdf->Cell($anchoCol - 20, 4, $venta->num_comprobante, 0, 1, 'R');
-
-            // ================= DATOS DEL CLIENTE (AJUSTADO) =================
-            $posY_Cliente = 44; 
-            $pdf->SetY($posY_Cliente); 
-            
-            $pdf->SetFillColor(245, 245, 245);
-            $pdf->SetDrawColor(100, 100, 100);
-            $pdf->SetLineWidth(0.3);
-            
-            // CAMBIO 1: Cambié el 16 por 11 (Esta es la altura del cuadro gris)
-            $pdf->Rect($margin, $posY_Cliente, $usableWidth, 11, 'FD'); 
-            
-            // --- LÍNEA 1: CLIENTE ---
-            $pdf->SetXY($margin + 2, $posY_Cliente + 1.5); // Margen interno superior
-            
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(18, 4, 'CLIENTE:', 0, 0, 'L'); // Bajé altura de celda a 4
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell(0, 4, utf8_decode(strtoupper($persona->nombre)), 0, 1, 'L');
-            
-            // --- LÍNEA 2: TELÉFONO ---
-            // CAMBIO 2: Ajusté la posición Y manualmente para que quede pegadito
-            // (posY_Cliente + 1.5 + 4 de la línea anterior = + 5.5)
-            $pdf->SetXY($margin + 2, $posY_Cliente + 5.5); 
-            
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(22, 4, utf8_decode('TELÉFONO:'), 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $telefono = (!empty($persona->telefono)) ? $persona->telefono : 'S/N';
-            $pdf->Cell(0, 4, $telefono, 0, 1, 'L');
-
-            // Salto de línea para separarse de la tabla de productos
-            $pdf->Ln(4);
-
-            // ================= CABECERA TABLA =================
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->SetFillColor(230, 230, 230); 
-            $pdf->SetDrawColor(100, 100, 100);
-
-            $pdf->Cell(21, 7, 'Cant', 1, 0, 'C', true);
-            $pdf->Cell(80, 7, utf8_decode('Descripción'), 1, 0, 'C', true);
-            $pdf->Cell(20, 7, 'U/Cj', 1, 0, 'C', true);
-            $pdf->Cell(20, 7, 'P.Unit', 1, 0, 'C', true);
-            $pdf->Cell(35, 7, 'Desc', 1, 0, 'C', true);
-            $pdf->Cell(20, 7, 'Subtotal', 1, 1, 'C', true);
-
-            // ================= DETALLES =================
-            $pdf->SetFont('Arial', '', 7.5);
-            $pdf->SetDrawColor(180, 180, 180);
-            
-            $total = 0;
-            $fill = false; 
-
-            foreach ($venta->detalles as $detalle) {
-                $modo = strtolower($detalle->modo_venta ?? 'unidad');
-
-                // --- INICIO LÓGICA DOCENA/CAJA ---
-                if ($modo === 'caja') {
-                    $factorCantidad = $detalle->producto->unidad_envase;
-                    $abreviacion = 'CJS';
-                    $cantXCajaVisual = $factorCantidad; // Mostramos ej: 6
-                } elseif ($modo === 'docena') {
-                    $factorCantidad = 12;
-                    $abreviacion = 'DOC';
-                    $cantXCajaVisual = 12; // Mostramos 12
-                } else {
-                    $factorCantidad = 1;
-                    $abreviacion = 'UND';
-                    $cantXCajaVisual = '-';
-                }
-                
-                // Cálculo matemático
-                $monto = $detalle->cantidad * $factorCantidad * $detalle->precio;
-
-                $descuentoMonto = $monto * ($detalle->descuento / 100);
-
-                $subtotal = $monto - $descuentoMonto;
-                $total += $subtotal;
-                // --- FIN LÓGICA ---
-
-                $cantidadTexto = $detalle->cantidad . ' ' . $abreviacion;
-
-                $productoTexto = strtoupper($detalle->producto->codigo . ' - ' . $detalle->producto->nombre);
-                $textoDescuento = $detalle->descuento . '% (Bs ' . number_format($descuentoMonto, 2) . ')';
-
-                // Asegúrate de tener el método cortarTexto o usa mb_strimwidth
-                if(method_exists($this, 'cortarTexto')){
-                    $productoTexto = $this->cortarTexto($pdf, utf8_decode($productoTexto), 52);
-                } else {
-                    $productoTexto = mb_strimwidth(utf8_decode($productoTexto), 0, 35, '...');
-                }
-
-                if ($fill) {
-                    $pdf->SetFillColor(250, 250, 250);
-                } else {
-                    $pdf->SetFillColor(255, 255, 255);
-                }
-
-                $pdf->Cell(21, 6, $cantidadTexto, 1, 0, 'C', true); 
-                $pdf->Cell(80, 6, $productoTexto, 1, 0, 'L', true);
-                $pdf->Cell(20, 6, $cantXCajaVisual, 1, 0, 'C', true);
-                $pdf->Cell(20, 6, number_format($detalle->precio, 2), 1, 0, 'R', true);
-                $pdf->Cell(35, 6, $textoDescuento, 1, 0, 'C', true);
-
-                $pdf->Cell(20, 6, number_format($subtotal, 2), 1, 1, 'R', true);
-                
-                $fill = !$fill;
+            $persona = Persona::find($venta->idcliente);
+            if (!$persona) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
             }
 
-            // ================= TOTALES =================
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetFillColor(230, 230, 230);
-            $pdf->SetDrawColor(100, 100, 100);
+            $empresa = Empresa::first();
+            if (!$empresa) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
+            }
 
-            $pdf->Cell(171, 7, utf8_decode('TOTAL A PAGAR'), 1, 0, 'R', true);
-            $pdf->Cell(25, 7, number_format($total, 2), 1, 1, 'R', true);
+            if ($venta->detalles->isNotEmpty()) {
+                $pdf = new FPDF('P', 'mm', 'Letter');
+                $pdf->SetMargins(10, 10, 10);
+                $pdf->SetAutoPageBreak(true, 15);
+                $pdf->AddPage();
 
-            // Conversión a literal
-            $formatter = new NumberFormatter("es", NumberFormatter::SPELLOUT);
-            $totalTexto = strtoupper($formatter->format($total)) . ' ' . ($total == 1 ? 'BOLIVIANO' : 'BOLIVIANOS');
-            
-            $pdf->Ln(2);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(0, 5, 'SON: ' . $totalTexto, 0, 1, 'L');
+                // ================= CONFIGURACIÓN PÁGINA =================
+                $pageWidth = $pdf->GetPageWidth();
+                $margin = 10;
+                $usableWidth = $pageWidth - ($margin * 2);
 
-            $pdf->Ln(8);
-            $pdf->SetFont('Arial', 'I', 10);
-            $pdf->Cell(0, 7, utf8_decode('¡GRACIAS POR SU COMPRA!'), 0, 1, 'C');
+                // ================= HEADER =================
+                $pdf->SetDrawColor(0, 0, 0);
+                $pdf->SetLineWidth(0.8);
+                $pdf->Line($margin, 8, $pageWidth - $margin, 8);
 
-             $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
-        $nombreArchivo = 'recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf';
+                $logoPath = public_path('img/logoPrincipal.png');
+                $logoWidth = 20;
 
-        return response($pdf->Output('S')) // 'S' genera PDF en memoria
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+                if (file_exists($logoPath)) {
+                    $pdf->Image($logoPath, $margin, 10, $logoWidth);
+                }
 
-    } else {
-        return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
+                $pdf->SetXY($margin, 12);
+                $pdf->SetFont('Arial', 'B', 12);
+                $pdf->Cell($usableWidth, 5, 'NOTA DE VENTA', 0, 1, 'C');
+
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
+                $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
+                $pdf->Cell($usableWidth, 4, utf8_decode('DIRECCIÓN: ' . $empresa->direccion), 0, 1, 'C');
+
+                // ================= FECHAS =================
+                $fecha = date('d/m/Y', strtotime($venta->created_at));
+                $hora = date('H:i:s', strtotime($venta->created_at));
+
+                $posY_Fila = 32;
+                $pdf->SetY($posY_Fila);
+
+                $pdf->SetDrawColor(150, 150, 150);
+                $pdf->SetLineWidth(0.3);
+                $pdf->Line($margin, $posY_Fila, $pageWidth - $margin, $posY_Fila);
+                $pdf->Line($margin, $posY_Fila + 7, $pageWidth - $margin, $posY_Fila + 7);
+
+                $anchoCol = $usableWidth / 3;
+
+                // FECHA
+                $pdf->SetXY($margin, $posY_Fila + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(12, 4, 'FECHA:', 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell($anchoCol - 12, 4, $fecha, 0, 0, 'L');
+
+                // HORA
+                $pdf->SetXY($margin + $anchoCol, $posY_Fila + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(12, 4, 'HORA:', 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell($anchoCol - 12, 4, $hora, 0, 0, 'L');
+
+                // NUMERO
+                $pdf->SetXY($margin + ($anchoCol * 2), $posY_Fila + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(20, 4, utf8_decode('N° COMPR:'), 0, 0, 'L');
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell($anchoCol - 20, 4, $venta->num_comprobante, 0, 1, 'R');
+
+                // ================= DATOS DEL CLIENTE (AJUSTADO) =================
+                $posY_Cliente = 44;
+                $pdf->SetY($posY_Cliente);
+
+                $pdf->SetFillColor(245, 245, 245);
+                $pdf->SetDrawColor(100, 100, 100);
+                $pdf->SetLineWidth(0.3);
+
+                // CAMBIO 1: Cambié el 16 por 11 (Esta es la altura del cuadro gris)
+                $pdf->Rect($margin, $posY_Cliente, $usableWidth, 11, 'FD');
+
+                // --- LÍNEA 1: CLIENTE ---
+                $pdf->SetXY($margin + 2, $posY_Cliente + 1.5); // Margen interno superior
+
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(18, 4, 'CLIENTE:', 0, 0, 'L'); // Bajé altura de celda a 4
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell(0, 4, utf8_decode(strtoupper($persona->nombre)), 0, 1, 'L');
+
+                // --- LÍNEA 2: TELÉFONO ---
+                // CAMBIO 2: Ajusté la posición Y manualmente para que quede pegadito
+                // (posY_Cliente + 1.5 + 4 de la línea anterior = + 5.5)
+                $pdf->SetXY($margin + 2, $posY_Cliente + 5.5);
+
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(22, 4, utf8_decode('TELÉFONO:'), 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $telefono = (!empty($persona->telefono)) ? $persona->telefono : 'S/N';
+                $pdf->Cell(0, 4, $telefono, 0, 1, 'L');
+
+                // Salto de línea para separarse de la tabla de productos
+                $pdf->Ln(4);
+
+                // ================= CABECERA TABLA =================
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFillColor(230, 230, 230);
+                $pdf->SetDrawColor(100, 100, 100);
+
+                $pdf->Cell(21, 7, 'Cant', 1, 0, 'C', true);
+                $pdf->Cell(80, 7, utf8_decode('Descripción'), 1, 0, 'C', true);
+                $pdf->Cell(20, 7, 'U/Cj', 1, 0, 'C', true);
+                $pdf->Cell(20, 7, 'P.Unit', 1, 0, 'C', true);
+                $pdf->Cell(35, 7, 'Desc Total', 1, 0, 'C', true);
+                $pdf->Cell(20, 7, 'Subtotal', 1, 1, 'C', true);
+
+                // ================= DETALLES =================
+                $pdf->SetFont('Arial', '', 7.5);
+                $pdf->SetDrawColor(180, 180, 180);
+
+                $total = 0;
+                $descuentoTotalDetalle = 0;
+
+                // Guardamos subtotal sin descuento adicional
+                $subtotalSinDescuentoAdicional = 0;
+
+                $fill = false;
+
+                foreach ($venta->detalles as $detalle) {
+                    $modo = strtolower($detalle->modo_venta ?? 'unidad');
+
+                    if ($modo === 'caja') {
+                        $factorCantidad = $detalle->producto->unidad_envase;
+                        $abreviacion = 'CJS';
+                        $cantXCajaVisual = $factorCantidad;
+                    } elseif ($modo === 'docena') {
+                        $factorCantidad = 12;
+                        $abreviacion = 'DOC';
+                        $cantXCajaVisual = 12;
+                    } else {
+                        $factorCantidad = 1;
+                        $abreviacion = 'UND';
+                        $cantXCajaVisual = '-';
+                    }
+
+                    // 🔹 Cálculo del monto y descuento total por producto
+                    $monto = $detalle->cantidad * $factorCantidad * $detalle->precio;
+                    $descuentoUnidad = $detalle->descuento ?? 0; // monto en Bs por unidad
+                    $descuentoMonto = $descuentoUnidad * $detalle->cantidad; // multiplicar por cantidad
+                    $subtotal = $monto - $descuentoMonto;
+
+                    $total += $subtotal;
+                    $descuentoTotalDetalle += $descuentoMonto;
+
+                    $subtotalSinDescuentoAdicional += $subtotal; // 🔹 Aquí sumamos subtotal ya con descuento por producto
+
+                    if ($fill) {
+                        $pdf->SetFillColor(250, 250, 250);
+                    } else {
+                        $pdf->SetFillColor(255, 255, 255);
+                    }
+
+                    $cantidadTexto = $detalle->cantidad . ' ' . $abreviacion;
+                    $productoTexto = strtoupper($detalle->producto->codigo . ' - ' . $detalle->producto->nombre);
+                    $textoDescuento = 'Bs ' . number_format($descuentoMonto, 2);
+
+                    $pdf->Cell(21, 6, $cantidadTexto, 1, 0, 'C', true);
+                    $pdf->Cell(80, 6, mb_strimwidth($productoTexto, 0, 35, '...'), 1, 0, 'L', true);
+                    $pdf->Cell(20, 6, $cantXCajaVisual, 1, 0, 'C', true);
+                    $pdf->Cell(20, 6, number_format($detalle->precio, 2), 1, 0, 'R', true);
+                    $pdf->Cell(35, 6, $textoDescuento, 1, 0, 'C', true);
+                    $pdf->Cell(20, 6, number_format($subtotal, 2), 1, 1, 'R', true);
+
+                    $fill = !$fill;
+
+                }
+
+                // 🔹 Calcular descuento adicional restante
+                $descuentoAdicionalAplicado = max(0, ($venta->descuento_total ?? 0) - $descuentoTotalDetalle);
+
+                // ================= TOTALES =================
+                $pdf->Ln(2);
+                $pdf->SetFont('Arial', 'B', 9);
+                $pdf->SetFillColor(230, 230, 230);
+                $pdf->SetDrawColor(100, 100, 100);
+
+                // Subtotal sin descuento adicional
+                $pdf->Cell(171, 7, 'SUBTOTAL SIN DESC. ADICIONAL', 1, 0, 'R', true);
+                $pdf->Cell(25, 7, number_format($subtotalSinDescuentoAdicional, 2), 1, 1, 'R', true);
+
+                // Descuento adicional aplicado
+                $pdf->Cell(171, 7, 'DESCUENTO ADICIONAL', 1, 0, 'R', true);
+                $pdf->Cell(25, 7, number_format($descuentoAdicionalAplicado, 2), 1, 1, 'R', true);
+
+                // Total final
+                $totalFinal = $total - $descuentoAdicionalAplicado;
+                $pdf->Cell(171, 7, 'TOTAL A PAGAR', 1, 0, 'R', true);
+                $pdf->Cell(25, 7, number_format($totalFinal, 2), 1, 1, 'R', true);
+
+                // Conversión a literal
+                $formatter = new NumberFormatter("es", NumberFormatter::SPELLOUT);
+                $totalTexto = strtoupper($formatter->format($totalFinal)) . ' BOLIVIANOS';
+                $pdf->Ln(2);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(0, 5, 'SON: ' . $totalTexto, 0, 1, 'L');
+
+                $pdf->Ln(8);
+                $pdf->SetFont('Arial', 'I', 10);
+                $pdf->Cell(0, 7, utf8_decode('¡GRACIAS POR SU COMPRA!'), 0, 1, 'C');
+
+                $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
+                $nombreArchivo = 'recibo_carta_' . $nombreLimpio . '_' . $id . '.pdf';
+
+                return response($pdf->Output('S')) // 'S' genera PDF en memoria
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+
+            } else {
+                return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA',
+                'detalle' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile()
+            ], 500);
+        }
     }
-    } catch (\Exception $e) {
-        \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
-
-    return response()->json([
-        'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA',
-        'detalle' => $e->getMessage(),
-        'linea' => $e->getLine(),
-        'archivo' => $e->getFile()
-    ], 500);    }
-}
 
     public function imprimirRemisionRollo($id)
     {
@@ -3310,7 +3356,7 @@ public function indexFiltrar(Request $request)
                 $pdf->SetMargins(5, 10, 5);
                 $pdf->AddPage();
 
-               // LOGO FIJO DESDE PUBLIC/IMG/logoPrincipal.png
+                // LOGO FIJO DESDE PUBLIC/IMG/logoPrincipal.png
                 $logoPath = public_path('img/logoPrincipal.png');
 
                 if (file_exists($logoPath)) {
@@ -3389,7 +3435,7 @@ public function indexFiltrar(Request $request)
 
                     $pdf->SetFont('Arial', 'B', 8);
                     // Usamos ancho 15
-                    $pdf->Cell(15, 5, utf8_decode($cantidadTexto), 0, 0, 'L'); 
+                    $pdf->Cell(15, 5, utf8_decode($cantidadTexto), 0, 0, 'L');
 
                     // Preparar nombre y código
                     $nombre = strtoupper(substr($detalle->producto->nombre, 0, 28)); // Ajustado a 28 caracteres
@@ -3431,245 +3477,246 @@ public function indexFiltrar(Request $request)
     }
 
     public function imprimirRemisionCarta($id)
-{
-    try {
-        $venta = Venta::with('detalles.producto')->find($id);
-        if (!$venta) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
-        }
-
-        $persona = Persona::find($venta->idcliente);
-        if (!$persona) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
-        }
-
-        $empresa = Empresa::first();
-        if (!$empresa) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
-        }
-
-        if ($venta->detalles->isNotEmpty()) {
-            $pdf = new FPDF('P', 'mm', [139.7, 215.9]); // MEDIA CARTA
-            $pdf->SetMargins(10, 10, 10);
-            $pdf->SetAutoPageBreak(true, 15);
-            $pdf->AddPage();
-
-            // ================= MEDIDAS =================
-            $pageWidth = $pdf->GetPageWidth();
-            $margin = 10;
-            $usableWidth = $pageWidth - ($margin * 2);
-
-            // ================= LÍNEA SUPERIOR DECORATIVA =================
-            $pdf->SetDrawColor(0, 0, 0);
-            $pdf->SetLineWidth(0.8);
-            $pdf->Line($margin, 8, $pageWidth - $margin, 8);
-
-            // ================= LOGO =================
-            $logoPath = public_path('img/logoPrincipal.png');
-            $logoWidth = 20;
-            if (file_exists($logoPath)) {
-                $pdf->Image($logoPath, $margin, 10, $logoWidth);
+    {
+        try {
+            $venta = Venta::with('detalles.producto')->find($id);
+            if (!$venta) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ LA VENTA'], 500);
             }
 
-            // ================= DATOS EMPRESA =================
-            $pdf->SetXY($margin, 12);
-            $pdf->SetFont('Arial', 'B', 12);
-            $pdf->Cell($usableWidth, 5, utf8_decode('NOTA DE REMISIÓN'), 0, 1, 'C');
+            $persona = Persona::find($venta->idcliente);
+            if (!$persona) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ EL CLIENTE'], 500);
+            }
 
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
-            $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
-            $pdf->Cell($usableWidth, 4, utf8_decode('DIRECCIÓN: ' . $empresa->direccion), 0, 1, 'C');
+            $empresa = Empresa::first();
+            if (!$empresa) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
+            }
 
-            // ================= FECHA, HORA Y N° =================
-            $fecha = date('d/m/Y', strtotime($venta->created_at));
-            $hora  = date('H:i:s', strtotime($venta->created_at));
+            if ($venta->detalles->isNotEmpty()) {
+                $pdf = new FPDF('P', 'mm', [139.7, 215.9]); // MEDIA CARTA
+                $pdf->SetMargins(10, 10, 10);
+                $pdf->SetAutoPageBreak(true, 15);
+                $pdf->AddPage();
 
-            $posY_Fila = 32; 
-            $pdf->SetY($posY_Fila);
+                // ================= MEDIDAS =================
+                $pageWidth = $pdf->GetPageWidth();
+                $margin = 10;
+                $usableWidth = $pageWidth - ($margin * 2);
 
-            $pdf->SetDrawColor(150, 150, 150);
-            $pdf->SetLineWidth(0.3);
-            $pdf->Line($margin, $posY_Fila, $pageWidth - $margin, $posY_Fila); 
-            $pdf->Line($margin, $posY_Fila + 7, $pageWidth - $margin, $posY_Fila + 7);
+                // ================= LÍNEA SUPERIOR DECORATIVA =================
+                $pdf->SetDrawColor(0, 0, 0);
+                $pdf->SetLineWidth(0.8);
+                $pdf->Line($margin, 8, $pageWidth - $margin, 8);
 
-            $anchoCol = $usableWidth / 3;
-
-            // 1. FECHA
-            $pdf->SetXY($margin, $posY_Fila + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(12, 4, 'FECHA:', 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell($anchoCol - 12, 4, $fecha, 0, 0, 'L');
-
-            // 2. HORA
-            $pdf->SetXY($margin + $anchoCol, $posY_Fila + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(12, 4, 'HORA:', 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell($anchoCol - 12, 4, $hora, 0, 0, 'L');
-
-            // 3. NÚMERO
-            $pdf->SetXY($margin + ($anchoCol * 2), $posY_Fila + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(20, 4, utf8_decode('N° COMPR:'), 0, 0, 'L');
-            $pdf->SetFont('Arial', 'B', 10);
-            $pdf->Cell($anchoCol - 20, 4, $venta->num_comprobante, 0, 1, 'R');
-
-            // ================= DATOS DEL CLIENTE =================
-            $posY_Cliente = 44;
-            $pdf->SetY($posY_Cliente); 
-            
-            $pdf->SetFillColor(245, 245, 245);
-            $pdf->SetDrawColor(100, 100, 100);
-            $pdf->SetLineWidth(0.3);
-            $pdf->Rect($margin, $posY_Cliente, $usableWidth, 12, 'FD');
-            
-            $pdf->SetXY($margin + 2, $posY_Cliente + 1.5);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(16, 4, 'CLIENTE:', 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell(0, 4, utf8_decode(strtoupper($persona->nombre)), 0, 1, 'L');
-
-            $pdf->SetX($margin + 2);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(16, 4, utf8_decode('TELÉFONO:'), 0, 0, 'L');
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell(0, 4, (!empty($persona->telefono)) ? $persona->telefono : 'S/N', 0, 1, 'L');
-
-            $pdf->Ln(6); 
-
-            // ================= TABLA DE PRODUCTOS =================
-            $w_cant = 15;
-            $w_cod  = 20;
-            $w_nom  = $usableWidth - ($w_cant + $w_cod + 15);
-            $w_caja = 15;
-
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->SetFillColor(230, 230, 230);
-            $pdf->SetDrawColor(100, 100, 100);
-
-            $pdf->Cell($w_cant, 7, 'Cant', 1, 0, 'C', true);
-            $pdf->Cell($w_cod, 7, utf8_decode('Cód'), 1, 0, 'C', true);
-            $pdf->Cell($w_nom, 7, 'Producto', 1, 0, 'C', true);
-            $pdf->Cell($w_caja, 7, 'U/Caja', 1, 1, 'C', true);
-
-            // ================= CONTENIDO =================
-            $pdf->SetFont('Arial', '', 7.5);
-            $pdf->SetDrawColor(180, 180, 180);
-            
-            $totalCajas = 0;
-            $totalDocenas = 0; // <--- NUEVO CONTADOR
-            $totalUnidades = 0;
-            $fill = false;
-
-            foreach ($venta->detalles as $detalle) {
-                $modo = strtolower($detalle->modo_venta ?? 'unidad'); // Normalizamos
-                
-                // --- INICIO DE LÓGICA MODIFICADA ---
-                if ($modo === 'caja') {
-                    $cantXCaja = $detalle->producto->unidad_envase; // Cantidad del envase
-                    $totalCajas += $detalle->cantidad;
-                    $abreviacion = 'CJS';
-                } elseif ($modo === 'docena') {
-                    $cantXCaja = 12; // La docena siempre son 12
-                    $totalDocenas += $detalle->cantidad;
-                    $abreviacion = 'DOC';
-                } else {
-                    $cantXCaja = '-';
-                    $totalUnidades += $detalle->cantidad;
-                    $abreviacion = 'UND';
-                }
-                // --- FIN DE LÓGICA MODIFICADA ---
-
-                $cantidadTexto = strtoupper($detalle->cantidad . ' ' . $abreviacion);
-                
-                $codigo = strtoupper($detalle->producto->codigo);
-                $nombre = strtoupper($detalle->producto->nombre);
-                
-                // Nota: Asegúrate de tener la función cortarTexto en tu clase o trait
-                if(method_exists($this, 'cortarTexto')){
-                     $nombre = $this->cortarTexto($pdf, utf8_decode($nombre), $w_nom - 2);
-                } else {
-                     $nombre = mb_strimwidth(utf8_decode($nombre), 0, 35, '...');
+                // ================= LOGO =================
+                $logoPath = public_path('img/logoPrincipal.png');
+                $logoWidth = 20;
+                if (file_exists($logoPath)) {
+                    $pdf->Image($logoPath, $margin, 10, $logoWidth);
                 }
 
-                if ($fill) {
-                    $pdf->SetFillColor(250, 250, 250);
-                } else {
-                    $pdf->SetFillColor(255, 255, 255);
-                }
+                // ================= DATOS EMPRESA =================
+                $pdf->SetXY($margin, 12);
+                $pdf->SetFont('Arial', 'B', 12);
+                $pdf->Cell($usableWidth, 5, utf8_decode('NOTA DE REMISIÓN'), 0, 1, 'C');
 
-                $pdf->Cell($w_cant, 6, $cantidadTexto, 1, 0, 'C', $fill);
-                
-                $pdf->SetFont('Arial', 'B', 7.5);
-                $pdf->Cell($w_cod, 6, utf8_decode($codigo), 1, 0, 'C', $fill);
-                
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell($usableWidth, 4, utf8_decode('SUCURSAL: Casa Matriz'), 0, 1, 'C');
+                $pdf->Cell($usableWidth, 4, utf8_decode('TELÉFONO: ' . $empresa->telefono), 0, 1, 'C');
+                $pdf->Cell($usableWidth, 4, utf8_decode('DIRECCIÓN: ' . $empresa->direccion), 0, 1, 'C');
+
+                // ================= FECHA, HORA Y N° =================
+                $fecha = date('d/m/Y', strtotime($venta->created_at));
+                $hora = date('H:i:s', strtotime($venta->created_at));
+
+                $posY_Fila = 32;
+                $pdf->SetY($posY_Fila);
+
+                $pdf->SetDrawColor(150, 150, 150);
+                $pdf->SetLineWidth(0.3);
+                $pdf->Line($margin, $posY_Fila, $pageWidth - $margin, $posY_Fila);
+                $pdf->Line($margin, $posY_Fila + 7, $pageWidth - $margin, $posY_Fila + 7);
+
+                $anchoCol = $usableWidth / 3;
+
+                // 1. FECHA
+                $pdf->SetXY($margin, $posY_Fila + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(12, 4, 'FECHA:', 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell($anchoCol - 12, 4, $fecha, 0, 0, 'L');
+
+                // 2. HORA
+                $pdf->SetXY($margin + $anchoCol, $posY_Fila + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(12, 4, 'HORA:', 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell($anchoCol - 12, 4, $hora, 0, 0, 'L');
+
+                // 3. NÚMERO
+                $pdf->SetXY($margin + ($anchoCol * 2), $posY_Fila + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(20, 4, utf8_decode('N° COMPR:'), 0, 0, 'L');
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell($anchoCol - 20, 4, $venta->num_comprobante, 0, 1, 'R');
+
+                // ================= DATOS DEL CLIENTE =================
+                $posY_Cliente = 44;
+                $pdf->SetY($posY_Cliente);
+
+                $pdf->SetFillColor(245, 245, 245);
+                $pdf->SetDrawColor(100, 100, 100);
+                $pdf->SetLineWidth(0.3);
+                $pdf->Rect($margin, $posY_Cliente, $usableWidth, 12, 'FD');
+
+                $pdf->SetXY($margin + 2, $posY_Cliente + 1.5);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(16, 4, 'CLIENTE:', 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell(0, 4, utf8_decode(strtoupper($persona->nombre)), 0, 1, 'L');
+
+                $pdf->SetX($margin + 2);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->Cell(16, 4, utf8_decode('TELÉFONO:'), 0, 0, 'L');
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->Cell(0, 4, (!empty($persona->telefono)) ? $persona->telefono : 'S/N', 0, 1, 'L');
+
+                $pdf->Ln(6);
+
+                // ================= TABLA DE PRODUCTOS =================
+                $w_cant = 15;
+                $w_cod = 20;
+                $w_nom = $usableWidth - ($w_cant + $w_cod + 15);
+                $w_caja = 15;
+
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFillColor(230, 230, 230);
+                $pdf->SetDrawColor(100, 100, 100);
+
+                $pdf->Cell($w_cant, 7, 'Cant', 1, 0, 'C', true);
+                $pdf->Cell($w_cod, 7, utf8_decode('Cód'), 1, 0, 'C', true);
+                $pdf->Cell($w_nom, 7, 'Producto', 1, 0, 'C', true);
+                $pdf->Cell($w_caja, 7, 'U/Caja', 1, 1, 'C', true);
+
+                // ================= CONTENIDO =================
                 $pdf->SetFont('Arial', '', 7.5);
-                $pdf->Cell($w_nom, 6, utf8_decode($nombre), 1, 0, 'L', $fill);
-                $pdf->Cell($w_caja, 6, $cantXCaja, 1, 1, 'C', $fill);
+                $pdf->SetDrawColor(180, 180, 180);
 
-                $fill = !$fill;
+                $totalCajas = 0;
+                $totalDocenas = 0; // <--- NUEVO CONTADOR
+                $totalUnidades = 0;
+                $fill = false;
+
+                foreach ($venta->detalles as $detalle) {
+                    $modo = strtolower($detalle->modo_venta ?? 'unidad'); // Normalizamos
+
+                    // --- INICIO DE LÓGICA MODIFICADA ---
+                    if ($modo === 'caja') {
+                        $cantXCaja = $detalle->producto->unidad_envase; // Cantidad del envase
+                        $totalCajas += $detalle->cantidad;
+                        $abreviacion = 'CJS';
+                    } elseif ($modo === 'docena') {
+                        $cantXCaja = 12; // La docena siempre son 12
+                        $totalDocenas += $detalle->cantidad;
+                        $abreviacion = 'DOC';
+                    } else {
+                        $cantXCaja = '-';
+                        $totalUnidades += $detalle->cantidad;
+                        $abreviacion = 'UND';
+                    }
+                    // --- FIN DE LÓGICA MODIFICADA ---
+
+                    $cantidadTexto = strtoupper($detalle->cantidad . ' ' . $abreviacion);
+
+                    $codigo = strtoupper($detalle->producto->codigo);
+                    $nombre = strtoupper($detalle->producto->nombre);
+
+                    // Nota: Asegúrate de tener la función cortarTexto en tu clase o trait
+                    if (method_exists($this, 'cortarTexto')) {
+                        $nombre = $this->cortarTexto($pdf, utf8_decode($nombre), $w_nom - 2);
+                    } else {
+                        $nombre = mb_strimwidth(utf8_decode($nombre), 0, 35, '...');
+                    }
+
+                    if ($fill) {
+                        $pdf->SetFillColor(250, 250, 250);
+                    } else {
+                        $pdf->SetFillColor(255, 255, 255);
+                    }
+
+                    $pdf->Cell($w_cant, 6, $cantidadTexto, 1, 0, 'C', $fill);
+
+                    $pdf->SetFont('Arial', 'B', 7.5);
+                    $pdf->Cell($w_cod, 6, utf8_decode($codigo), 1, 0, 'C', $fill);
+
+                    $pdf->SetFont('Arial', '', 7.5);
+                    $pdf->Cell($w_nom, 6, utf8_decode($nombre), 1, 0, 'L', $fill);
+                    $pdf->Cell($w_caja, 6, $cantXCaja, 1, 1, 'C', $fill);
+
+                    $fill = !$fill;
+                }
+
+                // ================= TOTALES (RESUMEN) =================
+                $pdf->Ln(2);
+
+                $pdf->SetFont('Arial', 'B', 9);
+                $pdf->SetFillColor(240, 240, 240);
+                $pdf->SetDrawColor(100, 100, 100);
+
+                $anchoTotales = 80;
+                $xStart = $pageWidth - $margin - $anchoTotales;
+
+                // 1. Cajas
+                if ($totalCajas > 0) {
+                    $pdf->SetX($xStart);
+                    $pdf->Cell($anchoTotales, 6, "TOTAL CAJAS: " . $totalCajas, 1, 1, 'R', true);
+                }
+
+                // 2. Docenas (Nuevo)
+                if ($totalDocenas > 0) {
+                    $pdf->SetX($xStart);
+                    $pdf->Cell($anchoTotales, 6, "TOTAL DOCENAS: " . $totalDocenas, 1, 1, 'R', true);
+                }
+
+                // 3. Unidades
+                if ($totalUnidades > 0) {
+                    $pdf->SetX($xStart);
+                    $pdf->Cell($anchoTotales, 6, "TOTAL UNIDADES SUELTAS: " . $totalUnidades, 1, 1, 'R', true);
+                }
+
+                // ================= PIE DE PÁGINA =================
+                $pdf->Ln(5);
+                $pdf->SetDrawColor(100, 100, 100);
+                $pdf->Line($margin, $pdf->GetY(), $pageWidth - $margin, $pdf->GetY());
+
+                $pdf->Ln(2);
+                $pdf->SetFont('Arial', 'I', 7);
+                $pdf->SetTextColor(80, 80, 80);
+                $pdf->Cell(0, 4, utf8_decode('Documento de Remisión - Control Interno'), 0, 1, 'C');
+
+                $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
+                $nombreArchivo = 'remision_carta_' . $nombreLimpio . '_' . $id . '.pdf';
+
+                // Enviar el PDF directamente al navegador
+                return response($pdf->Output('S')) // 'S' genera PDF en memoria
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+
+            } else {
+                return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
             }
-
-            // ================= TOTALES (RESUMEN) =================
-            $pdf->Ln(2);
-            
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetFillColor(240, 240, 240);
-            $pdf->SetDrawColor(100, 100, 100);
-            
-            $anchoTotales = 80; 
-            $xStart = $pageWidth - $margin - $anchoTotales;
-            
-            // 1. Cajas
-            if ($totalCajas > 0) {
-                $pdf->SetX($xStart);
-                $pdf->Cell($anchoTotales, 6, "TOTAL CAJAS: " . $totalCajas, 1, 1, 'R', true);
-            }
-            
-            // 2. Docenas (Nuevo)
-            if ($totalDocenas > 0) {
-                $pdf->SetX($xStart);
-                $pdf->Cell($anchoTotales, 6, "TOTAL DOCENAS: " . $totalDocenas, 1, 1, 'R', true);
-            }
-            
-            // 3. Unidades
-            if ($totalUnidades > 0) {
-                $pdf->SetX($xStart);
-                $pdf->Cell($anchoTotales, 6, "TOTAL UNIDADES SUELTAS: " . $totalUnidades, 1, 1, 'R', true);
-            }
-
-            // ================= PIE DE PÁGINA =================
-            $pdf->Ln(5);
-            $pdf->SetDrawColor(100, 100, 100);
-            $pdf->Line($margin, $pdf->GetY(), $pageWidth - $margin, $pdf->GetY());
-            
-            $pdf->Ln(2);
-            $pdf->SetFont('Arial', 'I', 7);
-            $pdf->SetTextColor(80, 80, 80);
-            $pdf->Cell(0, 4, utf8_decode('Documento de Remisión - Control Interno'), 0, 1, 'C');
-
-             $nombreLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $persona->nombre);
-        $nombreArchivo = 'remision_carta_' . $nombreLimpio . '_' . $id . '.pdf';
-
-        // Enviar el PDF directamente al navegador
-        return response($pdf->Output('S')) // 'S' genera PDF en memoria
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
-
-    } else {
-        return response()->json(['error' => 'NO HAY DETALLES PARA ESTA VENTA'], 404);
+        } catch (\Exception $e) {
+            \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA',
+                'detalle' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile()
+            ], 500);
+        }
     }
-    } catch (\Exception $e) {
-        \Log::error('Error al imprimir el recibo en carta: ' . $e->getMessage());
- return response()->json([
-        'error' => 'OCURRIÓ UN ERROR AL IMPRIMIR EL RECIBO EN CARTA',
-        'detalle' => $e->getMessage(),
-        'linea' => $e->getLine(),
-        'archivo' => $e->getFile()
-    ], 500);    }
-}
 
     public function selectRoles(Request $request)
     {
@@ -3681,17 +3728,17 @@ public function indexFiltrar(Request $request)
     }
 
     private function cortarTexto($pdf, $texto, $anchoMax)
-{
-    if ($pdf->GetStringWidth($texto) <= $anchoMax) {
-        return $texto;
-    }
+    {
+        if ($pdf->GetStringWidth($texto) <= $anchoMax) {
+            return $texto;
+        }
 
-    while ($pdf->GetStringWidth($texto . '...') > $anchoMax) {
-        $texto = mb_substr($texto, 0, -1);
-    }
+        while ($pdf->GetStringWidth($texto . '...') > $anchoMax) {
+            $texto = mb_substr($texto, 0, -1);
+        }
 
-    return $texto . '...';
-}
+        return $texto . '...';
+    }
 
     public function reporteVentasDiarias(Request $request)
     {
@@ -3874,7 +3921,8 @@ public function indexFiltrar(Request $request)
     }
     public function obtenerCuotas(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $id = $request->id;
 
@@ -4255,283 +4303,295 @@ public function indexFiltrar(Request $request)
         }
     }
     public function generarReporteCreditoPDF($clienteId)
-{
-    try {
+    {
+        try {
 
-        // Cliente
-        $cliente = Persona::findOrFail($clienteId);
+            // Cliente
+            $cliente = Persona::findOrFail($clienteId);
 
-        // Empresa
-        $empresa = Empresa::first();
-        if (!$empresa) {
-            return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
-        }
+            // Empresa
+            $empresa = Empresa::first();
+            if (!$empresa) {
+                return response()->json(['error' => 'NO SE ENCONTRÓ LA EMPRESA'], 404);
+            }
 
-        $movimientos = [];
-        $inicio = request('inicio');
-        $fin = request('fin');
+            $movimientos = [];
+            $inicio = request('inicio');
+            $fin = request('fin');
 
-        $filtrarFechas = $inicio && $fin;
+            $filtrarFechas = $inicio && $fin;
 
-        /* ------------------------------------------------------
-        1. VENTAS AL CONTADO
-        ------------------------------------------------------ */
-        $ventasContado = Venta::where('idcliente', $clienteId)
-            ->where('idtipo_venta', 1)
-            ->where('estado', '!=', '0') // crédito
-            ->when($filtrarFechas, function($q) use ($inicio, $fin) {
-                $q->whereBetween('fecha_hora', [
-                    Carbon::parse($inicio)->startOfDay(),
-                    Carbon::parse($fin)->endOfDay()
-                ]);
-            })
-            ->orderBy('fecha_hora', 'asc')
-            ->get();
-
-        foreach ($ventasContado as $venta) {
-            $tipoPago = $venta->idtipo_pago == 1 ? "EFECTIVO" : "BANCO";
-
-            $movimientos[] = [
-                'fecha'       => Carbon::parse($venta->fecha_hora)->format('Y-m-d H:i:s'),
-                'tipo'        => 'VENTAS',
-                'descripcion' => "CLIENTES\n AL CONTADO - {$tipoPago}",
-                'num_comprobante' => $venta->num_comprobante,
-                'cuenta'      => '',
-                'banco'       => '',
-                'importe'     => $venta->total,
-                'saldo'       => 0,
-                'color'       => null
-            ];
-        }
-
-        /* ------------------------------------------------------
-        2. VENTAS A CRÉDITO
-        ------------------------------------------------------ */
-        $ventasCredito = Venta::where('idcliente', $clienteId)
-            ->where('idtipo_venta', 2)
-            ->where('estado', '!=', '0') // crédito
-            ->when($filtrarFechas, function($q) use ($inicio, $fin) {
-                $q->whereBetween('fecha_hora', [
-                    Carbon::parse($inicio)->startOfDay(),
-                    Carbon::parse($fin)->endOfDay()
-                ]);
-            })
-            ->orderBy('fecha_hora', 'asc')
-            ->get();
-            
-
-        foreach ($ventasCredito as $venta) {
-            $fechaVenta = Carbon::parse($venta->fecha_hora)->subSecond();
-
-            // 🔥 Buscar si esta venta tiene descuento de liquidación
-            $cuotaLiquidacion = DB::table('cuotas_credito')
-                ->where('idcredito', $venta->id)
-                ->where('idtipo_pago', 5)
-                ->where('descuento', '>', 0)
-                ->first();
-            
-            $descuentoLiquidacion = $cuotaLiquidacion ? (float)$cuotaLiquidacion->descuento : 0;
-            $montoOriginalVenta = (float)$venta->total + $descuentoLiquidacion;
-
-            $movimientos[] = [
-                'fecha'       => $fechaVenta->format('Y-m-d H:i:s'),
-                'tipo'        => 'VENTAS',
-                'descripcion' => "CLIENTES\nCRÉDITO",
-                'num_comprobante' => $venta->num_comprobante,
-                'cuenta'      => '',
-                'banco'       => '',
-                'importe'     => $montoOriginalVenta, 
-                'saldo'       => $montoOriginalVenta,
-                'color'       => null,
-                // 🔥 NUEVO: Agregar info de liquidación si existe
-                'descuento_liquidacion' => $descuentoLiquidacion,
-                'monto_original_liquidacion' => $descuentoLiquidacion > 0 ? $montoOriginalVenta : null
-            ];
-
-            // Sus cuotas
-            $cuotas = DB::table('cuotas_credito')
-                ->where('idcredito', $venta->id)
-                ->when($filtrarFechas, function($q) use ($inicio, $fin) {
-                    $q->whereBetween('fecha_pago', [
+            /* ------------------------------------------------------
+            1. VENTAS AL CONTADO
+            ------------------------------------------------------ */
+            $ventasContado = Venta::where('idcliente', $clienteId)
+                ->where('idtipo_venta', 1)
+                ->where('estado', '!=', '0') // crédito
+                ->when($filtrarFechas, function ($q) use ($inicio, $fin) {
+                    $q->whereBetween('fecha_hora', [
                         Carbon::parse($inicio)->startOfDay(),
                         Carbon::parse($fin)->endOfDay()
                     ]);
                 })
-                ->orderBy('fecha_pago', 'asc')
+                ->orderBy('fecha_hora', 'asc')
                 ->get();
-            $numeroComprobanteVenta = $venta->num_comprobante;
 
-            foreach ($cuotas as $cuota) {
-                $tipoPago = '';
-                $nombreCuenta = '';
-                $nombreBanco  = '';
-                $colorFila = null;
-
-                if ($cuota->idtipo_pago == 5 && $cuota->descuento > 0) {
-                    $movimientos[] = [
-                        'fecha'       => $cuota->fecha_pago,
-                        'tipo'        => 'COBRAR',
-                        'descripcion' => "CLIENTES\nLIQUIDACIÓN",
-                        'num_comprobante' => $numeroComprobanteVenta,
-                        'cuenta'      => '',
-                        'banco'       => '',
-                        'importe'     => $cuota->descuento,
-                        'saldo'       => $cuota->saldo_restante,
-                        'color'       => 'yellow'
-                    ];
-                    continue;
-                }
-                if ($cuota->idtipo_pago == 4) {
-                    $transaccion = DB::table('transacciones_cajas')
-                        ->where('transaccion', 'like', '%'.$numeroComprobanteVenta.'%')
-                        ->orderByDesc('id')
-                        ->first();
-
-                    $movimientos[] = [
-                        'fecha'       => $cuota->fecha_pago,
-                        'tipo'        => 'PAGO', // 👈 IMPORTANTE
-                        'descripcion' => $transaccion
-                            ? $transaccion->transaccion
-                            : 'PAGO DE GASTO',
-                        'num_comprobante' => $numeroComprobanteVenta,
-                        'cuenta'      => '',
-                        'banco'       => '',
-                        'importe'     => abs($cuota->precio_cuota), // 👈 SIEMPRE POSITIVO
-                        'saldo'       => $cuota->saldo_restante,
-                        'color'       => null // 👈 NEGRO
-                    ];
-
-                    continue;
-                }
-                if ($cuota->idtipo_pago == 1) {
-                    $tipoPago = 'EFECTIVO';
-                    $cobrador = DB::table('users')->where('id', $cuota->idcobrador)->first();
-                    $nombreCuenta = $cobrador ? $cobrador->usuario : 'Desconocido';
-                } elseif ($cuota->idtipo_pago == 7) {
-                    $tipoPago = 'BANCO';
-                    $banco = DB::table('bancos')->where('id', $cuota->idbanco)->first();
-
-                    if ($banco) {
-                        $bancoArray = (array)$banco;
-
-                        $nombreCuenta = trim(
-                            ($bancoArray['nombre_cuenta'] ?? '') . '-' .
-                            ($bancoArray['numero_cuenta'] ?? '')
-                        );
-
-                        if ($nombreCuenta == '-') $nombreCuenta = 'Cuenta no registrada';
-                        $nombreBanco = $bancoArray['nombre_banco'] ?? $bancoArray['nombre'] ?? 'Banco desconocido';
-                    }
-                }
+            foreach ($ventasContado as $venta) {
+                $tipoPago = $venta->idtipo_pago == 1 ? "EFECTIVO" : "BANCO";
 
                 $movimientos[] = [
-                    'fecha'       => $cuota->fecha_pago,
-                    'tipo'        => 'COBRAR',
-                    'descripcion' => "CLIENTES\n{$tipoPago}",
-                    'num_comprobante' => $numeroComprobanteVenta,
-                    'cuenta'      => $nombreCuenta,
-                    'banco'       => $nombreBanco,
-                    'importe'     => $cuota->precio_cuota,
-                    'saldo'       => $cuota->saldo_restante,
-                    'color'       => null
+                    'fecha' => Carbon::parse($venta->fecha_hora)->format('Y-m-d H:i:s'),
+                    'tipo' => 'VENTAS',
+                    'descripcion' => "CLIENTES\n AL CONTADO - {$tipoPago}",
+                    'num_comprobante' => $venta->num_comprobante,
+                    'cuenta' => '',
+                    'banco' => '',
+                    'importe' => $venta->total,
+                    'saldo' => 0,
+                    'color' => null
                 ];
             }
-        }
-// 🔹 Saldos a favor registrados en cuotas_credito (numero_cuota = 0)
-$cuotasSaldoFavor = DB::table('cuotas_credito')
-    ->where('idcredito', null)          // No tienen venta asociada
-    ->where('numero_cuota', 0)         // Indica que es saldo a favor
-    ->where('idcobrador', '!=', null)  // Opcional: filtrar si quieres solo pagos válidos
-    ->where('idtipo_pago', '!=', 5)    // No incluir descuentos si quieres solo saldo a favor
-    ->where('idcliente', $clienteId)   // Solo para este cliente
-    ->get();
-        foreach ($cuotasSaldoFavor as $cuota) {
-    $movimientos[] = [
-        'fecha'       => $cuota->fecha_pago,
-        'tipo'        => 'SALDO_FAVOR',
-        'descripcion' => 'SALDO A FAVOR REGISTRADO',
-        'num_comprobante' => '',
-        'cuenta'      => '',
-        'banco'       => '',
-        'importe'     => $cuota->precio_cuota,
-        'saldo'       => $cuota->saldo_restante,
-        'color'       => 'green',
-        'numero_cuota'=> 0,
-        'idcredito'   => null,
-    ];
-}
 
-        /* ------------------------------------------------------
-        ORDENAR TODOS LOS MOVIMIENTOS POR FECHA
-        ------------------------------------------------------ */
-        usort($movimientos, fn($a, $b) => strtotime($a['fecha']) <=> strtotime($b['fecha']));
+            /* ------------------------------------------------------
+            2. VENTAS A CRÉDITO
+            ------------------------------------------------------ */
+            $ventasCredito = Venta::where('idcliente', $clienteId)
+                ->where('idtipo_venta', 2)
+                ->where('estado', '!=', '0') // crédito
+                ->when($filtrarFechas, function ($q) use ($inicio, $fin) {
+                    $q->whereBetween('fecha_hora', [
+                        Carbon::parse($inicio)->startOfDay(),
+                        Carbon::parse($fin)->endOfDay()
+                    ]);
+                })
+                ->orderBy('fecha_hora', 'asc')
+                ->get();
 
-        /* ------------------------------------------------------
-        TOTAL ACUMULADO POR MOVIMIENTO (ESTADO DE CUENTA REAL)
-        ------------------------------------------------------ */
-        $totalAcumulado = 0;
 
-        foreach ($movimientos as &$mov) {
+            foreach ($ventasCredito as $venta) {
+                $fechaVenta = Carbon::parse($venta->fecha_hora)->subSecond();
 
-            $importe = (float) $mov['importe'];
+                // 🔥 Buscar si esta venta tiene descuento de liquidación
+                $cuotaLiquidacion = DB::table('cuotas_credito')
+                    ->where('idcredito', $venta->id)
+                    ->where('idtipo_pago', 5)
+                    ->where('descuento', '>', 0)
+                    ->first();
 
-            // 🔵 VENTAS SUMAN
-            if ($mov['tipo'] === 'VENTAS') {
-                $totalAcumulado += $importe;
+                $descuentoLiquidacion = $cuotaLiquidacion ? (float) $cuotaLiquidacion->descuento : 0;
+                $montoOriginalVenta = (float) $venta->total + $descuentoLiquidacion;
+
+                $movimientos[] = [
+                    'fecha' => $fechaVenta->format('Y-m-d H:i:s'),
+                    'tipo' => 'VENTAS',
+                    'descripcion' => "CLIENTES\nCRÉDITO",
+                    'num_comprobante' => $venta->num_comprobante,
+                    'cuenta' => '',
+                    'banco' => '',
+                    'importe' => $montoOriginalVenta,
+                    'saldo' => $montoOriginalVenta,
+                    'color' => null,
+                    // 🔥 NUEVO: Agregar info de liquidación si existe
+                    'descuento_liquidacion' => $descuentoLiquidacion,
+                    'monto_original_liquidacion' => $descuentoLiquidacion > 0 ? $montoOriginalVenta : null
+                ];
+
+                // Sus cuotas
+                $cuotas = DB::table('cuotas_credito')
+                    ->where('idcredito', $venta->id)
+                    ->when($filtrarFechas, function ($q) use ($inicio, $fin) {
+                        $q->whereBetween('fecha_pago', [
+                            Carbon::parse($inicio)->startOfDay(),
+                            Carbon::parse($fin)->endOfDay()
+                        ]);
+                    })
+                    ->orderBy('fecha_pago', 'asc')
+                    ->get();
+                $numeroComprobanteVenta = $venta->num_comprobante;
+
+                foreach ($cuotas as $cuota) {
+                    $tipoPago = '';
+                    $nombreCuenta = '';
+                    $nombreBanco = '';
+                    $colorFila = null;
+
+                    if ($cuota->idtipo_pago == 5 && $cuota->descuento > 0) {
+                        $movimientos[] = [
+                            'fecha' => $cuota->fecha_pago,
+                            'tipo' => 'COBRAR',
+                            'descripcion' => "CLIENTES\nLIQUIDACIÓN",
+                            'num_comprobante' => $numeroComprobanteVenta,
+                            'cuenta' => '',
+                            'banco' => '',
+                            'importe' => $cuota->descuento,
+                            'saldo' => $cuota->saldo_restante,
+                            'color' => 'yellow'
+                        ];
+                        continue;
+                    }
+                    if ($cuota->idtipo_pago == 4) {
+                        $transaccion = DB::table('transacciones_cajas')
+                            ->where('transaccion', 'like', '%' . $numeroComprobanteVenta . '%')
+                            ->orderByDesc('id')
+                            ->first();
+
+                        $movimientos[] = [
+                            'fecha' => $cuota->fecha_pago,
+                            'tipo' => 'PAGO', // 👈 IMPORTANTE
+                            'descripcion' => $transaccion
+                                ? $transaccion->transaccion
+                                : 'PAGO DE GASTO',
+                            'num_comprobante' => $numeroComprobanteVenta,
+                            'cuenta' => '',
+                            'banco' => '',
+                            'importe' => abs($cuota->precio_cuota), // 👈 SIEMPRE POSITIVO
+                            'saldo' => $cuota->saldo_restante,
+                            'color' => null // 👈 NEGRO
+                        ];
+
+                        continue;
+                    }
+                    if ($cuota->idtipo_pago == 1) {
+                        $tipoPago = 'EFECTIVO';
+                        $cobrador = DB::table('users')->where('id', $cuota->idcobrador)->first();
+                        $nombreCuenta = $cobrador ? $cobrador->usuario : 'Desconocido';
+                    } elseif ($cuota->idtipo_pago == 7) {
+                        $tipoPago = 'BANCO';
+                        $banco = DB::table('bancos')->where('id', $cuota->idbanco)->first();
+
+                        if ($banco) {
+                            $bancoArray = (array) $banco;
+
+                            $nombreCuenta = trim(
+                                ($bancoArray['nombre_cuenta'] ?? '') . '-' .
+                                ($bancoArray['numero_cuenta'] ?? '')
+                            );
+
+                            if ($nombreCuenta == '-')
+                                $nombreCuenta = 'Cuenta no registrada';
+                            $nombreBanco = $bancoArray['nombre_banco'] ?? $bancoArray['nombre'] ?? 'Banco desconocido';
+                        }
+                    }
+
+                    $movimientos[] = [
+                        'fecha' => $cuota->fecha_pago,
+                        'tipo' => 'COBRAR',
+                        'descripcion' => "CLIENTES\n{$tipoPago}",
+                        'num_comprobante' => $numeroComprobanteVenta,
+                        'cuenta' => $nombreCuenta,
+                        'banco' => $nombreBanco,
+                        'importe' => $cuota->precio_cuota,
+                        'saldo' => $cuota->saldo_restante,
+                        'color' => null
+                    ];
+                }
+            }
+            // 🔹 Saldos a favor registrados en cuotas_credito (numero_cuota = 0)
+            $cuotasSaldoFavor = DB::table('cuotas_credito')
+                ->where('idcredito', null)          // No tienen venta asociada
+                ->where('numero_cuota', 0)         // Indica que es saldo a favor
+                ->where('idcobrador', '!=', null)  // Opcional: filtrar si quieres solo pagos válidos
+                ->where('idtipo_pago', '!=', 5)    // No incluir descuentos si quieres solo saldo a favor
+                ->where('idcliente', $clienteId)   // Solo para este cliente
+                ->get();
+            foreach ($cuotasSaldoFavor as $cuota) {
+                $movimientos[] = [
+                    'fecha' => $cuota->fecha_pago,
+                    'tipo' => 'SALDO_FAVOR',
+                    'descripcion' => 'SALDO A FAVOR REGISTRADO',
+                    'num_comprobante' => '',
+                    'cuenta' => '',
+                    'banco' => '',
+                    'importe' => $cuota->precio_cuota,
+                    'saldo' => $cuota->saldo_restante,
+                    'color' => 'green',
+                    'numero_cuota' => 0,
+                    'idcredito' => null,
+                ];
             }
 
-            // 🔴 COBROS RESTAN
-            if ($mov['tipo'] === 'COBRAR') {
-                $totalAcumulado -= abs($importe);
+            /* ------------------------------------------------------
+            ORDENAR TODOS LOS MOVIMIENTOS POR FECHA
+            ------------------------------------------------------ */
+            usort($movimientos, function ($a, $b) {
+                return strtotime($a['fecha']) <=> strtotime($b['fecha']);
+            });
+            /* ------------------------------------------------------
+            TOTAL ACUMULADO POR MOVIMIENTO (ESTADO DE CUENTA REAL)
+            ------------------------------------------------------ */
+            $totalAcumulado = 0;
+
+            foreach ($movimientos as &$mov) {
+
+                $importe = (float) $mov['importe'];
+
+                // 🔵 VENTAS SUMAN
+                if ($mov['tipo'] === 'VENTAS') {
+                    $totalAcumulado += $importe;
+                }
+
+                // 🔴 COBROS RESTAN
+                if ($mov['tipo'] === 'COBRAR') {
+                    $totalAcumulado -= abs($importe);
+                }
+
+                // 🟠 PAGOS SUMAN (gastos / cargos)
+                if ($mov['tipo'] === 'PAGO') {
+                    $totalAcumulado += abs($importe);
+                }
+
+                // 🔥 TOTAL ACUMULADO REAL
+                $mov['total_acumulado'] = round($totalAcumulado, 2);
             }
+            unset($mov);
 
-            // 🟠 PAGOS SUMAN (gastos / cargos)
-            if ($mov['tipo'] === 'PAGO') {
-                $totalAcumulado += abs($importe);
-            }
+            /* ------------------------------------------------------
+            AGRUPACIÓN POR MES
+            ------------------------------------------------------ */
+            $agrupado = collect($movimientos)
+                ->groupBy(function ($item) {
+                    return \Carbon\Carbon::parse($item['fecha'])->format('F Y');
+                });
 
-            // 🔥 TOTAL ACUMULADO REAL
-            $mov['total_acumulado'] = round($totalAcumulado, 2);
-        }
-        unset($mov);
+            $mesesEs = [
+                'January' => 'Enero',
+                'February' => 'Febrero',
+                'March' => 'Marzo',
+                'April' => 'Abril',
+                'May' => 'Mayo',
+                'June' => 'Junio',
+                'July' => 'Julio',
+                'August' => 'Agosto',
+                'September' => 'Septiembre',
+                'October' => 'Octubre',
+                'November' => 'Noviembre',
+                'December' => 'Diciembre',
+            ];
 
-        /* ------------------------------------------------------
-        AGRUPACIÓN POR MES
-        ------------------------------------------------------ */
-        $agrupado = collect($movimientos)
-            ->groupBy(fn($item) => Carbon::parse($item['fecha'])->format('F Y'));
+            $movimientos_por_mes = [];
+            $saldoAcumulado = 0;
+            $saldoAFavor = 0; // 🔥 NUEVO: Track saldo a favor por separado
 
-        $mesesEs = [
-            'January' => 'Enero', 'February' => 'Febrero', 'March' => 'Marzo',
-            'April' => 'Abril', 'May' => 'Mayo', 'June' => 'Junio',
-            'July' => 'Julio', 'August' => 'Agosto', 'September' => 'Septiembre',
-            'October' => 'Octubre', 'November' => 'Noviembre', 'December' => 'Diciembre',
-        ];
+            foreach ($agrupado as $mesIngles => $items) {
+                [$mesEng, $anio] = explode(' ', $mesIngles);
+                $mesEsp = $mesesEs[$mesEng] . ' ' . $anio;
 
-        $movimientos_por_mes = [];
-        $saldoAcumulado = 0;
-        $saldoAFavor = 0; // 🔥 NUEVO: Track saldo a favor por separado
+                $saldoAnterior = $saldoAcumulado;
+                $saldoAFavorAnterior = $saldoAFavor;
+                $totalVenta = 0;
+                $totalCobros = 0;
+                $itemsModificados = [];
+                $inicioMes = Carbon::createFromFormat('F Y', $mesIngles)->startOfMonth();
+                $finMes = Carbon::createFromFormat('F Y', $mesIngles)->endOfMonth();
+                // 🔥 TOTAL VENTAS = SUMA REAL DE LA TABLA ventas.total
+                $totalVenta = Venta::where('idcliente', $clienteId)
+                    ->where('estado', '!=', '0') // crédito
+                    ->whereBetween('fecha_hora', [$inicioMes, $finMes])
+                    ->sum('total');
 
-        foreach ($agrupado as $mesIngles => $items) {
-            [$mesEng, $anio] = explode(' ', $mesIngles);
-            $mesEsp = $mesesEs[$mesEng] . ' ' . $anio;
-
-            $saldoAnterior = $saldoAcumulado;
-            $saldoAFavorAnterior = $saldoAFavor;
-            $totalVenta = 0;
-            $totalCobros = 0;
-            $itemsModificados = [];
-            $inicioMes = Carbon::createFromFormat('F Y', $mesIngles)->startOfMonth();
-            $finMes    = Carbon::createFromFormat('F Y', $mesIngles)->endOfMonth();
-            // 🔥 TOTAL VENTAS = SUMA REAL DE LA TABLA ventas.total
-            $totalVenta = Venta::where('idcliente', $clienteId)
-                        ->where('estado', '!=', '0') // crédito
-                ->whereBetween('fecha_hora', [$inicioMes, $finMes])
-                ->sum('total');
-
-            // 🔥 TOTAL COBROS (opcional, si lo sigues usando)
-            $totalCobros = DB::table('ventas as v')
-            ->leftJoin(DB::raw("
+                // 🔥 TOTAL COBROS (opcional, si lo sigues usando)
+                $totalCobros = DB::table('ventas as v')
+                    ->leftJoin(DB::raw("
                 (
                     SELECT cc1.idcredito, cc1.saldo_restante
                     FROM cuotas_credito cc1
@@ -4543,11 +4603,11 @@ $cuotasSaldoFavor = DB::table('cuotas_credito')
                     ON cc2.idcredito = cc1.idcredito AND cc2.max_cuota = cc1.numero_cuota
                 ) ult
             "), 'ult.idcredito', '=', 'v.id')
-            ->where('v.idcliente', $clienteId)
-            ->where('v.idtipo_venta', 2)
-                        ->where('v.estado', '!=', '0') // crédito
-            ->whereBetween('v.fecha_hora', [$inicioMes, $finMes])
-            ->selectRaw("
+                    ->where('v.idcliente', $clienteId)
+                    ->where('v.idtipo_venta', 2)
+                    ->where('v.estado', '!=', '0') // crédito
+                    ->whereBetween('v.fecha_hora', [$inicioMes, $finMes])
+                    ->selectRaw("
                 SUM(
                     CASE
                         WHEN ult.idcredito IS NULL THEN v.total
@@ -4556,204 +4616,204 @@ $cuotasSaldoFavor = DB::table('cuotas_credito')
                     END
                 ) AS total
             ")
-            ->value('total');
+                    ->value('total');
 
 
-            foreach ($items as $i) {
-                $itemMod = $i; // Copia para modificar
-                
-                // 🔥 LIQUIDACIÓN: El descuento se suma a la venta (porque ya fue descontado del total)
-                if (!empty($i['color']) && $i['color'] === 'yellow') {
-                    
-                    $itemsModificados[] = $itemMod;
-                    continue;
-                }
-                if ($i['tipo'] === 'VENTAS' && str_contains($i['descripcion'], 'AL CONTADO')) {
-                    $itemsModificados[] = $itemMod;
-                    continue;
-                }
+                foreach ($items as $i) {
+                    $itemMod = $i; // Copia para modificar
 
-                if ($i['tipo'] === 'VENTAS') {
-                    $importeVenta = (float)$i['importe'];
-                    
-                    // 🔥 Si hay saldo a favor, el importe ya viene con el descuento aplicado
-                    // Entonces: monto_original = importe + saldo_favor
-                    if ($saldoAFavor > 0) {
-                        $descuentoAplicado = min($saldoAFavor, $importeVenta + $saldoAFavor);
-                        // El monto original es el importe actual + el saldo a favor que se aplicó
-                        $montoOriginal = $importeVenta + $descuentoAplicado;
-                        $itemMod['saldo_favor_aplicado'] = $descuentoAplicado;
-                        $itemMod['saldo_original'] = $montoOriginal; // 🔥 Monto original = importe + saldo aplicado
-                        $saldoAFavor -= $descuentoAplicado;
-                        // El importeVenta ya viene con el descuento, no lo modificamos
+                    // 🔥 LIQUIDACIÓN: El descuento se suma a la venta (porque ya fue descontado del total)
+                    if (!empty($i['color']) && $i['color'] === 'yellow') {
+
+                        $itemsModificados[] = $itemMod;
+                        continue;
                     }
-                }
-
-                if ($i['tipo'] === 'COBRAR') {
-                    $cobro = (float)$i['importe'];
-                    $saldoRestante = (float)$i['saldo'];
-                    
-
-                    
-                    // 🔥 Si el saldo restante es negativo, es saldo a favor
-                    if ($saldoRestante < 0) {
-                        $saldoAFavor = abs($saldoRestante);
-                        $itemMod['es_saldo_favor'] = true;
+                    if ($i['tipo'] === 'VENTAS' && str_contains($i['descripcion'], 'AL CONTADO')) {
+                        $itemsModificados[] = $itemMod;
+                        continue;
                     }
+
+                    if ($i['tipo'] === 'VENTAS') {
+                        $importeVenta = (float) $i['importe'];
+
+                        // 🔥 Si hay saldo a favor, el importe ya viene con el descuento aplicado
+                        // Entonces: monto_original = importe + saldo_favor
+                        if ($saldoAFavor > 0) {
+                            $descuentoAplicado = min($saldoAFavor, $importeVenta + $saldoAFavor);
+                            // El monto original es el importe actual + el saldo a favor que se aplicó
+                            $montoOriginal = $importeVenta + $descuentoAplicado;
+                            $itemMod['saldo_favor_aplicado'] = $descuentoAplicado;
+                            $itemMod['saldo_original'] = $montoOriginal; // 🔥 Monto original = importe + saldo aplicado
+                            $saldoAFavor -= $descuentoAplicado;
+                            // El importeVenta ya viene con el descuento, no lo modificamos
+                        }
+                    }
+
+                    if ($i['tipo'] === 'COBRAR') {
+                        $cobro = (float) $i['importe'];
+                        $saldoRestante = (float) $i['saldo'];
+
+
+
+                        // 🔥 Si el saldo restante es negativo, es saldo a favor
+                        if ($saldoRestante < 0) {
+                            $saldoAFavor = abs($saldoRestante);
+                            $itemMod['es_saldo_favor'] = true;
+                        }
+                    }
+
+                    $itemsModificados[] = $itemMod;
                 }
-                
-                $itemsModificados[] = $itemMod;
+
+                $saldoMes = $totalVenta - $totalCobros;
+
+                $saldoAcumulado = max(0, $saldoAnterior + $saldoMes);
+
+                $movimientos_por_mes[$mesEsp] = [
+                    'items' => $itemsModificados,
+                    'totalVenta' => $totalVenta,   // 👈 SUM(ventas.total)
+                    'totalCobros' => $totalCobros,  // 👈 saldo pendiente real
+                    'saldoMes' => $totalVenta - $totalCobros,
+                    'saldoAnterior' => max(0, $saldoAnterior),
+                    'saldoAcumulado' => $saldoAcumulado,
+                    'saldoAFavor' => $saldoAFavor,
+                ];
+
             }
 
-            $saldoMes = $totalVenta - $totalCobros;
+            /* ------------------------------------------------------
+            GENERAR PDF
+            ------------------------------------------------------ */
 
-            $saldoAcumulado = max(0, $saldoAnterior + $saldoMes);
+            // 🔥 Calcular totales como en Cobros.vue
+            $totalVentasSuma = 0;
+            $saldoRestanteSuma = 0;
 
-            $movimientos_por_mes[$mesEsp] = [
-                'items'          => $itemsModificados,
-                'totalVenta'     => $totalVenta,   // 👈 SUM(ventas.total)
-                'totalCobros'    => $totalCobros,  // 👈 saldo pendiente real
-                'saldoMes'       => $totalVenta - $totalCobros,
-                'saldoAnterior'  => max(0, $saldoAnterior),
-                'saldoAcumulado' => $saldoAcumulado,
-                'saldoAFavor'    => $saldoAFavor,
+            // Sumar totales de ventas a crédito
+            foreach ($ventasCredito as $venta) {
+                // Total de venta + descuento_total (liquidación ya descontada del total)
+                $totalVentasSuma += (float) $venta->total + (float) ($venta->descuento_total ?? 0);
+
+                // Buscar si tiene liquidación y sumar ese importe
+                $cuotaLiquidacion = DB::table('cuotas_credito')
+                    ->where('idcredito', $venta->id)
+                    ->where('idtipo_pago', 5)
+                    ->where('descuento', '>', 0)
+                    ->first();
+                if ($cuotaLiquidacion) {
+                    $totalVentasSuma += (float) $cuotaLiquidacion->descuento;
+                }
+
+                $saldoRestante = (float) $venta->saldo_restante;
+                if ($saldoRestante > 0) {
+                    $saldoRestanteSuma += $saldoRestante;
+                }
+            }
+
+            // Sumar totales de ventas al contado
+            foreach ($ventasContado as $venta) {
+                $totalVentasSuma += (float) $venta->total;
+            }
+
+            $data = [
+                'empresa' => $empresa,       // <-- Aquí pasamos la empresa
+                'cliente' => $cliente,
+                'movimientos' => $movimientos_por_mes,
+                'fecha_generacion' => Carbon::now()->format('d/m/Y H:i'),
+                'saldoFavorCliente' => (float) ($cliente->saldo_favor ?? 0), // 🔥 Saldo a favor desde tabla personas
+                'totalVentasSuma' => $totalVentasSuma, // 🔥 Total de ventas como en Cobros.vue
+                'saldoRestanteSuma' => $saldoRestanteSuma, // 🔥 Saldo restante (solo positivos de crédito)
             ];
 
+            $pdf = PDF::loadView('pdf.reporte-credito', $data)->setPaper('A4', 'portrait');
+
+            return $pdf->stream("estado_cuenta_{$cliente->id}.pdf");
+
+        } catch (\Exception $e) {
+            return "Error generando PDF: " . $e->getMessage();
         }
-
-        /* ------------------------------------------------------
-        GENERAR PDF
-        ------------------------------------------------------ */
-        
-        // 🔥 Calcular totales como en Cobros.vue
-        $totalVentasSuma = 0;
-        $saldoRestanteSuma = 0;
-        
-        // Sumar totales de ventas a crédito
-        foreach ($ventasCredito as $venta) {
-            // Total de venta + descuento_total (liquidación ya descontada del total)
-            $totalVentasSuma += (float)$venta->total + (float)($venta->descuento_total ?? 0);
-            
-            // Buscar si tiene liquidación y sumar ese importe
-            $cuotaLiquidacion = DB::table('cuotas_credito')
-                ->where('idcredito', $venta->id)
-                ->where('idtipo_pago', 5)
-                ->where('descuento', '>', 0)
-                ->first();
-            if ($cuotaLiquidacion) {
-                $totalVentasSuma += (float)$cuotaLiquidacion->descuento;
-            }
-            
-            $saldoRestante = (float)$venta->saldo_restante;
-            if ($saldoRestante > 0) {
-                $saldoRestanteSuma += $saldoRestante;
-            }
-        }
-        
-        // Sumar totales de ventas al contado
-        foreach ($ventasContado as $venta) {
-            $totalVentasSuma += (float)$venta->total;
-        }
-        
-        $data = [
-            'empresa'         => $empresa,       // <-- Aquí pasamos la empresa
-            'cliente'         => $cliente,
-            'movimientos'     => $movimientos_por_mes,
-            'fecha_generacion'=> Carbon::now()->format('d/m/Y H:i'),
-            'saldoFavorCliente' => (float) ($cliente->saldo_favor ?? 0), // 🔥 Saldo a favor desde tabla personas
-            'totalVentasSuma' => $totalVentasSuma, // 🔥 Total de ventas como en Cobros.vue
-            'saldoRestanteSuma' => $saldoRestanteSuma, // 🔥 Saldo restante (solo positivos de crédito)
-        ];
-
-        $pdf = PDF::loadView('pdf.reporte-credito', $data)->setPaper('A4', 'portrait');
-
-        return $pdf->stream("estado_cuenta_{$cliente->id}.pdf");
-
-    } catch (\Exception $e) {
-        return "Error generando PDF: " . $e->getMessage();
     }
-}
 
     public function obtenerCuotasid($idcredito)
-{
-    try {
-        $cuotas = CuotasCredito::select(
+    {
+        try {
+            $cuotas = CuotasCredito::select(
                 'cuotas_credito.*',
                 'tipos_pago.nombre as tipo_pago_nombre',
                 'bancos.nombre_cuenta as nombre_cuenta'
             )
-            ->leftJoin('tipos_pago', 'tipos_pago.id', '=', 'cuotas_credito.idtipo_pago')
-            ->leftJoin('bancos', 'bancos.id', '=', 'cuotas_credito.idbanco')
-            ->where('cuotas_credito.idcredito', $idcredito)
-            ->orderBy('cuotas_credito.numero_cuota', 'asc')
-            ->get();
+                ->leftJoin('tipos_pago', 'tipos_pago.id', '=', 'cuotas_credito.idtipo_pago')
+                ->leftJoin('bancos', 'bancos.id', '=', 'cuotas_credito.idbanco')
+                ->where('cuotas_credito.idcredito', $idcredito)
+                ->orderBy('cuotas_credito.numero_cuota', 'asc')
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'cuotas' => $cuotas
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'cuotas' => $cuotas
+            ], 200);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al obtener cuotas.',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-
-
-public function obtenerVentaCompleta($idventa)
-{
-    try {
-        // 🔹 Buscar venta principal
-        $venta = Venta::findOrFail($idventa);
-
-        // -----------------------------------------------------------
-        // 🔹 Obtener datos del cliente
-        // -----------------------------------------------------------
-        $cliente = null;
-
-        if (!empty($venta->idcliente)) {
-            $cliente = Persona::where('id', $venta->idcliente)
-                ->select(
-                    'id',
-                    'nombre',
-                    'num_documento',
-                    'telefono',
-                    'tipo_documento'
-                )
-                ->first();
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener cuotas.',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        // -----------------------------------------------------------
-        // 🔹 Recuperar detalles con stock actual
-        // -----------------------------------------------------------
-        $detalles = DetalleVenta::join('articulos', 'detalle_ventas.idarticulo', '=', 'articulos.id')
-            ->leftJoin('inventarios', function ($join) use ($venta) {
-                $join->on('inventarios.idarticulo', '=', 'detalle_ventas.idarticulo')
-                     ->where('inventarios.idalmacen', '=', $venta->idalmacen);
-            })
-            ->select(
-                'detalle_ventas.id',
-                'detalle_ventas.idarticulo',
-                'articulos.nombre as articulo',
-                'articulos.unidad_envase',
-                'articulos.descripcion_fabrica',
-                'detalle_ventas.cantidad',
-                'detalle_ventas.precio',
-                'detalle_ventas.descuento',
-                'detalle_ventas.modo_venta',
-                'articulos.codigo',
-                'articulos.precio_uno',
-                'articulos.precio_dos',
 
-                // 🔸 Stock actual
-                DB::raw("IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock"),
-                DB::raw("ROUND(IFNULL(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0), 0), 2) as saldo_stock_cajas"),
+    public function obtenerVentaCompleta($idventa)
+    {
+        try {
+            // 🔹 Buscar venta principal
+            $venta = Venta::findOrFail($idventa);
 
-                // 🔸 Precio seleccionado en la venta
-                DB::raw("
+            // -----------------------------------------------------------
+            // 🔹 Obtener datos del cliente
+            // -----------------------------------------------------------
+            $cliente = null;
+
+            if (!empty($venta->idcliente)) {
+                $cliente = Persona::where('id', $venta->idcliente)
+                    ->select(
+                        'id',
+                        'nombre',
+                        'num_documento',
+                        'telefono',
+                        'tipo_documento'
+                    )
+                    ->first();
+            }
+
+            // -----------------------------------------------------------
+            // 🔹 Recuperar detalles con stock actual
+            // -----------------------------------------------------------
+            $detalles = DetalleVenta::join('articulos', 'detalle_ventas.idarticulo', '=', 'articulos.id')
+                ->leftJoin('inventarios', function ($join) use ($venta) {
+                    $join->on('inventarios.idarticulo', '=', 'detalle_ventas.idarticulo')
+                        ->where('inventarios.idalmacen', '=', $venta->idalmacen);
+                })
+                ->select(
+                    'detalle_ventas.id',
+                    'detalle_ventas.idarticulo',
+                    'articulos.nombre as articulo',
+                    'articulos.unidad_envase',
+                    'articulos.descripcion_fabrica',
+                    'detalle_ventas.cantidad',
+                    'detalle_ventas.precio',
+                    'detalle_ventas.descuento',
+                    'detalle_ventas.modo_venta',
+                    'articulos.codigo',
+                    'articulos.precio_uno',
+                    'articulos.precio_dos',
+
+                    // 🔸 Stock actual
+                    DB::raw("IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock"),
+                    DB::raw("ROUND(IFNULL(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0), 0), 2) as saldo_stock_cajas"),
+
+                    // 🔸 Precio seleccionado en la venta
+                    DB::raw("
                     ROUND(
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
@@ -4764,8 +4824,8 @@ public function obtenerVentaCompleta($idventa)
                     , 2) as precioseleccionado
                 "),
 
-                // 🔸 Subtotal sin descuento
-                DB::raw("
+                    // 🔸 Subtotal sin descuento
+                    DB::raw("
                     ROUND(
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
@@ -4776,8 +4836,8 @@ public function obtenerVentaCompleta($idventa)
                     , 2) as subtotal_sin_descuento
                 "),
 
-                // 🔸 Descuento aplicado
-                DB::raw("
+                    // 🔸 Descuento aplicado
+                    DB::raw("
                     ROUND(
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
@@ -4788,8 +4848,8 @@ public function obtenerVentaCompleta($idventa)
                     , 2) as descuento_monto
                 "),
 
-                // 🔸 Subtotal final
-                DB::raw("
+                    // 🔸 Subtotal final
+                    DB::raw("
                     ROUND(
                         CASE 
                             WHEN detalle_ventas.modo_venta = 'caja' 
@@ -4801,557 +4861,559 @@ public function obtenerVentaCompleta($idventa)
                         END
                     , 2) as subtotal
                 ")
-            )
-            ->where('detalle_ventas.idventa', $idventa)
-            ->groupBy(
-                'detalle_ventas.id',
-                'detalle_ventas.idarticulo',
-                'articulos.nombre',
-                'articulos.unidad_envase',
-                'articulos.descripcion_fabrica',
-                'detalle_ventas.cantidad',
-                'detalle_ventas.precio',
-                'detalle_ventas.descuento',
-                'detalle_ventas.modo_venta',
-                'articulos.codigo',
-                'articulos.precio_uno',
-                'articulos.precio_dos'
-            )
-            ->orderBy('detalle_ventas.id', 'asc')
-            ->get();
+                )
+                ->where('detalle_ventas.idventa', $idventa)
+                ->groupBy(
+                    'detalle_ventas.id',
+                    'detalle_ventas.idarticulo',
+                    'articulos.nombre',
+                    'articulos.unidad_envase',
+                    'articulos.descripcion_fabrica',
+                    'detalle_ventas.cantidad',
+                    'detalle_ventas.precio',
+                    'detalle_ventas.descuento',
+                    'detalle_ventas.modo_venta',
+                    'articulos.codigo',
+                    'articulos.precio_uno',
+                    'articulos.precio_dos'
+                )
+                ->orderBy('detalle_ventas.id', 'asc')
+                ->get();
 
-        // 🔹 Respuesta final
-        return response()->json([
-            'venta' => $venta,
-            'cliente' => $cliente,
-            'detalles' => $detalles
-        ]);
+            // 🔹 Respuesta final
+            return response()->json([
+                'venta' => $venta,
+                'cliente' => $cliente,
+                'detalles' => $detalles
+            ]);
 
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json(['error' => 'Venta no encontrada'], 404);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Error al obtener la venta completa'], 500);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Venta no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener la venta completa'], 500);
+        }
     }
-}
 
-public function actualizarVenta(Request $request)
-{
-    try {
-        DB::beginTransaction();
+    public function actualizarVenta(Request $request)
+    {
+        try {
+            DB::beginTransaction();
 
-        $venta = Venta::findOrFail($request->idventa);
+            $venta = Venta::findOrFail($request->idventa);
 
-        // ----------------------------------------------------------
-        // 🟦 GUARDAR DETALLES ORIGINALES ANTES DE MODIFICAR NADA
-        // ----------------------------------------------------------
-        $detallesOriginales = DetalleVenta::where('idventa', $venta->id)->get();
+            // ----------------------------------------------------------
+            // 🟦 GUARDAR DETALLES ORIGINALES ANTES DE MODIFICAR NADA
+            // ----------------------------------------------------------
+            $detallesOriginales = DetalleVenta::where('idventa', $venta->id)->get();
 
-        // ----------------------------------------------------------
-        // 🟦 ACTUALIZAR CLIENTE
-        // ----------------------------------------------------------
-        if ($venta->idcliente) {
-            $cliente = Persona::find($venta->idcliente);
-            if ($cliente) {
-                $cliente->num_documento = $request->cliente['num_documento'];
-                $cliente->nombre = $request->cliente['nombre'];
-                $cliente->telefono = $request->cliente['telefono'];
-                $cliente->tipo_documento = $request->cliente['tipo_documento'];
-                $cliente->save();
-            }
-        }
-
-        // ----------------------------------------------------------
-        // 🟦 ACTUALIZAR DETALLES (BORRAR LOS QUE YA NO EXISTEN)
-        // ----------------------------------------------------------
-        $idsEnviados = collect($request->detalles)->pluck('iddetalle')->filter();
-
-        DetalleVenta::where('idventa', $venta->id)
-            ->whereNotIn('id', $idsEnviados)
-            ->delete();
-
-        foreach ($request->detalles as $item) {
-
-            $detalle = null;
-
-            if (!empty($item['iddetalle'])) {
-                $detalle = DetalleVenta::find($item['iddetalle']);
+            // ----------------------------------------------------------
+            // 🟦 ACTUALIZAR CLIENTE
+            // ----------------------------------------------------------
+            if ($venta->idcliente) {
+                $cliente = Persona::find($venta->idcliente);
+                if ($cliente) {
+                    $cliente->num_documento = $request->cliente['num_documento'];
+                    $cliente->nombre = $request->cliente['nombre'];
+                    $cliente->telefono = $request->cliente['telefono'];
+                    $cliente->tipo_documento = $request->cliente['tipo_documento'];
+                    $cliente->save();
+                }
             }
 
-            // 👉 Si NO existe en BD, se crea nuevo
-            if (!$detalle) {
-                $detalle = new DetalleVenta();
-                $detalle->idventa = $venta->id;
+            // ----------------------------------------------------------
+            // 🟦 ACTUALIZAR DETALLES (BORRAR LOS QUE YA NO EXISTEN)
+            // ----------------------------------------------------------
+            $idsEnviados = collect($request->detalles)->pluck('iddetalle')->filter();
+
+            DetalleVenta::where('idventa', $venta->id)
+                ->whereNotIn('id', $idsEnviados)
+                ->delete();
+
+            foreach ($request->detalles as $item) {
+
+                $detalle = null;
+
+                if (!empty($item['iddetalle'])) {
+                    $detalle = DetalleVenta::find($item['iddetalle']);
+                }
+
+                // 👉 Si NO existe en BD, se crea nuevo
+                if (!$detalle) {
+                    $detalle = new DetalleVenta();
+                    $detalle->idventa = $venta->id;
+                }
+
+                $detalle->idarticulo = $item['idarticulo'];
+                $detalle->cantidad = $item['cantidad'];
+                $detalle->precio = $item['precio'];
+                $detalle->descuento = $item['descuento'];
+                $detalle->modo_venta = $item['modo_venta'];
+                $detalle->save();
             }
 
-            $detalle->idarticulo = $item['idarticulo'];
-            $detalle->cantidad = $item['cantidad'];
-            $detalle->precio = $item['precio'];
-            $detalle->descuento = $item['descuento'];
-            $detalle->modo_venta = $item['modo_venta'];
-            $detalle->save();
-        }
+            // ----------------------------------------------------------
+            // 🟦 AJUSTAR INVENTARIO (REVERTIR → APLICAR NUEVO)
+            // ----------------------------------------------------------
 
-        // ----------------------------------------------------------
-        // 🟦 AJUSTAR INVENTARIO (REVERTIR → APLICAR NUEVO)
-        // ----------------------------------------------------------
+            // 🔄 Revertir inventario original
+            foreach ($detallesOriginales as $det) {
 
-        // 🔄 Revertir inventario original
-        foreach ($detallesOriginales as $det) {
+                $articulo = Articulo::find($det->idarticulo);
+                $unidadEnvase = $articulo->unidad_envase ?? 1;
 
-            $articulo = Articulo::find($det->idarticulo);
-            $unidadEnvase = $articulo->unidad_envase ?? 1;
+                $unidades = $det->modo_venta === 'caja'
+                    ? $det->cantidad * $unidadEnvase
+                    : $det->cantidad;
 
-            $unidades = $det->modo_venta === 'caja'
-                ? $det->cantidad * $unidadEnvase
-                : $det->cantidad;
-
-            DB::table('inventarios')
-                ->where('idalmacen', $venta->idalmacen)
-                ->where('idarticulo', $det->idarticulo)
-                ->increment('saldo_stock', $unidades);
-        }
-
-        // 🔄 Aplicar inventario nuevo
-        foreach ($request->detalles as $item) {
-
-            $articulo = Articulo::find($item['idarticulo']);
-            $unidadEnvase = $articulo->unidad_envase ?? 1;
-
-            $unidades = $item['modo_venta'] === 'caja'
-                ? $item['cantidad'] * $unidadEnvase
-                : $item['cantidad'];
-
-            DB::table('inventarios')
-                ->where('idalmacen', $venta->idalmacen)
-                ->where('idarticulo', $item['idarticulo'])
-                ->decrement('saldo_stock', $unidades);
-        }
-
-        // ----------------------------------------------------------
-        // 🟦 ACTUALIZAR TOTAL DE LA VENTA
-        // ----------------------------------------------------------
-        $totalAnterior = (float)$venta->total;
-
-        $venta->total = $request->total;
-
-        // ----------------------------------------------------------
-        // 🟦 ASIGNAR CAJA A LA VENTA (si no tiene o si deseas actualizarla)
-        // ----------------------------------------------------------
-        $caja = Caja::where('idusuario', $venta->idusuario)
-                    ->where('estado', '!=', 'CERRADO')
-                    ->orderBy('id', 'desc')
-                    ->first();
-
-        if ($caja) {
-            $venta->idcaja = $caja->id; // 🔥 se actualiza idcaja
-        }
-
-        $venta->save();
-
-        // ----------------------------------------------------------
-        // 🟦 ACTUALIZAR CUOTAS DE CRÉDITO
-        // ----------------------------------------------------------
-        $cuotas = CuotasCredito::where('idcredito', $venta->id)
-            ->orderBy('numero_cuota', 'asc')
-            ->get();
-
-        if ($cuotas->count() > 0) {
-
-            $totalNuevo = (float)$request->total;
-            $diferencia = $totalNuevo - $totalAnterior;
-
-            foreach ($cuotas as $cuota) {
-
-                $nuevoSaldo = (float)$cuota->saldo_restante + $diferencia;
-
-                if ($nuevoSaldo < 0) $nuevoSaldo = 0;
-
-                $cuota->saldo_restante = $nuevoSaldo;
-                $cuota->save();
-            }
-        }
-
-        // ----------------------------------------------------------
-        // 🟦 ACTUALIZAR CAJA (SOLO SI VENTA AL CONTADO)
-        // ----------------------------------------------------------
-        if ($venta->idtipo_venta == 1 && $caja) {
-
-            $diferencia = (float)$request->total - (float)$totalAnterior;
-
-            // ventas globales
-            $caja->ventas += $diferencia;
-
-            // efectivo
-            if ($venta->idtipo_pago == 1) {
-                $caja->ventasContado += $diferencia;
-                $caja->saldoCaja += $diferencia; // entra/sale efectivo físico
+                DB::table('inventarios')
+                    ->where('idalmacen', $venta->idalmacen)
+                    ->where('idarticulo', $det->idarticulo)
+                    ->increment('saldo_stock', $unidades);
             }
 
-            // QR
-            if ($venta->idtipo_pago == 7) {
-                $caja->ventasQR += $diferencia;
-                // QR no afecta saldo físico de caja
+            // 🔄 Aplicar inventario nuevo
+            foreach ($request->detalles as $item) {
+
+                $articulo = Articulo::find($item['idarticulo']);
+                $unidadEnvase = $articulo->unidad_envase ?? 1;
+
+                $unidades = $item['modo_venta'] === 'caja'
+                    ? $item['cantidad'] * $unidadEnvase
+                    : $item['cantidad'];
+
+                DB::table('inventarios')
+                    ->where('idalmacen', $venta->idalmacen)
+                    ->where('idarticulo', $item['idarticulo'])
+                    ->decrement('saldo_stock', $unidades);
             }
 
-            // total de ventas
-            $caja->saldototalventas += $diferencia;
+            // ----------------------------------------------------------
+            // 🟦 ACTUALIZAR TOTAL DE LA VENTA
+            // ----------------------------------------------------------
+            $totalAnterior = (float) $venta->total;
 
-            $caja->save();
-        }
+            $venta->total = $request->total;
 
-        // ----------------------------------------------------------
-        // 🟦 FIN — GUARDADO EXITOSO
-        // ----------------------------------------------------------
-        DB::commit();
-        return response()->json(['message' => 'Venta actualizada correctamente']);
+            // ----------------------------------------------------------
+            // 🟦 ASIGNAR CAJA A LA VENTA (si no tiene o si deseas actualizarla)
+            // ----------------------------------------------------------
+            $caja = Caja::where('idusuario', $venta->idusuario)
+                ->where('estado', '!=', 'CERRADO')
+                ->orderBy('id', 'desc')
+                ->first();
 
-    } catch (\Exception $e) {
+            if ($caja) {
+                $venta->idcaja = $caja->id; // 🔥 se actualiza idcaja
+            }
 
-        DB::rollBack();
+            $venta->save();
 
-        \Log::error("Error al actualizar venta", [
-            'exception' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-            'request' => $request->all()
-        ]);
-
-        return response()->json([
-            'error' => 'Error al actualizar venta',
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile()
-        ], 500);
-    }
-}
-public function actualizarDetallePrecio(Request $request)
-{
-    try {
-        $request->validate([
-            'idventa' => 'required|integer|exists:ventas,id',
-            'iddetalle' => 'required|integer|exists:detalle_ventas,id',
-            'precio' => 'required|numeric|min:0',
-            'modo_venta' => 'required|string|in:unidad,docena,caja',
-            'cantidad' => 'required|numeric|min:1',
-            'descuento' => 'required|numeric|min:0|max:100'
-        ]);
-
-        DB::beginTransaction();
-
-        // 🔹 Obtener la venta
-        $venta = Venta::findOrFail($request->idventa);
-
-        // 🔹 Obtener el detalle
-        $detalle = DetalleVenta::findOrFail($request->iddetalle);
-
-        // 🔹 Guardar inventario original
-        $articulo = Articulo::find($detalle->idarticulo);
-        $unidadEnvase = $articulo->unidad_envase ?? 1;
-
-        // 🔹 Calcular unidades originales
-        $unidadesOriginales = $detalle->modo_venta === 'caja'
-            ? $detalle->cantidad * $unidadEnvase
-            : $detalle->cantidad;
-
-        // 🔹 Calcular unidades nuevas
-        $unidadesNuevas = $request->modo_venta === 'caja'
-            ? $request->cantidad * $unidadEnvase
-            : $request->cantidad;
-
-        // 🔹 Actualizar detalle
-        $precioAnterior = $detalle->precio;
-        $detalle->precio = $request->precio;
-        $detalle->modo_venta = $request->modo_venta;
-        $detalle->cantidad = $request->cantidad;
-        $detalle->descuento = $request->descuento;
-        $detalle->save();
-
-        // 🔹 AJUSTAR INVENTARIO (revertir original + aplicar nuevo)
-        // Revertir unidades originales
-        if ($unidadesOriginales > 0) {
-            DB::table('inventarios')
-                ->where('idalmacen', $venta->idalmacen)
-                ->where('idarticulo', $detalle->idarticulo)
-                ->increment('saldo_stock', $unidadesOriginales);
-        }
-
-        // Aplicar unidades nuevas
-        if ($unidadesNuevas > 0) {
-            DB::table('inventarios')
-                ->where('idalmacen', $venta->idalmacen)
-                ->where('idarticulo', $detalle->idarticulo)
-                ->decrement('saldo_stock', $unidadesNuevas);
-        }
-
-        // 🔹 RECALCULAR TOTAL DE LA VENTA
-        $nuevoTotal = DetalleVenta::where('idventa', $venta->id)
-            ->get()
-            ->sum(function ($item) {
-                $cantidadReal = $item->modo_venta === 'caja'
-                    ? $item->cantidad * ($item->articulo->unidad_envase ?? 1)
-                    : $item->cantidad;
-
-                $subtotal = $item->precio * $cantidadReal;
-                $descuento = $subtotal * ($item->descuento / 100);
-                return $subtotal - $descuento;
-            });
-
-        $totalAnterior = (float)$venta->total;
-        $venta->total = $nuevoTotal;
-        $venta->save();
-
-        // 🔹 ACTUALIZAR CUOTAS DE CRÉDITO (si existen)
-        if ($venta->idtipo_venta == 2) {
+            // ----------------------------------------------------------
+            // 🟦 ACTUALIZAR CUOTAS DE CRÉDITO
+            // ----------------------------------------------------------
             $cuotas = CuotasCredito::where('idcredito', $venta->id)
                 ->orderBy('numero_cuota', 'asc')
                 ->get();
 
             if ($cuotas->count() > 0) {
-                $diferencia = $nuevoTotal - $totalAnterior;
+
+                $totalNuevo = (float) $request->total;
+                $diferencia = $totalNuevo - $totalAnterior;
 
                 foreach ($cuotas as $cuota) {
-                    $nuevoSaldo = (float)$cuota->saldo_restante + $diferencia;
-                    if ($nuevoSaldo < 0) $nuevoSaldo = 0;
+
+                    $nuevoSaldo = (float) $cuota->saldo_restante + $diferencia;
+
+                    if ($nuevoSaldo < 0)
+                        $nuevoSaldo = 0;
 
                     $cuota->saldo_restante = $nuevoSaldo;
                     $cuota->save();
                 }
             }
-        }
 
-        // 🔹 ACTUALIZAR CAJA (si venta al contado)
-        if ($venta->idtipo_venta == 1) {
-            $caja = Caja::find($venta->idcaja);
-            if ($caja) {
-                $diferencia = $nuevoTotal - $totalAnterior;
+            // ----------------------------------------------------------
+            // 🟦 ACTUALIZAR CAJA (SOLO SI VENTA AL CONTADO)
+            // ----------------------------------------------------------
+            if ($venta->idtipo_venta == 1 && $caja) {
 
+                $diferencia = (float) $request->total - (float) $totalAnterior;
+
+                // ventas globales
                 $caja->ventas += $diferencia;
-                $caja->saldototalventas += $diferencia;
 
+                // efectivo
                 if ($venta->idtipo_pago == 1) {
                     $caja->ventasContado += $diferencia;
-                    $caja->saldoCaja += $diferencia;
-                } elseif ($venta->idtipo_pago == 7) {
-                    $caja->ventasQR += $diferencia;
+                    $caja->saldoCaja += $diferencia; // entra/sale efectivo físico
                 }
+
+                // QR
+                if ($venta->idtipo_pago == 7) {
+                    $caja->ventasQR += $diferencia;
+                    // QR no afecta saldo físico de caja
+                }
+
+                // total de ventas
+                $caja->saldototalventas += $diferencia;
 
                 $caja->save();
             }
-        }
 
-        DB::commit();
+            // ----------------------------------------------------------
+            // 🟦 FIN — GUARDADO EXITOSO
+            // ----------------------------------------------------------
+            DB::commit();
+            return response()->json(['message' => 'Venta actualizada correctamente']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Precio actualizado correctamente',
-            'nuevoTotal' => $nuevoTotal
-        ]);
+        } catch (\Exception $e) {
 
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Datos inválidos',
-            'errors' => $e->errors()
-        ], 422);
+            DB::rollBack();
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        \Log::error("Error al actualizar precio del detalle", [
-            'exception' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-            'request' => $request->all()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al actualizar el precio',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-public function registrarGastoCredito(Request $request)
-{
-    DB::beginTransaction();
-
-    try {
-        $request->validate([
-            'idventa'     => 'required|integer|exists:ventas,id',
-            'monto'       => 'required|numeric|min:0.01',
-            'descripcion' => 'required|string|max:255',
-            'idbanco'     => 'nullable|integer|exists:bancos,id'
-        ]);
-
-        $venta = Venta::findOrFail($request->idventa);
-        $usuario = Auth::user();
-
-        // Caja actual
-        $caja = Caja::where('idsucursal', $usuario->idsucursal)
-            ->latest()
-            ->first();
-
-        if (!$caja) {
-            throw new \Exception('No existe caja abierta.');
-        }
-
-        // Última cuota
-        $ultimaCuota = CuotasCredito::where('idcredito', $venta->id)
-            ->orderByDesc('numero_cuota')
-            ->first();
-
-        $saldoAnterior = $ultimaCuota
-            ? floatval($ultimaCuota->saldo_restante)
-            : floatval($venta->total);
-
-        // 🔥 El gasto AUMENTA la deuda
-        $nuevoSaldo = $saldoAnterior + floatval($request->monto);
-
-        $numeroCuota = $ultimaCuota
-            ? $ultimaCuota->numero_cuota + 1
-            : 1;
-
-      // =========================
-        // REGISTRAR GASTO COMO CUOTA
-        // =========================
-        $cuota = CuotasCredito::create([
-            'idcredito'       => $venta->id,
-            'idcaja'          => $caja->id,
-            'idcobrador'      => $usuario->id,
-            'numero_cuota'    => $numeroCuota,
-            'fecha_pago'      => now(),
-            'fecha_cancelado' => now(),
-            'precio_cuota'    => floatval($request->monto),
-            'descuento'       => 0,
-            'saldo_restante'  => $nuevoSaldo,
-            'estado'          => 'Pendiente',
-            'idtipo_pago'     => 4, // GASTO
-            'idbanco'         => $request->filled('idbanco') ? $request->idbanco : null,
-        ]);
-
-        // =========================
-        // REGISTRAR TRANSACCIÓN CAJA
-        // =========================
-        $venta = Venta::with('cliente')->findOrFail($request->idventa);
-
-        $clienteNombre = DB::table('personas')
-            ->where('id', $venta->idcliente)
-            ->value('nombre');
-
-        $descripcionTransaccion =
-            'Gasto | NºComprobante: ' . ($venta->num_comprobante ?? 'S/N') .
-            ' | Cliente: ' . ($clienteNombre ?? 'N/A') .
-            ' | ' . trim($request->descripcion);
-        $tipoPagoCaja = $request->filled('idbanco') ? 7 : 1;
-
-        TransaccionesCaja::create([
-            'idcaja'           => $caja->id,
-            'idusuario'        => $usuario->id,
-            'fecha'            => now(),
-            'transaccion'      => $descripcionTransaccion,
-            'importe'          => floatval($request->monto),
-            'tipo_pago'        => $tipoPagoCaja,
-            'idbanco'          => $request->filled('idbanco') ? $request->idbanco : null,
-            'idcuota_credito'  => $cuota->id, // <-- aquí va el ID de la cuota creada
-        ]);
-        // =========================
-        // AFECTAR CAJA (SALE DINERO)
-        // =========================
-        $caja->salidas += floatval($request->monto);
-        $caja->saldoCaja -= floatval($request->monto);
-        $caja->saldototalventas -= floatval($request->monto);
-        $caja->save();
-
-        // Venta vuelve a crédito activo
-        $venta->estado = 2;
-        $venta->save();
-
-        DB::commit();
-
-        return [
-            'success'      => true,
-            'message'      => 'Gasto registrado correctamente.',
-            'nuevo_saldo'  => $nuevoSaldo
-        ];
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return [
-            'success' => false,
-            'error'   => $e->getMessage()
-        ];
-    }
-}
-public function obtenerCuotasPorCliente($clienteId)
-{
-    try {
-
-        // 🔎 Ventas a crédito del cliente
-        $ventas = Venta::where('idcliente', $clienteId)
-            ->where('idtipo_venta', 2)
-            ->orderBy('fecha_hora', 'asc')
-            ->get();
-
-        // ❗ Si no hay ventas
-        if ($ventas->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'El cliente no tiene ventas a crédito registradas.',
-                'data' => []
+            \Log::error("Error al actualizar venta", [
+                'exception' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'request' => $request->all()
             ]);
+
+            return response()->json([
+                'error' => 'Error al actualizar venta',
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ], 500);
         }
+    }
+    public function actualizarDetallePrecio(Request $request)
+    {
+        try {
+            $request->validate([
+                'idventa' => 'required|integer|exists:ventas,id',
+                'iddetalle' => 'required|integer|exists:detalle_ventas,id',
+                'precio' => 'required|numeric|min:0',
+                'modo_venta' => 'required|string|in:unidad,docena,caja',
+                'cantidad' => 'required|numeric|min:1',
+                'descuento' => 'required|numeric|min:0|max:100'
+            ]);
 
-        $resultado = [];
-        $totalSaldoPendiente = 0;
-        $totalSaldoFavor = 0;
+            DB::beginTransaction();
 
-        foreach ($ventas as $venta) {
+            // 🔹 Obtener la venta
+            $venta = Venta::findOrFail($request->idventa);
 
-            // 🔎 Cuotas de la venta
-            $cuotas = DB::table('cuotas_credito')
-                ->where('idcredito', $venta->id)
-                ->orderBy('numero_cuota', 'asc')
-                ->get();
+            // 🔹 Obtener el detalle
+            $detalle = DetalleVenta::findOrFail($request->iddetalle);
 
-            // 🔥 Calcular saldo restante real de la venta
-            $ultimaCuota = $cuotas->last();
-            $saldoRestanteVenta = $ultimaCuota ? (float) $ultimaCuota->saldo_restante : (float) $venta->total;
+            // 🔹 Guardar inventario original
+            $articulo = Articulo::find($detalle->idarticulo);
+            $unidadEnvase = $articulo->unidad_envase ?? 1;
 
-            if ($saldoRestanteVenta > 0) {
-                $totalSaldoPendiente += $saldoRestanteVenta;
-            } elseif ($saldoRestanteVenta < 0) {
-                $totalSaldoFavor += abs($saldoRestanteVenta);
+            // 🔹 Calcular unidades originales
+            $unidadesOriginales = $detalle->modo_venta === 'caja'
+                ? $detalle->cantidad * $unidadEnvase
+                : $detalle->cantidad;
+
+            // 🔹 Calcular unidades nuevas
+            $unidadesNuevas = $request->modo_venta === 'caja'
+                ? $request->cantidad * $unidadEnvase
+                : $request->cantidad;
+
+            // 🔹 Actualizar detalle
+            $precioAnterior = $detalle->precio;
+            $detalle->precio = $request->precio;
+            $detalle->modo_venta = $request->modo_venta;
+            $detalle->cantidad = $request->cantidad;
+            $detalle->descuento = $request->descuento;
+            $detalle->save();
+
+            // 🔹 AJUSTAR INVENTARIO (revertir original + aplicar nuevo)
+            // Revertir unidades originales
+            if ($unidadesOriginales > 0) {
+                DB::table('inventarios')
+                    ->where('idalmacen', $venta->idalmacen)
+                    ->where('idarticulo', $detalle->idarticulo)
+                    ->increment('saldo_stock', $unidadesOriginales);
             }
 
-            $resultado[] = [
-                'idventa'           => $venta->id,
-                'num_comprobante'   => $venta->num_comprobante,
-                'fecha'             => $venta->fecha_hora,
-                'total'             => (float) $venta->total,
-                'saldo_restante'    => $saldoRestanteVenta,
-                'cuotas'            => $cuotas
+            // Aplicar unidades nuevas
+            if ($unidadesNuevas > 0) {
+                DB::table('inventarios')
+                    ->where('idalmacen', $venta->idalmacen)
+                    ->where('idarticulo', $detalle->idarticulo)
+                    ->decrement('saldo_stock', $unidadesNuevas);
+            }
+
+            // 🔹 RECALCULAR TOTAL DE LA VENTA
+            $nuevoTotal = DetalleVenta::where('idventa', $venta->id)
+                ->get()
+                ->sum(function ($item) {
+                    $cantidadReal = $item->modo_venta === 'caja'
+                        ? $item->cantidad * ($item->articulo->unidad_envase ?? 1)
+                        : $item->cantidad;
+
+                    $subtotal = $item->precio * $cantidadReal;
+                    $descuento = $subtotal * ($item->descuento / 100);
+                    return $subtotal - $descuento;
+                });
+
+            $totalAnterior = (float) $venta->total;
+            $venta->total = $nuevoTotal;
+            $venta->save();
+
+            // 🔹 ACTUALIZAR CUOTAS DE CRÉDITO (si existen)
+            if ($venta->idtipo_venta == 2) {
+                $cuotas = CuotasCredito::where('idcredito', $venta->id)
+                    ->orderBy('numero_cuota', 'asc')
+                    ->get();
+
+                if ($cuotas->count() > 0) {
+                    $diferencia = $nuevoTotal - $totalAnterior;
+
+                    foreach ($cuotas as $cuota) {
+                        $nuevoSaldo = (float) $cuota->saldo_restante + $diferencia;
+                        if ($nuevoSaldo < 0)
+                            $nuevoSaldo = 0;
+
+                        $cuota->saldo_restante = $nuevoSaldo;
+                        $cuota->save();
+                    }
+                }
+            }
+
+            // 🔹 ACTUALIZAR CAJA (si venta al contado)
+            if ($venta->idtipo_venta == 1) {
+                $caja = Caja::find($venta->idcaja);
+                if ($caja) {
+                    $diferencia = $nuevoTotal - $totalAnterior;
+
+                    $caja->ventas += $diferencia;
+                    $caja->saldototalventas += $diferencia;
+
+                    if ($venta->idtipo_pago == 1) {
+                        $caja->ventasContado += $diferencia;
+                        $caja->saldoCaja += $diferencia;
+                    } elseif ($venta->idtipo_pago == 7) {
+                        $caja->ventasQR += $diferencia;
+                    }
+
+                    $caja->save();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Precio actualizado correctamente',
+                'nuevoTotal' => $nuevoTotal
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos inválidos',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error("Error al actualizar precio del detalle", [
+                'exception' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'request' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el precio',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function registrarGastoCredito(Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            $request->validate([
+                'idventa' => 'required|integer|exists:ventas,id',
+                'monto' => 'required|numeric|min:0.01',
+                'descripcion' => 'required|string|max:255',
+                'idbanco' => 'nullable|integer|exists:bancos,id'
+            ]);
+
+            $venta = Venta::findOrFail($request->idventa);
+            $usuario = Auth::user();
+
+            // Caja actual
+            $caja = Caja::where('idsucursal', $usuario->idsucursal)
+                ->latest()
+                ->first();
+
+            if (!$caja) {
+                throw new \Exception('No existe caja abierta.');
+            }
+
+            // Última cuota
+            $ultimaCuota = CuotasCredito::where('idcredito', $venta->id)
+                ->orderByDesc('numero_cuota')
+                ->first();
+
+            $saldoAnterior = $ultimaCuota
+                ? floatval($ultimaCuota->saldo_restante)
+                : floatval($venta->total);
+
+            // 🔥 El gasto AUMENTA la deuda
+            $nuevoSaldo = $saldoAnterior + floatval($request->monto);
+
+            $numeroCuota = $ultimaCuota
+                ? $ultimaCuota->numero_cuota + 1
+                : 1;
+
+            // =========================
+            // REGISTRAR GASTO COMO CUOTA
+            // =========================
+            $cuota = CuotasCredito::create([
+                'idcredito' => $venta->id,
+                'idcaja' => $caja->id,
+                'idcobrador' => $usuario->id,
+                'numero_cuota' => $numeroCuota,
+                'fecha_pago' => now(),
+                'fecha_cancelado' => now(),
+                'precio_cuota' => floatval($request->monto),
+                'descuento' => 0,
+                'saldo_restante' => $nuevoSaldo,
+                'estado' => 'Pendiente',
+                'idtipo_pago' => 4, // GASTO
+                'idbanco' => $request->filled('idbanco') ? $request->idbanco : null,
+            ]);
+
+            // =========================
+            // REGISTRAR TRANSACCIÓN CAJA
+            // =========================
+            $venta = Venta::with('cliente')->findOrFail($request->idventa);
+
+            $clienteNombre = DB::table('personas')
+                ->where('id', $venta->idcliente)
+                ->value('nombre');
+
+            $descripcionTransaccion =
+                'Gasto | NºComprobante: ' . ($venta->num_comprobante ?? 'S/N') .
+                ' | Cliente: ' . ($clienteNombre ?? 'N/A') .
+                ' | ' . trim($request->descripcion);
+            $tipoPagoCaja = $request->filled('idbanco') ? 7 : 1;
+
+            TransaccionesCaja::create([
+                'idcaja' => $caja->id,
+                'idusuario' => $usuario->id,
+                'fecha' => now(),
+                'transaccion' => $descripcionTransaccion,
+                'importe' => floatval($request->monto),
+                'tipo_pago' => $tipoPagoCaja,
+                'idbanco' => $request->filled('idbanco') ? $request->idbanco : null,
+                'idcuota_credito' => $cuota->id, // <-- aquí va el ID de la cuota creada
+            ]);
+            // =========================
+            // AFECTAR CAJA (SALE DINERO)
+            // =========================
+            $caja->salidas += floatval($request->monto);
+            $caja->saldoCaja -= floatval($request->monto);
+            $caja->saldototalventas -= floatval($request->monto);
+            $caja->save();
+
+            // Venta vuelve a crédito activo
+            $venta->estado = 2;
+            $venta->save();
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Gasto registrado correctamente.',
+                'nuevo_saldo' => $nuevoSaldo
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
             ];
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cuotas del cliente obtenidas correctamente.',
-            'resumen' => [
-                'total_ventas_credito' => count($resultado),
-                'saldo_pendiente'      => $totalSaldoPendiente,
-                'saldo_favor'          => $totalSaldoFavor
-            ],
-            'data' => $resultado
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al obtener las cuotas del cliente.',
-            'error'   => $e->getMessage()
-        ], 500);
     }
-}
+    public function obtenerCuotasPorCliente($clienteId)
+    {
+        try {
+
+            // 🔎 Ventas a crédito del cliente
+            $ventas = Venta::where('idcliente', $clienteId)
+                ->where('idtipo_venta', 2)
+                ->orderBy('fecha_hora', 'asc')
+                ->get();
+
+            // ❗ Si no hay ventas
+            if ($ventas->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El cliente no tiene ventas a crédito registradas.',
+                    'data' => []
+                ]);
+            }
+
+            $resultado = [];
+            $totalSaldoPendiente = 0;
+            $totalSaldoFavor = 0;
+
+            foreach ($ventas as $venta) {
+
+                // 🔎 Cuotas de la venta
+                $cuotas = DB::table('cuotas_credito')
+                    ->where('idcredito', $venta->id)
+                    ->orderBy('numero_cuota', 'asc')
+                    ->get();
+
+                // 🔥 Calcular saldo restante real de la venta
+                $ultimaCuota = $cuotas->last();
+                $saldoRestanteVenta = $ultimaCuota ? (float) $ultimaCuota->saldo_restante : (float) $venta->total;
+
+                if ($saldoRestanteVenta > 0) {
+                    $totalSaldoPendiente += $saldoRestanteVenta;
+                } elseif ($saldoRestanteVenta < 0) {
+                    $totalSaldoFavor += abs($saldoRestanteVenta);
+                }
+
+                $resultado[] = [
+                    'idventa' => $venta->id,
+                    'num_comprobante' => $venta->num_comprobante,
+                    'fecha' => $venta->fecha_hora,
+                    'total' => (float) $venta->total,
+                    'saldo_restante' => $saldoRestanteVenta,
+                    'cuotas' => $cuotas
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cuotas del cliente obtenidas correctamente.',
+                'resumen' => [
+                    'total_ventas_credito' => count($resultado),
+                    'saldo_pendiente' => $totalSaldoPendiente,
+                    'saldo_favor' => $totalSaldoFavor
+                ],
+                'data' => $resultado
+            ]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las cuotas del cliente.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

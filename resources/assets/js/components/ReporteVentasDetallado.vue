@@ -263,73 +263,76 @@
 
           <!-- TABLA DE ARTÍCULOS -->
           <div class="detalle-tabla-pro">
-            <DataTable
-              :value="arrayDetalle"
-              class="p-datatable-sm p-datatable-gridlines"
-            >
+            <DataTable :value="arrayDetalle" class="p-datatable-sm p-datatable-gridlines">
+              <Column field="codigo" header="Codigo"></Column>
+              <Column field="articulo" header="Producto"></Column>
+              <!--<Column field="unidad_envase" header="Cant x Caja">
+                <template #body="slotProps">
+                  <span v-if="slotProps.data.modo_venta === 'caja'">
+                    {{ slotProps.data.unidad_envase }}
+                  </span>
+
+                  <span v-else>-</span>
+                </template>
+</Column>-->
+
+              <Column header="Precio Unit.">
+                <template #body="slotProps">
+                  {{ (slotProps.data.precio * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  {{ monedaVenta[1] }}
+                </template>
+              </Column>
               <Column field="cantidad" header="Cant Vendida">
                 <template #body="slotProps">
-                  <span
-                    :style="{
-                      backgroundColor: obtenerColorModo(
-                        slotProps.data.modo_venta
-                      ),
-                      color:
-                        slotProps.data.modo_venta === 'docena'
-                          ? 'black'
-                          : 'white', // Texto oscuro para fondo amarillo
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontWeight: 'bold',
-                      display: 'inline-block',
-                    }"
-                  >
-                    {{ slotProps.data.cantidad }}
+                  <span :style="{
+                    backgroundColor:
+                      slotProps.data.modo_venta === 'caja'
+                        ? '#0d6efd'
+                        : slotProps.data.modo_venta === 'docena'
+                          ? '#6f42c1'
+                          : '#198754',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 'bold'
+                  }">
                     {{
-                      formatearUnidad(
-                        slotProps.data.modo_venta,
-                        slotProps.data.cantidad
+                      slotProps.data.cantidad + ' ' +
+                      (
+                        slotProps.data.modo_venta === 'caja'
+                          ? (slotProps.data.cantidad == 1 ? 'caja' : 'cajas')
+                          : slotProps.data.modo_venta === 'docena'
+                            ? (slotProps.data.cantidad == 1 ? 'docena' : 'docenas')
+                            : (slotProps.data.cantidad == 1 ? 'unidad' : 'unidades')
                       )
                     }}
                   </span>
                 </template>
               </Column>
-              <Column field="codigo" header="Codigo"></Column>
-              <Column field="articulo" header="Producto"></Column>
-
-              <Column header="Precio Unit.">
-                <template #body="slotProps">
-                  {{
-                    (
-                      slotProps.data.precio * parseFloat(monedaVenta[0])
-                    ).toFixed(2)
-                  }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-
-              <!--<Column header="Subtotal sin Descuento">
+              <Column header="Subtotal sin Descuento">
                 <template #body="slotProps">
                   {{ (slotProps.data.subtotal_sin_descuento * parseFloat(monedaVenta[0])).toFixed(2) }}
                   {{ monedaVenta[1] }}
                 </template>
               </Column>
 
-              <Column header="Descuento">
+              <Column header="Descuento por Producto">
                 <template #body="slotProps">
-                  {{ slotProps.data.descuento }}% =
-                  {{ (slotProps.data.descuento_monto * parseFloat(monedaVenta[0])).toFixed(2) }}
+                  {{ slotProps.data.descuento }}
                   {{ monedaVenta[1] }}
                 </template>
-              </Column>-->
+              </Column>
+
+              <Column header="Descuento Total">
+                <template #body="slotProps">
+                  {{ slotProps.data.descuento_total_producto }}
+                  {{ monedaVenta[1] }}
+                </template>
+              </Column>
 
               <Column field="subtotal" header="Subtotal">
                 <template #body="slotProps">
-                  {{
-                    (
-                      slotProps.data.subtotal * parseFloat(monedaVenta[0])
-                    ).toFixed(2)
-                  }}
+                  {{ (slotProps.data.subtotal * parseFloat(monedaVenta[0])).toFixed(2) }}
                   {{ monedaVenta[1] }}
                 </template>
               </Column>
@@ -1707,9 +1710,11 @@ export default {
       axios.get("/venta/obtenerDetalles?id=" + id).then(function(response) {
         me.arrayDetalle = response.data.detalles;
 
-        me.descuentoTotalDetalle = me.arrayDetalle.reduce((acc, item) => {
-          return acc + (parseFloat(item.descuento_monto) || 0);
-        }, 0);
+         me.descuentoTotalDetalle = me.arrayDetalle.reduce((acc, item) => {
+            const cantidad = parseFloat(item.cantidad) || 1;
+            const descuentoUnidad = parseFloat(item.descuento_monto) || 0; // monto por unidad
+            return acc + (descuentoUnidad * cantidad);
+          }, 0);
 
         me.descuentoAdicionalvista =
           (me.descuentoAdicionalvista || 0) - me.descuentoTotalDetalle;
@@ -2451,7 +2456,6 @@ export default {
           } else {
             let mensaje = `Se encontraron ${me.arrayReporte.length} ventas<br>`;
             mensaje += `Registradas Contado: ${me.cantidadVentasRegistradasContado}<br>`;
-            mensaje += `Registradas Crédito: ${me.cantidadVentasRegistradasCredito}<br>`;
             mensaje += `Anuladas: ${me.cantidadVentasAnuladas}`;
             me.$swal.fire("Éxito", mensaje, "success");
           }
