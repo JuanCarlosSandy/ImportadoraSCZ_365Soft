@@ -671,10 +671,10 @@
                           
                           <div class="d-flex flex-column flex-md-column mt-2 mt-md-0 text-center">
                             <div class="d-flex flex-row justify-content-center mb-1">
-                              <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
+                              <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
                                 <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
-                              </button>
-                              <button type="button" @click="aplicarDescuento(1)" class="btn btn-success">
+                              </button>-->
+                              <button type="button" @click="aplicarDescuentoRecibo(1, 1)" class="btn btn-success">
                                 <i class="fa fa-check mr-2"></i> Registrar Pago
                               </button>
                             </div>
@@ -707,10 +707,10 @@
                         </div>
 
                         <div class="d-flex flex-row flex-md-row mt-2 mt-md-0 justify-content-center">
-                          <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
+                          <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
                             <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
-                          </button>
-                          <button type="button" @click="aplicarDescuento(7)" class="btn btn-success">
+                          </button>-->
+                          <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
                             <i class="fa fa-check mr-2"></i> Registrar Pago
                           </button>
                         </div>
@@ -2115,6 +2115,38 @@ calcularTotal() {
   },
 
   methods: {
+     toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastInfo(mensaje) {
+      this.$toast.add({
+        severity: "info",
+        summary: "Información",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     stopAutoVerificarQR() {
       if (this.autoVerificarQRInterval) {
         clearInterval(this.autoVerificarQRInterval);
@@ -3779,11 +3811,7 @@ calcularTotal() {
       const cantidad = this.cantidad * this.unidadPaquete;
 
       if (this.saldosNegativos === 0 && this.arraySeleccionado.saldo_stock < cantidad) {
-        swal({
-          type: "error",
-          title: "Error...",
-          text: "No hay stock disponible!",
-        });
+        this.toastWarning("No hay stock disponible");
         return;
       }
 
@@ -3870,11 +3898,7 @@ calcularTotal() {
 
     agregarDetalleModalProducto(data) {
       if (data.saldo_stock == 0) {
-        Swal.fire({
-          icon: "warning",
-          title: "Sin stock",
-          text: "No hay stock de este ítem en el almacén.",
-        });
+        this.toastWarning("No hay stock disponible");
         return;
       }
 
@@ -3894,11 +3918,7 @@ calcularTotal() {
       // Si es medicamento, validar stock
       if (tipo === "medicamento") {
         if (data.saldo_stock == 0) {
-          Swal.fire({
-            icon: "warning",
-            title: "Sin stock",
-            text: "No hay stock de este ítem en el almacén.",
-          });
+          this.toastWarning("No hay stock disponible");
           return;
         }
 
@@ -4509,7 +4529,7 @@ calcularTotal() {
 
         } else {
           swal.close();
-          swal('DEBE TENER UNA CAJA ABIERTA', 'Error al registrar el Pago', 'warning');
+          me.toastInfo('Debe tener una caja abierta para registrar el pago');
           me.modalPago = false;
         }
 
@@ -5523,13 +5543,9 @@ calcularTotal() {
 
     manejarErrorVenta(data) {
       if (data.valorMaximo) {
-        swal(
-          "Aviso",
-          `El valor de descuento no puede exceder el ${data.valorMaximo}`,
-          "warning"
-        );
+        this.toastInfo(`El valor de descuento no puede exceder el ${data.valorMaximo}`);
       } else if (data.caja_validado) {
-        swal("Aviso", data.caja_validado, "warning");
+        this.toastInfo(data.caja_validado);
       } else {
         console.error("Error desconocido al registrar venta:", data);
       }
