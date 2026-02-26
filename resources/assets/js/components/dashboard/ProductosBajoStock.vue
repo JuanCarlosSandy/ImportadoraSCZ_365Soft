@@ -1,193 +1,169 @@
 <template>
-  <main class="main">
-    <Panel class="custom-panel">
-      <div v-if="isLoading" class="loading-overlay">
-        <div class="loading-container">
-          <div class="spinner"></div>
-          <div class="loading-text">LOADING...</div>
+  <Panel>
+    <template #header>
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
+      >
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <i class="pi pi-bars panel-icon"></i>
+          <h4 class="panel-title" style="margin: 0;">MEDICAMENTOS CON BAJO STOCK</h4>
+        </div>
+        <div class="botones-export">
+          <Button
+            icon="pi pi-file"
+            label="PDF"
+            v-if="mostrarBotones"
+            class="p-button-secondary p-button-sm bt-pdf p-mr-2"
+            @click="exportarPDF"
+          />
+          <Button
+            icon="pi pi-table"
+            label="Excel"
+            class="p-button-secondary p-button-sm bt-ex"
+            @click="cargarExcel"
+          />
         </div>
       </div>
+    </template>
 
-      <template #header>
-        <div class="panel-header-content">
-          <div class="header-left">
-            <i class="pi pi-bars panel-icon"></i>
-            <h4 class="panel-title">REPORTE DE PRODUCTOS CON BAJO STOCK</h4>
-          </div>
-          <div class="header-right">
-            <Button
-              icon="pi pi-file-pdf"
-              label="PDF"
-              class="p-button-danger p-button-sm bt-pdf p-mr-2"
-              @click="exportarPdf"
-              :disabled="isLoading"
-            />
-            <Button
-              icon="pi pi-file-excel"
-              label="Excel"
-              class="p-button-success p-button-sm bt-ex"
-              @click="exportarExcel"
-              :disabled="isLoading"
-            />
-          </div>
+    <div
+      class="filters-container"
+      v-if="mostrarBotones"
+      style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;"
+    >
+      <div
+        class="p-fluid grid formgrid"
+        style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;"
+      >
+        <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
+          <label for="almacen" style="font-weight: bold; font-size: 0.9rem;"
+            >Almacén</label
+          >
+          <Dropdown
+            id="almacen"
+            v-model="filtros.almacen_id"
+            :options="arrayAlmacenes"
+            optionLabel="nombre_almacen"
+            optionValue="id"
+            placeholder="Todos los almacenes"
+            showClear
+            @change="listarInventario(1)"
+            class="p-inputtext-sm"
+          />
+        </div>
+
+        <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
+          <label for="laboratorio" style="font-weight: bold; font-size: 0.9rem;"
+            >Proveedor</label
+          >
+          <InputText
+            id="laboratorio"
+            v-model="filtros.laboratorio"
+            placeholder="Escribe para buscar..."
+            class="p-inputtext-sm"
+            @input="buscarConRetraso"
+          />
+        </div>
+
+        <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
+          <label for="medicamento" style="font-weight: bold; font-size: 0.9rem;"
+            >Producto</label
+          >
+          <InputText
+            id="medicamento"
+            v-model="filtros.medicamento"
+            placeholder="Escribe para buscar..."
+            class="p-inputtext-sm"
+            @input="buscarConRetraso"
+          />
+        </div>
+
+        <div style="display: flex;">
+          <Button
+            icon="pi pi-filter-slash"
+            class="p-button-help p-button-sm p-button-outlined"
+            @click="resetFiltros"
+            title="Limpiar todos los filtros"
+            label="Limpiar"
+          />
+        </div>
+      </div>
+    </div>
+
+    <DataTable
+      :value="arrayInventario"
+      :rowClass="getRowClass"
+      responsiveLayout="scroll"
+      stripedRows
+      rowGroupMode="subheader"
+      groupRowsBy="nombre_almacen"
+      sortMode="single"
+      sortField="nombre_almacen"
+      :sortOrder="1"
+    >
+      <template #groupheader="slotProps">
+        <div
+          style="display: flex; align-items: center; gap: 10px; padding: 10px; background-color: #e9ecef;"
+        >
+          <i
+            class="pi pi-building"
+            style="font-size: 1.2rem; color: #495057;"
+          ></i>
+          <span style="font-weight: bold; font-size: 1.1rem; color: #495057;">
+            {{ slotProps.data.nombre_almacen }}
+          </span>
         </div>
       </template>
 
-      <div class="filters-container">
-        <div class="filters-row">
-          <div class="filter-item">
-            <label for="almacen" class="filter-label">Almacen</label>
-            <Dropdown
-              id="almacen"
-              v-model="filtros.idAlmacen"
-              :options="arrayAlmacenes"
-              optionLabel="nombre_almacen"
-              optionValue="id"
-              panelClass="almacen-dropdown-panel"
-              emptyMessage="No hay almacenes disponibles"
-              placeholder="Todos los almacenes"
-              class="p-inputtext-sm"
-              showClear
-              @change="listarInventario(1)"
-            />
-            <small v-if="!arrayAlmacenes.length" class="warning-text">
-              No se cargaron almacenes para este usuario.
-            </small>
-          </div>
-
-          <div class="filter-item">
-            <label for="proveedor" class="filter-label">Proveedor</label>
-            <AutoComplete
-              id="proveedor"
-              v-model="filtros.proveedor"
-              :suggestions="sugerenciasProveedor"
-              :dropdown="true"
-              placeholder="Escribe para buscar..."
-              class="p-inputtext-sm"
-              @complete="buscarProveedores"
-              @item-select="listarInventario(1)"
-              @change="buscarConRetraso"
-            />
-          </div>
-
-          <div class="filter-item">
-            <label for="productos" class="filter-label">Productos</label>
-            <AutoComplete
-              id="productos"
-              v-model="filtros.productos"
-              :suggestions="sugerenciasProductos"
-              :dropdown="true"
-              placeholder="Escribe para buscar..."
-              class="p-inputtext-sm"
-              @complete="buscarProductos"
-              @item-select="listarInventario(1)"
-              @change="buscarConRetraso"
-            />
-          </div>
-
-          <div class="filter-actions">
-            <Button
-              icon="pi pi-filter-slash"
-              class="p-button-help p-button-sm p-button-outlined"
-              @click="resetFiltros"
-              title="Limpiar todos los filtros"
-              label="Limpiar"
-            />
-          </div>
-        </div>
-        <div class="filters-row filters-row-secondary">
-          <div class="filter-item">
-            <label for="categoria" class="filter-label">Categoria</label>
-            <Dropdown
-              id="categoria"
-              v-model="filtros.idCategoria"
-              :options="arrayCategorias"
-              optionLabel="nombre"
-              optionValue="id"
-              placeholder="Todas"
-              class="p-inputtext-sm"
-              showClear
-              @change="listarInventario(1)"
-            />
-          </div>
-        </div>
-      </div>
-
-      <DataTable
-        :value="arrayInventario"
-        responsiveLayout="scroll"
-        stripedRows
-        rowGroupMode="subheader"
-        groupRowsBy="nombre_almacen"
-        sortMode="single"
-        sortField="nombre_almacen"
-        :sortOrder="1"
-        class="custom-table"
-      >
-        <template #groupheader="slotProps">
-          <div class="group-header">
-            <i class="pi pi-building"></i>
-            <span>{{ slotProps.data.nombre_almacen }}</span>
-          </div>
+      <Column field="nombre_proveedor" header="Laboratorio">
+        <template #body="slotProps">
+          <span style="font-weight: 600; color: #007bff;">
+            {{ slotProps.data.nombre_proveedor }}
+          </span>
         </template>
+      </Column>
 
-        <Column field="nombre_proveedor" header="Proveedor">
-          <template #body="slotProps">
-            <span class="proveedor-text">{{ getProveedor(slotProps.data) }}</span>
-          </template>
-        </Column>
+      <Column field="nombre_producto" header="Medicamento"></Column>
+      <Column field="stock" header="Stock Minimo">
+        <template #body="slotProps">
+          <span style="font-weight: bold; font-size: 1.1em;">
+            {{ slotProps.data.stock }}
+          </span>
+        </template>
+      </Column>
 
-        <Column field="nombre_producto" header="Productos">
-          <template #body="slotProps">
-            <span>{{ getProducto(slotProps.data) }}</span>
-          </template>
-        </Column>
+      <Column field="saldo_stock" header="Stock Actual">
+        <template #body="slotProps">
+          <span style="font-weight: bold; font-size: 1.1em;">
+            {{ slotProps.data.saldo_stock }}
+          </span>
+        </template>
+      </Column>
 
-        <Column field="nombre_categoria" header="Categoria">
-          <template #body="slotProps">
-            <span>{{ getCategoria(slotProps.data) }}</span>
-          </template>
-        </Column>
-
-        <Column field="stock_actual" header="Stock Actual">
-          <template #body="slotProps">
-            <span class="stock-text">{{ formatNumber(getStockActual(slotProps.data)) }}</span>
-          </template>
-        </Column>
-
-        <Column field="stock_minimo" header="Stock Minimo">
-          <template #body="slotProps">
-            <span>{{ formatNumber(getStockMinimo(slotProps.data)) }}</span>
-          </template>
-        </Column>
-
-        <Column header="Estado">
-          <template #body="slotProps">
-            <Tag
-              v-if="Number(getStockActual(slotProps.data)) <= 0"
-              class="tag-sin-stock"
-              icon="pi pi-times-circle"
-              value="Sin Stock"
-            />
-            <Tag
-              v-else
-              class="tag-bajo-stock"
-              icon="pi pi-exclamation-triangle"
-              value="Bajo Stock"
-            />
-          </template>
-        </Column>
-      </DataTable>
-
-      <Paginator
-        :rows="pagination.per_page"
-        :totalRecords="pagination.total"
-        :first="(pagination.current_page - 1) * pagination.per_page"
-        @page="onPageChange"
-        class="paginator-custom"
-      />
-    </Panel>
-  </main>
+      <Column header="Estado">
+        <template #body="slotProps">
+          <Tag
+            v-if="Number(slotProps.data.saldo_stock) === 0"
+            severity="danger"
+            icon="pi pi-times-circle"
+            value="Sin Stock"
+          />
+          <Tag
+            v-else
+            severity="warning"
+            icon="pi pi-exclamation-triangle"
+            value="Bajo Stock"
+          />
+        </template>
+      </Column>
+    </DataTable>
+    <Paginator
+      :rows="pagination.per_page"
+      :totalRecords="pagination.total"
+      :first="(pagination.current_page - 1) * pagination.per_page"
+      @page="onPageChange"
+    />
+  </Panel>
 </template>
 
 <script>
@@ -198,8 +174,7 @@ import Column from "primevue/column";
 import Tag from "primevue/tag";
 import Paginator from "primevue/paginator";
 import Dropdown from "primevue/dropdown";
-import AutoComplete from "primevue/autocomplete";
-import axios from "axios";
+import InputText from "primevue/inputtext";
 
 export default {
   components: {
@@ -210,344 +185,733 @@ export default {
     Tag,
     Paginator,
     Dropdown,
-    AutoComplete,
+    InputText,
+  },
+  props: {
+    mostrarBotones: { type: Boolean, default: false },
   },
   data() {
     return {
-      isLoading: false,
+      mostrarLabel: true,
       arrayInventario: [],
-      arrayAlmacenes: [],
-      arrayCategorias: [],
-      timerBusqueda: null,
-      sugerenciasProveedor: [],
-      sugerenciasProductos: [],
+      pagination: { total: 0, current_page: 1, per_page: 10, last_page: 0 },
       filtros: {
-        idAlmacen: null,
-        proveedor: "",
-        productos: "",
-        idCategoria: null,
+        almacen_id: null,
+        medicamento: "",
+        laboratorio: "",
       },
-      pagination: {
-        total: 0,
-        current_page: 1,
-        per_page: 10,
-        last_page: 0,
-      },
+      arrayAlmacenes: [],
+      timerBusqueda: null,
     };
   },
   methods: {
-    formatNumber(value) {
-      var number = parseFloat(value || 0);
-      return Number.isNaN(number) ? "0" : String(Math.round(number));
-    },
-    getProveedor(row) {
-      if (!row) return "SIN PROVEEDOR";
-      return row.nombre_proveedor || row.proveedor || "SIN PROVEEDOR";
-    },
-    getProducto(row) {
-      if (!row) return "";
-      return row.nombre_producto || row.producto || "";
-    },
-    getCategoria(row) {
-      if (!row) return "SIN CATEGORIA";
-      return row.nombre_categoria || row.categoria || "SIN CATEGORIA";
-    },
-    getStockActual(row) {
-      if (!row) return 0;
-      if (row.stock_actual !== undefined && row.stock_actual !== null) return row.stock_actual;
-      if (row.saldo_stock !== undefined && row.saldo_stock !== null) return row.saldo_stock;
-      return 0;
-    },
-    getStockMinimo(row) {
-      if (!row) return 0;
-      return row.stock_minimo !== undefined && row.stock_minimo !== null ? row.stock_minimo : 0;
-    },
-    getParams(page) {
-      return {
-        page: page || 1,
-        idAlmacen: this.filtros.idAlmacen || "",
-        proveedor: this.filtros.proveedor || "",
-        productos: this.filtros.productos || "",
-        idCategoria: this.filtros.idCategoria || "",
-      };
-    },
-    normalizeAlmacenes(response) {
-      var list = [];
-      if (!response || !response.data) return list;
-      if (Array.isArray(response.data.almacenes)) list = response.data.almacenes;
-      else if (response.data.almacenes && Array.isArray(response.data.almacenes.data)) list = response.data.almacenes.data;
-
-      return list.map(function (item) {
-        var nombre = item && (item.nombre_almacen || item.nombre || item.almacen || "");
-        return Object.assign({}, item, {
-          nombre_almacen: nombre || ("Almacen " + (item && item.id ? item.id : "")),
-        });
-      });
-    },
     async getDatosAlmacen() {
       try {
-        var response = await axios.get("/almacen/selectAlmacen");
-        var almacenes = this.normalizeAlmacenes(response);
-        if (!almacenes.length) {
-          response = await axios.get("/almacenes/lista");
-          almacenes = this.normalizeAlmacenes(response);
-        }
-        if (!almacenes.length) {
-          response = await axios.get("/almacen/selectAlmacenDest");
-          almacenes = this.normalizeAlmacenes(response);
-        }
-        this.arrayAlmacenes = almacenes;
+        const response = await axios.get(`/almacenes/lista/`);
+        this.arrayAlmacenes = response.data.almacenes;
       } catch (error) {
-        console.error("Error cargando almacenes:", error);
-        this.arrayAlmacenes = [];
+        console.error(error);
       }
     },
-    async buscarProveedores(event) {
-      var query = event && event.query ? event.query : "";
-      try {
-        var response = await axios.get("/proveedor/selectNombreProveedor", {
-          params: { filtro: query },
-        });
-        var list = response.data && response.data.proveedores ? response.data.proveedores : [];
-        this.sugerenciasProveedor = list.map(function (item) {
-          return item.nombre;
-        });
-      } catch (error) {
-        console.error("Error cargando sugerencias de proveedor:", error);
-        this.sugerenciasProveedor = [];
-      }
-    },
-    async buscarProductos(event) {
-      var query = event && event.query ? event.query : "";
-      try {
-        var response = await axios.get("/articulo", {
-          params: {
-            page: 1,
-            buscar: query,
-            criterio: "todos",
-          },
-        });
-        var data = response.data && response.data.articulos ? response.data.articulos.data : [];
-        var unicos = {};
-        var sugerencias = [];
-        data.forEach(function (item) {
-          var nombre = item && item.nombre ? item.nombre : "";
-          if (nombre && !unicos[nombre]) {
-            unicos[nombre] = true;
-            sugerencias.push(nombre);
-          }
-        });
-        this.sugerenciasProductos = sugerencias;
-      } catch (error) {
-        console.error("Error cargando sugerencias de productos:", error);
-        this.sugerenciasProductos = [];
-      }
-    },
-    async getCategorias() {
-      try {
-        var response = await axios.get("/categorianewview");
-        var categorias = [];
-        if (response && response.data) {
-          if (Array.isArray(response.data.categorias)) categorias = response.data.categorias;
-          else if (response.data.categorias && Array.isArray(response.data.categorias.data)) categorias = response.data.categorias.data;
-        }
-        this.arrayCategorias = categorias;
-      } catch (error) {
-        console.error("Error cargando categorias:", error);
-        this.arrayCategorias = [];
-      }
-    },
+
     buscarConRetraso() {
-      var me = this;
-      if (this.timerBusqueda) clearTimeout(this.timerBusqueda);
-      this.timerBusqueda = setTimeout(function () {
-        me.listarInventario(1);
-      }, 400);
-    },
-    async listarInventario(page) {
-      this.isLoading = true;
-      try {
-        var response = await axios.get("/inventarios/productosbajostock", {
-          params: this.getParams(page || 1),
-        });
-        this.arrayInventario = response.data && response.data.inventarios ? response.data.inventarios.data : [];
-        this.pagination = response.data && response.data.pagination ? response.data.pagination : this.pagination;
-      } catch (error) {
-        console.error("Error al listar productos bajo stock:", error);
-      } finally {
-        this.isLoading = false;
+      if (this.timerBusqueda) {
+        clearTimeout(this.timerBusqueda);
       }
+
+      this.timerBusqueda = setTimeout(() => {
+        this.listarInventario(1);
+      }, 500);
     },
+
+    listarInventario(page = 1) {
+      const params = {
+        page: page,
+        almacen_id: this.filtros.almacen_id,
+        medicamento: this.filtros.medicamento,
+        laboratorio: this.filtros.laboratorio,
+      };
+
+      axios
+        .get("/inventarios/productosbajostock", { params: params })
+        .then((response) => {
+          this.arrayInventario = response.data.inventarios.data;
+          this.pagination = response.data.pagination;
+        })
+        .catch((error) => console.error(error));
+    },
+
+    resetFiltros() {
+      this.filtros = { almacen_id: null, medicamento: "", laboratorio: "" };
+      this.listarInventario(1);
+    },
+
     onPageChange(event) {
       this.listarInventario(event.page + 1);
     },
-    resetFiltros() {
-      this.filtros = {
-        idAlmacen: null,
-        proveedor: "",
-        productos: "",
-        idCategoria: null,
+
+    async exportarPDF() {
+      const query = new URLSearchParams(this.filtros).toString();
+      window.open(`/inventarios/exportproductosbajostock?${query}`, "_blank");
+    },
+    cargarExcel() {
+      
+      const filtrosLimpios = {
+        almacen_id: this.filtros.almacen_id || "",
+        medicamento: this.filtros.medicamento || "",
+        laboratorio: this.filtros.laboratorio || "",
       };
-      this.listarInventario(1);
+
+      const query = new URLSearchParams(filtrosLimpios).toString();
+      
+      window.open(
+        `/inventarios/listarReporteBajoStockExcel?${query}`,
+        "_blank",
+      );
     },
-    async exportarExcel() {
-      try {
-        var response = await axios.get("/inventarios/listarReporteBajoStockExcel", {
-          params: this.getParams(1),
-          responseType: "blob",
-          timeout: 600000,
-        });
-        var url = window.URL.createObjectURL(new Blob([response.data]));
-        var link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "ReporteProductosBajoStock.xlsx");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Error al exportar Excel:", error);
-      }
+    handleResize() {
+      this.mostrarLabel = window.innerWidth > 768;
     },
-    async exportarPdf() {
-      try {
-        var response = await axios.get("/inventarios/listarReporteBajoStockPdf", {
-          params: this.getParams(1),
-          responseType: "blob",
-          timeout: 600000,
-        });
-        var url = window.URL.createObjectURL(new Blob([response.data]));
-        var link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "ReporteProductosBajoStock.pdf");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Error al exportar PDF:", error);
-      }
+    getRowClass(data) {
+      return {
+        "bg-red-100": Number(data.saldo_stock) === 0,
+        "bg-yellow-100": Number(data.saldo_stock) > 0,
+      };
     },
   },
   mounted() {
+    this.handleResize();
+    window.addEventListener("resize", this.handleResize);
     this.getDatosAlmacen();
-    this.getCategorias();
     this.listarInventario(1);
   },
 };
 </script>
 
 <style scoped>
-.custom-panel >>> .p-panel-header {
-  background: #fff;
-  border-bottom: 1px solid #dee2e6;
-  padding: 1rem 1.25rem;
+/* Arreglar icono de lupa - Centrado perfecto */
+.bt-pdf,
+.bt-ex {
+  /* o el verde */
+  border: 2px solid transparent; /* 👈 ya reserva el espacio */
+  box-sizing: border-box; /* evita que crezca */
+  transform: none;
+}
+.bt-pdf {
+  background-color: rgb(220, 53, 69);
+}
+.bt-ex {
+  background-color: rgb(40, 167, 69);
 }
 
-.panel-header-content {
+.bt-pdf:hover {
+  background-color: #fff !important;
+  color: rgb(220, 53, 69) !important;
+  border-color: rgb(220, 53, 69) !important;
+}
+
+.bt-ex:hover {
+  background-color: #fff !important;
+  color: rgb(40, 167, 69) !important;
+  border-color: rgb(40, 167, 69) !important;
+}
+
+.botones-export {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+}
+
+.search-bar .p-input-icon-left {
+  position: relative;
   width: 100%;
 }
 
-.header-left {
+.search-bar .p-input-icon-left i {
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+  height: 1rem;
+  z-index: 2;
+  color: #6c757d;
+  pointer-events: none;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  line-height: 1;
 }
 
-.panel-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+.search-bar .p-input-icon-left .p-inputtext {
+  padding-left: 2.5rem !important;
+  width: 100%;
 }
 
-.header-right {
-  display: flex;
-  gap: 0.5rem;
+.input-container {
+  position: relative;
+  padding-bottom: 20px;
+  /* Aumentado de 8px a 12px para dar espacio al error */
+  margin-bottom: 8px;
+  /* Agregado margen inferior pequeño */
 }
 
-.filters-container {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #dee2e6;
+.input-container .p-inputtext {
+  width: 100%;
+  margin-bottom: 0;
+  /* Eliminar margen inferior si existe */
 }
 
-.filters-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.filter-item {
-  flex: 1;
-  min-width: 200px;
-}
-
-.filters-row-secondary {
-  margin-top: 0.5rem;
-}
-
-.filter-label {
-  display: block;
-  font-weight: 700;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.warning-text {
-  display: block;
-  margin-top: 0.35rem;
-  color: #b45309;
+.error-message {
+  position: absolute;
+  bottom: 2px;
+  /* Ajustado para tener más espacio arriba del input */
+  left: 0;
   font-size: 0.75rem;
+  /* Tamaño de fuente más pequeño */
+  margin-top: 0;
+  /* Eliminado margen superior */
 }
 
-.filter-actions {
-  display: flex;
-  align-items: flex-end;
+/* Panel Content Spacing */
+>>> .p-panel .p-panel-content {
+  padding: 1rem;
 }
 
-.custom-table >>> .p-datatable-wrapper {
+>>> .p-panel .p-panel-header {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+>>> .p-panel .p-panel-header .p-panel-title {
+  font-weight: 600;
+}
+
+/* Responsive Dialog Styles */
+.responsive-dialog >>> .p-dialog {
+  margin: 0.75rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.responsive-dialog >>> .p-dialog-content {
   overflow-x: auto;
+  padding: 0.75rem 1rem;
+  /* Reducido padding vertical */
 }
 
-.group-header {
+.responsive-dialog >>> .p-dialog-header {
+  padding: 0.75rem 1.5rem;
+  /* Reducido padding vertical */
+  font-size: 1.1rem;
+}
+
+.responsive-dialog >>> .p-dialog-footer {
+  padding: 0.5rem 1.5rem;
+  /* Reducido padding vertical */
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Toolbar Responsive - Mantener en una línea */
+.toolbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+}
+
+.toolbar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  padding: 10px;
-  background-color: #e9ecef;
-  font-weight: bold;
+  flex-shrink: 0;
 }
 
-.proveedor-text {
+.search-bar {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  margin-right: 1rem;
+}
+
+/* Formulario compacto - Reducir espacios entre campos */
+.form-compact >>> .p-field {
+  margin-bottom: 0.25rem !important;
+  /* Reducido de 0.5rem a 0.25rem */
+}
+
+>>> .p-fluid .p-field {
+  margin-bottom: 0.25rem;
+  /* Reducido de 0.5rem a 0.25rem */
+}
+
+/* Reducir padding del contenedor del diálogo */
+.responsive-dialog >>> .p-dialog-content {
+  padding: 0.75rem 1rem !important;
+  /* Reducido padding vertical */
+}
+
+/* Estilos para campos obligatorios */
+.required-field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-weight: 600;
-  color: #007bff;
+  color: #2c3e50;
 }
 
-.stock-text {
+.required-icon {
+  color: #e74c3c;
+  font-size: 1rem;
   font-weight: bold;
-  font-size: 1.05em;
+  margin-right: 0.2rem;
 }
 
-.tag-bajo-stock {
-  background-color: #ff9800 !important;
-  color: #fff !important;
+/* Estilos para campos opcionales */
+.optional-field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+  color: #6c757d;
 }
 
-.tag-sin-stock {
-  background-color: #d32f2f !important;
-  color: #fff !important;
+.optional-icon {
+  color: #17a2b8;
+  font-size: 0.8rem;
 }
 
-.paginator-custom {
-  margin-top: 0.75rem;
+.activo {
+  color: green;
+  font-weight: bold;
 }
 
+.status-badge {
+  padding: 0.25em 0.5em;
+  border-radius: 4px;
+  color: white;
+}
+
+.status-badge.active {
+  background-color: rgb(0, 225, 0);
+}
+
+.status-badge.inactive {
+  background-color: red;
+}
+
+/* DataTable Responsive */
+>>> .p-datatable {
+  font-size: 0.9rem;
+}
+
+>>> .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.5rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>> .p-datatable .p-datatable-thead > tr > th {
+  padding: 0.75rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.p-dialog-mask {
+  z-index: 9990 !important;
+}
+
+.p-dialog {
+  z-index: 9990 !important;
+}
+
+/* SweetAlert z-index para que aparezca por encima de los diálogos */
+>>> .swal2-container {
+  z-index: 99999 !important;
+}
+
+>>> .swal2-popup {
+  z-index: 99999 !important;
+}
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  .responsive-dialog >>> .p-dialog {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+
+  >>> .p-datatable {
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .toolbar .p-button .p-button-label {
+    display: none;
+  }
+
+  .responsive-dialog >>> .p-dialog {
+    margin: 0.25rem;
+    max-height: 98vh;
+  }
+
+  .responsive-dialog >>> .p-dialog-content {
+    padding: 0.5rem 0.75rem;
+    /* Más compacto en móviles */
+  }
+
+  .responsive-dialog >>> .p-dialog-header {
+    padding: 0.5rem 1rem;
+    /* Reducido padding vertical */
+    font-size: 1rem;
+  }
+
+  .responsive-dialog >>> .p-dialog-footer {
+    padding: 0.4rem 1rem;
+    /* Reducido padding vertical */
+    justify-content: flex-end;
+  }
+
+  .toolbar-container {
+    gap: 0.5rem;
+  }
+
+  >>> .p-datatable {
+    font-size: 0.8rem;
+  }
+
+  >>> .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.4rem 0.3rem;
+  }
+
+  >>> .p-datatable .p-datatable-thead > tr > th {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  /* Ajustar botones en móviles */
+  >>> .p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+    min-width: auto !important;
+  }
+
+  /* Ajustar botón "Nuevo" para que coincida con otros botones */
+  .toolbar >>> .p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  /* Reducir altura del input buscador */
+  .search-bar .p-inputtext-sm {
+    padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Ajustar iconos en móviles */
+  .required-icon {
+    font-size: 0.8rem;
+  }
+
+  .optional-icon {
+    font-size: 0.6rem;
+  }
+
+  >>> .p-inputtext,
+  >>> .p-dropdown,
+  >>> .p-inputnumber-input {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+
+  /* Reducir espacios entre campos en móviles */
+  .input-container {
+    padding-bottom: 20px;
+    /* Aumentado para dar espacio al error en móviles */
+    margin-bottom: 6px;
+  }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 480px) {
+  .toolbar .p-button .p-button-label {
+    display: none;
+  }
+
+  .responsive-dialog >>> .p-dialog {
+    margin: 0.1rem;
+    max-height: 99vh;
+  }
+
+  .responsive-dialog >>> .p-dialog-content {
+    padding: 0.4rem 0.5rem;
+    /* Más compacto en móviles extra pequeños */
+  }
+
+  .responsive-dialog >>> .p-dialog-header {
+    padding: 0.4rem 0.75rem;
+    /* Reducido padding vertical */
+    font-size: 0.95rem;
+  }
+
+  .responsive-dialog >>> .p-dialog-footer {
+    padding: 0.3rem 0.75rem;
+    /* Reducido padding vertical */
+    justify-content: flex-end;
+  }
+
+  .responsive-dialog >>> .p-dialog-footer .p-button {
+    width: auto;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Toolbar mantiene elementos en una línea */
+  .toolbar-container {
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+  }
+
+  .toolbar {
+    flex-shrink: 0;
+    min-width: auto;
+  }
+
+  .search-bar {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Ajustar botones para que coincidan */
+  .toolbar >>> .p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  /* Reducir más la altura del input buscador en móviles pequeños */
+  .search-bar .p-inputtext-sm {
+    padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  >>> .p-datatable {
+    font-size: 0.75rem;
+  }
+
+  >>> .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.3rem 0.2rem;
+  }
+
+  >>> .p-datatable .p-datatable-thead > tr > th {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  /* Iconos más pequeños en móviles extra pequeños */
+  .required-icon {
+    font-size: 0.7rem;
+  }
+
+  .optional-icon {
+    font-size: 0.55rem;
+  }
+
+  >>> .p-inputtext,
+  >>> .p-dropdown,
+  >>> .p-inputnumber-input {
+    font-size: 0.85rem;
+    padding: 0.4rem;
+  }
+
+  >>> .p-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* Espacios aún más compactos en móviles extra pequeños */
+  .input-container {
+    padding-bottom: 20px;
+    /* Aumentado para dar espacio al error en móviles pequeños */
+    margin-bottom: 4px;
+  }
+}
+
+/* Paginator Responsive */
+@media (max-width: 768px) {
+  >>> .p-paginator {
+    flex-wrap: wrap !important;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+
+  >>> .p-paginator .p-paginator-page,
+  >>> .p-paginator .p-paginator-next,
+  >>> .p-paginator .p-paginator-prev,
+  >>> .p-paginator .p-paginator-first,
+  >>> .p-paginator .p-paginator-last {
+    min-width: 32px !important;
+    height: 32px !important;
+    font-size: 0.85rem !important;
+    padding: 0 6px !important;
+    margin: 2px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  >>> .p-paginator {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+
+  >>> .p-paginator .p-paginator-page,
+  >>> .p-paginator .p-paginator-next,
+  >>> .p-paginator .p-paginator-prev,
+  >>> .p-paginator .p-paginator-first,
+  >>> .p-paginator .p-paginator-last {
+    min-width: 28px !important;
+    height: 28px !important;
+    font-size: 0.8rem !important;
+    padding: 0 4px !important;
+    margin: 1px !important;
+  }
+}
+
+/* Action Buttons in DataTable */
+>>> .p-datatable .p-button {
+  margin-right: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  >>> .p-datatable .p-button {
+    margin-right: 0.15rem;
+    margin-bottom: 0.15rem;
+  }
+}
+
+>>> .p-fileupload .p-button.p-fileupload-choose {
+  background-color: #22c55e !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Efecto hover */
+>>> .p-fileupload .p-button.p-fileupload-choose:enabled:hover {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+}
+
+/* Efecto focus */
+>>> .p-fileupload .p-button.p-fileupload-choose:focus {
+  box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.5) !important;
+}
+
+/* Efecto active (cuando se hace clic) */
+>>> .p-fileupload .p-button.p-fileupload-choose:enabled:active {
+  background-color: #15803d !important;
+  border-color: #15803d !important;
+}
+
+/* Estilo cuando está deshabilitado */
+>>> .p-fileupload .p-button.p-fileupload-choose:disabled {
+  background-color: #22c55e !important;
+  border-color: #22c55e !important;
+  opacity: 0.6;
+}
+
+>>> .p-fileupload
+  .p-fileupload-buttonbar
+  .p-button.p-component:not(.p-fileupload-choose) {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Efecto hover */
+>>> .p-fileupload
+  .p-fileupload-buttonbar
+  .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+/* Efecto focus */
+>>> .p-fileupload
+  .p-fileupload-buttonbar
+  .p-button.p-component:not(.p-fileupload-choose):focus {
+  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Efecto active (cuando se hace clic) */
+>>> .p-fileupload
+  .p-fileupload-buttonbar
+  .p-button.p-component:not(.p-fileupload-choose):enabled:active {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+/* Estilo cuando está deshabilitado */
+>>> .p-fileupload
+  .p-fileupload-buttonbar
+  .p-button.p-component:not(.p-fileupload-choose):disabled {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  opacity: 0.6;
+}
+
+>>> .p-fileupload .p-fileupload-files .p-button {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Efecto hover */
+>>> .p-fileupload .p-fileupload-files .p-button:enabled:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+/* Efecto focus */
+>>> .p-fileupload .p-fileupload-files .p-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Efecto active (cuando se hace clic) */
+>>> .p-fileupload .p-fileupload-files .p-button:enabled:active {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+/* Estilo cuando está deshabilitado */
+>>> .p-fileupload .p-fileupload-files .p-button:disabled {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  opacity: 0.6;
+}
+
+/* Asegurar que el icono dentro del botón también sea blanco */
+>>> .p-fileupload .p-fileupload-files .p-button .p-button-icon {
+  color: #ffffff !important;
+}
+
+>>> .p-fileupload-row > div:first-child {
+  display: none !important;
+}
+
+>>> .p-dialog .p-dialog-content {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+/* Estilos del loader */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -587,33 +951,68 @@ export default {
   font-size: 14px;
 }
 
+.filters-container {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.375rem;
+  border: 1px solid #dee2e6;
+}
+
+.filter-row {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+}
+
+.filter-group-almacen {
+  flex: 2;
+  min-width: 200px;
+}
+
+.filter-group-laboratorio {
+  flex: 2;
+  min-width: 200px;
+}
+
+.filter-group-presentacion {
+  flex: 2;
+  min-width: 200px;
+}
+
+.filter-group-modo {
+  flex: 1;
+  min-width: 150px;
+}
+
+.filter-label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-group-almacen .filter-label,
+.filter-group-laboratorio .filter-label,
+.filter-group-presentacion .filter-label,
+.filter-group-modo .filter-label {
+  margin-bottom: 0.4rem;
+}
+
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-  .panel-header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+  0% {
+    transform: rotate(0deg);
   }
-  .header-right {
-    width: 100%;
-    justify-content: flex-end;
+
+  100% {
+    transform: rotate(360deg);
   }
 }
-</style>
 
-<style>
-.almacen-dropdown-panel .p-dropdown-items .p-dropdown-item {
-  color: #2d3748 !important;
-  background: #ffffff !important;
-}
-
-.almacen-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight,
-.almacen-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
-  color: #1a202c !important;
-  background: #edf2f7 !important;
+.modal-footer-buttons {
+  padding-top: 1rem;
 }
 </style>

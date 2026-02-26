@@ -253,6 +253,9 @@
     <itemscompuestos></itemscompuestos>
 </template>
 <productosbajostock v-if="menu==85"></productosbajostock>
+<template v-if="menu==92">
+    <reportestock></reportestock>
+</template>
 @elseif (Auth::user()->idrol == 2)
 <template v-if="menu==0">
     <venta></venta>
@@ -782,7 +785,9 @@
     <itemscompuestos></itemscompuestos>
 </template>
 <productosbajostock v-if="menu==85"></productosbajostock>
-
+<template v-if="menu==92">
+    <reportestock></reportestock>
+</template>
 @else
 
 @endif

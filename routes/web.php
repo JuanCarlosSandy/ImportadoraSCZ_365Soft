@@ -767,10 +767,6 @@ Route::group(["middleware" => ["auth"]], function () {
             "/inventarios/listarReporteBajoStockExcel",
             "InventarioController@listarReporteBajoStockExcel"
         );
-        Route::post(
-            "/inventarios/listarReporteBajoStockExcel",
-            "InventarioController@listarReporteBajoStockExcel"
-        );
         Route::get(
             "/inventarios/listarReporteBajoStockPdf",
             "InventarioController@exportarProductosBajoStockPdf"
@@ -1059,7 +1055,10 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post('/reporte/inventarioValoradoPdf', "ReportesInventariosController@exportarInventarioValoradoPdf");
         Route::post('/reporte/inventarioValoradoExcel', "ReportesInventariosController@exportarInventarioValorado");
         Route::post('/reporte/inventarioFisicoExcel', "ReportesInventariosController@exportarInventarioFisico");
-
+        Route::get(
+                    "/inventarios/exportproductosbajostock",
+                    "InventarioController@exportarBajoStockPDF"
+                );
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

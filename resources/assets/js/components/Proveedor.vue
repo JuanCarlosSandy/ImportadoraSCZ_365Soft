@@ -344,6 +344,38 @@ export default {
     },
   },
   methods: {
+    toastSuccess(mensaje) {
+  this.$toast.add({
+    severity: "success",
+    summary: "Éxito",
+    detail: mensaje,
+    life: 2000,
+  });
+},
+toastError(mensaje) {
+  this.$toast.add({
+    severity: "error",
+    summary: "Error",
+    detail: mensaje,
+    life: 2000,
+  });
+},
+toastWarning(mensaje) {
+  this.$toast.add({
+    severity: "warn",
+    summary: "Advertencia",
+    detail: mensaje,
+    life: 2000,
+  });
+},
+toastInfo(mensaje) {
+  this.$toast.add({
+    severity: "info",
+    summary: "Información",
+    detail: mensaje,
+    life: 2000,
+  });
+},
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768;
     },

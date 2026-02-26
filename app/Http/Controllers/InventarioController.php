@@ -291,20 +291,77 @@ class InventarioController extends Controller
     }
     public function productosBajoStock(Request $request)
     {
-        $user = auth()->user();
-        if (!$user || !in_array($user->idrol, [1, 4])) {
-            return response()->json([
-                'error' => true,
-                'message' => 'Acceso denegado. Esta accion solo esta permitida para Administrador y SuperAdministrador.'
-            ], 403);
-        }
-
-        if (!$request->ajax()) {
+        if (!$request->ajax())
             return redirect('/');
+
+        $usuario = \Auth::user(); // Usuario logueado
+        $buscar = $request->buscar;
+        $criterio = $request->criterio;
+
+        $almacen_id = $request->almacen_id;
+        $medicamento = $request->medicamento;
+        $laboratorio = $request->laboratorio;
+
+        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+        ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
+        ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+        ->join('personas', 'proveedores.id', '=', 'personas.id')
+        ->select(
+            'inventarios.idarticulo',
+            'inventarios.idalmacen',
+            'almacens.nombre_almacen',
+            'almacens.ubicacion',
+            'articulos.codigo',
+            'articulos.nombre as nombre_producto',
+            'articulos.unidad_envase',
+            'articulos.stock',
+            'articulos.precio_costo_unid',
+            'personas.nombre as nombre_proveedor',
+            \DB::raw('SUM(inventarios.saldo_stock) as saldo_stock')
+        )
+        ->groupBy(
+            'inventarios.idarticulo',
+            'inventarios.idalmacen',
+            'almacens.nombre_almacen',
+            'almacens.ubicacion',
+            'articulos.codigo',
+            'articulos.nombre',
+            'articulos.unidad_envase',
+            'articulos.stock',
+            'articulos.precio_costo_unid',
+            'personas.nombre'
+        )
+        ->havingRaw('articulos.stock > SUM(inventarios.saldo_stock)');
+
+
+        // ✅ Filtrar por sucursal del usuario (solo si no es rol 4)
+        if ($usuario->idrol != 4) {
+            $query->where('almacens.sucursal', $usuario->idsucursal);
         }
 
-        [$query, $filtros] = $this->construirQueryBajoStock($request);
-        $inventarios = $query->paginate(10);
+        
+        if ($buscar != '') {
+            $query->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
+        }
+
+        if (!empty($almacen_id)) {
+            $query->where('inventarios.idalmacen', $almacen_id);
+        }
+
+        
+        if (!empty($medicamento)) {
+            $query->where('articulos.nombre', 'like', '%' . $medicamento . '%');
+        }
+
+        
+        if (!empty($laboratorio)) {
+            $query->where('personas.nombre', 'like', '%' . $laboratorio . '%');
+        }
+
+        $inventarios = $query
+            ->orderBy('almacens.nombre_almacen', 'asc')
+            ->orderBy('personas.nombre', 'asc')
+            ->paginate(6);
 
         return [
             'pagination' => [
@@ -315,28 +372,19 @@ class InventarioController extends Controller
                 'from' => $inventarios->firstItem(),
                 'to' => $inventarios->lastItem(),
             ],
-            'inventarios' => $inventarios,
-            'filtros' => $filtros,
+            'inventarios' => $inventarios
         ];
     }
 
 
-
     public function listarReporteBajoStockExcel(Request $request)
     {
-        $user = auth()->user();
-        if (!$user || !in_array($user->idrol, [1, 4])) {
-            return response()->json([
-                'error' => true,
-                'message' => 'Acceso denegado. Esta accion solo esta permitida para Administrador y SuperAdministrador.'
-            ], 403);
-        }
 
-        [$query, $filtros] = $this->construirQueryBajoStock($request);
-        $datos = $query->get();
-        $nombreArchivo = 'ReporteProductosBajoStock_' . date('Ymd_His') . '.xlsx';
-
-        return Excel::download(new ProductosBajoStockExport($datos), $nombreArchivo);
+        return Excel::download(new ProductosBajoStockExport(
+            $request->almacen_id, 
+            $request->medicamento, 
+            $request->laboratorio
+        ), 'Producto_Bajo_Stock.xlsx');
     }
 
     public function exportarProductosBajoStockPdf(Request $request)
@@ -1049,6 +1097,253 @@ class InventarioController extends Controller
         $filename = 'reporteInventario_' . $nombreArchivoLimpio . '_' . $fecha . '.xlsx';
 
         return Excel::download(new InventarioExport($modo, $idAlmacen), $filename);
+    }
+    public function exportarBajoStockPDF(Request $request)
+    {
+        // 1. CAPTURAR FILTROS (Igual que en la vista)
+        $almacen_id = $request->almacen_id;
+        $medicamento = $request->medicamento;
+        $laboratorio = $request->laboratorio;
+        
+        // Variables legacy por si acaso
+        $buscar = $request->buscar; 
+        $criterio = $request->criterio;
+
+        // 2. CONSULTA (Copiada EXACTA de tu función productosBajoStock)
+        // Quitamos los GROUP BY y SUM sql, usamos la lógica fila por fila
+      $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+        ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
+        ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+        ->join('personas', 'proveedores.id', '=', 'personas.id')
+        ->select(
+            'inventarios.idarticulo',
+            'inventarios.idalmacen',
+            'almacens.nombre_almacen',
+            'almacens.ubicacion',
+            'articulos.codigo',
+            'articulos.nombre as nombre_producto',
+            'articulos.unidad_envase',
+            'articulos.stock as stock_minimo',
+            DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
+            'personas.nombre as nombre_proveedor'
+        )
+        ->groupBy(
+            'inventarios.idarticulo',
+            'inventarios.idalmacen',
+            'almacens.nombre_almacen',
+            'almacens.ubicacion',
+            'articulos.codigo',
+            'articulos.nombre',
+            'articulos.unidad_envase',
+            'articulos.stock',
+            'personas.nombre'
+        )
+        ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
+
+        // 3. APLICAR LOS MISMOS FILTROS
+        $usuario = \Auth::user();
+        if ($usuario->idrol != 4) {
+            $query->where('almacens.sucursal', $usuario->idsucursal);
+        }
+
+        // Filtros del buscador nuevo
+        if (!empty($almacen_id) && $almacen_id !== 'null') {
+            $query->where('inventarios.idalmacen', $almacen_id);
+        }
+        if (!empty($medicamento) && $medicamento !== 'null') {
+            $query->where('articulos.nombre', 'like', '%' . $medicamento . '%');
+        }
+        if (!empty($laboratorio) && $laboratorio !== 'null') {
+            $query->where('personas.nombre', 'like', '%' . $laboratorio . '%');
+        }
+
+        // Filtro legacy (buscador antiguo)
+        if (!empty($buscar)) {
+            $query->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
+        }
+
+        // 4. OBTENER DATOS (Sin paginar)
+        $data = $query->orderBy('almacens.nombre_almacen', 'asc')
+                    ->orderBy('personas.nombre', 'asc')
+                    ->get();
+
+        // 5. AGRUPAR PARA EL PDF (Visualmente)
+        // Esto no filtra datos, solo los organiza para que el PDF dibuje los títulos
+        $inventarios = $data->groupBy('nombre_almacen');
+
+        // --- GENERACIÓN DEL PDF ---
+        $pdf = new \FPDF('L', 'mm', 'A4');
+        $pdf->AddPage();
+
+        $this->addHeader($pdf);
+
+        // LOGICA VISUAL DE FILTROS (Para que sepas qué imprimiste)
+        $filtrosTexto = [];
+        if (!empty($almacen_id) && $almacen_id !== 'null') {
+            $nombre = \DB::table('almacens')->where('id', $almacen_id)->value('nombre_almacen');
+            $filtrosTexto[] = "Almacén: " . ($nombre ?? $almacen_id);
+        } else {
+            $filtrosTexto[] = "Almacén: Todos";
+        }
+        if (!empty($medicamento) && $medicamento !== 'null') $filtrosTexto[] = "Med: " . $medicamento;
+        if (!empty($laboratorio) && $laboratorio !== 'null') $filtrosTexto[] = "Lab: " . $laboratorio;
+        
+        // Imprimir filtros debajo del título
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(100);
+        $pdf->Cell(0, 6, utf8_decode("Filtros: " . implode(" | ", $filtrosTexto)), 0, 1, 'C');
+        $pdf->Ln(2);
+
+        // Total de registros encontrados
+        $this->addReportInfo($pdf, $data->count());
+
+        foreach ($inventarios as $nombreAlmacen => $productos) {
+            $this->addAlmacenHeader($pdf, $nombreAlmacen);
+            $this->addStyledTable($pdf, $productos);
+        }
+
+        $this->addFooter($pdf);
+
+        $pdf->Output('D', 'Productos_bajo_stock_' . date('Y-m-d') . '.pdf');
+        exit;
+    }
+     private function addHeader($pdf)
+    {
+        $pdf->SetFillColor(52, 73, 94);
+        $pdf->Rect(10, 10, 277, 20, 'F');
+
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetXY(10, 16);
+        $pdf->Cell(277, 8, utf8_decode('INFORME DE PRODUCTOS BAJO STOCK'), 0, 1, 'C');
+
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Ln(8);
+    }
+
+    private function addReportInfo($pdf, $totalRegistros)
+    {
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->SetTextColor(100, 100, 100);
+
+        $pdf->Cell(70, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 0, 'L');
+        $pdf->Cell(70, 6, utf8_decode('Total productos: ' . $totalRegistros), 0, 0, 'L');
+        $pdf->Cell(70, 6, utf8_decode('Estado: Requiere reposición'), 0, 1, 'L');
+
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Ln(5);
+    }
+
+    private function addAlmacenHeader($pdf, $nombreAlmacen)
+    {
+        $pdf->SetFillColor(200, 200, 200);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(0, 0, 0);
+
+        $pdf->Cell(277, 8, utf8_decode('ALMACÉN: ' . $nombreAlmacen), 1, 1, 'L', true);
+        $pdf->Ln(2);
+    }
+
+    private function addStyledTable($pdf, $productos)
+    {
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetTextColor(52, 73, 94);
+
+        $widths = [25, 95, 18, 20, 18, 62, 39];
+        $headers = ['Código', 'Producto', 'Unidad', 'Mínimo', 'Actual', 'Proveedor', 'Estado'];
+
+        $x = 10;
+        foreach ($headers as $i => $header) {
+            $pdf->SetXY($x, $pdf->GetY());
+            $pdf->Cell($widths[$i], 8, utf8_decode($header), 1, 0, 'C', true);
+            $x += $widths[$i];
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 8);
+        $fill = false;
+        $rowCount = 0;
+
+        foreach ($productos as $inv) {
+            if ($pdf->GetY() > 175) {
+                $pdf->AddPage();
+                $this->addTableHeader($pdf, $widths, $headers);
+            }
+
+            $y = $pdf->GetY();
+
+            if ($inv->saldo_stock == 0) {
+                $pdf->SetFillColor(255, 235, 235);
+                $pdf->SetTextColor(192, 57, 43);
+            } else {
+                $pdf->SetFillColor($fill ? 249 : 255, $fill ? 249 : 255, $fill ? 249 : 255);
+                $pdf->SetTextColor(0, 0, 0);
+            }
+
+            $data = [
+                utf8_decode($inv->codigo),
+                utf8_decode($this->truncateText($inv->nombre_producto, 25)),
+                utf8_decode($inv->unidad_envase),
+                utf8_decode($inv->stock_minimo),
+                utf8_decode($inv->saldo_stock),
+                utf8_decode($this->truncateText($inv->nombre_proveedor, 25)),
+            ];
+
+            $x = 10;
+            foreach ($data as $i => $item) {
+                $align = in_array($i, [2, 3, 4]) ? 'C' : 'L';
+                $pdf->SetXY($x, $y);
+                $pdf->Cell($widths[$i], 7, $item, 1, 0, $align, true);
+                $x += $widths[$i];
+            }
+
+            // Agregar columna de Estado
+            $estado = $inv->saldo_stock == 0 ? 'Sin Stock' : 'Bajo Stock';
+            $pdf->SetXY($x, $y);
+            $pdf->Cell($widths[6], 6, utf8_decode($estado), 1, 0, 'C', true);
+
+            $pdf->Ln();
+            $fill = !$fill;
+            $rowCount++;
+        }
+    }
+
+    private function addTableHeader($pdf, $widths, $headers)
+    {
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetTextColor(52, 73, 94);
+
+        $x = 10;
+        foreach ($headers as $i => $header) {
+            $pdf->SetXY($x, $pdf->GetY());
+            $pdf->Cell($widths[$i], 8, utf8_decode($header), 1, 0, 'C', true);
+            $x += $widths[$i];
+        }
+        $pdf->Ln();
+    }
+
+    private function addFooter($pdf)
+    {
+        $pdf->Ln(5);
+        $pdf->SetDrawColor(200, 200, 200);
+        $pdf->Line(10, $pdf->GetY(), 287, $pdf->GetY());
+
+        $pdf->Ln(3);
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->SetTextColor(100, 100, 100);
+        $pdf->Cell(0, 4, utf8_decode('Los productos marcados requieren reposición urgente según stock mínimo establecido.'), 0, 1, 'L');
+
+        $pdf->SetY(-15);
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->SetTextColor(150, 150, 150);
+        $pdf->Cell(0, 10, utf8_decode('Sistema de Inventarios - Página ' . $pdf->PageNo() . ' - Generado: ' . date('d/m/Y H:i:s')), 0, 0, 'C');
+    }
+
+    private function truncateText($text, $maxLength)
+    {
+        return strlen($text) > $maxLength ? substr($text, 0, $maxLength - 2) . '..' : $text;
     }
 }
 
