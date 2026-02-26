@@ -43,7 +43,7 @@
       >
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
           <label for="almacen" style="font-weight: bold; font-size: 0.9rem;"
-            >Almacén</label
+            >Seleccionar Almacén</label
           >
           <Dropdown
             id="almacen"
@@ -60,7 +60,7 @@
 
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
           <label for="laboratorio" style="font-weight: bold; font-size: 0.9rem;"
-            >Proveedor</label
+            >Buscar Proveedor</label
           >
           <InputText
             id="laboratorio"
@@ -73,7 +73,7 @@
 
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
           <label for="medicamento" style="font-weight: bold; font-size: 0.9rem;"
-            >Producto</label
+            >Buscar Producto</label
           >
           <InputText
             id="medicamento"
