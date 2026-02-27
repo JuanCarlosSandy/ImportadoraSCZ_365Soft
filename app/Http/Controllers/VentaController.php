@@ -128,39 +128,46 @@ class VentaController extends Controller
                 'sucursales.nombre as nombre_sucursal'
             )
             ->selectRaw("
-        CASE 
-        WHEN ventas.idtipo_venta = 2 THEN 
-            COALESCE(
-                (
-                    SELECT cc.saldo_restante
-                    FROM cuotas_credito cc
-                    WHERE cc.idcredito = ventas.id
-                    ORDER BY cc.numero_cuota DESC
-                    LIMIT 1
-                ),
-                ventas.total
-            )
-        ELSE 0
-    END as saldo_restante
-    ")
+                CASE 
+                WHEN ventas.idtipo_venta = 2 THEN 
+                    COALESCE(
+                        (
+                            SELECT cc.saldo_restante
+                            FROM cuotas_credito cc
+                            WHERE cc.idcredito = ventas.id
+                            ORDER BY cc.numero_cuota DESC
+                            LIMIT 1
+                        ),
+                        ventas.total
+                    )
+                ELSE 0
+            END as saldo_restante
+            ")
 
             // ✅ AQUÍ SE EXCLUYEN
             ->whereNull('proveedores.id')
             ->whereNull('u2.id')
             ->where(function ($q) {
                 $q->whereNotNull('ventas.id') // Si hay venta, la muestra (sea estado 1 o 0)
-                    ->orWhereNull('ventas.id'); // Si no hay venta (null), también (por tu estructura actual)
-            })
-            ->orderBy('ventas.fecha_hora', 'desc');
+                    ->orWhereNull('ventas.id'); // Si no hay venta (null), también
+            });
 
-        // 🔹 FILTROS POR ROL
+        // 🔹 FILTROS ESTRICTOS POR ROL Y FECHA
+        $hoy = \Carbon\Carbon::today();
+
         if ($idrol == 4) {
-            // ve todo
         } elseif ($idrol == 1) {
-            $query->where('users.idsucursal', $idsucursal);
+            // Ventas de su sucursal y SOLO del día actual.
+            $query->where('users.idsucursal', $idsucursal)
+                  ->whereDate('ventas.fecha_hora', $hoy);
         } elseif ($idrol == 2) {
-            // Solo ventas del día actual
-            $query->whereDate('ventas.fecha_hora', \Carbon\Carbon::today());
+            // Solo su sucursal y SOLO del día actual.
+            $query->where('users.idsucursal', $idsucursal)
+                  ->whereDate('ventas.fecha_hora', $hoy)
+                  ->where(function ($q) use ($usuario) {
+                      $q->where('ventas.idusuario', $usuario->id)
+                        ->orWhere('users.idrol', 1);
+                  });
         } else {
             $query->where('ventas.idusuario', $usuario->id);
         }
@@ -179,6 +186,8 @@ class VentaController extends Controller
         if ($request->filled('tipo_venta')) {
             $query->where('ventas.idtipo_venta', $request->tipo_venta);
         }
+
+        $query->orderBy('ventas.fecha_hora', 'desc');
 
         // ✅ SIN PAGINACIÓN
         $ventas = $query->get();
