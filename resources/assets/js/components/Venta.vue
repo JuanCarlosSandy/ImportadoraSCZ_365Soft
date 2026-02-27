@@ -71,6 +71,33 @@
       <span class="badge bg-secondary" id="direccion" style="display:none;" v-show="mostrarDireccion">No hay dirección
         registrada</span>
       <span class="badge bg-primary" id="cufdValor" style="display:none;" v-show="mostrarCUFD">No hay CUFD</span>-->
+        <div class="filtros-superadmin p-mb-3" v-if="idrol == 4" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">        
+          
+          <div class="field">
+            <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Sucursal</label>
+            <select v-model="filtroSucursal" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm">
+              <option value="">Todas las sucursales</option>
+              <option v-for="suc in arraySucursales" :key="suc.id" :value="suc.id">
+                {{ suc.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="fechaInicio" style="display:block; font-size: 12px; font-weight: bold;">Fecha Inicio</label>
+            <input type="date" v-model="fechaInicio" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm" style="height: 35px;" />
+          </div>
+
+          <div class="field">
+            <label for="fechaFin" style="display:block; font-size: 12px; font-weight: bold;">Fecha Fin</label>
+            <input type="date" v-model="fechaFin" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm" style="height: 35px;" />
+          </div>
+
+          <div class="field">
+            <Button @click="limpiarFiltros" label="Todos / Limpiar" icon="pi pi-filter-slash" class="p-button-secondary p-button-sm" style="height: 35px;" />
+          </div>
+        </div>
+
         <div class="toolbar-container" style="margin-top: 0; padding-top: 0;">
           <div class="search-bar">
             <span class="p-input-icon-left">
@@ -79,8 +106,7 @@
             </span>
           </div>
           <div class="toolbar">
-            <Button @click="abrirTipoVenta" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
-              class="p-button-primary p-button-sm" />
+            <Button @click="abrirTipoVenta" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-primary p-button-sm" />
           </div>
         </div>
         <div>
@@ -1971,6 +1997,12 @@ export default {
         { label: '🏦 Transferencia / QR', value: 7 },
       ],
       procesandoSeleccion: false,
+
+
+      filtroSucursal: '',
+      fechaInicio: '',
+      fechaFin: new Date().toISOString().split('T')[0], 
+      arraySucursales: [],
     };
   },
 
@@ -3519,26 +3551,41 @@ export default {
     },
     listarVenta(page, buscar, criterio, tipoVenta = '') {
       let me = this;
-
       let url = `/venta?page=${page}&buscar=${buscar}&criterio=${criterio}`;
 
       if (tipoVenta !== '') {
         url += `&tipo_venta=${tipoVenta}`;
       }
 
-      axios
+      if (this.filtroSucursal) url += `&sucursal_id=${this.filtroSucursal}`;
+      if (this.fechaInicio) url += `&fecha_inicio=${this.fechaInicio}`;
+      if (this.fechaFin) url += `&fecha_fin=${this.fechaFin}`;
+
+      console.log("URL generada: ", url);
+
+      return axios
         .get(url)
         .then(function (response) {
           var respuesta = response.data;
-          me.arrayVenta = respuesta.ventas;
-          console.log("lista: ", me.arrayVenta);
-          me.pagination = respuesta.pagination;
+          if (respuesta.ventas && respuesta.ventas.data) {
+             me.arrayVenta = respuesta.ventas.data;
+             me.pagination = respuesta.pagination;
+          } else {
+             me.arrayVenta = respuesta.ventas;
+          }
         })
         .catch(function (error) {
           console.log(error);
         });
     },
 
+    limpiarFiltros() {
+      this.filtroSucursal = '';
+      this.fechaInicio = '';
+      this.fechaFin = new Date().toISOString().split('T')[0];
+      this.buscar = '';
+      this.buscarVenta();
+    },
 
     listarVentaF(page, buscar, criterio) {
       let me = this;
@@ -3585,6 +3632,20 @@ export default {
       } catch (error) {
         console.error("Error al filtrar ventas:", error);
       }
+    },
+
+    selectSucursal() {
+      let me = this;
+      var url = '/sucursal/selectSucursal'; 
+      
+      return axios 
+        .get(url)
+        .then(function (response) {
+          me.arraySucursales = response.data.sucursales || response.data; 
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
     },
 
     selectCliente(numero) {
@@ -5986,10 +6047,11 @@ export default {
         //this.ejecutarSecuencial(),
         this.datosConfiguracion(),
         this.selectAlmacen(),
+        this.selectSucursal(),
         this.listarVenta(1, this.buscar, this.criterio),
         this.actualizarFechaHora(),
         this.ejecutarFlujoCompleto(),
-      ]);
+      ]);     
     } catch (error) {
       swal("Error", "Hubo un problema al cargar los datos iniciales", "error");
     } finally {

@@ -156,6 +156,20 @@ class VentaController extends Controller
         $hoy = \Carbon\Carbon::today();
 
         if ($idrol == 4) {
+            // Filtro por Sucursal
+            if ($request->filled('sucursal_id')) {
+                $query->where('users.idsucursal', $request->sucursal_id);
+            }
+            // Filtro por Fechas
+            if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+                $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio)
+                      ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+            } elseif ($request->filled('fecha_inicio')) {
+                $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio);
+            } elseif ($request->filled('fecha_fin')) {
+                $query->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+            }
+
         } elseif ($idrol == 1) {
             // Ventas de su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
