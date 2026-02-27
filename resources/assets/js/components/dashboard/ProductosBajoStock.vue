@@ -18,7 +18,6 @@
           <Button
             icon="pi pi-file"
             label="PDF"
-            v-if="mostrarBotones"
             class="p-button-secondary p-button-sm bt-pdf p-mr-2"
             @click="exportarPDF"
           />
@@ -34,7 +33,6 @@
 
     <div
       class="filters-container"
-      v-if="mostrarBotones"
       style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;"
     >
       <div
