@@ -208,32 +208,59 @@ class ItemCompuestoController extends Controller
         }
     }
 
-    public function getItemsCompuestosDetalle($idarticulo)
-    {
-        // Trae los productos relacionados con el artículo compuesto, incluyendo nombre, categoría y proveedor
-        $items = ItemCompuesto::where('itemcompuesto.idarticulo', $idarticulo)
-            ->join('articulos', 'itemcompuesto.iditem', '=', 'articulos.id')
-            ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
-            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-            ->join('personas', 'proveedores.id', '=', 'personas.id')
-            ->join('medidas', 'articulos.idmedida', '=', 'medidas.id')
-            ->select(
-                'itemcompuesto.id as id_item_compuesto', // ✅ ID de la relación
-                'articulos.id',
-                'articulos.codigo',
-                'articulos.nombre',
-                'articulos.precio_uno',
-                'categorias.nombre as categoria',
-                'personas.nombre as proveedor',
-                'articulos.descripcion',
-                'categorias.codigoProductoSin',
-                'categorias.actividadEconomica',
-                'medidas.codigoClasificador'
-            )
-            ->get();
+   public function getItemsCompuestosDetalle(Request $request, $idarticulo)
+{
+    $idAlmacen = $request->idalmacen;
 
-        return response()->json($items);
-    }
+    $items = ItemCompuesto::where('itemcompuesto.idarticulo', $idarticulo)
+        ->join('articulos', 'itemcompuesto.iditem', '=', 'articulos.id')
+        ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+        ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+        ->join('personas', 'proveedores.id', '=', 'personas.id')
+        ->join('medidas', 'articulos.idmedida', '=', 'medidas.id')
+
+        // 🔹 INVENTARIO DEL COMPONENTE
+        ->leftJoin('inventarios', function ($join) use ($idAlmacen) {
+            $join->on('inventarios.idarticulo', '=', 'articulos.id')
+                 ->where('inventarios.idalmacen', '=', $idAlmacen);
+        })
+
+        ->select(
+            'itemcompuesto.id as id_item_compuesto',
+            'itemcompuesto.cantidad as cantidad_necesaria', // 🔥 AQUI
+            'articulos.id',
+            'articulos.codigo',
+            'articulos.nombre',
+            'articulos.precio_uno',
+            'categorias.nombre as categoria',
+            'personas.nombre as proveedor',
+            'articulos.descripcion',
+            'categorias.codigoProductoSin',
+            'categorias.actividadEconomica',
+            'medidas.codigoClasificador',
+
+            DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock')
+        )
+
+        ->groupBy(
+            'itemcompuesto.id',
+            'itemcompuesto.cantidad', // 🔥 AQUI
+            'articulos.id',
+            'articulos.codigo',
+            'articulos.nombre',
+            'articulos.precio_uno',
+            'categorias.nombre',
+            'personas.nombre',
+            'articulos.descripcion',
+            'categorias.codigoProductoSin',
+            'categorias.actividadEconomica',
+            'medidas.codigoClasificador'
+        )
+
+        ->get();
+
+    return response()->json($items);
+}
 
     public function getItemsCompuestos($idarticulo)
 {

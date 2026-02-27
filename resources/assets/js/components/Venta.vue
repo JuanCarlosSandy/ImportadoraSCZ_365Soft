@@ -71,8 +71,9 @@
       <span class="badge bg-secondary" id="direccion" style="display:none;" v-show="mostrarDireccion">No hay dirección
         registrada</span>
       <span class="badge bg-primary" id="cufdValor" style="display:none;" v-show="mostrarCUFD">No hay CUFD</span>-->
-        <div class="filtros-superadmin p-mb-3" v-if="idrol == 4" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">        
-          
+        <div class="filtros-superadmin p-mb-3" v-if="idrol == 4"
+          style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
+
           <div class="field">
             <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Sucursal</label>
             <select v-model="filtroSucursal" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm">
@@ -85,16 +86,19 @@
 
           <div class="field">
             <label for="fechaInicio" style="display:block; font-size: 12px; font-weight: bold;">Fecha Inicio</label>
-            <input type="date" v-model="fechaInicio" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm" style="height: 35px;" />
+            <input type="date" v-model="fechaInicio" @change="buscarVenta"
+              class="p-inputtext p-component p-inputtext-sm" style="height: 35px;" />
           </div>
 
           <div class="field">
             <label for="fechaFin" style="display:block; font-size: 12px; font-weight: bold;">Fecha Fin</label>
-            <input type="date" v-model="fechaFin" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm" style="height: 35px;" />
+            <input type="date" v-model="fechaFin" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm"
+              style="height: 35px;" />
           </div>
 
           <div class="field">
-            <Button @click="limpiarFiltros" label="Todos / Limpiar" icon="pi pi-filter-slash" class="p-button-secondary p-button-sm" style="height: 35px;" />
+            <Button @click="limpiarFiltros" label="Todos / Limpiar" icon="pi pi-filter-slash"
+              class="p-button-secondary p-button-sm" style="height: 35px;" />
           </div>
         </div>
 
@@ -106,7 +110,8 @@
             </span>
           </div>
           <div class="toolbar">
-            <Button @click="abrirTipoVenta" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-primary p-button-sm" />
+            <Button @click="abrirTipoVenta" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
+              class="p-button-primary p-button-sm" />
           </div>
         </div>
         <div>
@@ -1035,8 +1040,22 @@
             <Column field="articulo" header="Producto" />
             <Column field="stock" header="Stock Actual" style="width: 15%">
               <template #body="slotProps">
-                <div style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
-                  <span v-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
+                <div style="
+        background-color: #007bff;
+        color: white;
+        padding: 4px;
+        border-radius: 4px;
+        text-align: center;
+      ">
+
+                  <!-- 🔥 SI ES ITEM COMPUESTO -->
+                  <span v-if="slotProps.data.tipo === 'itemcompuesto'">
+                    {{ slotProps.data.stockCompuesto }} Disponibles
+                  </span>
+
+                  <!-- 🔹 PRODUCTO NORMAL -->
+                  <span v-else-if="slotProps.data.descripcion_fabrica == '1'">∞</span>
+
                   <span v-else>
                     {{
                       slotProps.data.modoVenta === 'caja'
@@ -1046,6 +1065,7 @@
                           : slotProps.data.stock + ' Unidades'
                     }}
                   </span>
+
                 </div>
               </template>
             </Column>
@@ -1060,13 +1080,13 @@
               <template #body="slotProps">
                 <div class="precio-wrapper" style="display: flex; gap: 5px; align-items: center;">
                   <input type="text" v-model.number="slotProps.data.precioseleccionado"
-                    @input="actualizarDetalle(slotProps.index); guardarCambioPrecio(slotProps.data)" class="form-control form-control-sm input-precio-unidad"
+                    @input="actualizarDetalle(slotProps.index); guardarCambioPrecio(slotProps.data)"
+                    class="form-control form-control-sm input-precio-unidad"
                     :disabled="!slotProps.data.editandoPrecio && (permitir_cambioprecio == 0 && slotProps.data.descripcion_fabrica != '1')" />
-                  <Button 
-                    :icon="slotProps.data.editandoPrecio ? 'pi pi-check' : 'pi pi-pencil'" 
+                  <Button :icon="slotProps.data.editandoPrecio ? 'pi pi-check' : 'pi pi-pencil'"
                     class="p-button-sm p-button-secondary btn-precio-toggle"
                     :class="slotProps.data.editandoPrecio ? 'p-button-success' : ''"
-                    :title="slotProps.data.editandoPrecio ? 'Guardar precio' : 'Editar precio'" 
+                    :title="slotProps.data.editandoPrecio ? 'Guardar precio' : 'Editar precio'"
                     @click="toggleEditarPrecio(slotProps.data)" />
                 </div>
               </template>
@@ -1092,12 +1112,12 @@
                   :ref="'inputCantidad_' + slotProps.index" />
               </template>
             </Column>
-               <Column v-if="permitir_ofertas == 1" field="descuento" header="cuento por Cantidad (Bs)" style="width: 10%"
-              class="column-descuento">
+            <Column v-if="permitir_ofertas == 1" field="descuento" header="Descuento por Cantidad (Bs)"
+              style="width: 10%" class="column-descuento">
               <template #body="slotProps">
                 <InputNumber v-model="slotProps.data.descuento" mode="decimal" :minFractionDigits="2"
                   :maxFractionDigits="2" :min="0" class="p-inputtext-sm" @keydown.native="convertirPuntoComa"
-                  @input="actualizarDetalle(slotProps.index)" />
+                  @input="actualizarDetalle(slotProps.index)" :disabled="slotProps.data.descripcion_fabrica == 1" />
               </template>
             </Column>
 
@@ -1112,7 +1132,7 @@
                           ? slotProps.data.precioseleccionado * slotProps.data.cantidad * 12
                           : slotProps.data.precioseleccionado * slotProps.data.cantidad
                     ) - (parseFloat(slotProps.data.descuento || 0) * slotProps.data.cantidad)
-                  * parseFloat(monedaVenta[0])
+                    * parseFloat(monedaVenta[0])
                   ).toFixed(2)
                 }}
                 {{ monedaVenta[1] }}
@@ -2001,7 +2021,7 @@ export default {
 
       filtroSucursal: '',
       fechaInicio: '',
-      fechaFin: new Date().toISOString().split('T')[0], 
+      fechaFin: new Date().toISOString().split('T')[0],
       arraySucursales: [],
     };
   },
@@ -3568,10 +3588,10 @@ export default {
         .then(function (response) {
           var respuesta = response.data;
           if (respuesta.ventas && respuesta.ventas.data) {
-             me.arrayVenta = respuesta.ventas.data;
-             me.pagination = respuesta.pagination;
+            me.arrayVenta = respuesta.ventas.data;
+            me.pagination = respuesta.pagination;
           } else {
-             me.arrayVenta = respuesta.ventas;
+            me.arrayVenta = respuesta.ventas;
           }
         })
         .catch(function (error) {
@@ -3636,12 +3656,12 @@ export default {
 
     selectSucursal() {
       let me = this;
-      var url = '/sucursal/selectSucursal'; 
-      
-      return axios 
+      var url = '/sucursal/selectSucursal';
+
+      return axios
         .get(url)
         .then(function (response) {
-          me.arraySucursales = response.data.sucursales || response.data; 
+          me.arraySucursales = response.data.sucursales || response.data;
         })
         .catch(function (error) {
           console.log(error);
@@ -4065,191 +4085,195 @@ export default {
         // this.cerrarModal();
       } else if (tipo === "itemcompuesto") {
 
-  // 🔥 Función para calcular stock máximo vendible
-  const calcularStockMaximo = (componentes) => {
-    let stockMaximo = Infinity;
+        // 🔥 FUNCIÓN PARA CALCULAR STOCK REAL VENDIBLE
+        const calcularStockMaximo = (componentes) => {
+          let stockMaximo = Infinity;
 
-    componentes.forEach(c => {
-      const stockDisponible = Number(c.saldo_stock || 0);
-      const cantidadRequerida = Number(c.cantidad || 1);
+          componentes.forEach(c => {
+            const stockDisponible = Number(c.saldo_stock || 0);
+            const cantidadRequerida = Number(c.cantidad_necesaria || 1);
 
-      const kitsPosibles = Math.floor(stockDisponible / cantidadRequerida);
+            if (cantidadRequerida <= 0) return;
 
-      if (kitsPosibles < stockMaximo) {
-        stockMaximo = kitsPosibles;
-      }
-    });
+            const kitsPosibles = Math.floor(stockDisponible / cantidadRequerida);
 
-    return stockMaximo === Infinity ? 0 : stockMaximo;
-  };
+            if (kitsPosibles < stockMaximo) {
+              stockMaximo = kitsPosibles;
+            }
+          });
 
-  try {
-    const response = await axios.post(
-      "/articulo/verificarStockCompuesto",
-      {
-        idarticulo: data.id,
-        cantidad: 1,
-        idalmacen: this.idAlmacen,
-      }
-    );
+          return stockMaximo === Infinity ? 0 : stockMaximo;
+        };
 
-    if (!response.data.success) {
-      let mensajes = response.data.faltantes.map(
-        (faltante) =>
-          `El Item Compuesto: "${data.nombre}", no tiene stock suficiente en el item "${faltante.nombre_item}" (disponible "${faltante.stock}" requerido "${faltante.requerido}")`
-      );
+        try {
+          const response = await axios.post(
+            "/articulo/verificarStockCompuesto",
+            {
+              idarticulo: data.id,
+              cantidad: 1,
+              idalmacen: this.idAlmacen,
+            }
+          );
 
-      Swal.fire({
-        icon: "warning",
-        title: "Stock insuficiente",
-        html: mensajes.join("<br>"),
-      });
-      return;
-    }
-  } catch (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "No se pudo verificar el stock del compuesto.",
-    });
-    return;
-  }
+          if (!response.data.success) {
+            let mensajes = response.data.faltantes.map(
+              (faltante) =>
+                `El Item Compuesto: "${data.nombre}", no tiene stock suficiente en el item "${faltante.nombre_item}" (disponible "${faltante.stock}" requerido "${faltante.requerido}")`
+            );
 
-  const precioUno = Number(data.precio_uno || 0);
-  const precioDos = Number(data.precio_dos || 0);
-  const precioCompuesto = precioUno + precioDos;
+            Swal.fire({
+              icon: "warning",
+              title: "Stock insuficiente",
+              html: mensajes.join("<br>"),
+            });
+            return;
+          }
 
-  const existente = this.arrayDetalle.find(
-    (d) => d.idarticulo === data.id && d.tipo === "itemcompuesto"
-  );
+        } catch (error) {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "No se pudo verificar el stock del compuesto.",
+          });
+          return;
+        }
 
-  try {
+        const precioUno = Number(data.precio_uno || 0);
+        const precioDos = Number(data.precio_dos || 0);
+        const precioCompuesto = precioUno + precioDos;
 
-    const detalleResponse = await axios.get(
-      `/itemcompuesto/detalle/${data.id}`,
-      {
-        params: { idalmacen: this.idAlmacen }
-      }
-    );
+        const existente = this.arrayDetalle.find(
+          (d) => d.idarticulo === data.id && d.tipo === "itemcompuesto"
+        );
 
-    const componentes = detalleResponse.data;
+        try {
 
-    const stockMaximo = calcularStockMaximo(componentes);
+          const detalleResponse = await axios.get(
+            `/itemcompuesto/detalle/${data.id}`,
+            {
+              params: { idalmacen: this.idAlmacen }
+            }
+          );
 
-    if (stockMaximo <= 0) {
-      Swal.fire({
-        icon: "warning",
-        title: "Sin stock",
-        text: "No hay stock disponible para este item compuesto.",
-      });
-      return;
-    }
+          const componentes = detalleResponse.data;
 
-    const stocksComponentes = componentes.map(c => ({
-      id: c.id,
-      nombre: c.nombre,
-      stock: Number(c.saldo_stock)
-    }));
+          // 🔥 CALCULAR STOCK REAL VENDIBLE
+          const stockMaximo = calcularStockMaximo(componentes);
 
-    if (existente) {
+          if (stockMaximo <= 0) {
+            Swal.fire({
+              icon: "warning",
+              title: "Sin stock",
+              text: "No hay stock disponible para este item compuesto.",
+            });
+            return;
+          }
 
-      // 🔥 VALIDAR LÍMITE
-      if (existente.cantidad + 1 > stockMaximo) {
-        Swal.fire({
-          icon: "warning",
-          title: "Stock insuficiente",
-          text: `Solo hay ${stockMaximo} unidades disponibles.`,
-        });
-        return;
-      }
+          const stocksComponentes = componentes.map(c => ({
+            id: c.id,
+            nombre: c.nombre,
+            stock: Number(c.saldo_stock),
+            cantidad_necesaria: Number(c.cantidad_necesaria || 1)
+          }));
 
-      existente.cantidad += 1;
-      existente.precio = precioCompuesto;
-      existente.total = existente.cantidad * existente.precio;
-      existente.stockCompuesto = stockMaximo;
-      existente.stocksComponentes = stocksComponentes;
+          if (existente) {
 
-    } else {
+            // 🔥 VALIDAR QUE NO SUPERE LO VENDIBLE
+            if (existente.cantidad + 1 > stockMaximo) {
+              Swal.fire({
+                icon: "warning",
+                title: "Stock insuficiente",
+                text: `Solo puedes vender ${stockMaximo} unidades de este producto.`,
+              });
+              return;
+            }
 
-      const nuevoDetalle = {
-        id: Date.now(),
-        idkit: -1,
-        idarticulo: data.id,
-        articulo: data.nombre,
-        medida: data.medida || "",
-        unidad_envase: data.unidad_envase || 1,
-        cantidad: 1,
-        cantidad_paquetes: 1,
-        precio: precioCompuesto,
-        descuento: 0,
-        stock: null,
-        stockCompuesto: stockMaximo, // 🔥 STOCK REAL
-        stocksComponentes: stocksComponentes,
-        precioseleccionado: precioCompuesto,
-        total: precioCompuesto,
-        tipo: tipo,
-        precio_dos: data.precio_dos || 0,
-        modoVenta: "unidad",
-        descripcion_fabrica: data.descripcion_fabrica || "",
-        codigo_producto: data.codigo || "",
-        editandoPrecio: false,
-      };
+            existente.cantidad += 1;
+            existente.precio = precioCompuesto;
+            existente.total = existente.cantidad * existente.precio;
+            existente.stockCompuesto = stockMaximo;
+            existente.stocksComponentes = stocksComponentes;
 
-      this.arrayDetalle.push(nuevoDetalle);
-    }
+          } else {
 
-    // 🔹 ACTUALIZAR COMPONENTES EN arrayProductos
-    componentes.forEach((componente) => {
+            const nuevoDetalle = {
+              id: Date.now(),
+              idkit: -1,
+              idarticulo: data.id,
+              articulo: data.nombre,
+              medida: data.medida || "",
+              unidad_envase: data.unidad_envase || 1,
+              cantidad: 1,
+              cantidad_paquetes: 1,
+              precio: precioCompuesto,
+              descuento: 0,
+              stock: null,
+              stockCompuesto: stockMaximo, // 🔥 ESTE ES EL STOCK REAL
+              stocksComponentes: stocksComponentes,
+              precioseleccionado: precioCompuesto,
+              total: precioCompuesto,
+              tipo: tipo,
+              precio_dos: data.precio_dos || 0,
+              modoVenta: "unidad",
+              descripcion_fabrica: data.descripcion_fabrica || "",
+              codigo_producto: data.codigo || "",
+              editandoPrecio: false,
+            };
 
-      const qty = componente.cantidad || 1;
+            this.arrayDetalle.push(nuevoDetalle);
+          }
 
-      const prodExist = this.arrayProductos.find(
-        (p) =>
-          (p.codigoProducto &&
-            componente.codigo &&
-            p.codigoProducto === componente.codigo) ||
-          p.descripcion === componente.nombre
-      );
+          // 🔹 ACTUALIZAR COMPONENTES EN arrayProductos
+          componentes.forEach((componente) => {
 
-      if (prodExist) {
-        prodExist.cantidad = (prodExist.cantidad || 0) + qty;
-        prodExist.subTotal =
-          (prodExist.cantidad || 0) * prodExist.precioUnitario;
-      } else {
-        this.arrayProductos.push({
-          actividadEconomica: componente.actividadEconomica || "",
-          codigoProductoSin: componente.codigoProductoSin || "",
-          codigoProducto: componente.codigo || "",
-          descripcion: componente.nombre,
-          cantidad: qty,
-          unidadMedida: componente.codigoClasificador || "",
-          precioUnitario: componente.precio_uno,
-          montoDescuento: 0,
-          subTotal: componente.precio_uno * qty,
-          numeroSerie: null,
-          numeroImei: null,
-        });
-      }
+            const qty = Number(componente.cantidad_necesaria || 1);
 
-    });
+            const prodExist = this.arrayProductos.find(
+              (p) =>
+                (p.codigoProducto &&
+                  componente.codigo &&
+                  p.codigoProducto === componente.codigo) ||
+                p.descripcion === componente.nombre
+            );
 
-    this.$toast.add({
-      severity: "success",
-      summary: "Producto agregado",
-      detail: "El producto fue agregado al carrito correctamente",
-      life: 2500,
-    });
+            if (prodExist) {
+              prodExist.cantidad = (prodExist.cantidad || 0) + qty;
+              prodExist.subTotal =
+                (prodExist.cantidad || 0) * prodExist.precioUnitario;
+            } else {
+              this.arrayProductos.push({
+                actividadEconomica: componente.actividadEconomica || "",
+                codigoProductoSin: componente.codigoProductoSin || "",
+                codigoProducto: componente.codigo || "",
+                descripcion: componente.nombre,
+                cantidad: qty,
+                unidadMedida: componente.codigoClasificador || "",
+                precioUnitario: componente.precio_uno,
+                montoDescuento: 0,
+                subTotal: componente.precio_uno * qty,
+                numeroSerie: null,
+                numeroImei: null,
+              });
+            }
 
-  } catch (error) {
-    console.error("Error al obtener componentes:", error);
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "No se pudo obtener el detalle del item compuesto.",
-    });
-    return;
-  }
+          });
 
+          this.$toast.add({
+            severity: "success",
+            summary: "Producto agregado",
+            detail: "El producto fue agregado al carrito correctamente",
+            life: 2500,
+          });
+
+        } catch (error) {
+          console.error("Error al obtener componentes:", error);
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "No se pudo obtener el detalle del item compuesto.",
+          });
+          return;
+        }
 
         // ❌ No cerrar modal
         // this.cerrarModal();
@@ -6051,7 +6075,7 @@ export default {
         this.listarVenta(1, this.buscar, this.criterio),
         this.actualizarFechaHora(),
         this.ejecutarFlujoCompleto(),
-      ]);     
+      ]);
     } catch (error) {
       swal("Error", "Hubo un problema al cargar los datos iniciales", "error");
     } finally {
