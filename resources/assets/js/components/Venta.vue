@@ -1006,7 +1006,7 @@
                   @click="cambiarModoVenta(slotProps.data)" />
               </template>
             </Column>
-            <Column field="articulo" header="Artículo" />
+            <Column field="articulo" header="Producto" />
             <Column field="stock" header="Stock Actual" style="width: 15%">
               <template #body="slotProps">
                 <div style="background-color: #007bff; color: white; padding: 4px; border-radius: 4px; text-align: center;">
@@ -4003,187 +4003,192 @@ export default {
         // ❌ No cerramos el modal
         // this.cerrarModal();
       } else if (tipo === "itemcompuesto") {
-        try {
-          const response = await axios.post(
-            "/articulo/verificarStockCompuesto",
-            {
-              idarticulo: data.id,
-              cantidad: 1,
-              idalmacen: this.idAlmacen,
-            }
-          );
-          if (!response.data.success) {
-            let mensajes = response.data.faltantes.map(
-              (faltante) =>
-                `El Item Compuesto: "${data.nombre}", no tiene stock suficiente en el item "${faltante.nombre_item}" (disponible "${faltante.stock}" requerido "${faltante.requerido}")`
-            );
-            Swal.fire({
-              icon: "warning",
-              title: "Stock insuficiente",
-              html: mensajes.join("<br>"),
-            });
-            return;
-          }
-        } catch (error) {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "No se pudo verificar el stock del compuesto.",
-          });
-          return;
-        }
 
-        // CALCULAR SIEMPRE el precio compuesto = precio_uno + precio_dos (precio_dos puede ser 0)
-        const precioUno = Number(data.precio_uno || 0);
-        const precioDos = Number(data.precio_dos || 0);
-        const precioCompuesto = precioUno + precioDos;
+  // 🔥 Función para calcular stock máximo vendible
+  const calcularStockMaximo = (componentes) => {
+    let stockMaximo = Infinity;
 
-        // Verificar si ya está agregado en arrayDetalle
-        const existente = this.arrayDetalle.find(
-          (d) => d.idarticulo === data.id && d.tipo === "itemcompuesto"
-        );
+    componentes.forEach(c => {
+      const stockDisponible = Number(c.saldo_stock || 0);
+      const cantidadRequerida = Number(c.cantidad || 1);
 
-        if (existente) {
-          // Aumentar cantidad del detalle compuesto y calcular total con precioCompuesto
-          existente.cantidad += 1;
-          existente.precio = precioCompuesto;
-          existente.total = existente.cantidad * existente.precio;
-          console.log("Cantidad actualizada (item compuesto):", existente);
+      const kitsPosibles = Math.floor(stockDisponible / cantidadRequerida);
 
-          // Actualizar las cantidades/subTotals de los componentes en arrayProductos
-          try {
-            const detalleResponse = await axios.get(
-              `/itemcompuesto/detalle/${data.id}`
-            );
-            const componentes = detalleResponse.data;
-            componentes.forEach((componente) => {
-              // buscamos el componente por codigoProducto o descripcion para actualizarlo
-              const prod = this.arrayProductos.find(
-                (p) =>
-                  (p.codigoProducto &&
-                    componente.codigo &&
-                    p.codigoProducto === componente.codigo) ||
-                  p.descripcion === componente.nombre
-              );
-              const qtyToAdd = componente.cantidad || 1;
-              if (prod) {
-                prod.cantidad = (prod.cantidad || 0) + qtyToAdd;
-                prod.subTotal = (prod.cantidad || 0) * prod.precioUnitario;
-              } else {
-                // Si por alguna razón no existe (caso raro), lo agregamos con precio_uno
-                this.arrayProductos.push({
-                  actividadEconomica: componente.actividadEconomica || "",
-                  codigoProductoSin: componente.codigoProductoSin || "",
-                  codigoProducto: componente.codigo || "",
-                  descripcion: componente.nombre,
-                  cantidad: qtyToAdd,
-                  unidadMedida: componente.codigoClasificador || "",
-                  precioUnitario: componente.precio_uno,
-                  montoDescuento: 0,
-                  subTotal: qtyToAdd * componente.precio_uno,
-                  numeroSerie: null,
-                  numeroImei: null,
-                });
-              }
-            });
-          } catch (error) {
-            // No bloqueamos la acción si falla la actualización de componentes,
-            // solo avisamos y seguimos (para que no se pierda la venta).
-            console.error(
-              "No se pudo actualizar componentes del item compuesto:",
-              error
-            );
-            Swal.fire({
-              icon: "warning",
-              title: "Advertencia",
-              text:
-                "La venta se agregó pero no se pudieron actualizar las cantidades de los componentes en el carrito.",
-            });
-          }
-        } else {
-          // Agregar nuevo item compuesto en arrayDetalle con precio compuesto
-          const nuevoDetalle = {
-            id: Date.now(),
-            idkit: -1,
-            idarticulo: data.id,
-            articulo: data.nombre,
-            medida: data.medida || "",
-            unidad_envase: data.unidad_envase || 1,
-            cantidad: 1,
-            cantidad_paquetes: 1,
-            precio: precioCompuesto,
-            descuento: 0,
-            stock: null,
-            precioseleccionado: precioCompuesto,
-            total: precioCompuesto,
-            tipo: tipo,
-            precio_dos: data.precio_dos || 0,
-            modoVenta: "unidad", // 🔹 inicia vendiendo en cajas
-            descripcion_fabrica: data.descripcion_fabrica || "",
-            codigo_producto: data.codigo || "",
-            editandoPrecio: false,
-          };
-          this.arrayDetalle.push(nuevoDetalle);
-          console.log("Nuevo detalle agregado (item compuesto):", nuevoDetalle);
+      if (kitsPosibles < stockMaximo) {
+        stockMaximo = kitsPosibles;
+      }
+    });
 
-          // Obtener componentes y agregarlos a arrayProductos (cada componente con precioUnitario = precio_uno)
-          try {
-            const detalleResponse = await axios.get(
-              `/itemcompuesto/detalle/${data.id}`
-            );
-            const componentes = detalleResponse.data;
-            componentes.forEach((componente) => {
-              const qty = componente.cantidad || 1;
-              // Si el componente ya existe en arrayProductos, aumentamos su cantidad y subTotal
-              const prodExist = this.arrayProductos.find(
-                (p) =>
-                  (p.codigoProducto &&
-                    componente.codigo &&
-                    p.codigoProducto === componente.codigo) ||
-                  p.descripcion === componente.nombre
-              );
-              if (prodExist) {
-                prodExist.cantidad = (prodExist.cantidad || 0) + qty;
-                prodExist.subTotal =
-                  (prodExist.cantidad || 0) * prodExist.precioUnitario;
-              } else {
-                const producto = {
-                  actividadEconomica: componente.actividadEconomica || "",
-                  codigoProductoSin: componente.codigoProductoSin || "",
-                  codigoProducto: componente.codigo || "",
-                  descripcion: componente.nombre,
-                  cantidad: qty,
-                  unidadMedida: componente.codigoClasificador || "",
-                  precioUnitario: componente.precio_uno,
-                  montoDescuento: 0,
-                  subTotal: componente.precio_uno * qty,
-                  numeroSerie: null,
-                  numeroImei: null,
-                };
-                this.arrayProductos.push(producto);
-              }
-            });
-          } catch (error) {
-            console.error(
-              "Error al obtener componentes del item compuesto:",
-              error
-            );
-            Swal.fire({
-              icon: "error",
-              title: "Error",
-              text:
-                "No se pudo obtener el detalle de los componentes del item compuesto para el carrito.",
-            });
-          }
+    return stockMaximo === Infinity ? 0 : stockMaximo;
+  };
 
-          console.log("Detalle agregado (item compuesto):", nuevoDetalle);
-          this.$toast.add({
-            severity: "success",
-            summary: "Producto agregado",
-            detail: "El producto fue agregado al carrito correctamente",
-            life: 2500,
-          });
-        }
+  try {
+    const response = await axios.post(
+      "/articulo/verificarStockCompuesto",
+      {
+        idarticulo: data.id,
+        cantidad: 1,
+        idalmacen: this.idAlmacen,
+      }
+    );
+
+    if (!response.data.success) {
+      let mensajes = response.data.faltantes.map(
+        (faltante) =>
+          `El Item Compuesto: "${data.nombre}", no tiene stock suficiente en el item "${faltante.nombre_item}" (disponible "${faltante.stock}" requerido "${faltante.requerido}")`
+      );
+
+      Swal.fire({
+        icon: "warning",
+        title: "Stock insuficiente",
+        html: mensajes.join("<br>"),
+      });
+      return;
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "No se pudo verificar el stock del compuesto.",
+    });
+    return;
+  }
+
+  const precioUno = Number(data.precio_uno || 0);
+  const precioDos = Number(data.precio_dos || 0);
+  const precioCompuesto = precioUno + precioDos;
+
+  const existente = this.arrayDetalle.find(
+    (d) => d.idarticulo === data.id && d.tipo === "itemcompuesto"
+  );
+
+  try {
+
+    const detalleResponse = await axios.get(
+      `/itemcompuesto/detalle/${data.id}`,
+      {
+        params: { idalmacen: this.idAlmacen }
+      }
+    );
+
+    const componentes = detalleResponse.data;
+
+    const stockMaximo = calcularStockMaximo(componentes);
+
+    if (stockMaximo <= 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Sin stock",
+        text: "No hay stock disponible para este item compuesto.",
+      });
+      return;
+    }
+
+    const stocksComponentes = componentes.map(c => ({
+      id: c.id,
+      nombre: c.nombre,
+      stock: Number(c.saldo_stock)
+    }));
+
+    if (existente) {
+
+      // 🔥 VALIDAR LÍMITE
+      if (existente.cantidad + 1 > stockMaximo) {
+        Swal.fire({
+          icon: "warning",
+          title: "Stock insuficiente",
+          text: `Solo hay ${stockMaximo} unidades disponibles.`,
+        });
+        return;
+      }
+
+      existente.cantidad += 1;
+      existente.precio = precioCompuesto;
+      existente.total = existente.cantidad * existente.precio;
+      existente.stockCompuesto = stockMaximo;
+      existente.stocksComponentes = stocksComponentes;
+
+    } else {
+
+      const nuevoDetalle = {
+        id: Date.now(),
+        idkit: -1,
+        idarticulo: data.id,
+        articulo: data.nombre,
+        medida: data.medida || "",
+        unidad_envase: data.unidad_envase || 1,
+        cantidad: 1,
+        cantidad_paquetes: 1,
+        precio: precioCompuesto,
+        descuento: 0,
+        stock: null,
+        stockCompuesto: stockMaximo, // 🔥 STOCK REAL
+        stocksComponentes: stocksComponentes,
+        precioseleccionado: precioCompuesto,
+        total: precioCompuesto,
+        tipo: tipo,
+        precio_dos: data.precio_dos || 0,
+        modoVenta: "unidad",
+        descripcion_fabrica: data.descripcion_fabrica || "",
+        codigo_producto: data.codigo || "",
+        editandoPrecio: false,
+      };
+
+      this.arrayDetalle.push(nuevoDetalle);
+    }
+
+    // 🔹 ACTUALIZAR COMPONENTES EN arrayProductos
+    componentes.forEach((componente) => {
+
+      const qty = componente.cantidad || 1;
+
+      const prodExist = this.arrayProductos.find(
+        (p) =>
+          (p.codigoProducto &&
+            componente.codigo &&
+            p.codigoProducto === componente.codigo) ||
+          p.descripcion === componente.nombre
+      );
+
+      if (prodExist) {
+        prodExist.cantidad = (prodExist.cantidad || 0) + qty;
+        prodExist.subTotal =
+          (prodExist.cantidad || 0) * prodExist.precioUnitario;
+      } else {
+        this.arrayProductos.push({
+          actividadEconomica: componente.actividadEconomica || "",
+          codigoProductoSin: componente.codigoProductoSin || "",
+          codigoProducto: componente.codigo || "",
+          descripcion: componente.nombre,
+          cantidad: qty,
+          unidadMedida: componente.codigoClasificador || "",
+          precioUnitario: componente.precio_uno,
+          montoDescuento: 0,
+          subTotal: componente.precio_uno * qty,
+          numeroSerie: null,
+          numeroImei: null,
+        });
+      }
+
+    });
+
+    this.$toast.add({
+      severity: "success",
+      summary: "Producto agregado",
+      detail: "El producto fue agregado al carrito correctamente",
+      life: 2500,
+    });
+
+  } catch (error) {
+    console.error("Error al obtener componentes:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "No se pudo obtener el detalle del item compuesto.",
+    });
+    return;
+  }
+
 
         // ❌ No cerrar modal
         // this.cerrarModal();
@@ -4209,6 +4214,7 @@ export default {
             precio: data.precio_uno,
             descuento: 0,
             stock: null,
+            stocksComponentes: stocksComponentes,
             precioseleccionado: data.precio_uno,
             total: data.precio_uno,
             tipo: tipo,
