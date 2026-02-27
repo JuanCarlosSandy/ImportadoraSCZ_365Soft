@@ -98,8 +98,19 @@
 
       <!-- Contenido -->
       <form @submit.prevent="registrarCaja">
+        
+        <div class="p-field" v-if="idrol == 4" style="margin-bottom: 15px;">
+          <label class="label-input">Sucursal <span style="color:red;">*</span></label>
+          <select v-model="idSucursalSeleccionada" class="p-inputtext p-component p-inputtext-sm" style="width: 100%;">
+            <option value="" disabled>Seleccione una sucursal</option>
+            <option v-for="suc in arraySucursales" :key="suc.id" :value="suc.id">
+              {{ suc.nombre }}
+            </option>
+          </select>
+        </div>
+
         <div class="p-field">
-          <label class="label-input">Saldo Inicial</label>
+          <label class="label-input">Saldo Inicial <span style="color:red;">*</span></label>
           <InputText v-model="saldoInicial" placeholder="0.00" class="input-full" />
         </div>
 
@@ -496,6 +507,8 @@ export default {
       criterio: "",
       idCajaBotonesSecundarios: null,
       extraKey: 0,
+      idSucursalSeleccionada: '',
+      arraySucursales: [],
     };
   },
   computed: {
@@ -715,6 +728,20 @@ async generarReporte(idCaja) {
       me.pagination.current_page = page;
       me.listarCaja(page, buscar, criterio);
     },
+
+    selectSucursal() {
+      let me = this;
+      var url = '/sucursal/selectSucursal'; 
+      axios
+        .get(url)
+        .then(function (response) {
+          me.arraySucursales = response.data.sucursales; 
+        })
+        .catch(function (error) {
+          console.log("Error al cargar sucursales: ", error);
+        });
+    },
+
     async registrarCaja() {
       if (this.validarCaja()) {
         return;
@@ -725,6 +752,10 @@ async generarReporte(idCaja) {
         this.isLoading = true; // Activar loading
         let formData = new FormData();
         formData.append("saldoInicial", this.saldoInicial);
+        
+        if (this.idrol == 4) {
+            formData.append("idsucursal", this.idSucursalSeleccionada);
+        }
 
         await axios.post("/caja/registrar", formData, {
           headers: {
@@ -740,6 +771,7 @@ async generarReporte(idCaja) {
           detail: "Caja aperturada de forma satisfactoria!",
           life: 2500,
         });
+        this.idSucursalSeleccionada = ''; 
       } catch (error) {
         this.$toast.add({
           severity: "error",
@@ -936,12 +968,13 @@ async generarReporte(idCaja) {
     validarCaja() {
       this.errorCaja = 0;
       this.errorMostrarMsjCaja = [];
+      if (!this.saldoInicial) this.errorMostrarMsjCaja.push("El saldo inicial no puede estar vacío.");
 
-      if (!this.saldoInicial)
-        this.errorMostrarMsjCaja.push("El saldo inicial no puede estar vacío.");
+      if (this.idrol == 4 && !this.idSucursalSeleccionada) {
+        this.errorMostrarMsjCaja.push("Debe seleccionar una sucursal obligatoriamente.");
+      }
 
       if (this.errorMostrarMsjCaja.length) this.errorCaja = 1;
-
       return this.errorCaja;
     },
     cerrarModal() {
@@ -1120,6 +1153,9 @@ async generarReporte(idCaja) {
       console.log('Usuario obtenido:', userResponse.data);
       this.idrol = userResponse.data.idrol || 0;
       console.log('idrol asignado:', this.idrol);
+      if (this.idrol == 4) {
+        this.selectSucursal();
+      }
       
       await this.listarCaja(1, this.buscar, this.criterio);
     } catch (error) {

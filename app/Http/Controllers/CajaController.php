@@ -107,15 +107,30 @@ class CajaController extends Controller
     public function store(Request $request)
     {
         if (!$request->ajax()) return redirect('/');
+        
+        $usuario = \Auth::user();
+        $idSucursalAsignada = $usuario->idsucursal;
+
+        if ($usuario->idrol == 4) {
+            $request->validate([
+                'idsucursal' => 'required|exists:sucursales,id',
+            ], [
+                'idsucursal.required' => 'El SuperAdmin debe especificar una sucursal.',
+                'idsucursal.exists' => 'La sucursal seleccionada no es válida o no existe.'
+            ]);
+            $idSucursalAsignada = $request->idsucursal;
+        }
+
         $caja = new Caja();
-        $caja->idsucursal = \Auth::user()->idsucursal;
-        $caja->idusuario = \Auth::user()->id;
+        $caja->idsucursal = $idSucursalAsignada;
+        $caja->idusuario = $usuario->id;
         $caja->fechaApertura = now()->setTimezone('America/La_Paz');
         $caja->saldoInicial = $request->saldoInicial;
         $caja->saldoCaja = $request->saldoInicial;
-        
         $caja->estado = '1';
         $caja->save();
+        
+        return response()->json(['message' => 'Caja registrada correctamente']);
     }
 
     public function depositar(Request $request)
