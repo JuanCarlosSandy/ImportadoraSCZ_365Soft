@@ -1264,7 +1264,7 @@ class ReportesInventariosController extends Controller
             // --- ENCABEZADO ---
             $rutaLogo = public_path('img/logoPrincipal.png');
             if (file_exists($rutaLogo)) {
-                $pdf->Image($rutaLogo, 10, 5, 30);
+                $pdf->Image($rutaLogo, 10, 5, 20);
             }
 
             $pdf->SetFont('Arial', 'B', 16);
@@ -1303,8 +1303,9 @@ class ReportesInventariosController extends Controller
             $pdf->Cell(100, 8, utf8_decode(substr($buscar, 0, 50)), 0, 1, 'L');
             $pdf->Ln(5);
 
-            $w = [13, 28, 55, 16, 28, 42, 22, 22, 22, 42];
-            $headers = ['Código', 'Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
+            // 9 columnas, ancho total útil = 277 mm (A4 horizontal con márgenes 10/10)
+            $w = [16, 30, 62, 16, 30, 48, 24, 24, 27];
+            $headers = ['Código', 'Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock'];
 
             $pdf->SetFont('Arial', 'B', 8);
             $pdf->SetFillColor(52, 73, 94);
@@ -1331,7 +1332,6 @@ class ReportesInventariosController extends Controller
                 $pdf->Cell($w[6], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
                 $pdf->Cell($w[7], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
                 $pdf->Cell($w[8], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
-                $pdf->Cell($w[9], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
                 
                 $pdf->Ln();
                 $fill = !$fill;
