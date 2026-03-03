@@ -1646,130 +1646,30 @@ class VentaController extends Controller
         try {
 
             $venta = Venta::findOrFail($request->id);
+
+            if ((string) $venta->estado === '0') {
+                DB::rollBack();
+                return response()->json([
+                    'error' => 'La venta ya fue anulada previamente.'
+                ], 400);
+            }
+
+            $tipoReposicion = $request->tipo_reposicion ?? null;
+            $usuario = Auth::user();
+
+            $ultimaCaja = Caja::where('id', $venta->idcaja)->first();
+
+            if (!$ultimaCaja) {
+                throw new \Exception('No se encontró la caja asociada a la venta.');
+            }
+
+            $this->reponerInventarioPorAnulacion($venta);
+            $this->revertirCajaPorAnulacion($venta, $ultimaCaja, $usuario, $tipoReposicion, 'recibo');
+
             $venta->estado = '0';
             $venta->save();
 
-            $idAlmacen = $venta->idalmacen;
-
-            $detalles = DetalleVenta::where('idventa', $venta->id)->get();
-
-            foreach ($detalles as $detalle) {
-
-                $inventario = Inventario::where('idarticulo', $detalle->idarticulo)
-                    ->where('idalmacen', $idAlmacen)
-                    ->orderBy('fecha_vencimiento', 'asc')
-                    ->first();
-
-                if (!$inventario) {
-                    throw new \Exception('Inventario no encontrado');
-                }
-
-                $articulo = Articulo::find($detalle->idarticulo);
-                if (!$articulo) {
-                    throw new \Exception('Artículo no encontrado');
-                }
-
-                if (strtolower($detalle->modo_venta) === 'caja') {
-
-                    $unidadesPorCaja = (int) $articulo->unidad_envase;
-                    if ($unidadesPorCaja <= 0) {
-                        throw new \Exception('unidad_envase no configurado');
-                    }
-
-                    $unidadesDevueltas = $detalle->cantidad * $unidadesPorCaja;
-                    $inventario->saldo_stock += $unidadesDevueltas;
-
-                } elseif (strtolower($detalle->modo_venta) === 'docena') {
-                    // DOCENA - 12 unidades
-                    $unidadesDevueltas = $detalle->cantidad * 12;
-                    $inventario->saldo_stock += $unidadesDevueltas;
-                } else {
-                    // UNIDAD
-                    $inventario->saldo_stock += $detalle->cantidad;
-                }
-
-                $inventario->save();
-            }
-
-            // Caja
-            $usuario = Auth::user();
-            $ultimaCaja = Caja::where('idsucursal', $usuario->idsucursal)
-                ->where('estado', '1')
-                ->latest()
-                ->first();
-
-            if ($ultimaCaja) {
-                // Verificar si es venta a crédito (idtipo_venta = 2)
-                if ($venta->idtipo_venta == 2) {
-
-                    // Obtener cuotas PAGADAS
-                    $cuotasPagadas = CuotasCredito::where('idcredito', $venta->id)
-                        ->where('estado', 'Cancelado')
-                        ->get();
-
-                    $montoEfectivo = 0;
-                    $montoQR = 0;
-
-                    foreach ($cuotasPagadas as $cuota) {
-
-                        if ($cuota->idtipo_pago == 1) {
-                            $montoEfectivo += $cuota->precio_cuota;
-
-                            $ultimaCaja->ventasContado -= $cuota->precio_cuota;
-
-                        } elseif ($cuota->idtipo_pago == 7) {
-                            $montoQR += $cuota->precio_cuota;
-
-                            $ultimaCaja->ventasQR -= $cuota->precio_cuota;
-                        }
-                    }
-
-                    $totalPagado = $montoEfectivo + $montoQR;
-
-                    // Solo si hubo pagos
-                    if ($totalPagado > 0) {
-
-                        $ultimaCaja->saldototalventas -= $totalPagado;
-
-                        // Caja SOLO efectivo
-                        $ultimaCaja->saldoCaja -= $montoEfectivo;
-
-                        TransaccionesCaja::create([
-                            'idcaja' => $ultimaCaja->id,
-                            'idusuario' => $usuario->id,
-                            'fecha' => now()->setTimezone('America/La_Paz'),
-                            'transaccion' => 'Anulación de venta crédito',
-                            'importe' => $totalPagado
-                        ]);
-                    }
-                } else {
-
-                    $ultimaCaja->saldototalventas -= $venta->total;
-
-                    // Restar según el tipo de pago
-                    if ($venta->idtipo_pago == 1) {
-                        // Tipo pago 1 = Efectivo: restar de ventasContado
-                        $ultimaCaja->ventasContado -= $venta->total;
-
-                    } elseif ($venta->idtipo_pago == 7) {
-                        // Tipo pago 7 = QR/Banco: restar de ventasQR
-                        $ultimaCaja->ventasQR -= $venta->total;
-                    }
-
-                    // Actualizar saldo de caja
-                    $ultimaCaja->saldoCaja -= $venta->total;
-
-                    TransaccionesCaja::create([
-                        'idcaja' => $ultimaCaja->id,
-                        'idusuario' => $usuario->id,
-                        'fecha' => now()->setTimezone('America/La_Paz'),
-                        'transaccion' => 'Anulación de venta',
-                        'importe' => $venta->total
-                    ]);
-                }
-
-                $ultimaCaja->save();
-            }
+            $ultimaCaja->save();
 
             DB::commit();
 
@@ -1784,6 +1684,181 @@ class VentaController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function calcularUnidadesPorModo($cantidad, $modoVenta, $unidadEnvase = 1)
+    {
+        $cantidad = (float) $cantidad;
+        $unidadEnvase = max(1, (int) $unidadEnvase);
+        $modo = strtolower((string) $modoVenta);
+
+        if ($modo === 'caja') {
+            return (int) round($cantidad * $unidadEnvase);
+        }
+
+        if ($modo === 'docena') {
+            return (int) round($cantidad * 12);
+        }
+
+        return (int) round($cantidad);
+    }
+
+    private function sumarStockArticulo($idAlmacen, $idArticulo, $unidades)
+    {
+        $unidades = (int) $unidades;
+        if ($unidades <= 0) {
+            return;
+        }
+
+        $inventario = Inventario::where('idarticulo', $idArticulo)
+            ->where('idalmacen', $idAlmacen)
+            ->orderBy('fecha_vencimiento', 'asc')
+            ->first();
+
+        if (!$inventario) {
+            throw new \Exception('Inventario no encontrado para artículo ' . $idArticulo);
+        }
+
+        $inventario->saldo_stock += $unidades;
+        $inventario->save();
+    }
+
+    private function reponerInventarioPorAnulacion(Venta $venta)
+    {
+        $detalles = DetalleVenta::where('idventa', $venta->id)->get();
+
+        foreach ($detalles as $detalle) {
+            $articulo = Articulo::find($detalle->idarticulo);
+            if (!$articulo) {
+                throw new \Exception('Artículo no encontrado para detalle de venta.');
+            }
+
+            // Combo / oferta compuesto
+            if ($articulo->tipo_producto === 'C') {
+                $itemsHijos = ItemCompuesto::where('idarticulo', $articulo->id)->get();
+
+                if ($itemsHijos->isEmpty()) {
+                    $unidades = $this->calcularUnidadesPorModo(
+                        $detalle->cantidad,
+                        $detalle->modo_venta,
+                        $articulo->unidad_envase
+                    );
+                    $this->sumarStockArticulo($venta->idalmacen, $detalle->idarticulo, $unidades);
+                    continue;
+                }
+
+                foreach ($itemsHijos as $itemHijo) {
+                    $articuloHijo = Articulo::find($itemHijo->iditem);
+                    if (!$articuloHijo) {
+                        continue;
+                    }
+
+                    $cantidadBase = (float) $detalle->cantidad * (float) ($itemHijo->cantidad ?: 1);
+                    $unidadesHijo = $this->calcularUnidadesPorModo(
+                        $cantidadBase,
+                        $detalle->modo_venta,
+                        $articuloHijo->unidad_envase
+                    );
+
+                    $this->sumarStockArticulo($venta->idalmacen, $itemHijo->iditem, $unidadesHijo);
+                }
+
+                continue;
+            }
+
+            // Producto individual
+            $unidades = $this->calcularUnidadesPorModo(
+                $detalle->cantidad,
+                $detalle->modo_venta,
+                $articulo->unidad_envase
+            );
+
+            $this->sumarStockArticulo($venta->idalmacen, $detalle->idarticulo, $unidades);
+        }
+    }
+
+    private function revertirCajaPorAnulacion(Venta $venta, Caja $caja, $usuario, $tipoReposicion = null, $origen = 'venta')
+    {
+        // Venta a crédito: revertir montos realmente cobrados
+        if ((int) $venta->idtipo_venta === 2) {
+            $cuotas = CuotasCredito::where('idcredito', $venta->id)
+                ->where('idcaja', $caja->id)
+                ->get();
+
+            $montoEfectivo = 0;
+            $montoQR = 0;
+
+            foreach ($cuotas as $cuota) {
+                $monto = (float) ($cuota->precio_cuota ?? 0);
+                if ($monto <= 0) {
+                    continue;
+                }
+
+                if ((int) $cuota->idtipo_pago === 1) {
+                    $montoEfectivo += $monto;
+                } elseif ((int) $cuota->idtipo_pago === 7) {
+                    $montoQR += $monto;
+                }
+            }
+
+            $totalPagado = $montoEfectivo + $montoQR;
+
+            if ($totalPagado > 0) {
+                $caja->ventasContado -= $montoEfectivo;
+                $caja->ventasQR -= $montoQR;
+                $caja->saldototalventas -= $totalPagado;
+                $caja->saldoCaja -= $montoEfectivo;
+
+                TransaccionesCaja::create([
+                    'idcaja' => $caja->id,
+                    'idusuario' => $usuario->id,
+                    'fecha' => now()->setTimezone('America/La_Paz'),
+                    'transaccion' => 'Anulación de venta crédito (' . $origen . ')',
+                    'importe' => $totalPagado,
+                    'idventa' => $venta->id,
+                ]);
+            }
+
+            return;
+        }
+
+        $total = (float) $venta->total;
+        $tipoPago = (int) $venta->idtipo_pago;
+
+        if ($total <= 0) {
+            return;
+        }
+
+        if ($tipoPago === 1) {
+            $caja->ventasContado -= $total;
+        } elseif ($tipoPago === 7) {
+            $caja->ventasQR -= $total;
+        } elseif ($tipoPago === 2) {
+            $caja->ventasTarjeta -= $total;
+        }
+
+        $caja->saldototalventas -= $total;
+
+        $reposicion = strtolower((string) $tipoReposicion);
+        if ($reposicion === 'efectivo') {
+            $caja->saldoCaja -= $total;
+        } elseif ($reposicion === 'qr') {
+            // No afecta saldo físico
+        } else {
+            // Comportamiento por defecto según tipo de pago original
+            if ($tipoPago === 1) {
+                $caja->saldoCaja -= $total;
+            }
+        }
+
+        TransaccionesCaja::create([
+            'idcaja' => $caja->id,
+            'idusuario' => $usuario->id,
+            'fecha' => now()->setTimezone('America/La_Paz'),
+            'transaccion' => 'Anulación de venta (' . $origen . ')',
+            'importe' => $total,
+            'idventa' => $venta->id,
+        ]);
     }
 
 
@@ -2052,6 +2127,8 @@ class VentaController extends Controller
 
     public function anulacionFactura($cuf, $motivoSeleccionado, $opcionReposicionCaja, $id, $total)
     {
+        DB::beginTransaction();
+
         $user = Auth::user();
         $codigoPuntoVenta = '';
         if (!empty($user->idpuntoventa)) {
@@ -2074,49 +2151,34 @@ class VentaController extends Controller
         if ($res->RespuestaServicioFacturacion->transaccion === true) {
             $mensaje = $res->RespuestaServicioFacturacion->codigoDescripcion;
 
+            $venta = Venta::findOrFail($id);
+
             // ✅ Solo si la transacción fue exitosa, ejecutar la lógica de anulación
-            $ultimaCaja = Caja::where('idsucursal', $user->idsucursal)
-                ->where('estado', '1')  // caja abierta
-                ->latest()
-                ->first();
+            $ultimaCaja = Caja::where('id', $venta->idcaja)->first();
 
             if (!$ultimaCaja) {
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'No hay una caja abierta en la sucursal. No se puede anular la venta.'
+                    'mensaje' => 'No se encontró la caja asociada a la venta. No se puede anular la venta.'
                 ], 400);
             }
 
-            $venta = Venta::findOrFail($id);
+            if ((string) $venta->estado === '0') {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'La venta ya se encuentra anulada.'
+                ], 400);
+            }
+
+            $this->reponerInventarioPorAnulacion($venta);
+
             $venta->estado = '0';
             $venta->save();
 
-            $tipoReposicion = $opcionReposicionCaja;  // 'efectivo' o 'qr'
-            if ($tipoReposicion === 'efectivo') {
-                $ultimaCaja->saldoCaja -= $total;
-                $ultimaCaja->save();
-
-                TransaccionesCaja::create([
-                    'idcaja' => $ultimaCaja->id,
-                    'idusuario' => $user->id,
-                    'fecha' => now()->setTimezone('America/La_Paz'),
-                    'transaccion' => 'Anulación de venta (Reposición EFECTIVO)',
-                    'importe' => $total,
-                    'idventa' => $id
-                ]);
-            } elseif ($tipoReposicion === 'qr') {
-                $ultimaCaja->save();
-
-                TransaccionesCaja::create([
-                    'idcaja' => $ultimaCaja->id,
-                    'idusuario' => $user->id,
-                    'fecha' => now()->setTimezone('America/La_Paz'),
-                    'transaccion' => 'Anulación de venta (Reposición QR)',
-                    'importe' => $total,
-                    'idventa' => $id
-                ]);
-            }
+            $this->revertirCajaPorAnulacion($venta, $ultimaCaja, $user, $opcionReposicionCaja, 'factura');
+            $ultimaCaja->save();
 
             DB::commit();
 
@@ -2128,6 +2190,8 @@ class VentaController extends Controller
         } else {
             // 🚫 Si la transacción no fue exitosa, no se toca la venta ni la caja
             $mensaje = $res->RespuestaServicioFacturacion->mensajesList->descripcion ?? 'ANULACION RECHAZADA';
+
+            DB::rollBack();
 
             return response()->json([
                 'success' => false,
