@@ -301,6 +301,8 @@ class InventarioController extends Controller
         $almacen_id = $request->almacen_id;
         $medicamento = $request->medicamento;
         $laboratorio = $request->laboratorio;
+        $codigo = trim((string) $request->codigo);
+        $codigo = trim((string) $request->codigo);
 
         $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
         ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
@@ -358,6 +360,10 @@ class InventarioController extends Controller
             $query->where('personas.nombre', 'like', '%' . $laboratorio . '%');
         }
 
+        if ($codigo !== '') {
+            $query->where('articulos.codigo', 'like', '%' . $codigo . '%');
+        }
+
         $inventarios = $query
             ->orderBy('almacens.nombre_almacen', 'asc')
             ->orderBy('personas.nombre', 'asc')
@@ -386,7 +392,8 @@ class InventarioController extends Controller
             new ProductosBajoStockExport(
                 $request->almacen_id, 
                 $request->medicamento, 
-                $request->laboratorio
+                $request->laboratorio,
+                $request->codigo
             ),
             $nombreArchivo
         );
@@ -426,6 +433,7 @@ class InventarioController extends Controller
             'Almacen: ' . $toAscii($filtros['nombre_almacen'] ?? 'Todos'),
             'Proveedor: ' . $toAscii($filtros['proveedor'] ?: 'Todos'),
             'Productos: ' . $toAscii($filtros['productos'] ?: 'Todos'),
+            'Codigo: ' . $toAscii($filtros['codigo'] ?: 'Todos'),
             'Categoria: ' . $toAscii($filtros['nombre_categoria'] ?? 'Todas'),
         ];
         if ($filtros['stock_desde'] !== null || $filtros['stock_hasta'] !== null) {
@@ -478,6 +486,7 @@ class InventarioController extends Controller
         $almacenId = $request->input('idAlmacen', $request->input('almacen_id'));
         $proveedor = trim($request->input('proveedor', ''));
         $productos = trim($request->input('productos', $request->input('producto', '')));
+        $codigo = trim((string) $request->input('codigo', $request->input('codigo_producto', '')));
         $idCategoria = $request->input('idCategoria', $request->input('categoria_id'));
         $stockExpr = 'SUM(inventarios.saldo_stock)';
 
@@ -521,6 +530,9 @@ class InventarioController extends Controller
         if ($productos !== '') {
             $query->where('articulos.nombre', 'like', '%' . $productos . '%');
         }
+        if ($codigo !== '') {
+            $query->where('articulos.codigo', 'like', '%' . $codigo . '%');
+        }
         if (!empty($idCategoria)) {
             $query->where('articulos.idcategoria', $idCategoria);
         }
@@ -532,6 +544,7 @@ class InventarioController extends Controller
             'nombre_almacen' => !empty($almacenId) ? DB::table('almacens')->where('id', $almacenId)->value('nombre_almacen') : null,
             'proveedor' => $proveedor,
             'productos' => $productos,
+            'codigo' => $codigo,
             'id_categoria' => $idCategoria,
             'nombre_categoria' => !empty($idCategoria) ? DB::table('categorias')->where('id', $idCategoria)->value('nombre') : null,
             'stock_desde' => null,
@@ -1161,6 +1174,9 @@ class InventarioController extends Controller
         if (!empty($laboratorio) && $laboratorio !== 'null') {
             $query->where('personas.nombre', 'like', '%' . $laboratorio . '%');
         }
+        if (!empty($codigo) && $codigo !== 'null') {
+            $query->where('articulos.codigo', 'like', '%' . $codigo . '%');
+        }
 
         // Filtro legacy (buscador antiguo)
         if (!empty($buscar)) {
@@ -1192,6 +1208,7 @@ class InventarioController extends Controller
         }
         if (!empty($medicamento) && $medicamento !== 'null') $filtrosTexto[] = "Med: " . $medicamento;
         if (!empty($laboratorio) && $laboratorio !== 'null') $filtrosTexto[] = "Lab: " . $laboratorio;
+        if (!empty($codigo) && $codigo !== 'null') $filtrosTexto[] = "Cod: " . $codigo;
         
         // Imprimir filtros debajo del título
         $pdf->SetFont('Arial', '', 9);
