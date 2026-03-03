@@ -82,6 +82,19 @@
           />
         </div>
 
+        <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
+          <label for="codigo" style="font-weight: bold; font-size: 0.9rem;"
+            >Código de Producto</label
+          >
+          <InputText
+            id="codigo"
+            v-model="filtros.codigo"
+            placeholder="Escribe código..."
+            class="p-inputtext-sm"
+            @input="buscarConRetraso"
+          />
+        </div>
+
         <div style="display: flex;">
           <Button
             icon="pi pi-filter-slash"
@@ -119,15 +132,8 @@
         </div>
       </template>
 
-      <Column field="nombre_proveedor" header="Laboratorio">
-        <template #body="slotProps">
-          <span style="font-weight: 600; color: #007bff;">
-            {{ slotProps.data.nombre_proveedor }}
-          </span>
-        </template>
-      </Column>
-
-      <Column field="nombre_producto" header="Medicamento"></Column>
+      <Column field="codigo" header="Código"></Column>
+      <Column field="nombre_producto" header="Producto"></Column>
       <Column field="stock" header="Stock Minimo">
         <template #body="slotProps">
           <span style="font-weight: bold; font-size: 1.1em;">
@@ -205,6 +211,7 @@ export default {
         almacen_id: null,
         medicamento: "",
         laboratorio: "",
+        codigo: "",
       },
       arrayAlmacenes: [],
       timerBusqueda: null,
@@ -236,6 +243,7 @@ export default {
         almacen_id: this.filtros.almacen_id,
         medicamento: this.filtros.medicamento,
         laboratorio: this.filtros.laboratorio,
+        codigo: this.filtros.codigo,
       };
 
       axios
@@ -248,7 +256,7 @@ export default {
     },
 
     resetFiltros() {
-      this.filtros = { almacen_id: null, medicamento: "", laboratorio: "" };
+      this.filtros = { almacen_id: null, medicamento: "", laboratorio: "", codigo: "" };
       this.listarInventario(1);
     },
 
@@ -305,6 +313,7 @@ export default {
           almacen_id: this.filtros.almacen_id || "",
           medicamento: this.filtros.medicamento || "",
           laboratorio: this.filtros.laboratorio || "",
+          codigo: this.filtros.codigo || "",
         };
 
         const response = await axios.get(

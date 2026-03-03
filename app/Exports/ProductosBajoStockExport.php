@@ -20,12 +20,15 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
     protected $almacen_id;
     protected $medicamento;
     protected $laboratorio;
+    protected $codigo;
 
-    public function __construct($almacen_id, $medicamento, $laboratorio)
+    public function __construct($almacen_id, $medicamento, $laboratorio, $codigo = null)
     {
+        
         $this->almacen_id = ($almacen_id === 'null' || $almacen_id === '') ? null : $almacen_id;
         $this->medicamento = ($medicamento === 'null') ? '' : $medicamento;
         $this->laboratorio = ($laboratorio === 'null') ? '' : $laboratorio;
+        $this->codigo = ($codigo === 'null') ? '' : trim((string) $codigo);
     }
 
     public function query()
@@ -37,9 +40,9 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
     ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
     ->join('personas', 'proveedores.id', '=', 'personas.id')
     ->select(
+        'articulos.codigo',
         'almacens.nombre_almacen',
         'articulos.nombre as nombre_producto',
-        'personas.nombre as nombre_proveedor',
         'articulos.stock as stock_minimo',
         DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
         DB::raw('(CASE 
@@ -48,9 +51,9 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
         END) as estado')
     )
     ->groupBy(
+        'articulos.codigo',
         'almacens.nombre_almacen',
         'articulos.nombre',
-        'personas.nombre',
         'articulos.stock'
     )
     ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
@@ -69,6 +72,9 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
         if ($this->laboratorio) {
             $query->where('personas.nombre', 'like', '%' . $this->laboratorio . '%');
         }
+        if ($this->codigo) {
+            $query->where('articulos.codigo', 'like', '%' . $this->codigo . '%');
+        }
 
         return $query
             ->orderBy('almacens.nombre_almacen', 'asc')
@@ -77,12 +83,12 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
 
     public function headings(): array
     {
-        return ['Almacén', 'Producto', 'Proveedor', 'Stock Mínimo', 'Stock Actual', 'Estado'];
+        return ['Código', 'Almacén', 'Producto', 'Stock Mínimo', 'Stock Actual', 'Estado'];
     }
 
     public function columnWidths(): array
     {
-        return ['A' => 25, 'B' => 35, 'C' => 25, 'D' => 15, 'E' => 15, 'F' => 15];
+        return ['A' => 18, 'B' => 25, 'C' => 38, 'D' => 15, 'E' => 15, 'F' => 15];
     }
 
     public function styles(Worksheet $sheet)
@@ -114,9 +120,10 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
                    $nombre = DB::table('almacens')->where('id', $this->almacen_id)->value('nombre_almacen');
                    $filtrosTexto[] = "Almacén: " . ($nombre ?? 'Desconocido');
                 } else { $filtrosTexto[] = "Almacén: Todos"; }
+                     if ($this->codigo) { $filtrosTexto[] = "Código: " . $this->codigo; }
                 
                 $sheet->setCellValue('A3', "Filtros: " . implode(" | ", $filtrosTexto));
-                $sheet->mergeCells('A3:F3');
+                    $sheet->mergeCells('A3:F3');
                 $sheet->getStyle('A3')->getFont()->setItalic(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('555555'));
                 $sheet->getStyle('A3')->getAlignment()->setHorizontal('center');
 
@@ -128,7 +135,7 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
                 
                 for ($row = 6; $row <= $highestRow; $row++) {
                     
-                    $almacen = $sheet->getCell("A$row")->getValue();
+                    $almacen = $sheet->getCell("B$row")->getValue();
 
                     
                     if ($almacen !== $lastAlmacen && $almacen != '') {
