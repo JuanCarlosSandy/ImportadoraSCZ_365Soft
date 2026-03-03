@@ -62,6 +62,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
             ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
             ->join('personas', 'proveedores.id', '=', 'personas.id')
             ->select(
+                'articulos.codigo',
                 'articulos.nombre as nombre_producto',
                 'articulos.unidad_envase',
                 DB::raw('ROUND(articulos.precio_costo_unid, 2) as precio_costo_unid'),
@@ -88,6 +89,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
         if (!empty($buscar)) {
             $inventarios->where(function ($query) use ($buscar) {
                 $query->where('articulos.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('articulos.codigo', 'like', '%' . $buscar . '%')
                     ->orWhere('personas.nombre', 'like', '%' . $buscar . '%')
                     ->orWhere('almacens.nombre_almacen', 'like', '%' . $buscar . '%');
             });
@@ -95,6 +97,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
 
         $data = $inventarios
             ->groupBy(
+                'articulos.codigo',
                 'articulos.nombre',
                 'almacens.nombre_almacen',
                 'articulos.unidad_envase',
@@ -113,6 +116,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function headings(): array
     {
         return [
+            'Código',
             'Almacén',
             'Producto',
             'Categoría',
@@ -127,6 +131,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function map($row): array
     {
         return [
+            $row->codigo,
             $row->nombre_almacen,
             $row->nombre_producto,
             $row->nombre_categoria,  
@@ -141,14 +146,15 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function columnWidths(): array
     {
         return [
-            'A' => 25,  
-            'B' => 40,  
-            'C' => 25,  
-            'D' => 30,  
-            'E' => 15,  
-            'F' => 18,  
-            'G' => 15,  
-            'H' => 18,  
+            'A' => 13,
+            'B' => 25,  
+            'C' => 40,  
+            'D' => 25,  
+            'E' => 30,  
+            'F' => 15,  
+            'G' => 18,  
+            'H' => 15,  
+            'I' => 18,  
         ];
     }
     public function startCell(): string
@@ -181,7 +187,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
                 $sheet = $event->sheet;
 
                 // Título
-                $sheet->mergeCells('C2:H2');
+                $sheet->mergeCells('C2:I2');
                 $sheet->setCellValue('C2', 'REPORTE DE INVENTARIO FÍSICO VALORADO');
                 $sheet->getStyle('C2')->getFont()->setBold(true)->setSize(16);
                 $sheet->getStyle('C2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -205,14 +211,14 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
     public function styles(Worksheet $sheet)
     {
         // Estilo para el encabezado de la tabla
-        $sheet->getStyle('A8:H8')->applyFromArray([
+        $sheet->getStyle('A8:I8')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '34495E']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
 
         // Estilo para todo el contenido (bordes y alineación vertical)
-        $sheet->getStyle('A9:H' . $sheet->getHighestRow())->applyFromArray([
+        $sheet->getStyle('A9:I' . $sheet->getHighestRow())->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
@@ -223,7 +229,7 @@ class ReporteInventarioValoradoExport implements FromCollection, WithHeadings, W
         ]);
 
         // Alinear columnas numéricas a la derecha
-        $sheet->getStyle('E9:H' . $sheet->getHighestRow())->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('F9:I' . $sheet->getHighestRow())->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
         
         return [];
     }

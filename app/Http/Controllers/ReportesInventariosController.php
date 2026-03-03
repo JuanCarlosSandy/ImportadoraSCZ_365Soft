@@ -964,6 +964,7 @@ class ReportesInventariosController extends Controller
             ->join('personas', 'proveedores.id', '=', 'personas.id')
             ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
             ->select(
+                'articulos.codigo',
                 'articulos.nombre as nombre_producto',
                 'articulos.unidad_envase',
                 'articulos.precio_uno as precio_venta',
@@ -990,6 +991,7 @@ class ReportesInventariosController extends Controller
         if (!empty($buscar)) {
             $inventarios = $inventarios->where(function ($query) use ($buscar) {
                 $query->where('articulos.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('articulos.codigo', 'like', '%' . $buscar . '%')
                     ->orWhere('personas.nombre', 'like', '%' . $buscar . '%')
                     ->orWhere('almacens.nombre_almacen', 'like', '%' . $buscar . '%');
             });
@@ -997,6 +999,7 @@ class ReportesInventariosController extends Controller
 
         // 🔹 Agrupamos y ordenamos (sin paginar)
         return $inventarios->groupBy(
+            'articulos.codigo',
             'articulos.nombre',
             'almacens.nombre_almacen',
             'articulos.unidad_envase',
@@ -1031,6 +1034,7 @@ class ReportesInventariosController extends Controller
             ->join('personas', 'proveedores.id', '=', 'personas.id')
             ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
             ->select(
+                'articulos.codigo',
                 'articulos.nombre as nombre_producto',
                 'articulos.unidad_envase',
                 'categorias.nombre as nombre_categoria',
@@ -1059,6 +1063,7 @@ class ReportesInventariosController extends Controller
             $inventarios = $inventarios->where(function ($query) use ($buscar) {
                 $query
                     ->where('articulos.nombre', 'like', '%' . $buscar . '%')
+                    ->orWhere('articulos.codigo', 'like', '%' . $buscar . '%')
                     ->orWhere('personas.nombre', 'like', '%' . $buscar . '%')
                     ->orWhere('categorias.nombre', 'like', '%' . $buscar . '%')
                     ->orWhere('almacens.nombre_almacen', 'like', '%' . $buscar . '%');
@@ -1067,6 +1072,7 @@ class ReportesInventariosController extends Controller
 
         $inventarios = $inventarios
             ->groupBy(
+                'articulos.codigo',
                 'articulos.nombre',
                 'almacens.nombre_almacen',
                 'articulos.unidad_envase',
@@ -1171,8 +1177,8 @@ class ReportesInventariosController extends Controller
 
             // --- TABLA ---
             // Anchos en mm (total = 277, ancho util en A4 horizontal con margenes 10/10)
-            $w = [28, 55, 16, 28, 42, 22, 22, 22, 42];
-            $headers = ['Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
+            $w = [13, 28, 55, 16, 26, 42, 22, 22, 22, 38];
+            $headers = ['Código', 'Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
 
             $pdf->SetFont('Arial', 'B', 8);
             $pdf->SetFillColor(52, 73, 94);
@@ -1190,15 +1196,16 @@ class ReportesInventariosController extends Controller
             foreach ($inventarios as $item) {
                 $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
                 
-                $pdf->Cell($w[0], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
-                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_producto, 0, 38)), 1, 0, 'L', true);
-                $pdf->Cell($w[2], 6, $item->unidad_envase, 1, 0, 'C', true);
-                $pdf->Cell($w[3], 6, utf8_decode(substr($item->nombre_categoria, 0, 18)), 1, 0, 'L', true);
-                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_proveedor, 0, 26)), 1, 0, 'L', true);
-                $pdf->Cell($w[5], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
-                $pdf->Cell($w[6], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
-                $pdf->Cell($w[7], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
-                $pdf->Cell($w[8], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[0], 6, utf8_decode(substr($item->codigo, 0, 12)), 1, 0, 'L', true);
+                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[2], 6, utf8_decode(substr($item->nombre_producto, 0, 38)), 1, 0, 'L', true);
+                $pdf->Cell($w[3], 6, $item->unidad_envase, 1, 0, 'C', true);
+                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_categoria, 0, 18)), 1, 0, 'L', true);
+                $pdf->Cell($w[5], 6, utf8_decode(substr($item->nombre_proveedor, 0, 26)), 1, 0, 'L', true);
+                $pdf->Cell($w[6], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[7], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[8], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[9], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
                 
                 $pdf->Ln();
                 $fill = !$fill;
@@ -1296,8 +1303,8 @@ class ReportesInventariosController extends Controller
             $pdf->Cell(100, 8, utf8_decode(substr($buscar, 0, 50)), 0, 1, 'L');
             $pdf->Ln(5);
 
-            $w = [28, 55, 16, 28, 42, 22, 22, 22, 42];
-            $headers = ['Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
+            $w = [13, 28, 55, 16, 28, 42, 22, 22, 22, 42];
+            $headers = ['Código', 'Almacén', 'Producto', 'Envase', 'Categoría', 'Proveedor', 'P. Venta', 'Costo', 'Stock', 'Total'];
 
             $pdf->SetFont('Arial', 'B', 8);
             $pdf->SetFillColor(52, 73, 94);
@@ -1315,15 +1322,16 @@ class ReportesInventariosController extends Controller
             foreach ($inventarios as $item) {
                 $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
                 
-                $pdf->Cell($w[0], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
-                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_producto, 0, 38)), 1, 0, 'L', true);
-                $pdf->Cell($w[2], 6, $item->unidad_envase, 1, 0, 'C', true);
-                $pdf->Cell($w[3], 6, utf8_decode(substr($item->nombre_categoria, 0, 18)), 1, 0, 'L', true);
-                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_proveedor, 0, 26)), 1, 0, 'L', true);
-                $pdf->Cell($w[5], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
-                $pdf->Cell($w[6], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
-                $pdf->Cell($w[7], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
-                $pdf->Cell($w[8], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[0], 6, utf8_decode(substr($item->codigo, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[1], 6, utf8_decode(substr($item->nombre_almacen, 0, 20)), 1, 0, 'L', true);
+                $pdf->Cell($w[2], 6, utf8_decode(substr($item->nombre_producto, 0, 38)), 1, 0, 'L', true);
+                $pdf->Cell($w[3], 6, $item->unidad_envase, 1, 0, 'C', true);
+                $pdf->Cell($w[4], 6, utf8_decode(substr($item->nombre_categoria, 0, 18)), 1, 0, 'L', true);
+                $pdf->Cell($w[5], 6, utf8_decode(substr($item->nombre_proveedor, 0, 26)), 1, 0, 'L', true);
+                $pdf->Cell($w[6], 6, number_format($item->precio_venta, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[7], 6, number_format($item->precio_costo_unid, 2), 1, 0, 'R', true);
+                $pdf->Cell($w[8], 6, number_format($item->saldo_stock_total, 0), 1, 0, 'R', true);
+                $pdf->Cell($w[9], 6, number_format($item->valor_total, 2), 1, 0, 'R', true);
                 
                 $pdf->Ln();
                 $fill = !$fill;
@@ -1468,6 +1476,7 @@ class ReportesInventariosController extends Controller
 
             $coleccion = $datos->map(function ($item) {
                 return [
+                    'Código'        => $item->codigo,
                     'Almacén'        => $item->nombre_almacen,
                     'Producto'       => $item->nombre_producto,
                     'Unidad Envase'  => $item->unidad_envase,
@@ -1506,6 +1515,7 @@ class ReportesInventariosController extends Controller
                 public function headings(): array
                 {
                     return [
+                        'Código',
                         'Almacén',
                         'Producto',
                         'Unidad Envase',
@@ -1525,14 +1535,15 @@ class ReportesInventariosController extends Controller
                 public function columnWidths(): array
                 {
                     return [
-                        'A' => 25, // Almacén
-                        'B' => 40, // Producto
-                        'C' => 15, // Unidad Envase
-                        'D' => 25, // Categoría
-                        'E' => 30, // Proveedor
-                        'F' => 15, // Costo unitario
-                        'G' => 15, // Precio ventas
-                        'H' => 15, // Stock total
+                        'A' => 13, // Código
+                        'B' => 25, // Almacén
+                        'C' => 40, // Producto
+                        'D' => 15, // Unidad Envase
+                        'E' => 25, // Categoría
+                        'F' => 30, // Proveedor
+                        'G' => 15, // Costo unitario
+                        'H' => 15, // Precio ventas
+                        'I' => 15, // Stock total
                     ];
                 }
 
@@ -1582,13 +1593,13 @@ class ReportesInventariosController extends Controller
                 public function styles(Worksheet $sheet) {
                     $highestRow = $sheet->getHighestRow();
 
-                     $sheet->getStyle('A8:H8')->applyFromArray([
+                     $sheet->getStyle('A8:I8')->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '34495E']],
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                     ]);
 
-                     $sheet->getStyle('A9:H' . $highestRow)->applyFromArray([
+                     $sheet->getStyle('A9:I' . $highestRow)->applyFromArray([
                         'borders' => [
                             'allBorders' => [
                                 'borderStyle' => Border::BORDER_THIN,
@@ -1598,7 +1609,7 @@ class ReportesInventariosController extends Controller
                         'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
                     ]);
 
-                     $sheet->getStyle('F9:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                     $sheet->getStyle('G9:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
                      $sheet->getStyle('C9:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 

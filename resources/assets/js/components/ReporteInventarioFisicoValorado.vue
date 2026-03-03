@@ -144,7 +144,8 @@
             <!-- TABLA -->
             <DataTable v-if="tipoSeleccionado == 'item'" :value="arrayInventario"
                 class="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">
-                <Column field="nombre_producto" header="ITEM"></Column>
+                <Column field="codigo" header="CÓDIGO"></Column>
+                <Column field="nombre_producto" header="PRODUCTO"></Column>
                 <Column field="nombre_proveedor" header="PROVEEDORES"></Column>
                 <Column field="nombre_categoria" header="CATEGORÍA" class="d-none d-md-table-cell">
                     <template #body="slotProps">
