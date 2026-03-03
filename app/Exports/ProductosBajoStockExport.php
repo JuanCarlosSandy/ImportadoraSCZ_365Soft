@@ -119,8 +119,10 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
                 if ($this->almacen_id) {
                    $nombre = DB::table('almacens')->where('id', $this->almacen_id)->value('nombre_almacen');
                    $filtrosTexto[] = "Almacén: " . ($nombre ?? 'Desconocido');
-                } else { $filtrosTexto[] = "Almacén: Todos"; }
-                     if ($this->codigo) { $filtrosTexto[] = "Código: " . $this->codigo; }
+                     } else { $filtrosTexto[] = "Almacén: Todos"; }
+                     $filtrosTexto[] = "Producto: " . ($this->medicamento ?: 'Todos');
+                     $filtrosTexto[] = "Laboratorio: " . ($this->laboratorio ?: 'Todos');
+                     $filtrosTexto[] = "Código: " . ($this->codigo ?: 'Todos');
                 
                 $sheet->setCellValue('A3', "Filtros: " . implode(" | ", $filtrosTexto));
                     $sheet->mergeCells('A3:F3');
@@ -140,7 +142,7 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
                     
                     if ($almacen !== $lastAlmacen && $almacen != '') {
                         $sheet->insertNewRowBefore($row, 1);
-                        $sheet->setCellValue("A$row", $almacen);
+                        $sheet->setCellValue("A$row", 'ALMACÉN: ' . $almacen);
                         $sheet->mergeCells("A$row:F$row");
                         
                         $sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(12);

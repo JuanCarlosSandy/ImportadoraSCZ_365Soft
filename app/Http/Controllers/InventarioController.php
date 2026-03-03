@@ -430,8 +430,8 @@ class InventarioController extends Controller
         $pdf->Ln(3);
 
         $txtFiltros = [
+            'Código: ' . $toAscii($filtros['codigo'] ?: 'Todos'),        
             'Almacen: ' . $toAscii($filtros['nombre_almacen'] ?? 'Todos'),
-            'Proveedor: ' . $toAscii($filtros['proveedor'] ?: 'Todos'),
             'Productos: ' . $toAscii($filtros['productos'] ?: 'Todos'),
             'Codigo: ' . $toAscii($filtros['codigo'] ?: 'Todos'),
             'Categoria: ' . $toAscii($filtros['nombre_categoria'] ?? 'Todas'),
@@ -447,8 +447,8 @@ class InventarioController extends Controller
         $pdf->MultiCell(0, 5, implode(' | ', $txtFiltros));
         $pdf->Ln(2);
 
-        $w = [36, 76, 46, 58, 28, 28];
-        $headers = ['Almacen', 'Producto', 'Categoria', 'Proveedor', 'Stock Actual', 'Stock Minimo'];
+        $w = [13, 36, 76, 46, 28, 28];
+        $headers = ['Código', 'Almacen', 'Producto', 'Categoria', 'Stock Actual', 'Stock Minimo'];
 
         $pdf->SetFont('Arial', 'B', 8);
         $pdf->SetFillColor(220, 220, 220);
@@ -461,10 +461,10 @@ class InventarioController extends Controller
         $fill = false;
         foreach ($datos as $row) {
             $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
-            $pdf->Cell($w[0], 6, substr($toAscii($row->nombre_almacen), 0, 22), 1, 0, 'L', true);
-            $pdf->Cell($w[1], 6, substr($toAscii($row->nombre_producto), 0, 42), 1, 0, 'L', true);
-            $pdf->Cell($w[2], 6, substr($toAscii($row->nombre_categoria), 0, 26), 1, 0, 'L', true);
-            $pdf->Cell($w[3], 6, substr($toAscii($row->nombre_proveedor), 0, 30), 1, 0, 'L', true);
+            $pdf->Cell($w[0], 6, substr($toAscii($row->codigo), 0, 12), 1, 0, 'L', true);
+            $pdf->Cell($w[1], 6, substr($toAscii($row->nombre_almacen), 0, 22), 1, 0, 'L', true);
+            $pdf->Cell($w[2], 6, substr($toAscii($row->nombre_producto), 0, 42), 1, 0, 'L', true);
+            $pdf->Cell($w[3], 6, substr($toAscii($row->nombre_categoria), 0, 26), 1, 0, 'L', true);
             $pdf->Cell($w[4], 6, number_format($row->stock_actual, 0), 1, 0, 'R', true);
             $pdf->Cell($w[5], 6, number_format($row->stock_minimo, 0), 1, 1, 'R', true);
             $fill = !$fill;
@@ -496,6 +496,7 @@ class InventarioController extends Controller
             ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
             ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
             ->select(
+                'articulos.codigo',
                 'almacens.id as id_almacen',
                 'almacens.nombre_almacen',
                 'articulos.id as id_producto',
@@ -508,6 +509,7 @@ class InventarioController extends Controller
             )
             ->where('articulos.condicion', '=', 1)
             ->groupBy(
+                'articulos.codigo',
                 'almacens.id',
                 'almacens.nombre_almacen',
                 'articulos.id',
@@ -1122,6 +1124,7 @@ class InventarioController extends Controller
         $almacen_id = $request->almacen_id;
         $medicamento = $request->medicamento;
         $laboratorio = $request->laboratorio;
+        $codigo = trim((string) $request->codigo);
         
         // Variables legacy por si acaso
         $buscar = $request->buscar; 
@@ -1265,7 +1268,7 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
 
-        $pdf->Cell(277, 8, utf8_decode('ALMACÉN: ' . $nombreAlmacen), 1, 1, 'L', true);
+        $pdf->Cell(215, 8, utf8_decode('ALMACÉN: ' . $nombreAlmacen), 1, 1, 'L', true);
         $pdf->Ln(2);
     }
 
@@ -1275,8 +1278,8 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(52, 73, 94);
 
-        $widths = [25, 95, 18, 20, 18, 62, 39];
-        $headers = ['Código', 'Producto', 'Unidad', 'Mínimo', 'Actual', 'Proveedor', 'Estado'];
+        $widths = [25, 95, 18, 20, 18, 39];
+        $headers = ['Código', 'Producto', 'Unidad', 'Mínimo', 'Actual', 'Estado'];
 
         $x = 10;
         foreach ($headers as $i => $header) {
@@ -1312,7 +1315,6 @@ class InventarioController extends Controller
                 utf8_decode($inv->unidad_envase),
                 utf8_decode($inv->stock_minimo),
                 utf8_decode($inv->saldo_stock),
-                utf8_decode($this->truncateText($inv->nombre_proveedor, 25)),
             ];
 
             $x = 10;
@@ -1326,7 +1328,7 @@ class InventarioController extends Controller
             // Agregar columna de Estado
             $estado = $inv->saldo_stock == 0 ? 'Sin Stock' : 'Bajo Stock';
             $pdf->SetXY($x, $y);
-            $pdf->Cell($widths[6], 6, utf8_decode($estado), 1, 0, 'C', true);
+            $pdf->Cell($widths[5], 6, utf8_decode($estado), 1, 0, 'C', true);
 
             $pdf->Ln();
             $fill = !$fill;
@@ -1351,11 +1353,12 @@ class InventarioController extends Controller
 
     private function addFooter($pdf)
     {
-        $pdf->Ln(5);
         $pdf->SetDrawColor(200, 200, 200);
-        $pdf->Line(10, $pdf->GetY(), 287, $pdf->GetY());
+        $pdf->SetY(-28);
+        $y = $pdf->GetY();
+        $pdf->Line(10, $y, 287, $y);
 
-        $pdf->Ln(3);
+        $pdf->SetY(-24);
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->SetTextColor(100, 100, 100);
         $pdf->Cell(0, 4, utf8_decode('Los productos marcados requieren reposición urgente según stock mínimo establecido.'), 0, 1, 'L');
