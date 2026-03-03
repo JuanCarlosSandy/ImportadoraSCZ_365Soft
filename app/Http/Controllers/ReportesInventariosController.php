@@ -1136,7 +1136,7 @@ class ReportesInventariosController extends Controller
             // --- ENCABEZADO ---
             $rutaLogo = public_path('img/logoPrincipal.png');
             if (file_exists($rutaLogo)) {
-                $pdf->Image($rutaLogo, 10, 5, 30);
+                $pdf->Image($rutaLogo, 10, 5, 20);
             }
 
             $pdf->SetFont('Arial', 'B', 16);
