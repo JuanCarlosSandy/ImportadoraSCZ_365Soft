@@ -1197,6 +1197,8 @@ class InventarioController extends Controller
 
         // --- GENERACIÓN DEL PDF ---
         $pdf = new \FPDF('L', 'mm', 'A4');
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 20);
         $pdf->AddPage();
 
         $this->addHeader($pdf);
@@ -1268,7 +1270,7 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(0, 0, 0);
 
-        $pdf->Cell(215, 8, utf8_decode('ALMACÉN: ' . $nombreAlmacen), 1, 1, 'L', true);
+        $pdf->Cell(277, 8, utf8_decode('ALMACÉN: ' . $nombreAlmacen), 1, 1, 'L', true);
         $pdf->Ln(2);
     }
 
@@ -1278,7 +1280,8 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(52, 73, 94);
 
-        $widths = [25, 95, 18, 20, 18, 39];
+        // Ancho útil total en A4 horizontal con márgenes 10/10 = 277 mm
+        $widths = [30, 128, 20, 25, 25, 49];
         $headers = ['Código', 'Producto', 'Unidad', 'Mínimo', 'Actual', 'Estado'];
 
         $x = 10;
@@ -1311,7 +1314,7 @@ class InventarioController extends Controller
 
             $data = [
                 utf8_decode($inv->codigo),
-                utf8_decode($this->truncateText($inv->nombre_producto, 25)),
+                utf8_decode($this->truncateText($inv->nombre_producto, 40)),
                 utf8_decode($inv->unidad_envase),
                 utf8_decode($inv->stock_minimo),
                 utf8_decode($inv->saldo_stock),
@@ -1328,7 +1331,7 @@ class InventarioController extends Controller
             // Agregar columna de Estado
             $estado = $inv->saldo_stock == 0 ? 'Sin Stock' : 'Bajo Stock';
             $pdf->SetXY($x, $y);
-            $pdf->Cell($widths[5], 6, utf8_decode($estado), 1, 0, 'C', true);
+            $pdf->Cell($widths[5], 7, utf8_decode($estado), 1, 0, 'C', true);
 
             $pdf->Ln();
             $fill = !$fill;
@@ -1354,19 +1357,19 @@ class InventarioController extends Controller
     private function addFooter($pdf)
     {
         $pdf->SetDrawColor(200, 200, 200);
-        $pdf->SetY(-28);
+        $pdf->SetY(-24);
         $y = $pdf->GetY();
         $pdf->Line(10, $y, 287, $y);
 
-        $pdf->SetY(-24);
+        $pdf->SetY(-20);
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->SetTextColor(100, 100, 100);
         $pdf->Cell(0, 4, utf8_decode('Los productos marcados requieren reposición urgente según stock mínimo establecido.'), 0, 1, 'L');
 
-        $pdf->SetY(-15);
+        $pdf->SetY(-16);
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->SetTextColor(150, 150, 150);
-        $pdf->Cell(0, 10, utf8_decode('Sistema de Inventarios - Página ' . $pdf->PageNo() . ' - Generado: ' . date('d/m/Y H:i:s')), 0, 0, 'C');
+        $pdf->Cell(0, 4, utf8_decode('Sistema de Inventarios - Página ' . $pdf->PageNo() . ' - Generado: ' . date('d/m/Y H:i:s')), 0, 0, 'C');
     }
 
     private function truncateText($text, $maxLength)
