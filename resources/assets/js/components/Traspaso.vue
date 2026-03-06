@@ -6,6 +6,8 @@
         <div class="loading-text">LOADING...</div>
       </div>
     </div>
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
     <Panel>
       <template #header>
         <div class="panel-header">
@@ -14,85 +16,48 @@
         </div>
       </template>
 
-      <div class="toolbar-container">
-        <div
-          class="search-bar"
-          style="display: flex; flex-wrap: wrap; gap: 0.5rem;"
-        >
-          <div style="flex: 1 1 45%; min-width: 130px;">
-            <label for="fechaInicio" class="label-fecha">Fecha Desde</label>
-            <Calendar
-              id="fechaInicio"
-              v-model="fechaInicio"
-              dateFormat="yy-mm-dd"
-              showIcon
-              :appendTo="'body'"
-              style="width: 100%; font-size: 12px;"
-              inputStyle="padding: 0.4rem;"
-            />
-          </div>
+      <div class="toolbar-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
 
-          <div style="flex: 1 1 45%; min-width: 130px;">
-            <label for="fechaFin" class="label-fecha">Fecha Hasta</label>
-            <Calendar
-              id="fechaFin"
-              v-model="fechaFin"
-              dateFormat="yy-mm-dd"
-              showIcon
-              :appendTo="'body'"
-              style="width: 100%; font-size: 12px;"
-              inputStyle="padding: 0.4rem;"
-            />
-          </div>
+        <div style="flex: 1 1 140px;">
+          <label class="label-fecha"
+            style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Desde</label>
+          <Calendar v-model="fechaInicio" dateFormat="yy-mm-dd" showIcon :appendTo="'body'" class="p-inputtext-sm"
+            style="width: 100%;" />
         </div>
 
-        <div class="toolbar">
-          <Button
-            :label="mostrarLabel ? 'Filtrar' : ''"
-            icon="pi pi-filter"
-            class="p-button-help p-button-sm"
-            @click="fetchTraspasos"
-          />
-          <Button
-            :label="mostrarLabel ? 'Nuevo Traspaso' : ''"
-            icon="pi pi-plus"
-            @click="abrirModal('traspaso', 'registrar')"
-            class="p-button-secondary p-button-sm"
-          />
+        <div style="flex: 1 1 140px;">
+          <label class="label-fecha"
+            style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Hasta</label>
+          <Calendar v-model="fechaFin" dateFormat="yy-mm-dd" showIcon :appendTo="'body'" class="p-inputtext-sm"
+            style="width: 100%;" />
         </div>
+
+        <div style="padding-bottom: 2px;">
+          <Button :label="mostrarLabel ? 'Filtrar' : ''" icon="pi pi-filter" class="p-button-help p-button-sm"
+            v-tooltip="'Aplicar Filtros'" @click="listarTraspasos" />
+          <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
+            @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm"
+            v-tooltip="'Nuevo Traspaso'" />
+        </div>
+
       </div>
 
       <div class="p-fluid">
-        <DataTable
-          :value="traspasos"
-          responsiveLayout="scroll"
-          class="p-datatable-gridlines p-datatable-sm"
-          paginator
-          :rows="8"
-          :rowsPerPageOptions="[8, 10, 20]"
-          showCurrentPageReport
-        >
+        <DataTable :value="traspasos" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm" paginator
+          :rows="8" showCurrentPageReport>
           <Column header="Acciones" style="width: 120px; text-align: center;">
             <template #body="slotProps">
-              <Button
-                icon="pi pi-eye"
-                class="p-button-success p-button-sm"
-                style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset; margin-right: 5px;"
-                @click="verTraspaso(slotProps.data.id)"
-                title="Ver Detalle"
-              />
-              
-                <Button
-                icon="pi pi-file-pdf"
-                class="p-button-danger p-button-sm"
-                style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
-                @click="exportarPdfTraspaso(slotProps.data.id)"
-                title="Descargar PDF"
-                :disabled="isLoading"   
-              />
+              <Button icon="pi pi-eye" class="p-button-success btn-mini" @click="verTraspaso(slotProps.data.id)"
+                title="Ver Detalle" />
+
+              <Button icon="pi pi-file-pdf" class="p-button-warning btn-mini"
+                @click="exportarPdfTraspaso(slotProps.data.id)" title="Descargar PDF" :disabled="isLoading" />
+
+              <Button v-if="slotProps.data.estado == 1" icon="pi pi-trash" class="p-button-danger btn-mini"
+                @click="anularTraspaso(slotProps.data.id)" title="Anular Traspaso" />
             </template>
           </Column>
-                    <Column field="nombre_usuario" header="Encargado" />
+          <Column field="nombre_usuario" header="Encargado" />
           <Column field="nombre_almacen_origen" header="Almacen Origen" />
           <Column field="nombre_almacen_destino" header="Almacen Destino" />
           <Column header="Fecha">
@@ -105,18 +70,18 @@
               {{ formatTime(slotProps.data.created_at) }}
             </template>
           </Column>
+          <Column header="Estado">
+            <template #body="slotProps">
+              <Tag :value="slotProps.data.estado == 1 ? 'Registrado' : 'Anulado'"
+                :severity="slotProps.data.estado == 1 ? 'success' : 'danger'" class="tag-mini" />
+            </template>
+          </Column>
         </DataTable>
       </div>
     </Panel>
 
-    <Dialog
-      :visible.sync="modal"
-      :modal="true"
-      :appendTo="null"
-      @hide="handleModalClose"
-      :containerStyle="dialogContainerStyle"
-      class="responsive-dialog"
-    >
+    <Dialog :visible.sync="modal" :modal="true" :appendTo="null" @hide="handleModalClose"
+      :containerStyle="dialogContainerStyle" class="responsive-dialog">
       <template #header>
         <div class="flex justify-between items-center w-full">
           <h4 class="text-lg font-semibold">{{ tituloModal }}</h4>
@@ -124,154 +89,115 @@
       </template>
 
       <div class="p-fluid p-formgrid p-grid gap-3 form-compact">
-        <div class="p-grid">
-          <div class="p-col-12 p-md-4">
-            <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
-              <div
-                style="display: flex; align-items: center; min-width: 140px; flex-shrink: 0;"
-              >
-                <label for="almacenOrigen" style="margin-bottom: 0;">
-                  Almacén Origen
-                  <span class="p-tag p-tag-secondary obligatorio-rojo"
-                    >OBLIG</span
-                  >
-                </label>
-                <Button
-                  v-if="bloquearAlmacenOrigen"
-                  icon="pi pi-question"
-                  class="p-button-rounded p-button-text p-button-sm"
-                  style="margin-left: 4px; font-size: 0.8rem; padding: 0.05rem 0.1rem; min-width: 1.1rem; width: 1.1rem; height: 1.1rem;"
-                  @click="mostrarDialogAlmacenOrigen = true"
-                />
-              </div>
-            </div>
-            <div style="flex: 1 1 0; min-width: 0; margin-top: 0.4rem;">
-              <Dropdown
-                id="almacenOrigen"
-                v-model="AlmacenSeleccionado"
-                :options="arrayAlmacenes"
-                optionLabel="nombre_almacen"
-                optionValue="id"
-                placeholder="Seleccione"
-                @change="getDatosAlmacen"
-                :disabled="bloquearAlmacenOrigen"
-                class="w-full"
-              />
-            </div>
+        <div class="p-grid p-align-start">
+
+          <div class="p-col-12 p-sm-3">
+            <label for="almacenOrigen" class="label-input">
+              <span class="text-required">*</span> Almacén Origen
+            </label>
+            <!--<Button v-if="bloquearAlmacenOrigen" icon="pi pi-question"
+                  class="p-button-rounded p-button-text btn-mini" @click="mostrarDialogAlmacenOrigen = true" />-->
+            <Dropdown id="almacenOrigen" v-model="AlmacenSeleccionado" :options="arrayAlmacenes"
+              optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione" @change="getDatosAlmacen"
+              :disabled="bloquearAlmacenOrigen" class="dropdown-full" />
           </div>
 
           <!-- ALMACÉN DESTINO -->
-          <div class="p-col-12 p-md-4">
-            <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
-              <div
-                style="display: flex; align-items: center; min-width: 140px; flex-shrink: 0;"
-              >
-                <label for="almacenDestino">
-                  Almacén Destino
-                  <span class="p-tag p-tag-secondary obligatorio-rojo"
-                    >OBLIG</span
-                  >
-                </label>
-              </div>
-            </div>
+          <div class="p-col-12 p-sm-3">
+            <label for="almacenDestino" class="label-input">
+              <span class="text-required">*</span> Almacén Destino
+            </label>
 
-            <Dropdown
-              id="almacenDestino"
-              v-model="AlmacenDestSeleccionado"
-              :options="arrayAlmacenesDest"
-              optionLabel="nombre_almacen"
-              optionValue="id"
-              placeholder="Seleccione"
-              @change="getDatosAlmacenDest"
-              class="w-full"
-            />
+            <Dropdown id="almacenDestino" v-model="AlmacenDestSeleccionado" :options="arrayAlmacenesDest"
+              optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione" @change="getDatosAlmacenDest"
+              class="dropdown-full" />
           </div>
 
           <!-- TIPO TRASPASO -->
-          <div class="p-col-12 p-md-4">
-            <label for="tipoTraspaso">
-              Tipo Traspaso
-              <span class="p-tag p-tag-secondary obligatorio-rojo">OBLIG</span>
+          <div class="p-col-12 p-sm-3">
+            <label for="tipoTraspaso" class="label-input">
+              <span class="text-required">*</span> Tipo Traspaso
             </label>
-            <Dropdown
-              id="tipoTraspaso"
-              v-model="tipotraspo"
-              :options="arrayTraspaso"
-              placeholder="Seleccione"
-              class="w-full"
-            />
+            <Dropdown id="tipoTraspaso" v-model="tipotraspo" :options="arrayTraspaso" placeholder="Seleccione"
+              class="dropdown-full" :disabled="true" />
+          </div>
+          <div class="p-col-12 p-sm-3">
+            <label for="tipoTraspaso" class="label-input">
+              <span class="text-required">*</span> Buscador
+            </label>
+            <Button label="Buscar Medic." icon="pi pi-search" @click="abrirModal2()" class="p-button-outlined btn-sm" />
           </div>
         </div>
 
-        <div class="col-12 sm:col-4 flex items-center gap-2">
-          <Button
-            label="Buscar Producto"
-            icon="pi pi-search"
-            @click="abrirModal2()"
-            class="p-button-outlined p-button-sm"
-          />
-        </div>
         <div class="col-12 sm:col-8 flex items-center">
-          <strong>Artículo:</strong>
+          <strong>Producto:</strong>
           <span class="italic text-gray-600 ml-2">
-            {{ nombre_producto || "Seleccione un artículo" }}
+            {{ nombre_producto || "Seleccione un producto" }}
           </span>
         </div>
 
-        <div class="p-grid">
-          <div class="p-col-12 p-sm-4">
-            <label for="stockOrigen">Stock (Origen)</label>
-            <InputNumber
-              id="stockOrigen"
-              v-model="saldo_stock"
-              disabled
-              class="w-full"
-            />
+        <div class="p-grid p-align-start">
+          <div class="p-col-12 p-sm-3">
+            <label for="tipoTraspaso" class="label-input">
+              <span class="text-required">*</span> Stock (Origen)
+            </label>
+            <InputNumber v-model="saldo_stock" disabled class="input-number-full" />
           </div>
 
-          <div class="p-col-12 p-sm-4">
-            <label for="stockDestino">Stock (Destino)</label>
-            <InputNumber
-              id="stockDestino"
-              v-model="saldoStockTotal"
-              disabled
-              class="w-full"
-            />
+          <div class="p-col-12 p-sm-3">
+            <label for="tipoTraspaso" class="label-input">
+              <span class="text-required">*</span> Stock (Destino)
+            </label>
+            <InputNumber v-model="saldoStockTotal" disabled class="input-number-full" />
           </div>
 
-          <div class="p-col-12 p-sm-4">
-            <label for="cantidadTrasp">Cantidad Trasp</label>
-            <InputNumber
-              id="cantidadTrasp"
-              v-model="cantidad_traspaso"
-              class="w-full"
-            />
-          </div>
-        </div>
+          <div class="p-col-12 p-sm-3">
 
-        <div class="col-12 sm:col-4 flex align-items-center">
-          <Button
-            label="Agregar"
-            icon="pi pi-plus"
-            class="p-button-success p-button-sm"
-            @click="agregarDetalle()"
-          />
+            <label for="tipoTraspaso" class="label-input">
+              <span class="text-required">*</span> Cantidad a Traspasar
+            </label>
+            <InputNumber id="cantidadTrasp" v-model="cantidad_traspaso" class="input-number-full" :min="0"
+              :class="{ 'p-invalid': stockExcedido }"
+              :placeholder="es_paquete ? 'Cantidad de paquetes' : 'Cantidad de unidades'" />
+
+            <small v-if="stockExcedido" class="p-error block mt-1 font-bold">
+              ¡Stock insuficiente!
+            </small>
+
+          </div>
+          <!--<div class="p-col-12 p-sm-3">
+            <label for="tipoTraspaso" class="label-input">
+              <span class="text-required">*</span> Tipo de Medida
+            </label>
+            <div class="flex align-items-center justify-content-between mt-3">
+              <div class="flex align-items-center gap-2">
+                <span class="text-sm font-semibold" :style="{ color: es_paquete ? '#2196F3' : '#689F38' }">
+                  {{ es_paquete ? 'P' : 'U' }}
+                </span>
+                <InputSwitch v-model="es_paquete" />
+              </div>
+
+              <span v-if="es_paquete && factor_conversion > 1" class="text-xs text-gray-600 font-semibold">
+                1 Paq = {{ factor_conversion }} Unid.
+              </span>
+            </div>
+          </div>-->
+          <div class="p-col-12 p-sm-3">
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Agrear al detalle
+            </label>
+            <Button label="Agregar" icon="pi pi-plus" class="p-button-success btn-sm" @click="agregarDetalle()" />
+          </div>
         </div>
 
         <div class="col-12" style="max-height: 300px; overflow-y: auto;">
-          <DataTable
-            :value="arrayDetalle"
-            responsiveLayout="scroll"
-            emptyMessage="No hay artículos agregados"
-            class="p-datatable-sm"
-          >
+          <DataTable :value="arrayDetalle" responsiveLayout="scroll" emptyMessage="No hay artículos agregados"
+            class="p-datatable-sm tabla-pro p-datatable-gridlines">
             <Column header="Eliminar" style="width: 80px">
               <template #body="slotProps">
-                <Button
-                  icon="pi pi-trash"
-                  class="p-button-danger p-button-sm"
-                  @click="eliminarDetalle(slotProps.index)"
-                />
+                <Button icon="pi pi-trash" class="p-button-danger btn-mini"
+                  @click="eliminarDetalle(slotProps.index)" />
               </template>
             </Column>
             <Column field="codigo" header="Código" />
@@ -292,109 +218,90 @@
 
       <!-- FOOTER CON BOTONES -->
       <template #footer>
-        <Button
-          label="Cerrar"
-          icon="pi pi-times"
-          class="p-button-danger p-button-sm"
-          @click="cerrarModal()"
-          type="button"
-        />
-        <Button
-          v-if="tipoAccion === 1"
-          label="Guardar"
-          icon="pi pi-check"
-          class="p-button-success p-button-sm"
-          @click="registrarTraspaso()"
-          type="button"
-        />
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal()"
+          type="button" />
+        <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm"
+          @click="registrarTraspaso()" type="button" />
       </template>
     </Dialog>
-    <Dialog
-      :visible.sync="dialogTraspasoVisible"
-      header="Detalle De Traspaso"
-      :modal="true"
-      class="w-[70vw] md:w-[60vw]"
-    >
-      <DataTable
-        :value="arrayInventarioTrasp"
-        responsiveLayout="scroll"
-        class="p-datatable-gridlines p-datatable-sm"
-        stripedRows
-      >
+    <Dialog :visible.sync="dialogTraspasoVisible" :modal="true" :containerStyle="dialogContainerStyle"
+      class="responsive-dialog">
+
+      <!-- HEADER -->
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-arrows-h header-icon"></i>
+          <div class="header-text">
+            <span class="header-title">DETALLE DEL TRASPASO</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- INFO GENERAL -->
+      <div class="traspaso-info mb-3">
+        <div>
+          <strong>Almacén Origen:</strong> {{ datosTraspaso.almacen_origen }}
+        </div>
+        <div>
+          <strong>Almacén Destino:</strong> {{ datosTraspaso.almacen_destino }}
+        </div>
+        <div>
+          <strong>Fecha:</strong> {{ fechaTraspasoFormateada }}
+        </div>
+      </div>
+
+      <!-- TABLA -->
+      <DataTable :value="arrayInventarioTrasp" responsiveLayout="scroll"
+        class="p-datatable-gridlines p-datatable-sm tabla-pro" stripedRows>
         <Column field="nombre_producto" header="Producto" />
         <Column field="contacto" header="Proveedor" />
         <Column field="cantidad_traspaso" header="Total Traspasado" />
       </DataTable>
+
+      <!-- FOOTER -->
+      <template #footer>
+        <button class="btn btn-danger btn-sm" @click="dialogTraspasoVisible = false">
+          <i class="pi pi-times"></i> Cerrar
+        </button>
+      </template>
+
     </Dialog>
 
-    <Dialog
-      header="Almacén de origen bloqueado"
-      :visible.sync="mostrarDialogAlmacenOrigen"
-      :modal="true"
-      :closable="false"
-      :containerStyle="{ width: '600px' }"
-    >
+    <Dialog header="Almacén de origen bloqueado" :visible.sync="mostrarDialogAlmacenOrigen" :modal="true"
+      :closable="false" :containerStyle="{ width: '600px' }">
       <p>
         Ya agregó items al carrito del traspaso, no puede cambiar el Almacén de
         origen. Si se equivocó, debe cancelar el traspaso y volver a iniciarlo
         desde cero.
       </p>
       <div class="p-d-flex p-jc-end">
-        <Button
-          label="Cerrar"
-          icon="pi pi-times"
-          class="p-button-text"
-          @click="mostrarDialogAlmacenOrigen = false"
-        />
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-text" @click="mostrarDialogAlmacenOrigen = false" />
       </div>
     </Dialog>
 
-    <Dialog
-      :visible.sync="modal2"
-      :modal="true"
-      header="Seleccione el Producto"
-      class="w-[70vw] md:w-[60vw]"
-      :closable="true"
-      @hide="cerrarModal2"
-    >
+    <Dialog :visible.sync="modal2" :modal="true" :containerStyle="dialogContainerStyle" class="responsive-dialog"
+      :closable="true" @hide="cerrarModal2">
       <template #header>
-        <div class="flex justify-between items-center w-full">
-          <h4 class="text-lg font-semibold">{{ tituloModal2 }}</h4>
+        <div class="dialog-header">
+          <i class="pi pi-box header-icon"></i>
+          <span class="header-title">{{ tituloModal2 }}</span>
         </div>
       </template>
       <div class="p-fluid">
         <div class="p-field p-grid">
           <div class="p-col">
-            <InputText
-              id="buscarProducto"
-              v-model="buscar"
-              @keyup="actualizarBusqueda"
-              placeholder="Texto a buscar"
-              class="w-full"
-            />
+            <InputText id="buscarProducto" v-model="buscar" @keyup="actualizarBusqueda" placeholder="Texto a buscar"
+              class="input-full" />
           </div>
         </div>
-        <DataTable
-          :value="arrayInventario"
-          :paginator="true"
-          :rows="pagination.per_page || 8"
-          :first="(pagination.current_page - 1) * pagination.per_page"
-          :totalRecords="pagination.total"
-          :lazy="true"
-          @page="onInventarioPage"
-          responsiveLayout="scroll"
-          dataKey="id"
-          emptyMessage="No hay productos disponibles"
-          class="p-datatable-sm mt-3"
-        >
+        <DataTable :value="arrayInventario" :paginator="true" :rows="pagination.per_page || 8"
+          :first="(pagination.current_page - 1) * pagination.per_page" :totalRecords="pagination.total" :lazy="true"
+          @page="onInventarioPage" responsiveLayout="scroll" dataKey="id" emptyMessage="No hay productos disponibles"
+          class="p-datatable-gridlines p-datatable-sm tabla-pro">
           <Column header="Opciones" style="width: 80px">
             <template #body="slotProps">
-              <Button
-                icon="pi pi-check"
-                class="p-button-success p-button-sm"
-                style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
-                @click="agregarDetalleModal(slotProps.data)"
-              />
+              <Button icon="pi pi-check" class="p-button-success btn-mini"
+                @click="agregarDetalleModal(slotProps.data)" />
             </template>
           </Column>
           <Column field="nombre_producto" header="Producto" />
@@ -403,13 +310,8 @@
         </DataTable>
       </div>
       <template #footer>
-        <Button
-          label="Cerrar"
-          icon="pi pi-times"
-          class="p-button-danger p-button-sm"
-          @click="cerrarModal2()"
-          type="button"
-        />
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger btn-sm" @click="cerrarModal2()"
+          type="button" />
       </template>
     </Dialog>
   </main>
@@ -425,6 +327,10 @@ import Dropdown from "primevue/dropdown";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Panel from "primevue/panel";
+import Tag from 'primevue/tag';
+import Swal from "sweetalert2";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
 
 export default {
   components: {
@@ -437,9 +343,17 @@ export default {
     InputNumber,
     Panel,
     InputText,
+    Tag,
+    ToastService,
+    Toast
   },
   data() {
     return {
+      datosTraspaso: {
+        almacen_origen: '',
+        almacen_destino: '',
+        fecha_traspaso: ''
+      },
       mostrarLabel: true,
       bloquearAlmacenOrigen: false, // Cuando sea true, deshabilita el Dropdown de origen
       mostrarDialogAlmacenOrigen: false,
@@ -522,6 +436,11 @@ export default {
   },
 
   computed: {
+    fechaTraspasoFormateada() {
+      if (!this.datosTraspaso.fecha_traspaso) return '';
+      return new Date(this.datosTraspaso.fecha_traspaso)
+        .toLocaleString('es-BO');
+    },
     dialogContainerStyle() {
       if (window.innerWidth <= 480) {
         return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
@@ -533,11 +452,11 @@ export default {
         return { width: "800px", maxWidth: "90vw", margin: "0 auto" };
       }
     },
-    isActived: function() {
+    isActived: function () {
       return this.pagination.current_page;
     },
     //Calcula los elementos de la paginación
-    pagesNumber: function() {
+    pagesNumber: function () {
       if (!this.pagination.to) {
         return [];
       }
@@ -561,21 +480,21 @@ export default {
     },
   },
   methods: {
-    toastSuccess(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 50px;font-size:16px;">
-        <br>
-        ` +
-          mensaje +
-          `.<br>
-    </div>`,
-        {
-          type: "success",
-          position: "bottom-right",
-          duration: 2000,
-        }
-      );
+      toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
     },
     onInventarioPage(event) {
       const page = Math.floor(event.first / event.rows) + 1;
@@ -602,7 +521,7 @@ export default {
     },
     //---------listar por Trasapso por FILTRO DE FECHA---------
     //---listado por filtro de fecha--
-    async fetchTraspasos() {
+    async listarTraspasos() {
       let me = this;
       try {
         let url = "/list/traspasos";
@@ -686,7 +605,7 @@ export default {
       var url = "/almacen/selectAlmacen";
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayAlmacenes = respuesta.almacenes;
           console.log("ORIGEN", me.arrayAlmacenes);
@@ -697,7 +616,7 @@ export default {
             me.getDatosAlmacen(); // Llamar manualmente, porque @change no se dispara automáticamente
           }
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -706,12 +625,12 @@ export default {
       var url = "/almacen/selectAlmacenDest";
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayAlmacenesDest = respuesta.almacenes;
           console.log("DesTino_Almacen:", me.arrayAlmacenesDest);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -762,7 +681,7 @@ export default {
         me.idarticulo;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           console.log("list SALDO_STOCK:", respuesta);
           if (respuesta.invenstock.length > 0) {
@@ -774,7 +693,7 @@ export default {
             me.saldoStockTotal = 0; // O cualquier valor predeterminado
           }
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -964,7 +883,7 @@ export default {
 
         me.cerrarModal_1();
         me.eliminarDetalle();
-        await me.fetchTraspasos(); // Actualizar lista de traspasos
+        await me.listarTraspasos(); // Actualizar lista de traspasos
       } catch (error) {
         console.error(error);
         swal("Error", "No se pudo registrar el traspaso", "error");
@@ -977,14 +896,16 @@ export default {
       try {
         this.dialogTraspasoVisible = true;
 
-        let idtraspaso = id;
-        let me = this;
-
-        const url = "/traspaso/obtenerTraspaso?idtraspaso=" + idtraspaso;
+        const url = "/traspaso/obtenerTraspaso?idtraspaso=" + id;
         const response = await axios.get(url);
         const respuesta = response.data;
 
-        me.arrayInventarioTrasp = respuesta.detalletrasp;
+        // 🔹 DATOS GENERALES
+        this.datosTraspaso = respuesta.traspaso;
+
+        // 🔹 DETALLE PARA LA TABLA
+        this.arrayInventarioTrasp = respuesta.detalletrasp;
+
       } catch (error) {
         console.error("Error al obtener detalles del traspaso:", error);
         swal(
@@ -995,41 +916,88 @@ export default {
       }
     },
 
-async exportarPdfTraspaso(id) {
-  this.isLoading = true;
-  try {
-    const response = await axios.get(`/traspaso/exportar/${id}`, {
-      responseType: 'blob',
-      timeout: 600000 
-    });
+    async exportarPdfTraspaso(id) {
+      this.isLoading = true;
+      try {
+        const response = await axios.get(`/traspaso/exportar/${id}`, {
+          responseType: 'blob',
+          timeout: 600000
+        });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
 
-    let filename = `traspaso_${id}.pdf`;
-    const disposition = response.headers['content-disposition'];
-    if (disposition && disposition.indexOf('attachment') !== -1) {
-      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-      const matches = filenameRegex.exec(disposition);
-      if (matches != null && matches[1]) {
-        filename = matches[1].replace(/['"]/g, '');
+        let filename = `traspaso_${id}.pdf`;
+        const disposition = response.headers['content-disposition'];
+        if (disposition && disposition.indexOf('attachment') !== -1) {
+          const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+          const matches = filenameRegex.exec(disposition);
+          if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
+
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error al exportar PDF:', error);
+        swal("Error", "No se pudo generar el PDF del traspaso", "error");
+      } finally {
+        this.isLoading = false;
       }
-    }
+    },
 
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error al exportar PDF:', error);
-    swal("Error", "No se pudo generar el PDF del traspaso", "error");
-  } finally {
-    this.isLoading = false;
-  }
-},
-    
+    async anularTraspaso(id) {
+      const result = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Este paso es irreversible. El traspaso será anulado.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, anular',
+        cancelButtonText: 'No',
+        customClass: {
+          confirmButton: 'swal2-confirm-new',
+          cancelButton: 'swal2-cancel-new'
+        }
+      });
+
+      if (result.isConfirmed) {
+        try {
+
+          const response = await axios.delete(`/traspaso/anular/${id}`);
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Correcto',
+            text: response.data.message,
+            timer: 2000,
+            showConfirmButton: false
+          });
+
+          this.listarTraspasos();
+
+        } catch (error) {
+
+          let mensaje = 'Ocurrió un error al anular el traspaso';
+
+          if (error.response && error.response.data.message) {
+            mensaje = error.response.data.message;
+          }
+
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: mensaje
+          });
+
+        }
+      }
+    },
+
     //---abrir modal de registro de traspaso--
     abrirModal(modelo, accion, data = []) {
       switch (modelo) {
@@ -1146,7 +1114,7 @@ async exportarPdfTraspaso(id) {
         this.selectAlmacen(),
         this.selectAlmacenDestino(),
         this.inicializarFechas(),
-        this.fetchTraspasos(),
+        this.listarTraspasos(),
       ]);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
@@ -1159,6 +1127,171 @@ async exportarPdfTraspaso(id) {
 };
 </script>
 <style scoped>
+/* Input normal */
+.p-inputgroup>.p-inputtext,
+.p-inputgroup>.p-input-icon-left>.p-inputtext {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* Botón */
+.p-inputgroup>.p-button {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Label obligatorio */
+.label-input {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Estilos para campos opcionales */
+.optional-field {
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.optional-icon {
+  color: #17a2b8;
+  font-size: 0.5rem;
+}
+
+/* Estilosde Inputs text, number, dropdown y calendario*/
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+}
+
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+.input-number-full {
+  width: 100%;
+}
+
+.input-number-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+/* Estilo de tabla con scroll horizontal y Responsive*/
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.traspaso-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-subtitle {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
 /* Arreglar icono de lupa - Centrado perfecto */
 .search-bar .p-input-icon-left {
   position: relative;
@@ -1189,29 +1322,30 @@ async exportarPdfTraspaso(id) {
   display: flex;
   align-items: center;
 }
+
 .panel-title {
   margin: 0;
   padding-left: 5px;
 }
 
 /* Responsive Dialog Styles */
-.responsive-dialog >>> .p-dialog {
+.responsive-dialog>>>.p-dialog {
   margin: 0.75rem;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   overflow-x: auto;
   padding: 0.75rem 1rem;
 }
 
-.responsive-dialog >>> .p-dialog-header {
+.responsive-dialog>>>.p-dialog-header {
   padding: 0.75rem 1.5rem;
   font-size: 1.1rem;
 }
 
-.responsive-dialog >>> .p-dialog-footer {
+.responsive-dialog>>>.p-dialog-footer {
   padding: 0.5rem 1.5rem;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -1246,11 +1380,11 @@ async exportarPdfTraspaso(id) {
 }
 
 /* Formulario compacto - Reducir espacios entre campos */
-.form-compact >>> .p-field {
+.form-compact>>>.p-field {
   margin-bottom: 0.25rem !important;
 }
 
->>> .p-fluid .p-field {
+>>>.p-fluid .p-field {
   margin-bottom: 0.25rem;
 }
 
@@ -1284,43 +1418,27 @@ async exportarPdfTraspaso(id) {
   font-size: 0.8rem;
 }
 
-/* DataTable Responsive */
->>> .p-datatable {
-  font-size: 0.9rem;
-}
-
->>> .p-datatable .p-datatable-tbody > tr > td {
-  padding: 0.5rem;
-  word-break: break-word;
-  text-align: left;
-}
-
->>> .p-datatable .p-datatable-thead > tr > th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
-}
-
 /* Form Grid Responsive */
->>> .p-formgrid.p-grid {
+>>>.p-formgrid.p-grid {
   margin: 0;
 }
 
->>> .p-formgrid .p-field {
+>>>.p-formgrid .p-field {
   padding: 0.5rem;
 }
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.5rem;
     max-height: 95vh;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.85rem;
   }
 
-  >>> .p-formgrid .p-field.p-col-12.p-md-6 {
+  >>>.p-formgrid .p-field.p-col-12.p-md-6 {
     width: 100% !important;
     flex: 0 0 100% !important;
   }
@@ -1339,7 +1457,8 @@ async exportarPdfTraspaso(id) {
     justify-content: flex-start;
     align-items: flex-end;
   }
-  .search-bar > .p-col-12 {
+
+  .search-bar>.p-col-12 {
     flex: 1 1 0;
     max-width: 48%;
     min-width: 0;
@@ -1348,40 +1467,44 @@ async exportarPdfTraspaso(id) {
     flex-direction: column;
     align-items: flex-start;
   }
-  .search-bar >>> .p-calendar {
+
+  .search-bar>>>.p-calendar {
     max-width: 140px !important;
     width: 100%;
   }
-  .search-bar >>> .p-inputtext {
+
+  .search-bar>>>.p-inputtext {
     font-size: 0.9rem !important;
     padding: 0.28rem 1.5rem 0.28rem 0.5rem !important;
     height: 1.7rem !important;
   }
-  .search-bar >>> .p-datepicker-trigger {
+
+  .search-bar>>>.p-datepicker-trigger {
     width: 1.2rem !important;
     height: 1.2rem !important;
     font-size: 0.9rem !important;
     padding: 0.1rem !important;
   }
-  .search-bar >>> .pi-calendar {
+
+  .search-bar>>>.pi-calendar {
     font-size: 0.9rem !important;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.25rem;
     max-height: 98vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.5rem 0.75rem;
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.5rem 1rem;
     font-size: 1rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.4rem 1rem;
     justify-content: flex-end;
   }
@@ -1390,25 +1513,25 @@ async exportarPdfTraspaso(id) {
     gap: 0.5rem;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.8rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.4rem 0.3rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.5rem 0.3rem;
     font-size: 0.75rem;
   }
 
-  >>> .p-formgrid .p-field {
+  >>>.p-formgrid .p-field {
     padding: 0.25rem;
     margin-bottom: 0.4rem !important;
   }
 
-  >>> .p-formgrid .p-field label {
+  >>>.p-formgrid .p-field label {
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
   }
@@ -1422,22 +1545,22 @@ async exportarPdfTraspaso(id) {
     font-size: 0.6rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input,
-  >>> .p-multiselect,
-  >>> .p-inputtextarea {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input,
+  >>>.p-multiselect,
+  >>>.p-inputtextarea {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
 
-  >>> .p-button-sm {
+  >>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
     min-width: auto !important;
   }
 
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -1461,7 +1584,8 @@ async exportarPdfTraspaso(id) {
     justify-content: flex-start;
     align-items: flex-end;
   }
-  .search-bar > .p-col-12 {
+
+  .search-bar>.p-col-12 {
     flex: 1 1 0;
     max-width: 48%;
     min-width: 0;
@@ -1470,45 +1594,49 @@ async exportarPdfTraspaso(id) {
     flex-direction: column;
     align-items: flex-start;
   }
-  .search-bar >>> .p-calendar {
+
+  .search-bar>>>.p-calendar {
     max-width: 110px !important;
     width: 100%;
   }
-  .search-bar >>> .p-inputtext {
+
+  .search-bar>>>.p-inputtext {
     font-size: 0.8rem !important;
     padding: 0.18rem 1.1rem 0.18rem 0.4rem !important;
     height: 1.2rem !important;
   }
-  .search-bar >>> .p-datepicker-trigger {
+
+  .search-bar>>>.p-datepicker-trigger {
     width: 1rem !important;
     height: 1rem !important;
     font-size: 0.7rem !important;
     padding: 0.05rem !important;
   }
-  .search-bar >>> .pi-calendar {
+
+  .search-bar>>>.pi-calendar {
     font-size: 0.7rem !important;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.1rem;
     max-height: 99vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.4rem 0.5rem;
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.4rem 0.75rem;
     font-size: 0.95rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.3rem 0.75rem;
     justify-content: flex-end;
   }
 
-  .responsive-dialog >>> .p-dialog-footer .p-button {
+  .responsive-dialog>>>.p-dialog-footer .p-button {
     width: auto;
     margin-bottom: 0.25rem;
   }
@@ -1528,7 +1656,7 @@ async exportarPdfTraspaso(id) {
     min-width: 0;
   }
 
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -1538,25 +1666,25 @@ async exportarPdfTraspaso(id) {
     font-size: 0.8rem !important;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.75rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.3rem 0.2rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
   }
 
-  >>> .p-formgrid .p-field {
+  >>>.p-formgrid .p-field {
     padding: 0.2rem;
     margin-bottom: 0.3rem !important;
   }
 
-  >>> .p-formgrid .p-field label {
+  >>>.p-formgrid .p-field label {
     font-size: 0.85rem;
   }
 
@@ -1568,16 +1696,16 @@ async exportarPdfTraspaso(id) {
     font-size: 0.55rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input,
-  >>> .p-multiselect,
-  >>> .p-inputtextarea {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input,
+  >>>.p-multiselect,
+  >>>.p-inputtextarea {
     font-size: 0.85rem;
     padding: 0.4rem;
   }
 
-  >>> .p-tag {
+  >>>.p-tag {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
@@ -1585,18 +1713,18 @@ async exportarPdfTraspaso(id) {
 
 /* Paginator Responsive */
 @media (max-width: 768px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     flex-wrap: wrap !important;
     justify-content: center;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 32px !important;
     height: 32px !important;
     font-size: 0.85rem !important;
@@ -1606,16 +1734,16 @@ async exportarPdfTraspaso(id) {
 }
 
 @media (max-width: 480px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 28px !important;
     height: 28px !important;
     font-size: 0.8rem !important;
@@ -1625,12 +1753,12 @@ async exportarPdfTraspaso(id) {
 }
 
 /* Action Buttons in DataTable */
->>> .p-datatable .p-button {
+>>>.p-datatable .p-button {
   margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
-  >>> .p-datatable .p-button {
+  >>>.p-datatable .p-button {
     margin-right: 0.15rem;
     margin-bottom: 0.15rem;
   }
@@ -1680,6 +1808,7 @@ async exportarPdfTraspaso(id) {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -1688,23 +1817,28 @@ async exportarPdfTraspaso(id) {
 .p-dialog-mask {
   z-index: 9990 !important;
 }
+
 .p-dialog {
   z-index: 9990 !important;
 }
+
 /*Panel*/
 .ingreso-panel {
   margin-bottom: 1rem;
 }
+
 .panel-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
 }
+
 .panel-icon {
   color: #000000;
   font-size: 1.2rem;
 }
+
 .panel-title {
   margin: 0;
   font-size: 1.1rem;
@@ -1713,37 +1847,31 @@ async exportarPdfTraspaso(id) {
 }
 
 /* Panel Content Spacing */
->>> .p-panel .p-panel-content {
+>>>.p-panel .p-panel-content {
   padding: 1rem;
 }
->>> .p-panel .p-panel-header {
+
+>>>.p-panel .p-panel-header {
   padding: 0.75rem 1rem;
   background: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
 }
->>> .p-panel .p-panel-header .p-panel-title {
+
+>>>.p-panel .p-panel-header .p-panel-title {
   font-weight: 600;
 }
-.label-fecha {
-  background-color: #007bff;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  display: inline-block;
-  margin-bottom: 2px;
-  width: 100px;
-  text-align: center;
-}
+
 .obligatorio-rojo {
   background: #e53935 !important;
   color: #fff !important;
   border: none !important;
 }
-.search-bar >>> .p-datepicker {
+
+.search-bar>>>.p-datepicker {
   min-height: 280px !important;
   height: auto !important;
 }
+
 /* Forzar que el popup del calendario siempre esté visible y por encima */
 :deep(.p-datepicker) {
   z-index: 99999 !important;

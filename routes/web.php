@@ -775,11 +775,7 @@ Route::group(["middleware" => ["auth"]], function () {
             "/inventarios/listarReporteBajoStockPdf",
             "InventarioController@exportarProductosBajoStockPdf"
         );
-        //listado para seleccionar producto En TRASPASO
-        Route::get(
-            "/inventariosTraspaso",
-            "InventarioController@indextraspaso"
-        ); //listar en traspaso para seleccionar el arTiculo de invenTario
+         //listar en traspaso para seleccionar el arTiculo de invenTario
         Route::get(
             "/inventarios/itemLote/{tipo}",
             "InventarioController@indexItemLote"
@@ -794,14 +790,13 @@ Route::group(["middleware" => ["auth"]], function () {
             "InventarioController@importar"
         )->name("inventario.importar");
 
-        //traspaso
+        //MODULO TRASPASOS
         Route::get("/list/traspasos", "TraspasoController@index");
         Route::post("/traspaso/registrar", "TraspasoController@store");
-        Route::get(
-            "/traspaso/obtenerTraspaso",
-            "TraspasoController@indexPorID"
-        );
+        Route::get("/traspaso/obtenerTraspaso","TraspasoController@indexPorID");
         Route::get('/traspaso/exportar/{id}', 'TraspasoController@exportarPdf');
+        Route::get("/inventariosTraspaso","InventarioController@indextraspaso");
+        Route::delete('/traspaso/anular/{id}', 'TraspasoController@anularTraspaso');
 
         //Eventos Significativos
         Route::get("/eventos", "EventosSignificativosController@index");
@@ -1037,7 +1032,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post('/ingreso/actualizar', 'IngresoController@actualizar');
         Route::get('/reporte/caja/{idCaja}', 'CajaController@generarReporte')->name('reporte.caja');
 
-         // rutas para los items compuestos
+        // rutas para los items compuestos
         Route::get("/ItemsCompuestos/pdf", "ItemCompuestoController@exportarItemsCompuestosPDF");
         Route::get("/ItemsCompuestos/excel", "ItemCompuestoController@exportarItemsCompuestosExcel");
         Route::post("/itemcompuesto/registrar", "ItemCompuestoController@storeCompuesto");
@@ -1046,19 +1041,19 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::post("/itemcompuesto/actualizar", "ItemCompuestoController@updateCompuesto");
         Route::get('/itemcompuesto/detalle/{idarticulo}', 'ItemCompuestoController@getItemsCompuestosDetalle');
         Route::post('articulo/verificarStockCompuesto', 'ItemCompuestoController@verificarStockCompuesto');
-        
+
         Route::get("/categoria/servicio/lista", "CategoriaController@indexServicio");
         Route::post("/categoria/servicio/registrar", "CategoriaController@storeServicio");
 
-        Route::get("/reporte/inventariofisicovalorado/{tipo}","ReportesInventariosController@datosInventarioFisicoValorado");
+        Route::get("/reporte/inventariofisicovalorado/{tipo}", "ReportesInventariosController@datosInventarioFisicoValorado");
         Route::post('/reporte/inventarioFisicoPdf', "ReportesInventariosController@exportarInventarioFisicoPdf");
         Route::post('/reporte/inventarioValoradoPdf', "ReportesInventariosController@exportarInventarioValoradoPdf");
         Route::post('/reporte/inventarioValoradoExcel', "ReportesInventariosController@exportarInventarioValorado");
         Route::post('/reporte/inventarioFisicoExcel', "ReportesInventariosController@exportarInventarioFisico");
         Route::get(
-                    "/inventarios/exportproductosbajostock",
-                    "InventarioController@exportarBajoStockPDF"
-                );
+            "/inventarios/exportproductosbajostock",
+            "InventarioController@exportarBajoStockPDF"
+        );
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

@@ -8,7 +8,7 @@ class Traspaso extends Model
 {
     protected $table = 'traspasos';
     protected $fillable = 
-    ['tipo_traspaso','idusuario','almacen_origen','almacen_destino','fecha_traspaso'
+    ['tipo_traspaso','idusuario','almacen_origen','almacen_destino','fecha_traspaso', 'estado'
     ];
     public function usuario()
     {
