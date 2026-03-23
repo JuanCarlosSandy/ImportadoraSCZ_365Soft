@@ -269,28 +269,67 @@ public function generarReporte($idCaja, Request $request)
     // =========================
     $ventas = \DB::table('ventas')
         ->where('idtipo_venta', 1)
-        ->where('idsucursal', $idsucursal)
+        ->where('idcaja', $caja->id)  // 🔥 FILTRAR POR CAJA ESPECÍFICA
         ->where('estado', '<>', 0) // 👈 solo ventas activas
         ->get();
 
     foreach ($ventas as $venta) {
-        $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : 'otros');
+        $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : ($venta->idtipo_pago == 13 ? 'compuesto' : 'otros'));
 
         $cliente = \DB::table('personas')->find($venta->idcliente);
         $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
 
-        // Filtrado por tipo de reporte
-        if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
+        // 👉 Manejo especial para ventas compuestas
+        if ($venta->idtipo_pago == 13) {
+            // Si es compuesto
+            if ($tipo === 'completo') {
+                // Reporte completo: mostrar la venta como compuesto sin desglosar
+                $historial[] = [
+                    'fecha' => $venta->fecha_hora,
+                    'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                    'tipo_pago' => 'compuesto',
+                    'monto' => floatval($venta->total),
+                    'idbanco' => null,
+                    'nombre_banco' => null,
+                    'tipo' => 'venta'
+                ];
+            } elseif ($tipo === 'qr' && floatval($venta->monto_qr) > 0) {
+                // Solo QR
+                $historial[] = [
+                    'fecha' => $venta->fecha_hora,
+                    'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                    'tipo_pago' => 'qr',
+                    'monto' => floatval($venta->monto_qr),
+                    'idbanco' => null,
+                    'nombre_banco' => null,
+                    'tipo' => 'venta'
+                ];
+            } elseif ($tipo === 'efectivo' && floatval($venta->monto_efectivo) > 0) {
+                // Solo Efectivo
+                $historial[] = [
+                    'fecha' => $venta->fecha_hora,
+                    'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                    'tipo_pago' => 'efectivo',
+                    'monto' => floatval($venta->monto_efectivo),
+                    'idbanco' => null,
+                    'nombre_banco' => null,
+                    'tipo' => 'venta'
+                ];
+            }
+        } else {
+            // Ventas normales (no compuestas)
+            if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
 
-        $historial[] = [
-            'fecha' => $venta->fecha_hora,
-            'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
-            'tipo_pago' => $tipo_pago,
-            'monto' => floatval($venta->total),
-            'idbanco' => null,
-            'nombre_banco' => null,
-            'tipo' => 'venta'
-        ];
+            $historial[] = [
+                'fecha' => $venta->fecha_hora,
+                'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                'tipo_pago' => $tipo_pago,
+                'monto' => floatval($venta->total),
+                'idbanco' => null,
+                'nombre_banco' => null,
+                'tipo' => 'venta'
+            ];
+        }
     }
 
     // =========================
@@ -372,7 +411,7 @@ if (!$ventaRelacionada) {
 
 foreach ($transacciones as $trans) {
 
-    $tipo_pago = $trans->tipo_pago == 1 ? 'efectivo' : ($trans->tipo_pago == 7 ? 'qr' : 'otros');
+    $tipo_pago = $trans->tipo_pago == 1 ? 'efectivo' : ($trans->tipo_pago == 7 ? 'qr' : ($trans->tipo_pago == 13 ? 'compuesto' : 'otros'));
 
     // Filtrado por tipo de reporte
     if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
@@ -412,27 +451,28 @@ foreach ($transacciones as $trans) {
 $saldoActual = 0;
 $historial = $historial->map(function($item) use (&$saldoActual) {
 
-    // Determinar el monto a sumar o restar según el tipo
-    $monto = $item['monto'];
-
-if ($item['tipo'] === 'transaccion') {
-
-    // 👉 Todo lo que DEBE RESTAR del saldo
-    if (
-        stripos($item['detalle'], 'egreso') !== false ||
-        stripos($item['detalle'], 'gasto') !== false ||
-        stripos($item['detalle'], 'Anulación de venta crédito') !== false
-    ) {
-        $monto = -abs($monto);
-    } else {
-        $monto = abs($monto);
-    }
-}
-
     // Saldo inicial
     if ($item['tipo'] === 'saldo_inicial') {
-        $saldoActual = $monto;
+        $saldoActual = $item['monto'];
+    } elseif (stripos($item['detalle'], 'Anulación de venta') !== false) {
+        // 👉 Las anulaciones NO afectan el saldo actual, se ignoran completamente
+        // El saldo permanece igual
     } else {
+        // Determinar el monto a sumar o restar según el tipo
+        $monto = $item['monto'];
+
+        if ($item['tipo'] === 'transaccion') {
+            // 👉 Todo lo que DEBE RESTAR del saldo
+            if (
+                stripos($item['detalle'], 'egreso') !== false ||
+                stripos($item['detalle'], 'gasto') !== false
+            ) {
+                $monto = -abs($monto);
+            } else {
+                $monto = abs($monto);
+            }
+        }
+
         $saldoActual += $monto;
     }
 

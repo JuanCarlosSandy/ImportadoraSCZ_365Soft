@@ -630,6 +630,10 @@
                           <i class="fa fa-qrcode mr-2" aria-hidden="true"></i>
                           QR
                         </button>
+                        <button class="btn btn-primary" @click="opcionPago = 'compuesto'">
+                          <i class="fa fa-random mr-2" aria-hidden="true"></i>
+                          Compuesto
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -749,6 +753,95 @@
                             Click en el botón verde para Factura o en la imagen para Recibos
                           </small>-->
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="opcionPago === 'compuesto'" style="margin-top: -5px;">
+                    <div class="card p-3" style="font-size: 0.875rem;">
+                      <div class="mb-3">
+                        <label class="font-weight-bold">
+                          <i class="fa fa-qrcode mr-2"></i> Monto QR:
+                        </label>
+                        <div class="d-flex flex-wrap gap-2">
+                          <div class="input-group flex-grow-1 mr-2">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text">{{
+                                monedaVenta[1]
+                              }}</span>
+                            </div>
+                            <input type="number" class="form-control" v-model.number="montoQRCompuesto" min="0"
+                              :max="calcularTotal" placeholder="Monto QR" />
+                          </div>
+                          <button class="btn btn-primary" type="button" @click="generarQrCompuesto" :disabled="!montoQRCompuesto || montoQRCompuesto <= 0
+                            ">
+                            <i class="fa fa-qrcode mr-1"></i> Generar QR
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="font-weight-bold">
+                            <i class="fa fa-money mr-2"></i> Monto Efectivo
+                            Recibido:
+                          </label>
+                          <div class="input-group">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text">{{
+                                monedaVenta[1]
+                              }}</span>
+                            </div>
+                            <input type="number" class="form-control" v-model.number="recibidoCompuesto" min="0"
+                              :max="calcularTotal" placeholder="Monto Efectivo" />
+                          </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                          <label class="font-weight-bold">
+                            <i class="fa fa-exchange mr-2"></i> Faltante:
+                          </label>
+                          <input type="text" class="form-control bg-light" :value="(
+                            recibidoCompuesto +
+                            montoQRCompuesto -
+                            calcularTotal
+                          ).toFixed(2)
+                            " readonly />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="card" style="font-size: 0.75rem;">
+                      <div class="card-body">
+                        <h5 class="mb-2 text-center text-md-left" style="font-size: 0.95rem;">
+                          Detalle de Venta
+                        </h5>
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                          <div class="d-flex align-items-center">
+                            <i class="fa fa-money mr-2" style="font-size: 0.75rem;"></i>
+                            <span style="font-size: 0.85rem;">Total a Pagar:</span>
+                            <span class="font-weight-bold ml-2 h5 mb-0" style="font-size: 0.95rem;">{{
+                              (
+                                calcularTotal * parseFloat(monedaVenta[0])
+                              ).toFixed(2)
+                            }}
+                              {{ monedaVenta[1] }}</span>
+                          </div>
+                          <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
+                            <!--
+                            <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 13)">
+                              <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
+                                style="height: 24px;" />
+                            </button>
+                            -->
+                            <button type="button" @click="aplicarDescuentoRecibo(1, 13)" class="btn btn-success">
+                              <i class="fa fa-check mr-2"></i> Registrar Pago
+                            </button>
+                          </div>
+                        </div>
+                        <small style="color: #777; font-size: 0.75rem;">
+                          Click en el botón verde para Factura o en la imagen
+                          para Recibos
+                        </small>
                       </div>
                     </div>
                   </div>
@@ -1724,6 +1817,8 @@ export default {
   },
   data() {
     return {
+     montoQRCompuesto: 0,
+      recibidoCompuesto: 0,
       autoVerificarQR: false,
       autoVerificarQRInterval: null,
       countdownInterval: null,
@@ -2038,6 +2133,19 @@ export default {
         });
       }
     },
+    montoQRCompuesto(newVal) {
+      const maxQR = this.calcularTotal - (Number(this.recibidoCompuesto) || 0);
+      if (newVal > maxQR) {
+        this.montoQRCompuesto = maxQR > 0 ? maxQR : 0;
+      }
+    },
+    recibidoCompuesto(newVal) {
+      const maxEfectivo =
+        this.calcularTotal - (Number(this.montoQRCompuesto) || 0);
+      if (newVal > maxEfectivo) {
+        this.recibidoCompuesto = maxEfectivo > 0 ? maxEfectivo : 0;
+      }
+    },
     editarCuotas(val) {
       if (val) {
         this.cargarBancos();
@@ -2178,6 +2286,27 @@ export default {
   },
 
   methods: {
+  generarQrCompuesto() {
+      this.isLoading = true;
+      this.actualizarFechaHora();
+      this.aliasverificacion = this.alias;
+      axios
+        .post("/qr/generarqr", {
+          alias: this.alias,
+          monto: this.montoQRCompuesto,
+        })
+        .then((response) => {
+          const imagenBase64 = response.data.objeto.imagenQr;
+          this.qrImage = `data:image/png;base64,${imagenBase64}`;
+          this.showQrDialog = true;
+        })
+        .catch((error) => {
+          console.error(error);
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
     toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
@@ -3360,6 +3489,8 @@ export default {
       this.nombreCliente = "";
       this.telefonoCliente = "";
       this.saldoFavorCliente = 0;
+      this.montoQRCompuesto = 0;
+      this.recibidoCompuesto = 0;
       this.scrollToTop();
       this.$nextTick(() => {
         setTimeout(() => {
@@ -4482,7 +4613,25 @@ export default {
       var idtipo_pago = idtipopago;
       const descuentoGiftCard = this.descuentoGiftCard;
       const numeroTarjeta = this.numeroTarjeta;
-      if (numeroTarjeta && descuentoGiftCard) {
+      if (
+        idtipopago === 13 &&
+        (!this.montoQRCompuesto ||
+          this.montoQRCompuesto <= 0 ||
+          !this.recibidoCompuesto ||
+          this.recibidoCompuesto <= 0)
+      ) {
+        Swal.fire({
+          icon: "warning",
+          title: "Datos requeridos para pago compuesto",
+          text:
+            "Debe ingresar un monto para QR y un monto efectivo para registrar el pago compuesto.",
+        });
+        return;
+      }
+      // ✅ Si es pago compuesto (13), mantenerlo así
+      if (idtipo_pago === 13) {
+        idtipo_pago = 13;
+      } else if (numeroTarjeta && descuentoGiftCard) {
         idtipo_pago = 86;
       } else if (numeroTarjeta && !descuentoGiftCard) {
         idtipo_pago = 10;
@@ -4650,7 +4799,25 @@ export default {
       var idtipo_venta = idtipoventa;
       const descuentoGiftCard = this.descuentoGiftCard;
       const numeroTarjeta = this.numeroTarjeta;
-      if (numeroTarjeta && descuentoGiftCard) {
+      if (
+        idtipopago === 13 &&
+        (!this.montoQRCompuesto ||
+          this.montoQRCompuesto <= 0 ||
+          !this.recibidoCompuesto ||
+          this.recibidoCompuesto <= 0)
+      ) {
+        Swal.fire({
+          icon: "warning",
+          title: "Datos requeridos para pago compuesto",
+          text:
+            "Debe ingresar un monto para QR y un monto efectivo para registrar el pago compuesto.",
+        });
+        return;
+      }
+      // ✅ Si es pago compuesto (13), mantenerlo así
+      if (idtipo_pago === 13) {
+        idtipo_pago = 13;
+      } else if (numeroTarjeta && descuentoGiftCard) {
         idtipo_pago = 86;
       } else if (numeroTarjeta && !descuentoGiftCard) {
         idtipo_pago = 10;
@@ -4958,6 +5125,7 @@ export default {
           } else if (this.tipo_comprobante === "RESIVO") {
             await this.obtenerDatosSesionYComprobante();
           }
+          
           const ventaData = this.prepararDatosVenta(idtipo_pago, idtipo_venta);
           console.log("📤 VentaData enviado:", ventaData);
           const response = await axios.post("/venta/registrar", ventaData);
@@ -5039,6 +5207,9 @@ export default {
         idtipo_venta,
         idbanco: this.idbanco ? this.idbanco : null,
         data: this.arrayDetalle,
+        // 🔥 Agregar montos de pago compuesto directamente
+        qr_pago: idtipo_pago === 13 ? Number(this.montoQRCompuesto) || 0 : 0,
+        efectivo_pago: idtipo_pago === 13 ? Number(this.recibidoCompuesto) || 0 : 0,
       };
 
       if (idtipo_venta === 2) {
@@ -5849,6 +6020,8 @@ export default {
       this.modal2 = false;
       this.tituloModal2 = "";
       this.idtipo_pago = "";
+      this.montoQRCompuesto = 0;
+      this.recibidoCompuesto = 0;
       this.tipoPago = "";
       this.mostrarDesplegable = false;
       this.habilitacionpromocion = false;

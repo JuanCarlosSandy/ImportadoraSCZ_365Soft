@@ -24,6 +24,17 @@ class Venta extends Model
         'idbanco',
     ];
 
+    // ✅ Mutador: Solo permite 1 o 2, si es otro valor o está vacío, asigna 1
+    public function setIdtipoVentaAttribute($value)
+    {
+        // Si está vacío o no es 1 ni 2, asignar 1
+        if (empty($value) || ($value !== 1 && $value !== 2)) {
+            $this->attributes['idtipo_venta'] = 1;
+        } else {
+            $this->attributes['idtipo_venta'] = $value;
+        }
+    }
+
     public function caja()
     {
         return $this->belongsTo('App\Caja', 'id');

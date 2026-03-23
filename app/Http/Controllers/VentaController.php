@@ -1175,6 +1175,11 @@ class VentaController extends Controller
             'idbanco'
         ]));
 
+        // ✅ Validar que idtipo_venta sea solo 1 o 2, si no, asignar 1
+        if (empty($venta->idtipo_venta) || ($venta->idtipo_venta !== 1 && $venta->idtipo_venta !== 2)) {
+            $venta->idtipo_venta = 1;
+        }
+
         // Usuario logueado
         $usuario = \Auth::user();
 
@@ -1209,6 +1214,24 @@ class VentaController extends Controller
             $venta->idbanco = null;
         }
 
+        // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO
+        if ($request->idtipo_pago == 1) {
+            // Efectivo: guardar total en monto_efectivo
+            $venta->monto_efectivo = floatval($request->total);
+            $venta->monto_qr = 0;
+        } elseif ($request->idtipo_pago == 7) {
+            // QR: guardar total en monto_qr
+            $venta->monto_qr = floatval($request->total);
+            $venta->monto_efectivo = 0;
+        } elseif ($request->idtipo_pago == 13) {
+            // Pago compuesto: dividir entre QR y efectivo
+            $venta->monto_qr = floatval($request->input('qr_pago', 0));
+            $venta->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+        } else {
+            // Otros tipos de pago
+            $venta->monto_efectivo = 0;
+            $venta->monto_qr = 0;
+        }
 
         // Guardar la venta
         $venta->save();
@@ -1247,6 +1270,11 @@ class VentaController extends Controller
             'total'
         ]));
 
+        // ✅ Validar que idtipo_venta sea solo 1 o 2, si no, asignar 1
+        if (empty($venta->idtipo_venta) || ($venta->idtipo_venta !== 1 && $venta->idtipo_venta !== 2)) {
+            $venta->idtipo_venta = 1;
+        }
+
         // Usuario logueado
         $usuario = \Auth::user();
 
@@ -1259,7 +1287,7 @@ class VentaController extends Controller
         $venta->idalmacen = $request->idAlmacen;
 
         // Estado: 2 si es crédito, 1 si es contado
-        $venta->estado = $request->idtipo_venta == 2 ? 2 : 1;
+        $venta->estado = $venta->idtipo_venta == 2 ? 2 : 1;
 
         // Obtener la última caja abierta de la sucursal del usuario logueado
         $ultimaCajaAbierta = Caja::where('idsucursal', $usuario->idsucursal)
@@ -1272,6 +1300,25 @@ class VentaController extends Controller
         }
 
         $venta->idcaja = $ultimaCajaAbierta->id;
+
+        // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO
+        if ($request->idtipo_pago == 1) {
+            // Efectivo: guardar total en monto_efectivo
+            $venta->monto_efectivo = floatval($request->total);
+            $venta->monto_qr = 0;
+        } elseif ($request->idtipo_pago == 7) {
+            // QR: guardar total en monto_qr
+            $venta->monto_qr = floatval($request->total);
+            $venta->monto_efectivo = 0;
+        } elseif ($request->idtipo_pago == 13) {
+            // Pago compuesto: dividir entre QR y efectivo
+            $venta->monto_qr = floatval($request->input('qr_pago', 0));
+            $venta->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+        } else {
+            // Otros tipos de pago
+            $venta->monto_efectivo = 0;
+            $venta->monto_qr = 0;
+        }
 
         // Guardar la venta
         $venta->save();
@@ -1318,6 +1365,23 @@ class VentaController extends Controller
                 // Sumar a ventas contado
                 $ultimaCaja->ventasQR += $request->total;
                 $ultimaCaja->saldototalventas += $request->total;
+            }
+        } elseif ($request->idtipo_pago == 13) {
+            // 🔥 PAGO COMPUESTO: dividir entre QR y efectivo
+            $montoQR = floatval($request->input('qr_pago', 0));
+            $montoEfectivo = floatval($request->input('efectivo_pago', 0));
+            
+            if ($request->idtipo_venta == 2) {
+                // Sumar a ventas crédito (dividir entre QR y efectivo)
+                $ultimaCaja->ventasQR += $montoQR;
+                $ultimaCaja->ventasContado += $montoEfectivo;
+                $ultimaCaja->saldototalventas += ($montoQR + $montoEfectivo);
+            } else {
+                // Sumar a ventas contado (dividir entre QR y efectivo)
+                $ultimaCaja->ventasQR += $montoQR;
+                $ultimaCaja->ventasContado += $montoEfectivo;
+                $ultimaCaja->saldoCaja += $montoEfectivo;
+                $ultimaCaja->saldototalventas += ($montoQR + $montoEfectivo);
             }
         }
 
@@ -1835,6 +1899,14 @@ class VentaController extends Controller
             $caja->ventasQR -= $total;
         } elseif ($tipoPago === 2) {
             $caja->ventasTarjeta -= $total;
+        } elseif ($tipoPago === 13) {
+            // 🔥 PAGO COMPUESTO: revertir montos de QR y efectivo
+            $montoQR = floatval($venta->monto_qr ?? 0);
+            $montoEfectivo = floatval($venta->monto_efectivo ?? 0);
+            
+            $caja->ventasQR -= $montoQR;
+            $caja->ventasContado -= $montoEfectivo;
+            $caja->saldoCaja -= $montoEfectivo;
         }
 
         $caja->saldototalventas -= $total;
@@ -2582,6 +2654,11 @@ class VentaController extends Controller
             'idbanco'
         ]));
 
+        // ✅ Validar que idtipo_venta sea solo 1 o 2, si no, asignar 1
+        if (empty($ventaResivo->idtipo_venta) || ($ventaResivo->idtipo_venta !== 1 && $ventaResivo->idtipo_venta !== 2)) {
+            $ventaResivo->idtipo_venta = 1;
+        }
+
         // Usuario logueado
         $usuario = \Auth::user();
 
@@ -2590,7 +2667,7 @@ class VentaController extends Controller
         $ventaResivo->idsucursal = $usuario->idsucursal; // ✅ nuevo: guardar la sucursal del usuario
         $ventaResivo->fecha_hora = now()->setTimezone('America/La_Paz');
         $ventaResivo->idalmacen = $request->idAlmacen;
-        $ventaResivo->estado = $request->idtipo_venta == 2 ? 2 : 1;
+        $ventaResivo->estado = $ventaResivo->idtipo_venta == 2 ? 2 : 1;
 
         // Obtener la última caja abierta de la sucursal del usuario logueado
         $ultimaCajaAbierta = Caja::where('idsucursal', $usuario->idsucursal)
@@ -2610,6 +2687,26 @@ class VentaController extends Controller
             // Cualquier otro caso NO lleva banco
             $ventaResivo->idbanco = null;
         }
+
+        // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO (RESIVO)
+        if ($request->idtipo_pago == 1) {
+            // Efectivo: guardar total en monto_efectivo
+            $ventaResivo->monto_efectivo = floatval($request->total);
+            $ventaResivo->monto_qr = 0;
+        } elseif ($request->idtipo_pago == 7) {
+            // QR: guardar total en monto_qr
+            $ventaResivo->monto_qr = floatval($request->total);
+            $ventaResivo->monto_efectivo = 0;
+        } elseif ($request->idtipo_pago == 13) {
+            // Pago compuesto: dividir entre QR y efectivo
+            $ventaResivo->monto_qr = floatval($request->input('qr_pago', 0));
+            $ventaResivo->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+        } else {
+            // Otros tipos de pago
+            $ventaResivo->monto_efectivo = 0;
+            $ventaResivo->monto_qr = 0;
+        }
+
         // Guardar la venta
         $ventaResivo->save();
 
@@ -2649,6 +2746,11 @@ class VentaController extends Controller
             'total'
         ]));
 
+        // ✅ Validar que idtipo_venta sea solo 1 o 2, si no, asignar 1
+        if (empty($ventaResivo->idtipo_venta) || ($ventaResivo->idtipo_venta !== 1 && $ventaResivo->idtipo_venta !== 2)) {
+            $ventaResivo->idtipo_venta = 1;
+        }
+
         // Usuario logueado
         $usuario = \Auth::user();
 
@@ -2672,6 +2774,25 @@ class VentaController extends Controller
         }
 
         $ventaResivo->idcaja = $ultimaCajaAbierta->id;
+
+        // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO (RESIVO2)
+        if ($request->idtipo_pago == 1) {
+            // Efectivo: guardar total en monto_efectivo
+            $ventaResivo->monto_efectivo = floatval($request->total);
+            $ventaResivo->monto_qr = 0;
+        } elseif ($request->idtipo_pago == 7) {
+            // QR: guardar total en monto_qr
+            $ventaResivo->monto_qr = floatval($request->total);
+            $ventaResivo->monto_efectivo = 0;
+        } elseif ($request->idtipo_pago == 13) {
+            // Pago compuesto: dividir entre QR y efectivo
+            $ventaResivo->monto_qr = floatval($request->input('qr_pago', 0));
+            $ventaResivo->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+        } else {
+            // Otros tipos de pago
+            $ventaResivo->monto_efectivo = 0;
+            $ventaResivo->monto_qr = 0;
+        }
 
         // Guardar la venta
         $ventaResivo->save();

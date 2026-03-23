@@ -86,6 +86,11 @@
             font-weight: bold;
         }
 
+        .saldo-neutral {
+            color: #7f8c8d;
+            font-weight: bold;
+        }
+
         tfoot td {
             font-weight: bold;
             background-color: #ecf0f1;
@@ -145,26 +150,31 @@
                         color: 
                             @if(strtolower($item['tipo_pago']) === 'efectivo') #27ae60
                             @elseif(strtolower($item['tipo_pago']) === 'qr') #2980b9
+                            @elseif(strtolower($item['tipo_pago']) === 'compuesto') #ff7d04
                             @else #7f8c8d
                             @endif
                     ">
                                     {{ ucfirst($item['tipo_pago']) }}
                                 </td>
                                 <td class="text-right">
-                                    @if($item['monto'] < 0)
+                                    @if($item['monto'] < 0 || stripos($item['detalle'], 'Anulación de venta') !== false)
                                         <span class="saldo-negativo">{{ number_format($item['monto'], 2) }}</span>
                                     @else
                                         <span class="saldo-positivo">{{ number_format($item['monto'], 2) }}</span>
                                     @endif
                                 </td>
                               <td class="text-right">
-    @if(
+    @if(stripos($item['detalle'], 'Anulación de venta') !== false)
+        <!-- Las anulaciones no afectan saldo, mostrar en color plomo -->
+        <span class="saldo-neutral">
+            {{ number_format($item['saldo_actual'], 2) }}
+        </span>
+    @elseif(
         stripos($item['detalle'], 'egreso') !== false ||
-        stripos($item['detalle'], 'gasto') !== false ||
-        stripos($item['detalle'], 'Anulación de venta crédito') !== false
+        stripos($item['detalle'], 'gasto') !== false
     )
         <span class="saldo-negativo">
-            -{{ number_format(abs($item['saldo_actual']), 2) }}
+            {{ number_format($item['saldo_actual'], 2) }}
         </span>
     @else
         <span class="saldo-positivo">
