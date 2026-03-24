@@ -1877,8 +1877,8 @@ export default {
     // Descargar el PDF de la tabla grande (Todos los productos)
     descargarPdfGeneral() {
       let me = this;
-      if (!me.sucursalseleccionada || !me.fechaInicio || !me.fechaFin) {
-        swal("Atención", "Debe seleccionar Sucursal y Fechas primero", "warning");
+      if (!me.almacenseleccionado || !me.almacenseleccionado.id || !me.fechaInicio || !me.fechaFin) {
+        swal("Atención", "Debe seleccionar Almacén y Fechas primero", "warning");
         return;
       }
 
@@ -1887,7 +1887,7 @@ export default {
 
       // Construir la URL con todos los filtros actuales
       let params = new URLSearchParams();
-      params.append("sucursal", me.sucursalseleccionada.id);
+      params.append("idAlmacen", me.almacenseleccionado.id);
       params.append("fechaInicio", me.fechaInicio);
       params.append("fechaFin", me.fechaFin);
 
@@ -1899,12 +1899,12 @@ export default {
       let url = '/reporte-resumen-general-pdf?' + params.toString();
 
       // Generar nombre dinámico para el archivo PDF
-      // Normalizar nombre de sucursal: reemplazar espacios por guiones
-      let nombreSucursal = me.sucursalseleccionada.nombre || 'sucursal';
-      nombreSucursal = nombreSucursal.replace(/\s+/g, '_');
+      // Normalizar nombre de almacén: reemplazar espacios por guiones
+      let nombreAlmacen = me.almacenseleccionado.nombre_almacen || 'almacen';
+      nombreAlmacen = nombreAlmacen.replace(/\s+/g, '_');
 
       // Normalizar nombre para evitar caracteres especiales
-      nombreSucursal = nombreSucursal.replace(/[^a-zA-Z0-9_áéíóúÁÉÍÓÚÑñ-]/g, '');
+      nombreAlmacen = nombreAlmacen.replace(/[^a-zA-Z0-9_áéíóúÁÉÍÓÚÑñ-]/g, '');
 
       // Formatear fechas en formato YYYY-MM-DD
       let fechaInicioFormateada = me.fechaInicio || 'todasLasFechas';
@@ -1918,8 +1918,8 @@ export default {
         fechaFinFormateada = 'todasLasFechas';
       }
 
-      // Construir nombre del archivo: KardexInventario_sucursal_fechaInicio_fechaFin.pdf
-      let nombreArchivo = `KardexInventario_${nombreSucursal}_${fechaInicioFormateada}_${fechaFinFormateada}.pdf`;
+      // Construir nombre del archivo: KardexInventario_almacen_fechaInicio_fechaFin.pdf
+      let nombreArchivo = `KardexInventario_${nombreAlmacen}_${fechaInicioFormateada}_${fechaFinFormateada}.pdf`;
 
       // Descargar archivo directamente sin abrir nueva pestaña
       axios({
