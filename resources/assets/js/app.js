@@ -317,6 +317,7 @@ Vue.component("reportedia", require("./components/ReporteDelDia.vue"));
 Vue.component("itemscompuestos", require("./components/ItemCompuestos/ItemsCompuestos.vue"));
 Vue.component("medicamentosbajostock", require("./components/productos/MedicamentosBajoStock.vue"));
 Vue.component("reportestock", require("./components/ReporteProductosBajoStock.vue"));
+Vue.component("kardexproducto", require("./components/ResumenKardexProducto.vue"));
 
 Vue.use(BootstrapVue);
 Vue.use(Toasted);

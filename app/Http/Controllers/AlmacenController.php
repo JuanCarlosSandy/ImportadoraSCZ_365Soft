@@ -256,7 +256,7 @@ class AlmacenController extends Controller
             $query->where('sucursal', '=', $usuario->idsucursal);
         }
 
-        $almacenes = $query->select('id', 'nombre_almacen')->orderBy('nombre_almacen', 'asc')->get();
+        $almacenes = $query->select('id', 'nombre_almacen', 'condicion')->orderBy('nombre_almacen', 'asc')->get();
 
         return ['almacenes' => $almacenes, 'idrol' => $idrol]; // incluye el rol también
     }

@@ -260,3 +260,70 @@
   border-color: #ef4444 !important;
   color: #fff !important;
 }
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 1rem;
+  font-family: sans-serif;
+}
+
+.filters-title {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #4a5568;
+}
+
+.filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Diseño de la "Tag" o Chip */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  background-color: #edf2f7; /* Gris azulado suave */
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.65rem;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+  background-color: #e2e8f0;
+  border-color: #cbd5e0;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #2d3748;
+  margin-right: 4px;
+}
+
+.filter-value {
+  color: #4a5568;
+}
+
+/* Botón de eliminar dentro del chip */
+.filter-remove-btn {
+  background: none;
+  border: none;
+  margin-left: 6px;
+  cursor: pointer;
+  color: #a0aec0;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.filter-remove-btn:hover {
+  color: #e53e3e; /* Rojo al borrar */
+}

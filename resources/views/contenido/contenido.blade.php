@@ -3,6 +3,10 @@
 
 @if(Auth::check())
 @if (Auth::user()->idrol == 1)
+
+<template v-if="menu==100">
+    <kardexproducto></kardexproducto>
+</template>
 <template v-if="menu==0">
     <venta></venta>
 </template>
@@ -787,6 +791,9 @@
 <productosbajostock v-if="menu==85"></productosbajostock>
 <template v-if="menu==92">
     <reportestock></reportestock>
+</template>
+<template v-if="menu==100">
+    <kardexproducto></kardexproducto>
 </template>
 @else
 
