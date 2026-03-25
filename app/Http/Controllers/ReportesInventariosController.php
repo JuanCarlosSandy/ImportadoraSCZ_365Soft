@@ -612,69 +612,33 @@ class ReportesInventariosController extends Controller
         $resultados = $data['resultados'];
 
         $pdf = new PDFWithPagination('L', 'mm', 'A4');
+        $pdf->setFechaInicio($request->fechaInicio);
+        $pdf->setFechaFin($request->fechaFin);
         $pdf->AliasNbPages();
         $pdf->AddPage();
         $pdf->SetMargins(10, 10, 10);
-        $pdf->SetAutoPageBreak(true, 20);
-
-        $pdf->SetFont('Arial', 'B', 18);
-        $pdf->SetTextColor(33, 37, 41);
-        $pdf->Cell(0, 12, utf8_decode('Kardex de Producto'), 0, 1, 'C');
+        $pdf->SetAutoPageBreak(true, 25);
         
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 8, utf8_decode('IMPORTADORA SCZ'), 0, 1, 'C');
-        $pdf->Ln(5);
-
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(40, 6, utf8_decode('Rango de Fechas:'), 0, 0, 'L');
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Del ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1, 'L');
-
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(40, 6, utf8_decode('Fecha de Generación:'), 0, 0, 'L');
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, date('d/m/Y H:i:s'), 0, 1, 'L');
-        
-        $pdf->Ln(8);
-        
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(255, 224, 210); 
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetDrawColor(180, 180, 180);
-
-        $w = [25, 80, 22, 35, 22, 22, 22, 22, 22, 22]; 
-        
-        $pdf->Cell($w[0], 10, 'CODIGO', 1, 0, 'C', true);
-        $pdf->Cell($w[1], 10, 'PRODUCTO', 1, 0, 'C', true);
-        $pdf->Cell($w[2], 10, 'UNID.CAJA', 1, 0, 'C', true);
-        $pdf->Cell($w[3], 10, 'CATEGORIA', 1, 0, 'C', true);
-        $pdf->Cell($w[4], 10, 'VENTAS', 1, 0, 'C', true);
-        $pdf->Cell($w[5], 10, 'COMPRAS', 1, 0, 'C', true);
-        $pdf->Cell($w[6], 10, 'TRASP.ENT', 1, 0, 'C', true);
-        $pdf->Cell($w[7], 10, 'TRASP.SAL', 1, 0, 'C', true);
-        $pdf->Cell($w[8], 10, 'AJUSTES', 1, 0, 'C', true);
-        $pdf->Cell($w[9], 10, 'STOCK', 1, 1, 'C', true);
-
         $pdf->SetFont('Arial', '', 8);
 
         foreach ($resultados as $item) {
-            $pdf->Cell($w[0], 8, utf8_decode($item['codigo']), 1, 0, 'C');
+            $pdf->Cell(20, 8, utf8_decode($item['codigo']), 1, 0, 'C');
             
-            $nombre = substr(utf8_decode($item['nombre_producto']), 0, 45);
-            $pdf->Cell($w[1], 8, $nombre, 1, 0, 'L');
+            $nombre = substr(utf8_decode($item['nombre_producto']), 0, 50);
+            $pdf->Cell(55, 8, $nombre, 1, 0, 'L');
             
             $unidCaja = isset($item['unidad_envase']) && $item['unidad_envase'] ? (int)$item['unidad_envase'] : '-';
-            $pdf->Cell($w[2], 8, $unidCaja, 1, 0, 'C');
+            $pdf->Cell(20, 8, $unidCaja, 1, 0, 'C');
             
-            $categoria = substr(utf8_decode($item['categoria']), 0, 20);
-            $pdf->Cell($w[3], 8, $categoria, 1, 0, 'L');
+            $categoria = substr(utf8_decode($item['categoria']), 0, 25);
+            $pdf->Cell(35, 8, $categoria, 1, 0, 'L');
             
-            $pdf->Cell($w[4], 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
-            $pdf->Cell($w[5], 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
-            $pdf->Cell($w[6], 8, utf8_decode($item['total_traspasos_entrada']), 1, 0, 'R');
-            $pdf->Cell($w[7], 8, utf8_decode($item['total_traspasos_salida']), 1, 0, 'R');
-            $pdf->Cell($w[8], 8, utf8_decode($item['total_ajuste_texto']), 1, 0, 'R');
-            $pdf->Cell($w[9], 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
+            $pdf->Cell(25, 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
+            $pdf->Cell(25, 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
+            $pdf->Cell(25, 8, utf8_decode($item['total_traspasos_entrada']), 1, 0, 'R');
+            $pdf->Cell(25, 8, utf8_decode($item['total_traspasos_salida']), 1, 0, 'R');
+            $pdf->Cell(22, 8, utf8_decode($item['total_ajuste_texto']), 1, 0, 'R');
+            $pdf->Cell(22, 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
         }
 
         return response($pdf->Output('S'))
@@ -1641,11 +1605,62 @@ class ReportesInventariosController extends Controller
 class PDFWithPagination extends FPDF
 {
     protected $user;
+    protected $fechaInicio;
+    protected $fechaFin;
 
     function __construct($orientation = 'P', $unit = 'mm', $size = 'A4')
     {
         parent::__construct($orientation, $unit, $size);
         $this->user = auth()->user() ? auth()->user()->usuario : 'N/A';
+    }
+
+    function setFechaInicio($fecha)
+    {
+        $this->fechaInicio = $fecha;
+    }
+
+    function setFechaFin($fecha)
+    {
+        $this->fechaFin = $fecha;
+    }
+
+    function Header()
+    {
+        $this->SetFont('Arial', 'B', 18);
+        $this->SetTextColor(33, 37, 41);
+        $this->Cell(0, 12, utf8_decode('Kardex de Producto'), 0, 1, 'C');
+        
+        $this->SetFont('Arial', 'B', 12);
+        $this->Cell(0, 8, utf8_decode('IMPORTADORA SCZ'), 0, 1, 'C');
+        $this->Ln(5);
+
+        $this->SetFont('Arial', 'B', 10);
+        $this->Cell(40, 6, utf8_decode('Rango de Fechas:'), 0, 0, 'L');
+        $this->SetFont('Arial', '', 10);
+        $this->Cell(0, 6, 'Del ' . $this->fechaInicio . ' al ' . $this->fechaFin, 0, 1, 'L');
+
+        $this->SetFont('Arial', 'B', 10);
+        $this->Cell(40, 6, utf8_decode('Fecha de Generación:'), 0, 0, 'L');
+        $this->SetFont('Arial', '', 10);
+        $this->Cell(0, 6, date('d/m/Y H:i:s'), 0, 1, 'L');
+        
+        $this->Ln(8);
+        
+        $this->SetFont('Arial', 'B', 9);
+        $this->SetFillColor(255, 224, 210); 
+        $this->SetTextColor(0, 0, 0);
+        $this->SetDrawColor(180, 180, 180);
+
+        $this->Cell(20, 10, 'CODIGO', 1, 0, 'C', true);
+        $this->Cell(55, 10, 'PRODUCTO', 1, 0, 'C', true);
+        $this->Cell(20, 10, 'UNID.CAJA', 1, 0, 'C', true);
+        $this->Cell(35, 10, 'CATEGORIA', 1, 0, 'C', true);
+        $this->Cell(25, 10, 'VENTAS', 1, 0, 'C', true);
+        $this->Cell(25, 10, 'COMPRAS', 1, 0, 'C', true);
+        $this->Cell(25, 10, 'TRASP.ENT', 1, 0, 'C', true);
+        $this->Cell(25, 10, 'TRASP.SAL', 1, 0, 'C', true);
+        $this->Cell(22, 10, 'AJUSTES', 1, 0, 'C', true);
+        $this->Cell(22, 10, 'STOCK', 1, 1, 'C', true);
     }
 
     function Footer()
@@ -1654,7 +1669,7 @@ class PDFWithPagination extends FPDF
         $this->SetFont('Arial', 'I', 8);
         
         $pageNumber = 'Página ' . $this->PageNo() . '/{nb}';
-        $userText = 'Generado por: ' . $this->user;
+        $userText = 'Generado por usuario: ' . $this->user;
 
         $this->Cell(0, 10, $userText, 0, 0, 'L');
         $this->Cell(0, 10, utf8_decode($pageNumber), 0, 0, 'R');
