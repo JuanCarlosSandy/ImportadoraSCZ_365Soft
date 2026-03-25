@@ -608,42 +608,42 @@ class ReportesInventariosController extends Controller
 
     public function exportarPDFResumenGeneral(Request $request)
     {
-        // 1. Obtenemos datos
         $data = $this->resumenFisicoMovimientos($request); 
         $resultados = $data['resultados'];
 
-        // *** CORRECCIÓN 1: 'L' para Landscape (Horizontal) ***
         $pdf = new PDFWithPagination('L', 'mm', 'A4');
-        $pdf->AliasNbPages(); // Importante para que funcione el {nb} del footer
+        $pdf->AliasNbPages();
         $pdf->AddPage();
-        $pdf->SetMargins(10, 10, 10); // Márgenes de 1cm
-        $pdf->SetAutoPageBreak(true, 15); // Salto de página automático
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 20);
 
-        // --- ENCABEZADO ---
-        $pdf->SetFont('Arial', 'B', 16);
-        $pdf->Cell(0, 10, 'REPORTE GENERAL DE KARDEX FISICO', 0, 1, 'C');
+        $pdf->SetFont('Arial', 'B', 18);
+        $pdf->SetTextColor(33, 37, 41);
+        $pdf->Cell(0, 12, utf8_decode('Kardex de Producto'), 0, 1, 'C');
         
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Generado el: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
-        $pdf->Ln(2);
-        
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(25, 6, 'Filtro Fecha:', 0, 0);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 6, 'Del ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1);
-        
-        // --- TABLA ---
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 8, utf8_decode('IMPORTADORA SCZ'), 0, 1, 'C');
         $pdf->Ln(5);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(230, 230, 230); // Gris clarito
-        $pdf->SetDrawColor(180, 180, 180); // Bordes grises finos
 
-        // *** CORRECCIÓN 2: Ajuste de Anchos ***
-        // Aprovechar todo el ancho de A4 Horizontal (297mm - 20mm márgenes = 277mm útil)
-        // [Codigo, Producto, UnidCaja, Categoria, Ventas, Compras, TraspasoEntrada, TraspasoSalida, Ajustes, Stock]
-        $w = [18, 70, 19, 30, 22, 22, 24, 24, 22, 22]; 
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(40, 6, utf8_decode('Rango de Fechas:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, 'Del ' . $request->fechaInicio . ' al ' . $request->fechaFin, 0, 1, 'L');
+
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(40, 6, utf8_decode('Fecha de Generación:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, date('d/m/Y H:i:s'), 0, 1, 'L');
         
-        // Cabecera de la tabla
+        $pdf->Ln(8);
+        
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(255, 224, 210); 
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetDrawColor(180, 180, 180);
+
+        $w = [25, 80, 22, 35, 22, 22, 22, 22, 22, 22]; 
+        
         $pdf->Cell($w[0], 10, 'CODIGO', 1, 0, 'C', true);
         $pdf->Cell($w[1], 10, 'PRODUCTO', 1, 0, 'C', true);
         $pdf->Cell($w[2], 10, 'UNID.CAJA', 1, 0, 'C', true);
@@ -658,23 +658,17 @@ class ReportesInventariosController extends Controller
         $pdf->SetFont('Arial', '', 8);
 
         foreach ($resultados as $item) {
-            // Lógica para altura dinámica si el nombre es muy largo (opcional, pero ayuda)
-            // Por simplicidad usaremos Cell normal recortando texto si es excesivo
-            
             $pdf->Cell($w[0], 8, utf8_decode($item['codigo']), 1, 0, 'C');
             
-            // Recortamos a 45 caracteres para que no rompa la fila
             $nombre = substr(utf8_decode($item['nombre_producto']), 0, 45);
             $pdf->Cell($w[1], 8, $nombre, 1, 0, 'L');
             
-            // Agregar unidad_envase
             $unidCaja = isset($item['unidad_envase']) && $item['unidad_envase'] ? (int)$item['unidad_envase'] : '-';
             $pdf->Cell($w[2], 8, $unidCaja, 1, 0, 'C');
             
             $categoria = substr(utf8_decode($item['categoria']), 0, 20);
             $pdf->Cell($w[3], 8, $categoria, 1, 0, 'L');
             
-            // Cantidades alineadas a la derecha ('R')
             $pdf->Cell($w[4], 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
             $pdf->Cell($w[5], 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
             $pdf->Cell($w[6], 8, utf8_decode($item['total_traspasos_entrada']), 1, 0, 'R');
@@ -842,24 +836,40 @@ class ReportesInventariosController extends Controller
         $pdf->SetAutoPageBreak(true, 25);
         $pdf->AddPage();
         
-        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetFont('Arial', 'B', 18);
         $pdf->SetTextColor(33, 37, 41);
-        $pdf->Cell(0, 10, utf8_decode('Kardex de Producto'), 0, 1, 'C');
-        $pdf->Ln(2);
+        $pdf->Cell(0, 12, utf8_decode('Kardex de Producto'), 0, 1, 'C');
+        
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 8, utf8_decode('IMPORTADORA SCZ'), 0, 1, 'C');
+        $pdf->Ln(5);
 
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(40, 6, utf8_decode('Producto:'), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(95, 6, utf8_decode('Empresa: IMPORTADORA SCZ'), 0, 0, 'L');
-        $pdf->Cell(95, 6, utf8_decode('Fecha de Generación: ' . date('d/m/Y H:i:s')), 0, 1, 'R');
-        $pdf->Cell(95, 6, utf8_decode('Producto: ' . $articulo->nombre), 0, 0, 'L');
-        $pdf->Cell(95, 6, utf8_decode('Rango de Fechas: ' . $fechaInicio . ' al ' . $fechaFin), 0, 1, 'R');
-        $pdf->Cell(95, 6, utf8_decode('Almacén: ' . $articulo->nombre_almacen), 0, 1, 'L');
+        $pdf->Cell(0, 6, utf8_decode($articulo->nombre), 0, 1, 'L');
+
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(40, 6, utf8_decode('Almacén:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, utf8_decode($articulo->nombre_almacen), 0, 1, 'L');
+
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(40, 6, utf8_decode('Rango de Fechas:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, $fechaInicio . ' al ' . $fechaFin, 0, 1, 'L');
+        
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(40, 6, utf8_decode('Fecha de Generación:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, date('d/m/Y H:i:s'), 0, 1, 'L');
 
         $pdf->Ln(8);
 
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(233, 236, 239);
-        $pdf->SetTextColor(33, 37, 41);
-        $pdf->SetDrawColor(206, 212, 218);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetDrawColor(180, 180, 180);
 
         $pdf->Cell(25, 10, 'Fecha', 1, 0, 'C', true);
         $pdf->Cell(35, 10, 'Tipo de Movimiento', 1, 0, 'C', true);
