@@ -605,12 +605,11 @@ class ReportesInventariosController extends Controller
         return ['resultados' => $resultados, 'productos' => $productos];
 
     }
-
+/*PDF General INICIO*/ 
     public function exportarPDFResumenGeneral(Request $request)
     {
         $data = $this->resumenFisicoMovimientos($request); 
         $resultados = $data['resultados'];
-
         $pdf = new PDFWithPagination('L', 'mm', 'A4');
         $pdf->setFechaInicio($request->fechaInicio);
         $pdf->setFechaFin($request->fechaFin);
@@ -645,7 +644,7 @@ class ReportesInventariosController extends Controller
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="reporte_general.pdf"');
     }
-
+/*PDF General FINAL*/ 
     public function exportarExcelResumenGeneral(Request $request)
     {
         $data = $this->resumenFisicoMovimientos($request); 
@@ -681,6 +680,7 @@ class ReportesInventariosController extends Controller
         return Excel::download(new ResumenKardexExport($resultados, $filtros), $nombreArchivo);
     }
 
+/*NO SE USA ESTA FUNCION*/ 
     public function exportarPDFDetallado(Request $request)
     {
         $idArticulo = $request->input('idArticulo');
@@ -805,7 +805,7 @@ class ReportesInventariosController extends Controller
         $pdf->Cell(0, 12, utf8_decode('Kardex de Producto'), 0, 1, 'C');
         
         $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 8, utf8_decode('IMPORTADORA SCZ'), 0, 1, 'C');
+        $pdf->Cell(0, 8, utf8_decode('IMPORTADORA SCZ Broken'), 0, 1, 'C');
         $pdf->Ln(5);
 
         $pdf->SetFont('Arial', 'B', 10);
@@ -886,7 +886,7 @@ class ReportesInventariosController extends Controller
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
     }
-
+/*1111*/ 
     public function exportarExcelDetallado(Request $request)
     {
         
@@ -1607,6 +1607,18 @@ class PDFWithPagination extends FPDF
     protected $user;
     protected $fechaInicio;
     protected $fechaFin;
+    protected $almacen;
+    protected $categoria;
+
+    function setAlmacen($almacen)
+    {
+        $this->almacen = $almacen;
+    }
+
+    function setCategoria($categoria)
+    {
+        $this->categoria = $categoria;
+    }
 
     function __construct($orientation = 'P', $unit = 'mm', $size = 'A4')
     {
@@ -1626,29 +1638,61 @@ class PDFWithPagination extends FPDF
 
     function Header()
     {
-        $this->SetFont('Arial', 'B', 18);
-        $this->SetTextColor(33, 37, 41);
-        $this->Cell(0, 12, utf8_decode('Kardex de Producto'), 0, 1, 'C');
-        
-        $this->SetFont('Arial', 'B', 12);
-        $this->Cell(0, 8, utf8_decode('IMPORTADORA SCZ'), 0, 1, 'C');
+        // LOGO
+        $rutaLogo = public_path() . '/img/logoPrincipal.png';
+        if (file_exists($rutaLogo)) {
+            $this->Image($rutaLogo, 10, 5, 20);
+        }
+
+        // TÍTULO
+        $this->SetFont('Arial', 'B', 16);
+        $this->SetTextColor(44, 62, 80);
+        $this->Cell(0, 10, utf8_decode('KARDEX DE INVENTARIO'), 0, 1, 'C');
+
+        // FECHA GENERACIÓN
+        $this->SetFont('Arial', '', 10);
+        $this->Cell(0, 6, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
+        $this->Ln(4);
+
+        // ===== CAJA DE FILTROS =====
+        $this->SetFillColor(236, 240, 241);
+        $this->SetDrawColor(200, 200, 200);
+        $this->Rect(10, $this->GetY(), 277, 16, 'F');
+
+        // FILA 1
+        $this->SetX(12);
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(35, 8, utf8_decode('Rango Fechas:'), 0, 0);
+
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(90, 8, 'Del ' . $this->fechaInicio . ' al ' . $this->fechaFin, 0, 0);
+
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(25, 8, utf8_decode('Almacén:'), 0, 0);
+
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(100, 8, utf8_decode(substr($this->almacen, 0, 50)), 0, 1);
+
+        // FILA 2
+        $this->SetX(12);
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(35, 8, utf8_decode('Fecha Gen:'), 0, 0);
+
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(90, 8, date('d/m/Y H:i:s'), 0, 0);
+
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(25, 8, utf8_decode('Categoría:'), 0, 0);
+
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(100, 8, utf8_decode(substr($this->categoria, 0, 50)), 0, 1);
+
         $this->Ln(5);
 
-        $this->SetFont('Arial', 'B', 10);
-        $this->Cell(40, 6, utf8_decode('Rango de Fechas:'), 0, 0, 'L');
-        $this->SetFont('Arial', '', 10);
-        $this->Cell(0, 6, 'Del ' . $this->fechaInicio . ' al ' . $this->fechaFin, 0, 1, 'L');
-
-        $this->SetFont('Arial', 'B', 10);
-        $this->Cell(40, 6, utf8_decode('Fecha de Generación:'), 0, 0, 'L');
-        $this->SetFont('Arial', '', 10);
-        $this->Cell(0, 6, date('d/m/Y H:i:s'), 0, 1, 'L');
-        
-        $this->Ln(8);
-        
+        // ===== TABLA =====
         $this->SetFont('Arial', 'B', 9);
-        $this->SetFillColor(255, 224, 210); 
-        $this->SetTextColor(0, 0, 0);
+        $this->SetFillColor(52, 73, 94);
+        $this->SetTextColor(255, 255, 255);
         $this->SetDrawColor(180, 180, 180);
 
         $this->Cell(20, 10, 'CODIGO', 1, 0, 'C', true);
