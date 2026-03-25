@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Inventario;
 use App\Articulo;
+use App\Almacen;
 use App\Categoria;
 
 use Illuminate\Support\Facades\Log;
@@ -613,6 +614,19 @@ class ReportesInventariosController extends Controller
         $pdf = new PDFWithPagination('L', 'mm', 'A4');
         $pdf->setFechaInicio($request->fechaInicio);
         $pdf->setFechaFin($request->fechaFin);
+
+        // FIXED: Set Almacén and Categoría filters for PDF header
+        $nombreAlmacen = $request->has('idAlmacen') && $request->idAlmacen !== 'undefined' 
+            ? Almacen::where('id', $request->idAlmacen)->first()->nombre_almacen ?? 'Todos los Almacenes' 
+            : 'Todos los Almacenes';
+
+        $nombreCategoria = $request->has('linea') && $request->linea !== 'undefined' 
+            ? Categoria::where('id', $request->linea)->first()->nombre ?? 'Todas las Categorías' 
+            : 'Todas las Categorías';
+
+        $pdf->setAlmacen($nombreAlmacen);
+        $pdf->setCategoria($nombreCategoria);
+
         $pdf->AliasNbPages();
         $pdf->AddPage();
         $pdf->SetMargins(10, 10, 10);
@@ -621,23 +635,23 @@ class ReportesInventariosController extends Controller
         $pdf->SetFont('Arial', '', 8);
 
         foreach ($resultados as $item) {
-            $pdf->Cell(20, 8, utf8_decode($item['codigo']), 1, 0, 'C');
+            $pdf->Cell(20, 8, utf8_decode($item['codigo']), 1, 0, 'L');
             
             $nombre = substr(utf8_decode($item['nombre_producto']), 0, 50);
-            $pdf->Cell(55, 8, $nombre, 1, 0, 'L');
+            $pdf->Cell(57, 8, $nombre, 1, 0, 'L');
             
             $unidCaja = isset($item['unidad_envase']) && $item['unidad_envase'] ? (int)$item['unidad_envase'] : '-';
-            $pdf->Cell(20, 8, $unidCaja, 1, 0, 'C');
+            $pdf->Cell(20, 8, $unidCaja, 1, 0, 'L');
             
             $categoria = substr(utf8_decode($item['categoria']), 0, 25);
             $pdf->Cell(35, 8, $categoria, 1, 0, 'L');
             
-            $pdf->Cell(25, 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'R');
-            $pdf->Cell(25, 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'R');
-            $pdf->Cell(25, 8, utf8_decode($item['total_traspasos_entrada']), 1, 0, 'R');
-            $pdf->Cell(25, 8, utf8_decode($item['total_traspasos_salida']), 1, 0, 'R');
-            $pdf->Cell(22, 8, utf8_decode($item['total_ajuste_texto']), 1, 0, 'R');
-            $pdf->Cell(22, 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'R');
+            $pdf->Cell(25, 8, utf8_decode($item['total_ventas_texto']), 1, 0, 'L');
+            $pdf->Cell(25, 8, utf8_decode($item['total_ingresos_texto']), 1, 0, 'L');
+            $pdf->Cell(25, 8, utf8_decode($item['total_traspasos_entrada']), 1, 0, 'L');
+            $pdf->Cell(25, 8, utf8_decode($item['total_traspasos_salida']), 1, 0, 'L');
+            $pdf->Cell(22, 8, utf8_decode($item['total_ajuste_texto']), 1, 0, 'L');
+            $pdf->Cell(23, 8, utf8_decode($item['saldo_stock_actual_texto']), 1, 1, 'L');
         }
 
         return response($pdf->Output('S'))
@@ -1696,7 +1710,7 @@ class PDFWithPagination extends FPDF
         $this->SetDrawColor(180, 180, 180);
 
         $this->Cell(20, 10, 'CODIGO', 1, 0, 'C', true);
-        $this->Cell(55, 10, 'PRODUCTO', 1, 0, 'C', true);
+        $this->Cell(57, 10, 'PRODUCTO', 1, 0, 'C', true); // antes 55
         $this->Cell(20, 10, 'UNID.CAJA', 1, 0, 'C', true);
         $this->Cell(35, 10, 'CATEGORIA', 1, 0, 'C', true);
         $this->Cell(25, 10, 'VENTAS', 1, 0, 'C', true);
@@ -1704,7 +1718,7 @@ class PDFWithPagination extends FPDF
         $this->Cell(25, 10, 'TRASP.ENT', 1, 0, 'C', true);
         $this->Cell(25, 10, 'TRASP.SAL', 1, 0, 'C', true);
         $this->Cell(22, 10, 'AJUSTES', 1, 0, 'C', true);
-        $this->Cell(22, 10, 'STOCK', 1, 1, 'C', true);
+        $this->Cell(23, 10, 'STOCK', 1, 1, 'C', true); // antes 22
     }
 
     function Footer()
