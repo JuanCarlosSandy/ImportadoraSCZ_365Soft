@@ -725,7 +725,6 @@ class ReportesInventariosController extends Controller
 
     public function exportarPDFDetallado(Request $request)
     {
-        
         $idArticulo = $request->input('idArticulo');
         $idAlmacen = $request->input('idAlmacen');
         $fechaInicio = $request->input('fechaInicio');
@@ -735,246 +734,177 @@ class ReportesInventariosController extends Controller
             return response()->json(['error' => 'Faltan parámetros: idArticulo, idAlmacen, fechaInicio, fechaFin'], 400);
         }
 
-        
-        $articulo = DB::table('articulos')->where('id', $idArticulo)->first();
+        $articulo = DB::table('articulos')
+            ->leftJoin('almacens', 'almacens.id', '=', DB::raw($idAlmacen))
+            ->where('articulos.id', $idArticulo)
+            ->select('articulos.*', 'almacens.nombre_almacen')
+            ->first();
 
         if (!$articulo) {
             return response('Artículo no encontrado', 404);
         }
 
-        $unidadEnvase = (int)($articulo->unidad_envase ?? 1);
+        $unidadEnvase = (int) ($articulo->unidad_envase ?? 1);
 
-        
         $fecha_fin_filtro = $request->fechaFin;
         $fecha_fin_filtro_timestamp = strtotime($fecha_fin_filtro . ' 23:59:59');
-        
-        
+
         $request->fechaFin = now()->format('Y-m-d');
-        
+
         $response = $this->detalleMovimientosProducto($request);
         $data = $response->getData();
 
-        
         $ventas = $data->ventas ?? [];
         $ingresos = $data->ingresos ?? [];
         $ajustes = $data->ajustes ?? [];
         $traspasos = $data->traspasos ?? [];
-        $saldo_actual = (float)($data->saldo_actual ?? 0);
-
+        $saldo_actual = (float) ($data->saldo_actual ?? 0);
 
         $movimientos = [];
 
-        
         foreach ($ventas as $v) {
-            $cantidadUnidades = (float)$v->cantidad;
-            
-            
+            $cantidadUnidades = (float) $v->cantidad;
             if (isset($v->modo_venta) && strtolower($v->modo_venta) === 'caja') {
                 $cantidadUnidades = $cantidadUnidades * $unidadEnvase;
             }
             if (isset($v->modo_venta) && strtolower($v->modo_venta) === 'docena') {
                 $cantidadUnidades = $cantidadUnidades * 12;
             }
-
             $movimientos[] = [
                 'fecha_hora' => $v->fecha_hora,
-                'timestamp'  => strtotime($v->fecha_hora),
-                'tipo'       => 'Venta',
+                'timestamp' => strtotime($v->fecha_hora),
+                'tipo' => 'Venta',
                 'referencia' => 'Doc: ' . $v->num_comprobante . ' - ' . utf8_decode($v->nombre_cliente),
-                'entrada'    => 0,
-                'salida'     => $cantidadUnidades
+                'entrada' => 0,
+                'salida' => $cantidadUnidades,
             ];
         }
 
-        
         foreach ($ingresos as $i) {
-            // La cantidad en detalle_ingresos ya está en unidades, no es necesario multiplicar
-            $cantidadUnidades = (float)preg_replace('/[^0-9.]/', '', $i->cantidad);
-
+            $cantidadUnidades = (float) preg_replace('/[^0-9.]/', '', $i->cantidad);
             $movimientos[] = [
                 'fecha_hora' => $i->fecha_hora,
-                'timestamp'  => strtotime($i->fecha_hora),
-                'tipo'       => 'Compra',
+                'timestamp' => strtotime($i->fecha_hora),
+                'tipo' => 'Compra',
                 'referencia' => 'Doc: ' . $i->num_comprobante . ' - ' . utf8_decode($i->responsable_compra ?? 'Sistema'),
-                'entrada'    => $cantidadUnidades,
-                'salida'     => 0
+                'entrada' => $cantidadUnidades,
+                'salida' => 0,
             ];
         }
 
-        
         foreach ($ajustes as $a) {
-            $cantidadUnidades = (float)$a->cantidad;
-            $isSalida = (strtolower($a->tipo_ajuste) === 'salida');
-
+            $cantidadUnidades = (float) $a->cantidad;
+            $esSalida = (strtolower($a->tipo_movimiento) === 'salida');
             $movimientos[] = [
                 'fecha_hora' => $a->fecha_hora,
-                'timestamp'  => strtotime($a->fecha_hora),
-                'tipo'       => 'Ajuste',
+                'timestamp' => strtotime($a->fecha_hora),
+                'tipo' => 'Ajuste',
                 'referencia' => utf8_decode($a->motivo ?? 'Ajuste de inventario'),
-                'entrada'    => !$isSalida ? $cantidadUnidades : 0,
-                'salida'     => $isSalida ? $cantidadUnidades : 0
+                'entrada' => $esSalida ? 0 : $cantidadUnidades,
+                'salida' => $esSalida ? $cantidadUnidades : 0,
             ];
         }
-
-        
         foreach ($traspasos as $t) {
             $tipoMov = strtoupper($t->tipo_movimiento);
             $isEntrada = ($tipoMov == 'ENTRADA');
-            
-            
             $referencia = $isEntrada ? 'Desde: ' . $t->almacen_origen : 'Hacia: ' . $t->almacen_destino;
-
             $movimientos[] = [
                 'fecha_hora' => $t->fecha_hora,
-                'timestamp'  => strtotime($t->fecha_hora),
-                'tipo'       => $isEntrada ? 'Traspaso (Ingreso)' : 'Traspaso (Salida)',
+                'timestamp' => strtotime($t->fecha_hora),
+                'tipo' => $isEntrada ? 'Traspaso (Ingreso)' : 'Traspaso (Salida)',
                 'referencia' => substr(utf8_decode($referencia), 0, 45),
-                'entrada'    => $isEntrada ? (float) $t->cantidad : 0,
-                'salida'     => !$isEntrada ? (float) $t->cantidad : 0
+                'entrada' => $isEntrada ? (float) $t->cantidad : 0,
+                'salida' => !$isEntrada ? (float) $t->cantidad : 0,
             ];
         }
 
-        
-        usort($movimientos, function($a, $b) {
+        usort($movimientos, function ($a, $b) {
             return $a['timestamp'] <=> $b['timestamp'];
         });
 
-        
-        $movimientosAMostrar = array_filter($movimientos, function($mov) use ($fecha_fin_filtro_timestamp) {
+        $movimientosAMostrar = array_filter($movimientos, function ($mov) use ($fecha_fin_filtro_timestamp) {
             return $mov['timestamp'] <= $fecha_fin_filtro_timestamp;
         });
         $movimientosAMostrar = array_values($movimientosAMostrar);
 
-        
-        
-        $totalEntradas = array_sum(array_column($movimientos, 'entrada'));
-        $totalSalidas = array_sum(array_column($movimientos, 'salida'));
-        $neto = $totalEntradas - $totalSalidas;
-        
-        
+        $totalEntradasPeriodo = array_sum(array_column($movimientosAMostrar, 'entrada'));
+        $totalSalidasPeriodo = array_sum(array_column($movimientosAMostrar, 'salida'));
+
+        $totalEntradasNeto = array_sum(array_column($movimientos, 'entrada'));
+        $totalSalidasNeto = array_sum(array_column($movimientos, 'salida'));
+        $neto = $totalEntradasNeto - $totalSalidasNeto;
         $saldoInicial = $saldo_actual - $neto;
         $saldoAcumulado = $saldoInicial;
 
-        
-        $pdf = new PDFWithPagination('L', 'mm', 'A4');  
+        $pdf = new PDFWithPagination('P', 'mm', 'A4');
         $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
-        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->SetAutoPageBreak(true, 25);
         $pdf->AddPage();
         
-        
-        $pdf->footerText = 'Reporte generado por el sistema de Importadora SEMO 365 - ';
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(33, 37, 41);
+        $pdf->Cell(0, 10, utf8_decode('Kardex de Producto'), 0, 1, 'C');
+        $pdf->Ln(2);
 
-        
-        $logoPath = public_path('img/logoPrincipal.png');
-        if (file_exists($logoPath)) {
-            $pdf->Image($logoPath, 10, 10, 30);
-        }
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(95, 6, utf8_decode('Empresa: IMPORTADORA SCZ'), 0, 0, 'L');
+        $pdf->Cell(95, 6, utf8_decode('Fecha de Generación: ' . date('d/m/Y H:i:s')), 0, 1, 'R');
+        $pdf->Cell(95, 6, utf8_decode('Producto: ' . $articulo->nombre), 0, 0, 'L');
+        $pdf->Cell(95, 6, utf8_decode('Rango de Fechas: ' . $fechaInicio . ' al ' . $fechaFin), 0, 1, 'R');
+        $pdf->Cell(95, 6, utf8_decode('Almacén: ' . $articulo->nombre_almacen), 0, 1, 'L');
 
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->SetXY(150, 12);
-        $pdf->Cell(0, 8, 'KARDEX DETALLADO DE PRODUCTO', 0, 1, 'L');
-        
-        
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetXY(150, 22);
-        $pdf->Cell(70, 5, 'Codigo: ' . utf8_decode($articulo->codigo), 0, 0);
-        $pdf->Cell(0, 5, 'Rango: ' . $fechaInicio . ' al ' . $fecha_fin_filtro, 0, 1);
-        
-        $pdf->SetXY(150, 27);
-        $pdf->Cell(70, 5, 'Producto: ' . utf8_decode(substr($articulo->nombre, 0, 35)), 0, 0);
-        $pdf->Cell(0, 5, 'Unid. x Caja: ' . ($articulo->unidad_envase ?? '-'), 0, 1);
-        
-        
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetXY(150, 32);
-        $totalEntradas = array_sum(array_column($movimientos, 'entrada'));
-        $totalSalidas = array_sum(array_column($movimientos, 'salida'));
-        $neto = $totalEntradas - $totalSalidas;
-        $pdf->Cell(0, 4, 'Saldo Actual Inventario: ' . intval($saldo_actual) . ' Unid. | Entradas: ' . intval($totalEntradas) . ' Unid. | Salidas: ' . intval($totalSalidas) . ' Unid.', 0, 1);
-        $pdf->Ln(5);
+        $pdf->Ln(8);
 
-        
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->SetFillColor(230, 230, 230);
-        
-        
-        $tableWidth = 35 + 28 + 80 + 40 + 40 + 45;  
-        $leftMargin = (210 - $tableWidth) / 2;  
-        
-        
-        $pdf->Cell(35, 8, 'FECHA', 1, 0, 'C', true);
-        $pdf->Cell(32, 8, 'TIPO', 1, 0, 'C', true);
-        $pdf->Cell(82, 8, 'DOCUMENTO / REFERENCIA', 1, 0, 'C', true);
-        $pdf->Cell(40, 8, 'ENTRADA', 1, 0, 'C', true);
-        $pdf->Cell(40, 8, 'SALIDA', 1, 0, 'C', true);
-        $pdf->Cell(45, 8, 'SALDO', 1, 1, 'C', true);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(233, 236, 239);
+        $pdf->SetTextColor(33, 37, 41);
+        $pdf->SetDrawColor(206, 212, 218);
+
+        $pdf->Cell(25, 10, 'Fecha', 1, 0, 'C', true);
+        $pdf->Cell(35, 10, 'Tipo de Movimiento', 1, 0, 'C', true);
+        $pdf->Cell(50, 10, 'Detalle o Referencia', 1, 0, 'C', true);
+        $pdf->Cell(25, 10, 'Entradas', 1, 0, 'C', true);
+        $pdf->Cell(25, 10, 'Salidas', 1, 0, 'C', true);
+        $pdf->Cell(30, 10, 'Saldo', 1, 1, 'C', true);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(248, 249, 250);
+        $pdf->Cell(110, 8, 'Saldo Inicial al ' . $fechaInicio, 1, 0, 'R', true);
+        $pdf->Cell(25, 8, '', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, '', 1, 0, 'R', true);
+        $pdf->Cell(30, 8, number_format($saldoInicial, 2), 1, 1, 'R', true);
 
         $pdf->SetFont('Arial', '', 8);
+        $pdf->SetTextColor(33, 37, 41);
 
-        
-        $pdf->SetFillColor(245, 245, 245);
-        $pdf->Cell(149, 6, 'SALDO AL INICIO DEL PERIODO (' . $fechaInicio . ')', 1, 0, 'R', true);
-        $pdf->Cell(40, 6, '-', 1, 0, 'C', true);
-        $pdf->Cell(40, 6, '-', 1, 0, 'C', true);
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell(45, 6, intval($saldoAcumulado) . ' Unid.', 1, 1, 'R', true);
-        $pdf->SetFont('Arial', '', 8);
-
-        
         if (count($movimientosAMostrar) > 0) {
             foreach ($movimientosAMostrar as $mov) {
-                $saldoAcumulado += $mov['entrada'];
-                $saldoAcumulado -= $mov['salida'];
-                // Definir color según tipo de movimiento
-                switch ($mov['tipo']) {
-                    case 'Venta':
-                        $pdf->SetFillColor(198, 239, 206); // verde claro
-                        break;
+                $saldoAcumulado += $mov['entrada'] - $mov['salida'];
 
-                    case 'Compra':
-                        $pdf->SetFillColor(255, 242, 204); // amarillo claro
-                        break;
-
-                    case 'Traspaso (Ingreso)':
-                    case 'Traspaso (Salida)':
-                        $pdf->SetFillColor(221, 217, 238); // morado claro
-                        break;
-
-                    case 'Ajuste':
-                        if ($mov['salida'] > 0) {
-                            $pdf->SetFillColor(255, 199, 206); // rojo claro (ajuste salida)
-                        } else {
-                            $pdf->SetFillColor(189, 215, 238); // celeste claro (ajuste entrada)
-                        }
-                        break;
-
-                    default:
-                        $pdf->SetFillColor(255, 255, 255); // blanco
-                        break;
-                }
-
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(35, 6, date('d/m/Y H:i', $mov['timestamp']), 1, 0, 'C');
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(32, 6, utf8_decode(substr($mov['tipo'], 0, 20)), 1, 0, 'L', true);
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->Cell(82, 6, substr($mov['referencia'], 0, 60), 1, 0, 'L');
-                
-                $entradaTexto = ($mov['entrada'] > 0 ? intval($mov['entrada']) . ' Unid.' : '-');
-                $salidaTexto = ($mov['salida'] > 0 ? intval($mov['salida']) . ' Unid.' : '-');
-                $saldoTexto = intval($saldoAcumulado) . ' Unid.';
-                
-                $pdf->Cell(40, 6, $entradaTexto, 1, 0, 'R');
-                $pdf->Cell(40, 6, $salidaTexto, 1, 0, 'R');
-                
-                $pdf->SetFont('Arial', 'B', 8);
-                $pdf->Cell(45, 6, $saldoTexto, 1, 1, 'R');
+                $pdf->Cell(25, 8, date('d/m/Y', $mov['timestamp']), 1, 0, 'L');
+                $pdf->Cell(35, 8, $mov['tipo'], 1, 0, 'L');
+                $pdf->Cell(50, 8, substr($mov['referencia'], 0, 30), 1, 0, 'L');
+                $pdf->Cell(25, 8, $mov['entrada'] > 0 ? number_format($mov['entrada'], 2) : '-', 1, 0, 'R');
+                $pdf->Cell(25, 8, $mov['salida'] > 0 ? number_format($mov['salida'], 2) : '-', 1, 0, 'R');
+                $pdf->Cell(30, 8, number_format($saldoAcumulado, 2), 1, 1, 'R');
             }
         } else {
-            $pdf->Cell(268, 8, 'Sin movimientos en este periodo.', 1, 1, 'C');
+            $pdf->Cell(190, 10, 'No se encontraron movimientos en el período seleccionado.', 1, 1, 'C');
         }
 
+        $pdf->Ln(5);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(248, 249, 250);
+        $pdf->Cell(110, 8, 'Totales del Periodo', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, number_format($totalEntradasPeriodo, 2), 1, 0, 'R', true);
+        $pdf->Cell(25, 8, number_format($totalSalidasPeriodo, 2), 1, 0, 'R', true);
+        $pdf->Cell(30, 8, '', 1, 1, 'R', true);
+        
+        $pdf->Cell(110, 8, 'Saldo Final', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, '', 1, 0, 'R', true);
+        $pdf->Cell(25, 8, '', 1, 0, 'R', true);
+        $pdf->Cell(30, 8, number_format($saldoAcumulado, 2), 1, 1, 'R', true);
         
         $nombreArchivo = 'KARDEX_' . preg_replace('/[^A-Za-z0-9]/', '_', $articulo->nombre) . '_' . str_replace('-', '', $fecha_fin_filtro) . '.pdf';
 
@@ -1700,11 +1630,23 @@ class ReportesInventariosController extends Controller
 
 class PDFWithPagination extends FPDF
 {
+    protected $user;
+
+    function __construct($orientation = 'P', $unit = 'mm', $size = 'A4')
+    {
+        parent::__construct($orientation, $unit, $size);
+        $this->user = auth()->user() ? auth()->user()->usuario : 'N/A';
+    }
+
     function Footer()
     {
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
-        $texto = utf8_decode('Página ') . $this->PageNo() . '/{nb}';
-        $this->Cell(0, 10, $texto, 0, 0, 'C');
+        
+        $pageNumber = 'Página ' . $this->PageNo() . '/{nb}';
+        $userText = 'Generado por: ' . $this->user;
+
+        $this->Cell(0, 10, $userText, 0, 0, 'L');
+        $this->Cell(0, 10, utf8_decode($pageNumber), 0, 0, 'R');
     }
 }
