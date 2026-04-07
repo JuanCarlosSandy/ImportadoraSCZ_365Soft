@@ -90,8 +90,8 @@
       :closeOnEscape="true" @hide="closeDialog" :containerStyle="dialogContainerStyle" class="responsive-dialog">
       <form>
         <TabView v-model:activeIndex="activeTab">
-          <!-- 🟢 TAB 1: DATOS DEL ARTÍCULO -->
-          <TabPanel header="Datos del Artículo">
+          <!-- 🟢 TAB 1: DATOS DEL producto -->
+          <TabPanel header="Datos del producto">
 
             <div class="form-group row">
               <div class="col-md-6">
@@ -555,7 +555,7 @@ export default {
       intentoEnviar: false,
       criterio: "nombre",
       buscar: "",
-      arrayArticulo: [], // Datos del artículo
+      arrayArticulo: [], // Datos del producto
       dialogVisible: false,
       agregarStock: false,
       fechaVencimientoSeleccion: false,
@@ -1833,7 +1833,7 @@ async descargarReportePDF() {
           me.$toast.add({
             severity: "success",
             summary: "Registrado",
-            detail: "El artículo fue registrado correctamente.",
+            detail: "El producto fue registrado correctamente.",
             life: 2500,
           });
 
@@ -1877,7 +1877,7 @@ async descargarReportePDF() {
             me.$toast.add({
               severity: "error",
               summary: "Error",
-              detail: "Hubo un error al registrar el artículo o el inventario.",
+              detail: "Hubo un error al registrar el producto o el inventario.",
               life: 3000,
             });
           }
@@ -1909,7 +1909,7 @@ async descargarReportePDF() {
           me.$toast.add({
             severity: "success",
             summary: "Actualizado",
-            detail: "El artículo fue actualizado correctamente.",
+            detail: "El producto fue actualizado correctamente.",
             life: 2500,
           });
 
@@ -1923,7 +1923,7 @@ async descargarReportePDF() {
           me.$toast.add({
             severity: "error",
             summary: "Error",
-            detail: "No se pudo actualizar el artículo.",
+            detail: "No se pudo actualizar el producto.",
             life: 3000,
           });
         });
@@ -1933,7 +1933,7 @@ async descargarReportePDF() {
             if (!this.validarPermisoVendedor()) return;
       try {
         const result = await Swal.fire({
-          title: "¿Está seguro de ELIMINAR este artículo?",
+          title: "¿Está seguro de ELIMINAR este producto?",
           icon: "warning",
           showCancelButton: true,
           confirmButtonColor: "#22c55e",
@@ -1957,7 +1957,7 @@ async descargarReportePDF() {
           this.$toast.add({
             severity: "success",
             summary: "Eliminado",
-            detail: "El artículo fue eliminado correctamente.",
+            detail: "El producto fue eliminado correctamente.",
             life: 2500,
           });
         }
@@ -1969,7 +1969,7 @@ async descargarReportePDF() {
         this.$toast.add({
           severity: "error",
           summary: "Error",
-          detail: "No se pudo eliminar el artículo.",
+          detail: "No se pudo eliminar el producto.",
           life: 3500,
         });
 
@@ -1981,7 +1981,7 @@ async descargarReportePDF() {
     activarArticulo(id) {
       if (!this.validarPermisoVendedor()) return;
       Swal.fire({
-        title: "¿Está seguro de activar este artículo?",
+        title: "¿Está seguro de activar este producto?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#22c55e",
@@ -2078,7 +2078,7 @@ async descargarReportePDF() {
 
               this.$nextTick(async () => {
                 this.dialogVisible = true;
-                this.tituloModal = "Registrar Artículo";
+                this.tituloModal = "Registrar producto";
                 this.agregarStock = false;
                 this.tipoAccion = 1;
                 this.fotografia = "";
@@ -2152,7 +2152,7 @@ async descargarReportePDF() {
                   console.log("DATA ACTUALIZAR (refrescado)", articulo);
                   this.agregarStock = false;
                   this.dialogVisible = true;
-                  this.tituloModal = "Actualizar Artículo";
+                  this.tituloModal = "Actualizar producto";
                   this.tipoAccion = 2;
 
                   this.datosFormulario = {

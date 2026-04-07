@@ -133,9 +133,9 @@
             <li class="nav-item nav-dropdown">
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-line-chart"></i> REPORTE INVENTARIO</a>
                 <ul class="nav-dropdown-items">
-                    <li @click="menu=100" class="nav-item">
+                    <!--<li @click="menu=100" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Kardex Fisico de Inventario</a>
-                    </li>
+                    </li>-->
                     <li @click="menu=92" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Productos Bajo Stock</a>
                     </li>

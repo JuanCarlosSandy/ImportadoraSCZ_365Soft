@@ -630,10 +630,10 @@
                           <i class="fa fa-qrcode mr-2" aria-hidden="true"></i>
                           QR
                         </button>
-                        <button class="btn btn-primary" @click="opcionPago = 'compuesto'">
+                        <!--<button class="btn btn-primary" @click="opcionPago = 'compuesto'">
                           <i class="fa fa-random mr-2" aria-hidden="true"></i>
                           Compuesto
-                        </button>
+                        </button>-->
                       </div>
                     </div>
                   </div>
