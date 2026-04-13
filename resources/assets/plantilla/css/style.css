@@ -12810,8 +12810,8 @@ hr.transparent {
 );
         
   color: #ffffff;
-  font-size: 9px;
-  padding: 2px 40px;
+  font-size: 5px;
+  padding: 1px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
