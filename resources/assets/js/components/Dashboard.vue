@@ -30,42 +30,46 @@
         </template>
       </div>
 
-      <!-- Componentes de precios actualizados -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <newprecioarti :fechaInicio="fechaInicio" :fechaFin="fechaFin" :moneda="monedaPrincipal" />
-        </div>
-      </div>
-
       <!-- Cuadros resumen: Ventas, Gastos, Ganancia -->
       <div class="row justify-content-between mb-5">
         <!-- Ventas siempre visible -->
         <square-item :icono="'fa fa-usd'" :titulo="'Ventas'" :moneda="monedaPrincipal[1]"
           :cantidad="sumaVentas.toFixed(2)" :fondoDegradado="'linear-gradient(35deg, #028bd2, #6dd3dd)'" />
 
-        <!-- Gastos solo para rol 4 -->
-        <square-item v-if="idrol == 4" :icono="'fa fa-shopping-cart'" :titulo="'Gastos'" :moneda="monedaPrincipal[1]"
-          :cantidad="sumaCompras.toFixed(2)" :fondoDegradado="'linear-gradient(35deg, #f67318, #f9ca38)'" />
+         <!-- Costos (antes gastos) -->
+        <square-item
+          v-show="idrol == 4"
+          :icono="'fa fa-shopping-cart'"
+          :titulo="'Costos'"
+          :moneda="monedaPrincipal[1]"
+          :cantidad="sumaCostos.toFixed(2)"
+          :fondoDegradado="'linear-gradient(35deg, #f67318, #f9ca38)'"
+        />
 
-        <!-- Ganancias solo para rol 4 -->
-        <square-item v-if="idrol == 4" :icono="'fa fa-angle-double-up'" :titulo="'Ganancias'"
-          :moneda="monedaPrincipal[1]" :cantidad="(sumaVentas - sumaCompras).toFixed(2)"
-          :fondoDegradado="'linear-gradient(35deg, #3b9c3f, #41d445)'" />
+        <!-- Utilidad -->
+        <square-item
+          v-show="idrol == 4"
+          :icono="'fa fa-line-chart'"
+          :titulo="'Utilidad'"
+          :moneda="monedaPrincipal[1]"
+          :cantidad="sumaUtilidad.toFixed(2)"
+          :fondoDegradado="'linear-gradient(35deg, #3b9c3f, #41d445)'"
+        />
       </div>
       <hr class="my-4" />
 
       <!-- Gráficas de ventas y compras -->
       <div class="row mb-5">
-        <div class="col-md-6" v-if="idrol == 4">
+        <div class="col-md-6" v-show="idrol == 4">
           <div class="card card-chart shadow-sm">
             <div class="card-header bg-light">
-              <h5 class="mb-0">Compras</h5>
+              <h5 class="mb-0">Costos</h5>
             </div>
             <div class="card-body">
-              <canvas id="ingresos"></canvas>
+              <canvas id="costos"></canvas>
             </div>
             <div class="card-footer small text-muted">
-              Compras de los últimos meses.
+              Costos de los últimos meses.
             </div>
           </div>
         </div>
@@ -82,6 +86,13 @@
               Ventas de los últimos meses.
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Componentes de precios actualizados -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <newprecioarti :fechaInicio="fechaInicio" :fechaFin="fechaFin" :moneda="monedaPrincipal" />
         </div>
       </div>
 
@@ -132,12 +143,18 @@ export default {
       monedaPrincipal: [],
       tipoPeriodo: "Mes",
       sumaVentas: 0,
+      sumaCostos: 0,
+      sumaUtilidad: 0,
+      data: [],
 
       charIngreso: null,
       ingresos: [],
 
       sumaCompras: 0,
       charVenta: null,
+      charCosto: null,
+      charUtilidad: null,
+
       ventas: [],
 
       fechaInicio: formatDateLocal(firstDayOfMonth),
@@ -265,17 +282,34 @@ export default {
         const respuesta = response.data;
         this.idrol = respuesta.idrol;
 
-        this.ingresos = respuesta.ingresos.map((item) => {
-          item.total *= parseFloat(this.monedaPrincipal[0]);
-          return item;
+        this.data = (respuesta.data || []).map((item) => {
+          return {
+            ...item,
+            total_ventas: item.total_ventas * parseFloat(this.monedaPrincipal[0]),
+            total_costo: item.total_costo * parseFloat(this.monedaPrincipal[0]),
+            utilidad: item.utilidad * parseFloat(this.monedaPrincipal[0]),
+          };
         });
+        this.sumaVentas = this.data.reduce(
+          (total, item) => total + parseFloat(item.total_ventas || 0),
+          0
+        );
 
-        this.ventas = respuesta.ventas.map((item) => {
-          item.total *= parseFloat(this.monedaPrincipal[0]);
-          return item;
-        });
+        this.sumaCostos = this.data.reduce(
+          (total, item) => total + parseFloat(item.total_costo || 0),
+          0
+        );
 
-        await Promise.all([this.loadIngresos(), this.loadVentas()]);
+        this.sumaUtilidad = this.data.reduce(
+          (total, item) => total + parseFloat(item.utilidad || 0),
+          0
+        );
+        await this.$nextTick();
+        await Promise.all([
+          this.loadVentas(),
+          this.loadCostos(),
+          this.loadUtilidad()
+        ]);
       } catch (error) {
         console.error("Error al obtener datos:", error);
         this.$toast.add({
@@ -295,37 +329,33 @@ export default {
       try {
         const arrayMes = [];
         const arrayTotal = [];
+
         data.forEach((item) => {
           arrayMes.push(item.mes);
-          arrayTotal.push(item.total);
+
+          if (tipo === "ventas") {
+            arrayTotal.push(item.total_ventas);
+          } else if (tipo === "costos") {
+            arrayTotal.push(item.total_costo);
+          } else if (tipo === "utilidad") {
+            arrayTotal.push(item.utilidad);
+          }
         });
 
         const nombresMeses = [
-          "Enero",
-          "Febrero",
-          "Marzo",
-          "Abril",
-          "Mayo",
-          "Junio",
-          "Julio",
-          "Agosto",
-          "Septiembre",
-          "Octubre",
-          "Noviembre",
-          "Diciembre",
+          "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+          "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
         ];
+
         const meses = arrayMes.map((numero) => nombresMeses[numero - 1]);
 
-        if (tipo == "compras") {
-          this.sumaCompras = arrayTotal.reduce(
-            (total, valor) => total + parseFloat(valor),
-            0
-          );
-        } else {
-          this.sumaVentas = arrayTotal.reduce(
-            (total, valor) => total + parseFloat(valor),
-            0
-          );
+        // 🔥 SUMATORIAS
+        if (tipo === "ventas") {
+          this.sumaVentas = arrayTotal.reduce((t, v) => t + parseFloat(v), 0);
+        } else if (tipo === "costos") {
+          this.sumaCostos = arrayTotal.reduce((t, v) => t + parseFloat(v), 0);
+        } else if (tipo === "utilidad") {
+          this.sumaUtilidad = arrayTotal.reduce((t, v) => t + parseFloat(v), 0);
         }
 
         return new Chart(chartElement, {
@@ -337,7 +367,6 @@ export default {
                 label: "Total de " + tipo,
                 data: arrayTotal,
                 backgroundColor: color,
-                borderColor: "rgba(54, 162, 235, 0.2)",
                 borderWidth: 1,
               },
             ],
@@ -346,57 +375,62 @@ export default {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              yAxes: [
-                {
-                  ticks: {
-                    beginAtZero: true,
-                  },
-                },
-              ],
+              yAxes: [{ ticks: { beginAtZero: true } }],
             },
           },
         });
+
       } catch (error) {
-        console.error(`Error al cargar gráfico de ${tipo}:`, error);
+        console.error(`Error en gráfico ${tipo}:`, error);
         throw error;
       }
     },
-    async loadIngresos() {
-      try {
-        this.isLoading = true; // Activar loading
-        if (this.charIngreso) {
-          this.charIngreso.destroy();
-        }
-        this.charIngreso = this.loadChart(
-          "compras",
-          this.ingresos,
-          document.getElementById("ingresos").getContext("2d"),
-          "#fec71f"
-        );
-      } catch (error) {
-        console.error("Error al cargar gráfico de ingresos:", error);
-      } finally {
-        this.isLoading = false; // Desactivar loading
+    async loadCostos() {
+      const canvas = document.getElementById("costos");
+
+      if (!canvas) {
+        console.warn("Canvas costos no existe aún");
+        return;
       }
+
+      if (this.charCosto) this.charCosto.destroy();
+
+      this.charCosto = this.loadChart(
+        "costos",
+        this.data,
+        canvas.getContext("2d"),
+        "#f39c12"
+      );
     },
     async loadVentas() {
-      try {
-        this.isLoading = true; // Activar loading
-        if (this.charVenta) {
-          this.charVenta.destroy();
-        }
-        this.charVenta = this.loadChart(
-          "ventas",
-          this.ventas,
-          document.getElementById("ventas").getContext("2d"),
-          "rgb(54, 162, 235)"
-        );
-      } catch (error) {
-        console.error("Error al cargar gráfico de ventas:", error);
-      } finally {
-        this.isLoading = false; // Desactivar loading
-      }
+      const canvas = document.getElementById("ventas");
+
+      if (!canvas) return;
+
+      if (this.charVenta) this.charVenta.destroy();
+
+      this.charVenta = this.loadChart(
+        "ventas",
+        this.data,
+        canvas.getContext("2d"),
+        "rgb(54, 162, 235)"
+      );
     },
+    async loadUtilidad() {
+      console.log("Cargando utilidad...");
+      const canvas = document.getElementById("utilidad");
+
+      if (!canvas) return;
+
+      if (this.charUtilidad) this.charUtilidad.destroy();
+
+      this.charUtilidad = this.loadChart(
+        "utilidad",
+        this.data,
+        canvas.getContext("2d"),
+        "#2ecc71"
+      );
+    }
   },
   async mounted() {
     try {
