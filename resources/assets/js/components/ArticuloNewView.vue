@@ -1636,7 +1636,7 @@ async descargarReporteExcel() {
   
   const fecha = new Date().toISOString().slice(0, 10);
   const url = '/articulo/reporteExcel';
-  const nombreArchivo = `ProductosBajoStock_${fecha}.xlsx`;
+  const nombreArchivo = `MisProductos_${fecha}.xlsx`;
   
   this.isLoading = true;
   try {
@@ -1719,7 +1719,7 @@ async descargarReportePDF() {
   
   const fecha = new Date().toISOString().slice(0, 10);
   const url = '/articulo/reportePDF';
-  const nombreArchivo = `ProductosBajoStock_${fecha}.pdf`;
+  const nombreArchivo = `MisProductos_${fecha}.pdf`;
 
   this.isLoading = true;
   try {
