@@ -107,6 +107,15 @@ class VentaController extends Controller
                 'ventas.tipo_comprobante',
                 DB::raw('COALESCE(ventas.idcliente, personas.id) as idcliente'),
                 'ventas.idtipo_venta',
+                'ventas.idtipo_pago', // <-- opcional dejarlo
+                DB::raw("
+                    CASE 
+                        WHEN ventas.idtipo_pago = 1 THEN 'EFECTIVO'
+                        WHEN ventas.idtipo_pago = 7 THEN 'QR'
+                        WHEN ventas.idtipo_pago = 13 THEN 'COMPUESTO'
+                        ELSE 'OTRO'
+                    END as tipo_pago_texto
+                "),
                 'ventas.id',
                 'ventas.serie_comprobante',
                 'ventas.num_comprobante',

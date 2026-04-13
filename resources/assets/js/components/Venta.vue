@@ -175,6 +175,15 @@
             <Column field="num_comprobante" header="N° de Comprobante" class="d-none d-md-table-cell"></Column>
             <Column field="razonSocial" header="Cliente"></Column>
             <Column field="documentoid" header="Documento" class="d-none d-md-table-cell"></Column>
+            <Column header="Tipo Pago">
+              <template #body="slotProps">
+                <Tag 
+                  class="tag-mini"
+                  :value="slotProps.data.tipo_pago_texto"
+                  :severity="getTipoPagoSeverity(slotProps.data.tipo_pago_texto)"
+                />
+              </template>
+            </Column>
             <Column header="Total">
               <template #body="slotProps">
                 <span class="font-weight-bold text-primary">
@@ -630,10 +639,10 @@
                           <i class="fa fa-qrcode mr-2" aria-hidden="true"></i>
                           QR
                         </button>
-                        <!--<button class="btn btn-primary" @click="opcionPago = 'compuesto'">
+                        <button class="btn btn-primary" @click="opcionPago = 'compuesto'">
                           <i class="fa fa-random mr-2" aria-hidden="true"></i>
                           Compuesto
-                        </button>-->
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -735,9 +744,9 @@
                             </div>
                           </div>
 
-                          <button class="btn btn-primary" @click="generarQr">
+                          <!--<button class="btn btn-primary" @click="generarQr">
                             <i class="fa fa-qrcode mr-2"></i> Generar QR
-                          </button>
+                          </button>-->
                         </div>
 
                         <div class="d-flex flex-row flex-md-row mt-2 mt-md-0 justify-content-center">
@@ -772,10 +781,10 @@
                             <input type="number" class="form-control" v-model.number="montoQRCompuesto" min="0"
                               :max="calcularTotal" placeholder="Monto QR" />
                           </div>
-                          <button class="btn btn-primary" type="button" @click="generarQrCompuesto" :disabled="!montoQRCompuesto || montoQRCompuesto <= 0
+                          <!--<button class="btn btn-primary" type="button" @click="generarQrCompuesto" :disabled="!montoQRCompuesto || montoQRCompuesto <= 0
                             ">
                             <i class="fa fa-qrcode mr-1"></i> Generar QR
-                          </button>
+                          </button>-->
                         </div>
                       </div>
 
@@ -2286,6 +2295,18 @@ export default {
   },
 
   methods: {
+  getTipoPagoSeverity(tipo) {
+    switch (tipo) {
+      case 'EFECTIVO':
+        return 'success'; // verde
+      case 'QR':
+        return 'info'; // azul
+      case 'COMPUESTO':
+        return 'warning'; // amarillo
+      default:
+        return 'secondary'; // gris
+    }
+  },
   generarQrCompuesto() {
       this.isLoading = true;
       this.actualizarFechaHora();
