@@ -48,7 +48,7 @@
                   @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
                 <Button v-if="slotProps.data.condicion" icon="pi pi-trash" class="p-button p-button-danger btn-mini"
                   @click="desactivarUsuario(slotProps.data.id)" v-tooltip.top="'Desactivar'" />
-                <Button v-else icon="pi pi-check" class="p-button p-button-info"
+                <Button v-else icon="pi pi-check" class="p-button p-button-info btn-mini"
                   @click="activarUsuario(slotProps.data.id)" v-tooltip.top="'Activar'" />
                 <Button icon="pi pi-image" class="p-button p-button-secondary p-button-outlined btn-mini"
                   @click="verFoto(slotProps.data.fotografia)" v-tooltip.top="'Ver Foto'" />

@@ -3895,10 +3895,9 @@ export default {
 
 
       this.agregarDetalle();
-
-      setTimeout(() => {
-        this.codigo = "";
-      }, 100);
+      this.codigo = "";
+      this.resultadosBusqueda = [];
+      this.mostrarDesplegable = false;
     },
     onPageChange(event) {
       let page = event.page + 1; // PrimeVue pages are 0-based, while your logic uses 1-based
