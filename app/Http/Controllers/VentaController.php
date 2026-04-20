@@ -33,6 +33,7 @@ use App\Notifications\NotifyAdmin;
 use FPDF;
 use chillerlan\QRCode\{QRCode, QROptions};
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use SebastianBergmann\Environment\Console;
 use SimpleXMLElement;
@@ -57,10 +58,22 @@ use function Ramsey\Uuid\v1;
 class VentaController extends Controller
 {
     private $fecha_formato;
+    private $ventasMontoColumnsCache = null;
 
     public function __construct()
     {
         session_start();
+    }
+
+    private function ventasTieneColumnasMonto()
+    {
+        if ($this->ventasMontoColumnsCache === null) {
+            $this->ventasMontoColumnsCache =
+                Schema::hasColumn('ventas', 'monto_efectivo') &&
+                Schema::hasColumn('ventas', 'monto_qr');
+        }
+
+        return $this->ventasMontoColumnsCache;
     }
     public function index(Request $request)
     {
@@ -1224,22 +1237,20 @@ class VentaController extends Controller
         }
 
         // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO
-        if ($request->idtipo_pago == 1) {
-            // Efectivo: guardar total en monto_efectivo
-            $venta->monto_efectivo = floatval($request->total);
-            $venta->monto_qr = 0;
-        } elseif ($request->idtipo_pago == 7) {
-            // QR: guardar total en monto_qr
-            $venta->monto_qr = floatval($request->total);
-            $venta->monto_efectivo = 0;
-        } elseif ($request->idtipo_pago == 13) {
-            // Pago compuesto: dividir entre QR y efectivo
-            $venta->monto_qr = floatval($request->input('qr_pago', 0));
-            $venta->monto_efectivo = floatval($request->input('efectivo_pago', 0));
-        } else {
-            // Otros tipos de pago
-            $venta->monto_efectivo = 0;
-            $venta->monto_qr = 0;
+        if ($this->ventasTieneColumnasMonto()) {
+            if ($request->idtipo_pago == 1) {
+                $venta->monto_efectivo = floatval($request->total);
+                $venta->monto_qr = 0;
+            } elseif ($request->idtipo_pago == 7) {
+                $venta->monto_qr = floatval($request->total);
+                $venta->monto_efectivo = 0;
+            } elseif ($request->idtipo_pago == 13) {
+                $venta->monto_qr = floatval($request->input('qr_pago', 0));
+                $venta->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+            } else {
+                $venta->monto_efectivo = 0;
+                $venta->monto_qr = 0;
+            }
         }
 
         // Guardar la venta
@@ -1311,22 +1322,20 @@ class VentaController extends Controller
         $venta->idcaja = $ultimaCajaAbierta->id;
 
         // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO
-        if ($request->idtipo_pago == 1) {
-            // Efectivo: guardar total en monto_efectivo
-            $venta->monto_efectivo = floatval($request->total);
-            $venta->monto_qr = 0;
-        } elseif ($request->idtipo_pago == 7) {
-            // QR: guardar total en monto_qr
-            $venta->monto_qr = floatval($request->total);
-            $venta->monto_efectivo = 0;
-        } elseif ($request->idtipo_pago == 13) {
-            // Pago compuesto: dividir entre QR y efectivo
-            $venta->monto_qr = floatval($request->input('qr_pago', 0));
-            $venta->monto_efectivo = floatval($request->input('efectivo_pago', 0));
-        } else {
-            // Otros tipos de pago
-            $venta->monto_efectivo = 0;
-            $venta->monto_qr = 0;
+        if ($this->ventasTieneColumnasMonto()) {
+            if ($request->idtipo_pago == 1) {
+                $venta->monto_efectivo = floatval($request->total);
+                $venta->monto_qr = 0;
+            } elseif ($request->idtipo_pago == 7) {
+                $venta->monto_qr = floatval($request->total);
+                $venta->monto_efectivo = 0;
+            } elseif ($request->idtipo_pago == 13) {
+                $venta->monto_qr = floatval($request->input('qr_pago', 0));
+                $venta->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+            } else {
+                $venta->monto_efectivo = 0;
+                $venta->monto_qr = 0;
+            }
         }
 
         // Guardar la venta
@@ -2698,22 +2707,20 @@ class VentaController extends Controller
         }
 
         // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO (RESIVO)
-        if ($request->idtipo_pago == 1) {
-            // Efectivo: guardar total en monto_efectivo
-            $ventaResivo->monto_efectivo = floatval($request->total);
-            $ventaResivo->monto_qr = 0;
-        } elseif ($request->idtipo_pago == 7) {
-            // QR: guardar total en monto_qr
-            $ventaResivo->monto_qr = floatval($request->total);
-            $ventaResivo->monto_efectivo = 0;
-        } elseif ($request->idtipo_pago == 13) {
-            // Pago compuesto: dividir entre QR y efectivo
-            $ventaResivo->monto_qr = floatval($request->input('qr_pago', 0));
-            $ventaResivo->monto_efectivo = floatval($request->input('efectivo_pago', 0));
-        } else {
-            // Otros tipos de pago
-            $ventaResivo->monto_efectivo = 0;
-            $ventaResivo->monto_qr = 0;
+        if ($this->ventasTieneColumnasMonto()) {
+            if ($request->idtipo_pago == 1) {
+                $ventaResivo->monto_efectivo = floatval($request->total);
+                $ventaResivo->monto_qr = 0;
+            } elseif ($request->idtipo_pago == 7) {
+                $ventaResivo->monto_qr = floatval($request->total);
+                $ventaResivo->monto_efectivo = 0;
+            } elseif ($request->idtipo_pago == 13) {
+                $ventaResivo->monto_qr = floatval($request->input('qr_pago', 0));
+                $ventaResivo->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+            } else {
+                $ventaResivo->monto_efectivo = 0;
+                $ventaResivo->monto_qr = 0;
+            }
         }
 
         // Guardar la venta
@@ -2785,22 +2792,20 @@ class VentaController extends Controller
         $ventaResivo->idcaja = $ultimaCajaAbierta->id;
 
         // 🔥 GUARDAR MONTOS SEGÚN TIPO DE PAGO (RESIVO2)
-        if ($request->idtipo_pago == 1) {
-            // Efectivo: guardar total en monto_efectivo
-            $ventaResivo->monto_efectivo = floatval($request->total);
-            $ventaResivo->monto_qr = 0;
-        } elseif ($request->idtipo_pago == 7) {
-            // QR: guardar total en monto_qr
-            $ventaResivo->monto_qr = floatval($request->total);
-            $ventaResivo->monto_efectivo = 0;
-        } elseif ($request->idtipo_pago == 13) {
-            // Pago compuesto: dividir entre QR y efectivo
-            $ventaResivo->monto_qr = floatval($request->input('qr_pago', 0));
-            $ventaResivo->monto_efectivo = floatval($request->input('efectivo_pago', 0));
-        } else {
-            // Otros tipos de pago
-            $ventaResivo->monto_efectivo = 0;
-            $ventaResivo->monto_qr = 0;
+        if ($this->ventasTieneColumnasMonto()) {
+            if ($request->idtipo_pago == 1) {
+                $ventaResivo->monto_efectivo = floatval($request->total);
+                $ventaResivo->monto_qr = 0;
+            } elseif ($request->idtipo_pago == 7) {
+                $ventaResivo->monto_qr = floatval($request->total);
+                $ventaResivo->monto_efectivo = 0;
+            } elseif ($request->idtipo_pago == 13) {
+                $ventaResivo->monto_qr = floatval($request->input('qr_pago', 0));
+                $ventaResivo->monto_efectivo = floatval($request->input('efectivo_pago', 0));
+            } else {
+                $ventaResivo->monto_efectivo = 0;
+                $ventaResivo->monto_qr = 0;
+            }
         }
 
         // Guardar la venta
