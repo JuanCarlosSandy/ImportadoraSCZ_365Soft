@@ -326,7 +326,7 @@ export default {
         await this.descargarArchivoReporte(url, filename);
       } else if (result.isDenied) {
         // Exportar a PDF
-        const url = `/inventario/exportar-pdf?modo=${modo}&idAlmacen=${idAlmacen}`;
+        const url = `/inventario/exportar-pdf?modo=${modo}&idAlmacen=${idAlmacen}&buscar=${this.buscar}`;
         const filename = `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.pdf`;
         await this.descargarArchivoReporte(url, filename);
       }
