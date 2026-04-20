@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Exception;
 use App\Exports\ProductExport;
 use Maatwebsite\Excel\Facades\Excel;
+use FPDF;
 use App\Inventario;
 use App\Articulo;
 use App\Imports\ArticuloImport;
@@ -496,6 +497,9 @@ class ArticuloController extends Controller
 
     public function descargarExcel()
     {
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
+        
         $user = auth()->user();
         if (!$user || !in_array($user->idrol, [1, 4])) {
             return response()->json([
@@ -536,7 +540,7 @@ class ArticuloController extends Controller
                 'articulos.precio_costo_unid',
                 'articulos.precio_uno',
                 'articulos.precio_dos',
-                'articulos.precio_tres',
+                'articulos.precio_tres'
             )
             ->where('articulos.condicion', '=', 1);
 
@@ -557,11 +561,89 @@ class ArticuloController extends Controller
 
         $articulos = $query->orderBy('articulos.nombre', 'asc')->get(); 
 
-        $pdf = \PDF::loadView('pdf.productos', ['articulos' => $articulos]);
-        
-        $pdf->setPaper('letter', 'landscape');
+        $pdf = new ArticuloPDFConFooter('L', 'mm', 'A4'); 
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->AddPage();
 
-        return $pdf->download('Reporte_Articulos.pdf');
+        // --- ENCABEZADO ---
+        $rutaLogo = public_path('img/logoPrincipal.png');
+        if (file_exists($rutaLogo)) {
+            $pdf->Image($rutaLogo, 10, 5, 20);
+        }
+
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(44, 62, 80);
+        $pdf->Cell(0, 10, utf8_decode('REPORTE GENERAL DE ARTÍCULOS'), 0, 1, 'C');
+
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, utf8_decode('Fecha de emisión: ' . date('d/m/Y H:i:s') . ' | Usuario: ' . ($user->usuario ?? 'Sistema')), 0, 1, 'C');
+        $pdf->Ln(5);
+
+        // --- CAJA DE FILTROS ---
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Rect(10, $pdf->GetY(), 277, 10, 'F');
+
+        $pdf->SetX(12);
+        $pdf->Cell(25, 10, utf8_decode('Búsqueda:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(120, 10, utf8_decode($buscar ?: 'Ninguna'), 0, 0, 'L');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 10, utf8_decode('Total Registros:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(50, 10, $articulos->count(), 0, 1, 'L');
+        $pdf->Ln(5);
+
+        // --- CABECERA DE TABLA ---
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(52, 73, 94); // Azul oscuro corporativo
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetDrawColor(180, 180, 180);
+
+        $pdf->Cell(22, 8, utf8_decode('CÓDIGO'), 1, 0, 'C', true);
+        $pdf->Cell(85, 8, 'NOMBRE', 1, 0, 'L', true);
+        $pdf->Cell(45, 8, utf8_decode('CATEGORÍA'), 1, 0, 'L', true);
+        $pdf->Cell(35, 8, 'PROVEEDOR', 1, 0, 'L', true);
+        $pdf->Cell(22, 8, 'C. COMPRA', 1, 0, 'R', true);
+        $pdf->Cell(22, 8, 'P. UNIDAD', 1, 0, 'R', true);
+        $pdf->Cell(23, 8, 'P. DOCENA', 1, 0, 'R', true);
+        $pdf->Cell(23, 8, 'P. PAQUETE', 1, 1, 'R', true);
+
+        // --- CUERPO DE TABLA ---
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+
+        if ($articulos->count() == 0) {
+            $pdf->Cell(277, 10, utf8_decode('No hay registros para mostrar.'), 1, 1, 'C');
+        }
+
+        $fill = false;
+        foreach ($articulos as $row) {
+            $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+            
+            $pdf->Cell(22, 7, utf8_decode(substr($row->codigo, 0, 15)), 1, 0, 'C', true);
+            $pdf->SetFont('Arial', 'B', 7);
+            $pdf->Cell(85, 7, utf8_decode(substr($row->nombre, 0, 55)), 1, 0, 'L', true);
+            $pdf->SetFont('Arial', '', 7);
+            $pdf->Cell(45, 7, utf8_decode(substr($row->nombre_categoria, 0, 30)), 1, 0, 'L', true);
+            $pdf->Cell(35, 7, utf8_decode(substr($row->nombre_proveedor, 0, 22)), 1, 0, 'L', true);
+            $pdf->Cell(22, 7, number_format((float)$row->precio_costo_unid, 2) . ' Bs', 1, 0, 'R', true);
+            $pdf->Cell(22, 7, number_format((float)$row->precio_uno, 2) . ' Bs', 1, 0, 'R', true);
+            $pdf->Cell(23, 7, number_format((float)$row->precio_dos, 2) . ' Bs', 1, 0, 'R', true);
+            $pdf->Cell(23, 7, number_format((float)$row->precio_tres, 2) . ' Bs', 1, 1, 'R', true);
+            $fill = !$fill;
+        }
+
+        $fecha = now()->format('Ymd_His');
+        $nombreArchivo = "MisProductos_{$fecha}.pdf";
+
+        return response($pdf->Output('S'), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"$nombreArchivo\"");
     }
 
     public function buscarArticulo(Request $request)
@@ -1097,4 +1179,17 @@ class ArticuloController extends Controller
         ];
     }
 
+}
+
+class ArticuloPDFConFooter extends FPDF
+{
+    public function Footer()
+    {
+        // Posición a 1.5 cm del final
+        $this->SetY(-15);
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(0, 0, 0);
+        // Número de página
+        $this->Cell(0, 10, utf8_decode('Reporte Generado por el sistema - Página ' . $this->PageNo() . ' de {nb}'), 0, 0, 'C');
+    }
 }
