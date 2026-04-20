@@ -321,7 +321,7 @@ export default {
       
       if (result.isConfirmed) {
         // Exportar a Excel
-        const url = `/inventario/exportar-excel?modo=${modo}&idAlmacen=${idAlmacen}`;
+        const url = `/inventario/exportar-excel?modo=${modo}&idAlmacen=${idAlmacen}&buscar=${this.buscar}`;
         const filename = `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.xlsx`;
         await this.descargarArchivoReporte(url, filename);
       } else if (result.isDenied) {

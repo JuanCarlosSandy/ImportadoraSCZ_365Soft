@@ -997,24 +997,14 @@ class InventarioController extends Controller
         $pdf->SetX(12);
         $pdf->Cell(30, 8, utf8_decode('Almacén:'), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(100, 8, utf8_decode(substr($nombreAlmacen, 0, 60)), 0, 0, 'L');
-
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(30, 8, utf8_decode('Modo Vista:'), 0, 0, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(100, 8, utf8_decode(ucfirst($modo)), 0, 1, 'L');
+        $pdf->Cell(100, 8, utf8_decode(substr($nombreAlmacen, 0, 60)), 0, 1, 'L');
 
         $pdf->SetX(12);
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(30, 8, utf8_decode('Búsqueda:'), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(100, 8, utf8_decode(substr($buscar_filtro ?: 'Ninguna', 0, 60)), 0, 0, 'L');
-        
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(30, 8, utf8_decode('Estado:'), 0, 0, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(100, 8, utf8_decode('Activo'), 0, 1, 'L');
-        
+        $pdf->Cell(100, 8, utf8_decode(substr($buscar_filtro ?: 'Ninguna', 0, 60)), 0, 1, 'L');
+
         $pdf->Ln(5);
 
         if ($modo === 'item') {
@@ -1104,8 +1094,9 @@ class InventarioController extends Controller
     {
         $modo = $request->input('modo', 'item');
         $idAlmacen = $request->input('idAlmacen');
+        $buscar = $request->input('buscar', '');
 
-        // Obtener nombre de almacÃƒÆ’Ã‚Â©n
+        // Obtener nombre de almacén
         $almacen = \DB::table('almacens')->where('id', $idAlmacen)->first();
         $nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Desconocido';
 
@@ -1115,7 +1106,7 @@ class InventarioController extends Controller
         $nombreArchivoLimpio = preg_replace('/_+/', '_', $nombreArchivoLimpio); // Eliminar guiones bajos duplicados
         $filename = 'reporteInventario_' . $nombreArchivoLimpio . '_' . $fecha . '.xlsx';
 
-        return Excel::download(new InventarioExport($modo, $idAlmacen), $filename);
+        return Excel::download(new InventarioExport($modo, $idAlmacen, $buscar), $filename);
     }
     public function exportarBajoStockPDF(Request $request)
     {
