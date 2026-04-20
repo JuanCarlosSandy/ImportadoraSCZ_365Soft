@@ -65,7 +65,7 @@ class ReportesVentas extends Controller
         if ($request->has('estadoVenta') && $request->estadoVenta !== 'Todos') {
             $estado_venta = $request->estadoVenta;
 
-            // Convertir texto a número
+            // Convertir texto a nÃºmero
             if ($estado_venta === 'Registrado') {
                 $ventas->where('ventas.estado', '=', 1);
             } elseif ($estado_venta === 'Anulado') {
@@ -188,7 +188,7 @@ class ReportesVentas extends Controller
             'personas.id as id_cliente',
             'personas.nombre as Cliente',
             'users.usuario as Vendedor',
-            'detalle_ventas.descuento', // <-- aquí agregas
+            'detalle_ventas.descuento', // <-- aquÃ­ agregas
             'tipo_ventas.nombre_tipo_ventas as Tipo de venta',
             'roles.nombre as Ejecutivo de Venta',
             'sucursales.nombre as Sucursal',
@@ -316,7 +316,7 @@ class ReportesVentas extends Controller
             $query->where('ventas.idcliente', $cliente);
         }
         if ($request->has('moneda') && $request->moneda !== 'undefined') {
-            // Si necesitas filtrar por moneda, agrega aquí la lógica
+            // Si necesitas filtrar por moneda, agrega aquÃ­ la lÃ³gica
         }
 
         $resultados = $query->get();
@@ -330,7 +330,7 @@ class ReportesVentas extends Controller
             ->join('users', 'ventas.idusuario', '=', 'users.id')
             ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
 
-            // Última cuota por venta
+            // Ãšltima cuota por venta
             ->leftJoin(DB::raw('(
                 SELECT c1.idcredito, c1.saldo_restante
                 FROM cuotas_credito c1
@@ -402,121 +402,129 @@ class ReportesVentas extends Controller
         $ventas = $query->orderBy('ventas.fecha_hora', 'asc')->get();
 
         // ---------------- PDF ----------------
-        $pdf = new PDFVentas();
+                $pdf = new PDFVentas();
         $pdf->AliasNbPages();
         $pdf->AddPage();
 
-        /* ========= HEADER ÚNICO ========= */
-        $pdf->SetFillColor(11, 79, 119);
-        $pdf->SetTextColor(255);
-
-        // Altura total del header
-        $headerHeight = 22;
-
-        // 1️⃣ Fondo azul (UN SOLO BLOQUE)
-        $pdf->Cell(0, $headerHeight, '', 0, 1, 'L', true);
-
-        // 2️⃣ Volver arriba del header
-        $pdf->SetY($pdf->GetY() - $headerHeight);
-        $pdf->SetX(10);
-
-        // 3️⃣ Título (izquierda)
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(120, 10, utf8_decode('REPORTE GENERAL DE VENTAS'), 0, 0, 'L');
-
-        // 4️⃣ Logo (derecha, DENTRO del header)
-        $pdf->Image(
-            public_path('img/logoPrincipal.png'),
-            178,                  // X (derecha)
-            $pdf->GetY() + 2,     // Y alineado
-            18                    // ancho
-        );
-
-        // 5️⃣ Segunda línea dentro del mismo header
-        $pdf->Ln(10);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(120, 10, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i')), 0, 1, 'L');
-
-        // 6️⃣ Salir del header
-        $pdf->Ln(4);
-
-        // Separador inferior
-        $pdf->SetDrawColor(11, 79, 119);
-        $pdf->SetLineWidth(0.6);
-        $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
-        $pdf->Ln(6);
-
-
-        /* ========= FILTROS ========= */
-        if (count($filtros) > 0) {
-            $pdf->SetTextColor(0);
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->Cell(0, 5, utf8_decode('Filtros aplicados:'), 0, 1);
-            $pdf->SetFont('Arial', '', 9);
-            $pdf->Cell(0, 5, utf8_decode(implode(' | ', $filtros)), 0, 1);
-            $pdf->Ln(4);
+        $logoPath = null;
+        if (file_exists(public_path('img/logoPrincipal.png'))) {
+            $logoPath = public_path('img/logoPrincipal.png');
+        } elseif (file_exists(public_path('logo.png'))) {
+            $logoPath = public_path('logo.png');
+        } elseif (file_exists(public_path('img/logo.png'))) {
+            $logoPath = public_path('img/logo.png');
+        } elseif (file_exists(public_path('images/logo.png'))) {
+            $logoPath = public_path('images/logo.png');
         }
 
-        /* ========= CABECERA TABLA ========= */
-        $pdf->SetFillColor(11, 79, 119);
-        $pdf->SetTextColor(255);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(22, 8, 'Nro Comp.', 1, 0, 'C', true);
-        $pdf->Cell(30, 8, 'Fecha y Hora', 1, 0, 'C', true);
-        $pdf->Cell(38, 8, 'Cliente', 1, 0, 'C', true);
-        $pdf->Cell(22, 8, 'Total', 1, 0, 'C', true);
-        $pdf->Cell(28, 8, 'Vendedor', 1, 0, 'C', true);
-        $pdf->Cell(20, 8, 'Tipo Venta', 1, 0, 'C', true);
-        $pdf->Cell(30, 8, 'Estado', 1, 1, 'C', true);
+        if ($logoPath) {
+            $pdf->Image($logoPath, 10, 8, 30);
+        }
 
-        /* ========= DATOS ========= */
+        $tipoReporteTexto = 'Ventas Generales';
+        if ($request->tipoReporte === 'dia') {
+            $tipoReporteTexto = 'Ventas Diarias';
+        } elseif ($request->tipoReporte === 'mes') {
+            $tipoReporteTexto = 'Ventas Mensuales';
+        }
+
+        $filtrosPdf = array_values(array_filter(array_merge($filtros ?? [], $filtrosTexto ?? [])));
+
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(52, 73, 94);
+        $pdf->SetXY(50, 15);
+        $pdf->Cell(140, 10, utf8_decode('REPORTE DE VENTAS'), 0, 1, 'L');
+
+        $pdf->SetFont('Arial', '', 11);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetXY(50, 26);
+        $pdf->Cell(140, 6, utf8_decode('Tipo: ' . $tipoReporteTexto), 0, 1, 'L');
+        $pdf->SetXY(50, 33);
+        $pdf->Cell(140, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'L');
+
+        $pdf->Ln(8);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetFillColor(52, 73, 94);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(190, 7, utf8_decode('FILTROS APLICADOS'), 0, 1, 'L', true);
+
         $pdf->SetFont('Arial', '', 9);
-        $pdf->SetTextColor(0);
+        $pdf->SetTextColor(100, 100, 100);
+        $pdf->SetFillColor(236, 240, 241);
+        $textoFiltros = count($filtrosPdf) > 0 ? implode(' | ', $filtrosPdf) : 'Sin filtros adicionales';
+        $pdf->MultiCell(190, 6, utf8_decode($textoFiltros), 1, 'L', true);
+        $pdf->Ln(4);
+
+        $renderHeaderTabla = function () use ($pdf) {
+            $pdf->SetFillColor(236, 240, 241);
+            $pdf->SetTextColor(52, 73, 94);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(22, 7, 'Nro Comp.', 1, 0, 'C', true);
+            $pdf->Cell(30, 7, 'Fecha y Hora', 1, 0, 'C', true);
+            $pdf->Cell(38, 7, 'Cliente', 1, 0, 'C', true);
+            $pdf->Cell(22, 7, 'Total', 1, 0, 'C', true);
+            $pdf->Cell(28, 7, 'Vendedor', 1, 0, 'C', true);
+            $pdf->Cell(20, 7, 'Tipo Venta', 1, 0, 'C', true);
+            $pdf->Cell(30, 7, 'Estado', 1, 1, 'C', true);
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->SetTextColor(0, 0, 0);
+        };
+
+        $renderHeaderTabla();
+
         $totalVentasRegistradas = 0;
+        $contadorFilas = 0;
 
         foreach ($ventas as $venta) {
+            if ($pdf->GetY() > 265) {
+                $pdf->AddPage();
+                $renderHeaderTabla();
+            }
 
-            $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
-            $fill = false;
+            $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Credito';
+            $estadoTexto = 'Registrado';
 
             if ($venta->estado == 0) {
-                $pdf->SetTextColor(217, 48, 37);
+                $pdf->SetTextColor(192, 57, 43);
+                $pdf->SetFillColor(255, 235, 235);
                 $estadoTexto = 'Anulado';
             } else {
+                $pdf->SetTextColor(0, 0, 0);
                 if ($venta->idtipo_venta == 2 && $venta->saldo_restante !== null && (float) $venta->saldo_restante > 0) {
-                    $pdf->SetTextColor(0);
-                    $pdf->SetFillColor(255, 243, 176);
-                    $estadoTexto = 'Pendiente Bs' . number_format((float) $venta->saldo_restante, 2);
-                    $fill = true;
+                    $estadoTexto = 'Pendiente Bs ' . number_format((float) $venta->saldo_restante, 2);
                 } else {
-                    $pdf->SetTextColor(11, 122, 59);
-                    $estadoTexto = 'Registrado';
                     $totalVentasRegistradas += $venta->total;
+                }
+
+                if ($contadorFilas % 2 === 0) {
+                    $pdf->SetFillColor(255, 255, 255);
+                } else {
+                    $pdf->SetFillColor(249, 249, 249);
                 }
             }
 
-            $pdf->Cell(22, 8, $venta->num_comprobante, 1, 0, 'L', $fill);
-            $pdf->Cell(30, 8, date('d/m/Y H:i', strtotime($venta->fecha_hora)), 1, 0, 'L', $fill);
-            $pdf->Cell(38, 8, utf8_decode(mb_strimwidth($venta->cliente ?? '-', 0, 25, '...')), 1, 0, 'L', $fill);
-            $pdf->Cell(22, 8, number_format($venta->total, 2), 1, 0, 'R', $fill);
-            $pdf->Cell(28, 8, utf8_decode(mb_strimwidth($venta->vendedor ?? '-', 0, 20, '...')), 1, 0, 'L', $fill);
-            $pdf->Cell(20, 8, utf8_decode($tipoVenta), 1, 0, 'L', $fill);
+            $contadorFilas++;
 
+            $pdf->Cell(22, 6, $venta->num_comprobante, 1, 0, 'L', true);
+            $pdf->Cell(30, 6, date('d/m/Y H:i', strtotime($venta->fecha_hora)), 1, 0, 'L', true);
+            $pdf->Cell(38, 6, utf8_decode(mb_strimwidth($venta->cliente ?? '-', 0, 25, '...')), 1, 0, 'L', true);
+            $pdf->Cell(22, 6, number_format($venta->total, 2), 1, 0, 'R', true);
+            $pdf->Cell(28, 6, utf8_decode(mb_strimwidth($venta->vendedor ?? '-', 0, 20, '...')), 1, 0, 'L', true);
+            $pdf->Cell(20, 6, utf8_decode($tipoVenta), 1, 0, 'L', true);
+            $pdf->Cell(30, 6, utf8_decode($estadoTexto), 1, 1, 'C', true);
 
-            $pdf->Cell(30, 8, utf8_decode($estadoTexto), 1, 1, 'C', $fill);
-
-            $pdf->SetTextColor(0);
-            $pdf->SetFillColor(255);
+            $pdf->SetTextColor(0, 0, 0);
         }
 
-        /* ========= TOTAL ========= */
         $pdf->Ln(4);
         $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(0, 0, 0);
         $pdf->Cell(0, 8, 'Total de ventas registradas: ' . number_format($totalVentasRegistradas, 2), 0, 1, 'R');
 
-        // ================= NOMBRE DINÁMICO =================
 
-        // 1️⃣ Tipo
+        // ================= NOMBRE DINÃMICO =================
+
+        // 1?? Tipo
         $tipo = 'General';
 
         if ($request->tipoReporte === 'dia') {
@@ -525,7 +533,7 @@ class ReportesVentas extends Controller
             $tipo = 'Mes';
         }
 
-        // 2️⃣ Fecha del filtro
+        // 2?? Fecha del filtro
         $fechaFiltro = date('Y-m-d'); // por defecto hoy
 
         if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
@@ -536,7 +544,7 @@ class ReportesVentas extends Controller
             $fechaFiltro = $request->mesSeleccionado;
         }
 
-        // 3️⃣ Nombre sucursal
+        // 3?? Nombre sucursal
         $nombreSucursal = 'Todas';
 
         if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
@@ -547,7 +555,7 @@ class ReportesVentas extends Controller
         // Limpiar espacios y caracteres raros para nombre de archivo
         $nombreSucursal = str_replace([' ', '/', '\\'], '_', $nombreSucursal);
 
-        // 4️⃣ Construir nombre final
+        // 4?? Construir nombre final
         $nombreArchivo = "ReporteGeneralVentas_{$tipo}_{$fechaFiltro}_{$nombreSucursal}.pdf";
 
         // Descargar
@@ -587,7 +595,7 @@ class ReportesVentas extends Controller
             $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
         }
 
-        // Filtro FECHA (Este es el que hace que funcione por día)
+        // Filtro FECHA (Este es el que hace que funcione por dÃ­a)
         if ($request->filled('tipoReporte')) {
             if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
                 $query->whereBetween('ventas.fecha_hora', [
@@ -625,50 +633,55 @@ class ReportesVentas extends Controller
 
         $ventas = $query->orderBy('ventas.fecha_hora', 'desc')->get();
 
-        $pdf = new PDFDetalleVentas(); // Asegúrate de tener importada esta clase o usar FPDF
+                $pdf = new PDFDetalleVentas();
         $pdf->AliasNbPages();
         $pdf->AddPage();
 
-        /* ========= HEADER AZUL (SE MANTIENE IGUAL) ========= */
-        $pdf->SetFillColor(11, 79, 119);
-        $pdf->SetTextColor(255);
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(0, 14, '', 0, 1, 'L', true);
-        $pdf->SetY($pdf->GetY() - 14);
-        $pdf->SetX(10);
-        $pdf->Cell(130, 14, utf8_decode('REPORTE DETALLADO DE VENTAS'), 0, 0, 'L');
-
-        // Logo
-        $headerY = $pdf->GetY();
-        // Ajusta la ruta si es necesario
+        $logoPath = null;
         if (file_exists(public_path('img/logoPrincipal.png'))) {
-            $pdf->Image(public_path('img/logoPrincipal.png'), 178, $headerY + 2, 10);
+            $logoPath = public_path('img/logoPrincipal.png');
+        } elseif (file_exists(public_path('logo.png'))) {
+            $logoPath = public_path('logo.png');
+        } elseif (file_exists(public_path('img/logo.png'))) {
+            $logoPath = public_path('img/logo.png');
+        } elseif (file_exists(public_path('images/logo.png'))) {
+            $logoPath = public_path('images/logo.png');
         }
-        $pdf->Ln(14);
 
-        // Fecha
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->Cell(0, 8, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i')), 0, 1, 'L', true);
+        if ($logoPath) {
+            $pdf->Image($logoPath, 10, 8, 30);
+        }
+
+        $filtrosPdf = array_values(array_filter(array_merge($filtros ?? [], $filtrosTexto ?? [])));
+
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(52, 73, 94);
+        $pdf->SetXY(50, 15);
+        $pdf->Cell(140, 10, utf8_decode('REPORTE DE VENTAS'), 0, 1, 'L');
+
+        $pdf->SetFont('Arial', '', 11);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetXY(50, 26);
+        $pdf->Cell(140, 6, utf8_decode('Tipo: Ventas Detalladas'), 0, 1, 'L');
+        $pdf->SetXY(50, 33);
+        $pdf->Cell(140, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'L');
+
+        $pdf->Ln(8);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetFillColor(52, 73, 94);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(190, 7, utf8_decode('FILTROS APLICADOS'), 0, 1, 'L', true);
+
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(100, 100, 100);
+        $pdf->SetFillColor(236, 240, 241);
+        $textoFiltros = count($filtrosPdf) > 0 ? implode(' | ', $filtrosPdf) : 'Sin filtros adicionales';
+        $pdf->MultiCell(190, 6, utf8_decode($textoFiltros), 1, 'L', true);
         $pdf->Ln(4);
-        $pdf->SetDrawColor(11, 79, 119);
-        $pdf->SetLineWidth(0.6);
-        $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
-        $pdf->Ln(6);
-        $pdf->SetTextColor(0);
-
-        // Imprimir filtros si existen...
-        if (isset($filtros) && count($filtros) > 0) {
-            $pdf->SetFont('Arial', '', 9);
-            foreach ($filtros as $filtro) {
-                $pdf->Cell(0, 5, utf8_decode($filtro), 0, 1);
-            }
-            $pdf->Ln(3);
-        }
 
         $totalVentasRegistradas = 0;
 
         foreach ($ventas as $venta) {
-            // 🔹 Calcular descuento total por detalle
             $descuentoTotalDetalle = 0;
 
             foreach ($venta->detalles as $d) {
@@ -676,143 +689,118 @@ class ReportesVentas extends Controller
                 $descuentoTotalDetalle += $descuentoUnitario * $d->cantidad;
             }
 
-            // 🔹 Descuento adicional real aplicado
             $descuentoAdicionalAplicado = max(0, ($venta->descuento_total ?? 0) - $descuentoTotalDetalle);
 
-            // -------- DATOS GENERALES DE LA VENTA --------
-            $tipoVenta = ($venta->idtipo_venta == 1) ? 'Contado' : 'Crédito';
             $clienteNombre = $venta->cliente->nombre ?? 'S/N';
             $clienteRecortado = mb_strimwidth(utf8_decode($clienteNombre), 0, 30, '...');
             $saldoRestante = $venta->saldo_restante;
 
             $estadoTexto = 'Registrado';
             if ($venta->estado == 0) {
-                $pdf->SetTextColor(255, 0, 0);
                 $estadoTexto = 'Anulado';
-            } else {
-                $pdf->SetTextColor(0);
-                if ($venta->idtipo_venta == 2 && $saldoRestante !== null && (float) $saldoRestante > 0) {
-                    $estadoTexto = 'Saldo Faltante Bs ' . number_format((float) $saldoRestante, 2);
-                }
+            } elseif ($venta->idtipo_venta == 2 && $saldoRestante !== null && (float) $saldoRestante > 0) {
+                $estadoTexto = 'Saldo Faltante Bs ' . number_format((float) $saldoRestante, 2);
             }
 
-            // CABECERA DE LA VENTA (GRIS)
-            $pdf->SetFont('Arial', 'B', 11);
-            $pdf->SetFillColor(230, 230, 230);
-            $pdf->Cell(0, 7, utf8_decode("Venta Nro: {$venta->num_comprobante}"), 0, 1, 'L', true);
+            if ($pdf->GetY() > 225) {
+                $pdf->AddPage();
+            }
 
-            // DATOS DE LA VENTA
-            $pdf->SetFont('Arial', '', 10);
-            $pdf->Cell(60, 6, 'Fecha: ' . date('d/m/Y H:i', strtotime($venta->fecha_hora)), 0, 0);
-            $pdf->Cell(60, 6, 'Vendedor: ' . ($venta->usuario->persona->nombre ?? ''), 0, 1);
-            $pdf->Cell(60, 6, 'Sucursal: ' . utf8_decode($venta->sucursal_nombre), 0, 1);
-            $pdf->Cell(60, 6, 'Cliente: ' . $clienteRecortado, 0, 1);
-            $pdf->Cell(60, 6, 'Desc. Adicional: ' . number_format($descuentoAdicionalAplicado, 2), 0, 1);
-            $pdf->Cell(60, 6, 'Importe Total: ' . number_format($venta->total, 2), 0, 1);
-            $pdf->Cell(60, 6, 'Estado: ' . utf8_decode($estadoTexto), 0, 1);
-            $pdf->Ln(2);
+            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->SetFillColor(52, 73, 94);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->Cell(190, 7, utf8_decode('VENTA NRO: ' . $venta->num_comprobante), 0, 1, 'L', true);
 
-            // TABLA DE DETALLES
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFillColor(236, 240, 241);
+            $pdf->Cell(95, 6, 'Fecha: ' . date('d/m/Y H:i', strtotime($venta->fecha_hora)), 1, 0, 'L', true);
+            $pdf->Cell(95, 6, 'Vendedor: ' . ($venta->usuario->persona->nombre ?? ''), 1, 1, 'L', true);
+            $pdf->Cell(95, 6, 'Sucursal: ' . utf8_decode($venta->sucursal_nombre), 1, 0, 'L', true);
+            $pdf->Cell(95, 6, 'Cliente: ' . $clienteRecortado, 1, 1, 'L', true);
+            $pdf->Cell(95, 6, 'Desc. Adicional: ' . number_format($descuentoAdicionalAplicado, 2), 1, 0, 'L', true);
+            $pdf->Cell(95, 6, 'Importe Total: ' . number_format($venta->total, 2), 1, 1, 'L', true);
+
+            if ($venta->estado == 0) {
+                $pdf->SetTextColor(192, 57, 43);
+            } else {
+                $pdf->SetTextColor(0, 0, 0);
+            }
+            $pdf->Cell(190, 6, 'Estado: ' . utf8_decode($estadoTexto), 1, 1, 'L', true);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(3);
+
             $w_cant = 25;
             $w_cod = 25;
             $w_prod = 65;
-            $w_caja = 20;
             $w_prec = 25;
-            $w_desc = 25;   // 🔹 NUEVA COLUMNA
+            $w_desc = 25;
             $w_sub = 25;
 
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->SetFillColor(11, 79, 119);
-            $pdf->SetTextColor(255);
+            $renderDetalleHeader = function () use ($pdf, $w_cant, $w_cod, $w_prod, $w_prec, $w_desc, $w_sub) {
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFillColor(236, 240, 241);
+                $pdf->SetTextColor(52, 73, 94);
+                $pdf->Cell($w_cant, 7, 'Cant.', 1, 0, 'C', true);
+                $pdf->Cell($w_cod, 7, utf8_decode('Codigo'), 1, 0, 'C', true);
+                $pdf->Cell($w_prod, 7, 'Producto', 1, 0, 'C', true);
+                $pdf->Cell($w_prec, 7, 'P. Unitario', 1, 0, 'C', true);
+                $pdf->Cell($w_desc, 7, 'Desc.', 1, 0, 'C', true);
+                $pdf->Cell($w_sub, 7, 'Subtotal', 1, 1, 'C', true);
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->SetTextColor(0, 0, 0);
+            };
 
-            $pdf->Cell($w_cant, 7, 'Cant.', 1, 0, 'C', true);
-            $pdf->Cell($w_cod, 7, utf8_decode('Código'), 1, 0, 'C', true);
-            $pdf->Cell($w_prod, 7, 'Producto', 1, 0, 'C', true);
-            $pdf->Cell($w_prec, 7, 'P. Unitario', 1, 0, 'C', true);
-            $pdf->Cell($w_desc, 7, 'Desc.', 1, 0, 'C', true);     // 🔹 NUEVO
-            $pdf->Cell($w_sub, 7, 'Subtotal', 1, 1, 'C', true);
-
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->SetTextColor(0);
+            $renderDetalleHeader();
 
             $sumaSubtotalesVenta = 0;
+            $contadorDetalle = 0;
 
             foreach ($venta->detalles as $d) {
+                if ($pdf->GetY() > 265) {
+                    $pdf->AddPage();
+                    $renderDetalleHeader();
+                }
 
-                // 1. Obtener Modo
                 $modo = strtolower($d->modo_venta ?? 'unidad');
-
-                // 2. Texto Cantidad (Visual)
                 $plural = ($d->cantidad > 1 && substr($modo, -1) != 's') ? 's' : '';
                 $textoCantidad = $d->cantidad . ' ' . $modo . $plural;
 
-                // 3. Datos Producto
                 $producto = $d->producto;
                 $codigoProducto = $producto->codigo ?? '-';
-                $nombreProducto = $producto->nombre ?? 'Artículo ' . $d->idarticulo;
+                $nombreProducto = $producto->nombre ?? 'Articulo ' . $d->idarticulo;
                 $nombreRecortado = mb_strimwidth(utf8_decode($nombreProducto), 0, 35, '...');
-
-                // Obtener unidades por caja (por seguridad, si es 0 o null, poner 1)
-                $unidadesPorCaja = (isset($producto->unidad_envase) && $producto->unidad_envase > 0)
-                    ? $producto->unidad_envase
-                    : 1;
-
-                // ============================================================
-                // 🔹 LÓGICA DE CÁLCULO DE SUBTOTAL MODIFICADA
-                // ============================================================
+                $unidadesPorCaja = (isset($producto->unidad_envase) && $producto->unidad_envase > 0) ? $producto->unidad_envase : 1;
 
                 $subtotalLinea = 0;
                 $precioUnitario = $d->precio;
 
-                // 🔹 Calcular subtotal base según modo
                 if ($modo == 'caja') {
                     $subtotalLinea = $d->cantidad * $unidadesPorCaja * $precioUnitario;
-
                 } elseif ($modo == 'docena') {
                     $subtotalLinea = $d->cantidad * 12 * $precioUnitario;
-
                 } else {
                     $subtotalLinea = $d->cantidad * $precioUnitario;
                 }
 
-                // 🔹 DESCUENTO POR PRODUCTO (monto fijo por unidad)
                 $descuentoUnitario = $d->descuento ?? 0;
                 $descuentoTotalProducto = $descuentoUnitario * $d->cantidad;
-
-                // 🔹 TOTAL FINAL DE LA LÍNEA
                 $totalLinea = $subtotalLinea - $descuentoTotalProducto;
-
-                // 🔹 Acumular el total real
                 $sumaSubtotalesVenta += $totalLinea;
 
-                if ($modo == 'caja') {
-                    // FÓRMULA: Cantidad(cajas) * Unidades_por_caja * Precio_unitario
-                    $subtotalLinea = $d->cantidad * $unidadesPorCaja * $precioUnitario;
-
-                } elseif ($modo == 'docena') {
-                    // FÓRMULA: Cantidad(docenas) * 12 * Precio_unitario
-                    $subtotalLinea = $d->cantidad * 12 * $precioUnitario;
-
+                if ($contadorDetalle % 2 === 0) {
+                    $pdf->SetFillColor(255, 255, 255);
                 } else {
-                    // CASO UNIDAD (u otros): Cantidad * Precio_unitario
-                    $subtotalLinea = $d->cantidad * $precioUnitario;
+                    $pdf->SetFillColor(249, 249, 249);
                 }
+                $contadorDetalle++;
 
-                // ============================================================
-
-                $sumaSubtotalesVenta += $subtotalLinea;
-
-                // 5. Imprimir Fila
-                $pdf->Cell($w_cant, 6, utf8_decode($textoCantidad), 1, 0, 'C');
-                $pdf->Cell($w_cod, 6, utf8_decode($codigoProducto), 1, 0, 'C');
-                $pdf->Cell($w_prod, 6, $nombreRecortado, 1, 0, 'L');
-                $pdf->Cell($w_prec, 6, number_format($precioUnitario, 2), 1, 0, 'R');
-
-                // 🔹 Mostrar descuento total del producto
-                $pdf->Cell($w_desc, 6, number_format($descuentoTotalProducto, 2), 1, 0, 'R');
-
-                // 🔹 Mostrar total ya con descuento aplicado
-                $pdf->Cell($w_sub, 6, number_format($totalLinea, 2), 1, 1, 'R');
+                $pdf->Cell($w_cant, 6, utf8_decode($textoCantidad), 1, 0, 'C', true);
+                $pdf->Cell($w_cod, 6, utf8_decode($codigoProducto), 1, 0, 'C', true);
+                $pdf->Cell($w_prod, 6, $nombreRecortado, 1, 0, 'L', true);
+                $pdf->Cell($w_prec, 6, number_format($precioUnitario, 2), 1, 0, 'R', true);
+                $pdf->Cell($w_desc, 6, number_format($descuentoTotalProducto, 2), 1, 0, 'R', true);
+                $pdf->Cell($w_sub, 6, number_format($totalLinea, 2), 1, 1, 'R', true);
             }
 
             if ($venta->estado != 0) {
@@ -820,13 +808,14 @@ class ReportesVentas extends Controller
             }
 
             $pdf->Ln(5);
-            $pdf->SetTextColor(0);
+            $pdf->SetTextColor(0, 0, 0);
         }
 
         $pdf->SetFont('Arial', 'B', 12);
         $pdf->Line(150, $pdf->GetY(), 200, $pdf->GetY());
         $pdf->Ln(2);
         $pdf->Cell(0, 8, utf8_decode('Total de ventas: ' . number_format($totalVentasRegistradas, 2)), 0, 1, 'R');
+
 
         $pdf->Output('D', 'ventas_detalladas_' . date('Ymd_His') . '.pdf');
         exit;
@@ -868,7 +857,8 @@ class PDFVentas extends FPDF
     {
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, utf8_decode('Página ') . $this->PageNo() . '/{nb}', 0, 0, 'C');
+        $this->SetTextColor(0, 0, 0);
+        $this->Cell(0, 10, utf8_decode('Reporte Generado por el sistema - Pagina ') . $this->PageNo() . ' de {nb}', 0, 0, 'C');
     }
 }
 class PDFDetalleVentas extends FPDF
@@ -877,6 +867,7 @@ class PDFDetalleVentas extends FPDF
     {
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, utf8_decode('Página ') . $this->PageNo() . '/{nb}', 0, 0, 'C');
+        $this->SetTextColor(0, 0, 0);
+        $this->Cell(0, 10, utf8_decode('Reporte Generado por el sistema - Pagina ') . $this->PageNo() . ' de {nb}', 0, 0, 'C');
     }
 }
