@@ -301,65 +301,96 @@ class AjusteInventarioController extends Controller
         if ($idAlmacen) {
             $query->where('ajuste_invetarios.almacen', $idAlmacen);
         }
+        if ($buscar) {
+            $query->where('articulos.nombre', 'like', '%' . $buscar . '%');
+        }
 
         $ajustes = $query->orderBy('ajuste_invetarios.id', 'desc')->get();
 
-        $pdf = new PDFConFooter('P', 'mm', 'A4'); 
-        $pdf->AddPage();
+        $pdf = new PDFConFooter('L', 'mm', 'A4'); 
         $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 20);
+        $pdf->AddPage();
 
+        // --- ENCABEZADO ---
         $rutaLogo = public_path('img/logoPrincipal.png');
         if (file_exists($rutaLogo)) {
             $pdf->Image($rutaLogo, 10, 5, 20);
         }
 
-        $pdf->SetY(15);
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(44, 62, 80);
+        $pdf->Cell(0, 10, utf8_decode('REPORTE DE AJUSTES DE INVENTARIO'), 0, 1, 'C');
 
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 8, utf8_decode('REPORTE DE AJUSTES DE INVENTARIO'), 0, 1, 'C');
-        
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(0, 5, utf8_decode("Rango de Fecha: $fechaInicio al $fechaFin"), 0, 1, 'C');
-        
-        if ($idAlmacen) {
-            $nombreAlmacen = $ajustes->first() ? $ajustes->first()->nombre_almacen : 'Almacén Seleccionado';
-            $pdf->Cell(0, 5, utf8_decode("Almacén: $nombreAlmacen"), 0, 1, 'C');
-        } else {
-            $pdf->Cell(0, 5, utf8_decode("Almacén: TODOS"), 0, 1, 'C');
-        }
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
         $pdf->Ln(5);
 
-        // ENCABEZADOS
-        $pdf->SetFont('Arial', 'B', 7); 
-        $pdf->SetFillColor(220, 220, 220);        
-        
-        $pdf->Cell(25, 7, 'FECHA', 1, 0, 'C', true);
-        $pdf->Cell(30, 7, 'ALMACEN', 1, 0, 'C', true);
-        $pdf->Cell(15, 7, 'TIPO', 1, 0, 'C', true);
-        $pdf->Cell(60, 7, 'ARTICULO', 1, 0, 'C', true);
-        $pdf->Cell(15, 7, 'CANTIDAD', 1, 0, 'C', true);
-        $pdf->Cell(35, 7, 'MOTIVO', 1, 1, 'C', true); 
+        // --- CAJA DE FILTROS ---
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Rect(10, $pdf->GetY(), 277, 16, 'F');
 
-        // CUERPO
-        $pdf->SetFont('Arial', '', 7); 
+        $pdf->SetX(12);
+        $pdf->Cell(35, 8, utf8_decode('Rango Fechas:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, utf8_decode($fechaInicio . ' al ' . $fechaFin), 0, 0, 'L');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Almacén:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $nombreAlmacen = $idAlmacen ? ($ajustes->first() ? $ajustes->first()->nombre_almacen : 'Almacén Seleccionado') : 'TODOS';
+        $pdf->Cell(100, 8, utf8_decode(substr($nombreAlmacen, 0, 50)), 0, 1, 'L');
+
+        $pdf->SetX(12);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(35, 8, utf8_decode('Búsqueda:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, utf8_decode($buscar ?: 'Ninguna'), 0, 0, 'L');
+        
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Registros:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, $ajustes->count(), 0, 1, 'L');
+        
+        $pdf->Ln(5);
+
+        // --- CABECERA DE TABLA ---
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(52, 73, 94); // Azul oscuro corporativo
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetDrawColor(180, 180, 180);
+
+        $pdf->Cell(30, 8, 'FECHA', 1, 0, 'C', true);
+        $pdf->Cell(45, 8, 'ALMACEN', 1, 0, 'C', true);
+        $pdf->Cell(20, 8, 'TIPO', 1, 0, 'C', true);
+        $pdf->Cell(92, 8, 'ARTICULO', 1, 0, 'C', true);
+        $pdf->Cell(25, 8, 'CANTIDAD', 1, 0, 'C', true);
+        $pdf->Cell(65, 8, 'MOTIVO', 1, 1, 'C', true);
+
+        // --- CUERPO DE TABLA ---
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
 
         if ($ajustes->count() == 0) {
-            $pdf->Cell(190, 10, utf8_decode('No hay registros para los filtros seleccionados.'), 1, 1, 'C');
+            $pdf->Cell(277, 10, utf8_decode('No hay registros para los filtros seleccionados.'), 1, 1, 'C');
         }
 
+        $fill = false;
         foreach ($ajustes as $row) {
-            $nombreArt = substr(utf8_decode($row->nombre_articulo), 0, 45); 
-            $motivo = substr(utf8_decode($row->justificacion), 0, 25);
-            $almacenCorto = substr(utf8_decode($row->nombre_almacen), 0, 20);
+            $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
             
             $tipo = strtoupper($row->tipo_movimiento) == 'ENTRADA' ? 'ENTRADA' : 'SALIDA';
             
-            $pdf->Cell(25, 6, date('d/m/y H:i', strtotime($row->created_at)), 1, 0, 'C');
-            $pdf->Cell(30, 6, $almacenCorto, 1, 0, 'L');
-            $pdf->Cell(15, 6, $tipo, 1, 0, 'C');
-            $pdf->Cell(60, 6, $nombreArt, 1, 0, 'L');
-            $pdf->Cell(15, 6, $row->cantidad, 1, 0, 'R');
-            $pdf->Cell(35, 6, $motivo, 1, 1, 'L');
+            $pdf->Cell(30, 7, date('d/m/y H:i', strtotime($row->created_at)), 1, 0, 'C', true);
+            $pdf->Cell(45, 7, utf8_decode(substr($row->nombre_almacen, 0, 30)), 1, 0, 'L', true);
+            $pdf->Cell(20, 7, $tipo, 1, 0, 'C', true);
+            $pdf->Cell(92, 7, utf8_decode(substr($row->nombre_articulo, 0, 65)), 1, 0, 'L', true);
+            $pdf->Cell(25, 7, number_format($row->cantidad, 2), 1, 0, 'R', true);
+            $pdf->Cell(65, 7, utf8_decode(substr($row->justificacion, 0, 50)), 1, 1, 'L', true);
+            $fill = !$fill;
         }
 
         $fechaInicioNombre = $this->formatearFechaParaNombre($fechaInicio);
@@ -389,9 +420,10 @@ class PDFConFooter extends FPDF
 {
     public function Footer()
     {
+        // Posiciona el pie de página a 1.5 cm del final
         $this->SetY(-15);
-        $this->SetFont('Arial', 'I', 8);
-        $this->SetTextColor(100);
-        $this->Cell(0, 10, utf8_decode('Ajuste de Inventario - Página ') . $this->PageNo() . '/{nb}', 0, 0, 'C');
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(0, 0, 0);
+        $this->Cell(0, 10, utf8_decode('Reporte Generado por el sistema - Página ' . $this->PageNo() . ' de {nb}'), 0, 0, 'C');
     }
 }
