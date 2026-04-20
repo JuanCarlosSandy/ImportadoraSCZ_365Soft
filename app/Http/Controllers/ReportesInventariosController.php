@@ -1109,7 +1109,8 @@ class ReportesInventariosController extends Controller
             $buscar = $request->buscar ?? 'Ninguna';
 
             // 🔹 Generar PDF con FPDF
-            $pdf = new FPDF('L', 'mm', 'A4');
+            $pdf = new PDFInventarioValoradoFooter('L', 'mm', 'A4');
+            $pdf->AliasNbPages();
             $pdf->SetMargins(10, 10, 10);
             $pdf->SetAutoPageBreak(true, 15);
             $pdf->AddPage();
@@ -1613,6 +1614,17 @@ class ReportesInventariosController extends Controller
                 'line' => $e->getLine()
             ], 500);
         }
+    }
+}
+
+class PDFInventarioValoradoFooter extends FPDF
+{
+    public function Footer()
+    {
+        $this->SetY(-15);
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(0, 0, 0);
+        $this->Cell(0, 10, utf8_decode('Reporte Generado por el sistema - Página ' . $this->PageNo() . ' de {nb}'), 0, 0, 'C');
     }
 }
 
