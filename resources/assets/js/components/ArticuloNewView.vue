@@ -1635,7 +1635,8 @@ async descargarReporteExcel() {
   if (!this.validarPermisoVendedor()) return;
   
   const fecha = new Date().toISOString().slice(0, 10);
-  const url = '/articulo/reporteExcel';
+  const buscarQuery = this.buscar ? `?buscar=${encodeURIComponent(this.buscar)}` : '';
+  const url = `/articulo/reporteExcel${buscarQuery}`;
   const nombreArchivo = `MisProductos_${fecha}.xlsx`;
   
   this.isLoading = true;
@@ -1718,7 +1719,8 @@ async descargarReportePDF() {
   if (!this.validarPermisoVendedor()) return;
   
   const fecha = new Date().toISOString().slice(0, 10);
-  const url = '/articulo/reportePDF';
+  const buscarQuery = this.buscar ? `?buscar=${encodeURIComponent(this.buscar)}` : '';
+  const url = `/articulo/reportePDF${buscarQuery}`;
   const nombreArchivo = `MisProductos_${fecha}.pdf`;
 
   this.isLoading = true;

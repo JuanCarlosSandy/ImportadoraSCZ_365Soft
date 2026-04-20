@@ -11,24 +11,48 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ProductExport implements FromQuery, WithHeadings, WithColumnWidths, WithStyles
 {
+    protected $buscar;
+
+    public function __construct($buscar = '')
+    {
+        $this->buscar = $buscar;
+    }
+
     public function query()
     {
-        return Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+        $query = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
             ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
             ->select(
                 'articulos.codigo',
                 'articulos.nombre',
                 'articulos.descripcion',
                 'categorias.nombre as nombre_categoria',
-                'proveedores.contacto as nombre_proveedor',
+                'personas.nombre as nombre_proveedor',
                 'articulos.unidad_envase',
                 'articulos.precio_costo_unid',
                 'articulos.precio_costo_paq',
                 'articulos.precio_uno',
                 'articulos.precio_dos',
                 'articulos.stock',
-            )
-            ->orderBy('articulos.nombre', 'desc');
+            );
+
+        if (!empty($this->buscar)) {
+            $palabras = explode(' ', $this->buscar);
+            $query->where(function ($q) use ($palabras) {
+                foreach ($palabras as $palabra) {
+                    $q->where(function ($sub) use ($palabra) {
+                        $sub->where('articulos.nombre', 'like', '%' . $palabra . '%')
+                            ->orWhere('articulos.descripcion', 'like', '%' . $palabra . '%')
+                            ->orWhere('articulos.codigo', 'like', '%' . $palabra . '%')
+                            ->orWhere('personas.nombre', 'like', '%' . $palabra . '%')
+                            ->orWhere('categorias.nombre', 'like', '%' . $palabra . '%');
+                    });
+                }
+            });
+        }
+
+        return $query->orderBy('articulos.nombre', 'asc');
     }
 
     public function headings(): array

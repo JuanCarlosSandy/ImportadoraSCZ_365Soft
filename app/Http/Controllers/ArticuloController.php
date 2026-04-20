@@ -495,7 +495,7 @@ class ArticuloController extends Controller
         return ['articulos' => $articulos->get()];
     }
 
-    public function descargarExcel()
+    public function descargarExcel(Request $request)
     {
         set_time_limit(300);
         ini_set('memory_limit', '1024M');
@@ -508,7 +508,8 @@ class ArticuloController extends Controller
             ], 403);
         }
         
-        return Excel::download(new ProductExport, 'articulos.xlsx');
+        $buscar = $request->buscar;
+        return Excel::download(new ProductExport($buscar), 'articulos.xlsx');
     }
 
     public function descargarPDF(Request $request)
