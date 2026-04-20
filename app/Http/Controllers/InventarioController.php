@@ -423,12 +423,19 @@ class InventarioController extends Controller
             return $converted !== false ? $converted : $text;
         };
 
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(0, 8, 'REPORTE DE PRODUCTOS CON BAJO STOCK', 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(0, 5, 'Fecha de generacion: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
-        $pdf->Ln(3);
+        $rutaLogo = public_path('img/logoPrincipal.png');
+        if (file_exists($rutaLogo)) {
+            $pdf->Image($rutaLogo, 10, 5, 20);
+        }
 
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(44, 62, 80);
+        $pdf->Cell(0, 10, utf8_decode('REPORTE DE PRODUCTOS CON BAJO STOCK'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, utf8_decode('Fecha de generacion: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
+        $pdf->Ln(5);
+
+        $filtrosY = $pdf->GetY();
         $txtFiltros = [
             'Código: ' . $toAscii($filtros['codigo'] ?: 'Todos'),        
             'Almacen: ' . $toAscii($filtros['nombre_almacen'] ?? 'Todos'),
@@ -446,6 +453,46 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', '', 8);
         $pdf->MultiCell(0, 5, implode(' | ', $txtFiltros));
         $pdf->Ln(2);
+
+        $textoBusqueda = 'Ninguna';
+        if ($filtros['productos'] !== '' && $filtros['codigo'] !== '') {
+            $textoBusqueda = $filtros['productos'] . ' / ' . $filtros['codigo'];
+        } elseif ($filtros['productos'] !== '') {
+            $textoBusqueda = $filtros['productos'];
+        } elseif ($filtros['codigo'] !== '') {
+            $textoBusqueda = $filtros['codigo'];
+        }
+
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->Rect(10, $filtrosY, 277, 21, 'F');
+        $pdf->SetY($filtrosY);
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetDrawColor(200, 200, 200);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Rect(10, $pdf->GetY(), 277, 16, 'F');
+
+        $pdf->SetX(12);
+        $pdf->Cell(25, 8, utf8_decode('Almacen:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, utf8_decode(substr($toAscii($filtros['nombre_almacen'] ?? 'Todos'), 0, 50)), 0, 0, 'L');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Proveedor:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, utf8_decode(substr($toAscii($filtros['proveedor'] ?: 'Todos'), 0, 50)), 0, 1, 'L');
+
+        $pdf->SetX(12);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Categoria:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, utf8_decode(substr($toAscii($filtros['nombre_categoria'] ?? 'Todas'), 0, 50)), 0, 0, 'L');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Busqueda:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(100, 8, utf8_decode(substr($toAscii($textoBusqueda), 0, 50)), 0, 1, 'L');
+        $pdf->Ln(5);
 
         $w = [13, 36, 76, 46, 28, 28];
         $headers = ['Código', 'Almacen', 'Producto', 'Categoria', 'Stock Actual', 'Stock Minimo'];
@@ -1195,12 +1242,32 @@ class InventarioController extends Controller
         $inventarios = $data->groupBy('nombre_almacen');
 
         // --- GENERACIÓN DEL PDF ---
-        $pdf = new \FPDF('L', 'mm', 'A4');
+        $pdf = new PDFBajoStockReporte('L', 'mm', 'A4');
+        $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 20);
-        $pdf->AddPage();
+        $nombreAlmacenFiltro = 'Todos';
+        if (!empty($almacen_id) && $almacen_id !== 'null') {
+            $nombreAlmacenFiltro = \DB::table('almacens')->where('id', $almacen_id)->value('nombre_almacen') ?? $almacen_id;
+        }
 
-        $this->addHeader($pdf);
+        $proveedorFiltro = !empty($request->proveedor) && $request->proveedor !== 'null'
+            ? $request->proveedor
+            : ((!empty($laboratorio) && $laboratorio !== 'null') ? $laboratorio : 'Todos');
+
+        $busquedaFiltro = !empty($request->producto) && $request->producto !== 'null'
+            ? $request->producto
+            : ((!empty($medicamento) && $medicamento !== 'null') ? $medicamento : 'Ninguna');
+
+        if (!empty($codigo) && $codigo !== 'null') {
+            $busquedaFiltro = $busquedaFiltro === 'Ninguna'
+                ? $codigo
+                : $busquedaFiltro . ' / ' . $codigo;
+        }
+
+        $pdf->setFiltros($nombreAlmacenFiltro, $proveedorFiltro, 'Todas', $busquedaFiltro);
+        $pdf->AddPage();
+        if (false) {
 
         // LOGICA VISUAL DE FILTROS (Para que sepas qué imprimiste)
         $filtrosTexto = [];
@@ -1222,6 +1289,7 @@ class InventarioController extends Controller
 
         // Total de registros encontrados
         $this->addReportInfo($pdf, $data->count());
+        }
 
         foreach ($inventarios as $nombreAlmacen => $productos) {
             $this->addAlmacenHeader($pdf, $nombreAlmacen);
@@ -1355,6 +1423,7 @@ class InventarioController extends Controller
 
     private function addFooter($pdf)
     {
+        return;
         $pdf->SetDrawColor(200, 200, 200);
         $pdf->SetY(-24);
         $y = $pdf->GetY();
@@ -1374,6 +1443,73 @@ class InventarioController extends Controller
     private function truncateText($text, $maxLength)
     {
         return strlen($text) > $maxLength ? substr($text, 0, $maxLength - 2) . '..' : $text;
+    }
+}
+
+class PDFBajoStockReporte extends FPDF
+{
+    protected $almacen = 'Todos';
+    protected $proveedor = 'Todos';
+    protected $categoria = 'Todas';
+    protected $busqueda = 'Ninguna';
+
+    public function setFiltros($almacen, $proveedor, $categoria, $busqueda)
+    {
+        $this->almacen = $almacen ?: 'Todos';
+        $this->proveedor = $proveedor ?: 'Todos';
+        $this->categoria = $categoria ?: 'Todas';
+        $this->busqueda = $busqueda ?: 'Ninguna';
+    }
+
+    public function Header()
+    {
+        $rutaLogo = public_path('img/logoPrincipal.png');
+        if (file_exists($rutaLogo)) {
+            $this->Image($rutaLogo, 10, 5, 20);
+        }
+
+        $this->SetFont('Arial', 'B', 16);
+        $this->SetTextColor(44, 62, 80);
+        $this->Cell(0, 10, utf8_decode('REPORTE DE PRODUCTOS BAJO STOCK'), 0, 1, 'C');
+
+        $this->SetFont('Arial', '', 10);
+        $this->Cell(0, 6, utf8_decode('Fecha de generacion: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
+        $this->Ln(5);
+
+        $this->SetFillColor(236, 240, 241);
+        $this->SetTextColor(0, 0, 0);
+        $this->SetFont('Arial', 'B', 9);
+        $this->Rect(10, $this->GetY(), 277, 16, 'F');
+
+        $this->SetX(12);
+        $this->Cell(25, 8, utf8_decode('Almacen:'), 0, 0, 'L');
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(100, 8, utf8_decode(substr($this->almacen, 0, 50)), 0, 0, 'L');
+
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(25, 8, utf8_decode('Proveedor:'), 0, 0, 'L');
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(100, 8, utf8_decode(substr($this->proveedor, 0, 50)), 0, 1, 'L');
+
+        $this->SetX(12);
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(25, 8, utf8_decode('Categoria:'), 0, 0, 'L');
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(100, 8, utf8_decode(substr($this->categoria, 0, 50)), 0, 0, 'L');
+
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(25, 8, utf8_decode('Busqueda:'), 0, 0, 'L');
+        $this->SetFont('Arial', '', 9);
+        $this->Cell(100, 8, utf8_decode(substr($this->busqueda, 0, 50)), 0, 1, 'L');
+        $this->Ln(5);
+    }
+
+    public function Footer()
+    {
+        $this->SetY(-15);
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(0, 0, 0);
+        $this->Cell(0, 10, utf8_decode('Reporte Generado por el sistema - Página ' . $this->PageNo() . ' de {nb}'), 0, 0, 'C');
     }
 }
 
