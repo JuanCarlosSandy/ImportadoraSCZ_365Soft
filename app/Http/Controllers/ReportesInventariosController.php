@@ -1238,7 +1238,8 @@ class ReportesInventariosController extends Controller
             $buscar = $request->buscar ?? 'Ninguna';
 
             // 🔹 Generar PDF con FPDF
-            $pdf = new FPDF('L', 'mm', 'A4');
+            $pdf = new PDFInventarioValoradoFooter('L', 'mm', 'A4');
+            $pdf->AliasNbPages();
             $pdf->SetMargins(10, 10, 10);
             $pdf->SetAutoPageBreak(true, 15);
             $pdf->AddPage();
