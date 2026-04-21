@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DetalleVenta;
 use App\Moneda;
+use App\Persona;
 use App\Venta;
 use App\User;
 use App\Sucursales;
@@ -360,7 +361,7 @@ class ReportesVentas extends Controller
         $filtros = [];
 
         if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
-            $query->where('users.idsucursal', $request->sucursal);
+            $query->where('ventas.idsucursal', $request->sucursal);
             $sucursal = Sucursales::find($request->sucursal);
             $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
         }
@@ -383,7 +384,7 @@ class ReportesVentas extends Controller
         }
 
         if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
-            $query->where('ventas.estado', $request->estadoVenta);
+            $this->aplicarFiltroEstadoVenta($query, $request->estadoVenta);
             $filtros[] = 'Estado: ' . $request->estadoVenta;
         }
 
@@ -393,33 +394,14 @@ class ReportesVentas extends Controller
         }
 
 
-        if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
-            $query->where('ventas.idusuario', $request->idusuario);
-            $vendedorObj = User::find($request->idusuario);
+        $idUsuarioFiltro = $this->obtenerIdUsuarioFiltro($request);
+        if ($idUsuarioFiltro) {
+            $query->where('ventas.idusuario', $idUsuarioFiltro);
+            $vendedorObj = User::find($idUsuarioFiltro);
             $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
         }
 
         $ventas = $query->orderBy('ventas.fecha_hora', 'asc')->get();
-
-        // ---------------- PDF ----------------
-                $pdf = new PDFVentas();
-        $pdf->AliasNbPages();
-        $pdf->AddPage();
-
-        $logoPath = null;
-        if (file_exists(public_path('img/logoPrincipal.png'))) {
-            $logoPath = public_path('img/logoPrincipal.png');
-        } elseif (file_exists(public_path('logo.png'))) {
-            $logoPath = public_path('logo.png');
-        } elseif (file_exists(public_path('img/logo.png'))) {
-            $logoPath = public_path('img/logo.png');
-        } elseif (file_exists(public_path('images/logo.png'))) {
-            $logoPath = public_path('images/logo.png');
-        }
-
-        if ($logoPath) {
-            $pdf->Image($logoPath, 10, 8, 30);
-        }
 
         $tipoReporteTexto = 'Ventas Generales';
         if ($request->tipoReporte === 'dia') {
@@ -428,32 +410,49 @@ class ReportesVentas extends Controller
             $tipoReporteTexto = 'Ventas Mensuales';
         }
 
-        $filtrosPdf = array_values(array_filter(array_merge($filtros ?? [], $filtrosTexto ?? [])));
+        $pdf = new PDFVentas();
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->AddPage();
 
-        $pdf->SetFont('Arial', 'B', 16);
-        $pdf->SetTextColor(52, 73, 94);
-        $pdf->SetXY(50, 15);
-        $pdf->Cell(140, 10, utf8_decode('REPORTE DE VENTAS'), 0, 1, 'L');
+        $nombreSucursal = 'Todas';
+        if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
+            $sucursalObj = Sucursales::find($request->sucursal);
+            $nombreSucursal = $sucursalObj ? $sucursalObj->nombre : 'Desconocida';
+        }
 
-        $pdf->SetFont('Arial', '', 11);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetXY(50, 26);
-        $pdf->Cell(140, 6, utf8_decode('Tipo: ' . $tipoReporteTexto), 0, 1, 'L');
-        $pdf->SetXY(50, 33);
-        $pdf->Cell(140, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'L');
+        $nombreVendedor = 'Todos';
+        if ($idUsuarioFiltro) {
+            $vendedorObj = User::find($idUsuarioFiltro);
+            $nombreVendedor = $vendedorObj ? $vendedorObj->usuario : 'Desconocido';
+        }
 
-        $pdf->Ln(8);
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetFillColor(52, 73, 94);
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->Cell(190, 7, utf8_decode('FILTROS APLICADOS'), 0, 1, 'L', true);
+        $periodoTexto = 'Todos';
+        if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
+            $periodoTexto = $request->fechaSeleccionada;
+        } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
+            $periodoTexto = date('F Y', strtotime($request->mesSeleccionado . '-01'));
+        }
 
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetTextColor(100, 100, 100);
-        $pdf->SetFillColor(236, 240, 241);
-        $textoFiltros = count($filtrosPdf) > 0 ? implode(' | ', $filtrosPdf) : 'Sin filtros adicionales';
-        $pdf->MultiCell(190, 6, utf8_decode($textoFiltros), 1, 'L', true);
-        $pdf->Ln(4);
+        $filtroExtra = [];
+        if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
+            $filtroExtra[] = 'Estado: ' . $request->estadoVenta;
+        }
+        if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
+            $cliente = Persona::find($request->idcliente);
+            $filtroExtra[] = 'Cliente: ' . ($cliente ? $cliente->nombre : $request->idcliente);
+        }
+        $filtroExtraTexto = !empty($filtroExtra) ? implode(' | ', $filtroExtra) : 'Sin filtros';
+
+        $this->renderVentasPdfHeader(
+            $pdf,
+            'REPORTE DE ' . strtoupper($tipoReporteTexto),
+            $nombreSucursal,
+            $nombreVendedor,
+            $periodoTexto,
+            $filtroExtraTexto
+        );
 
         $renderHeaderTabla = function () use ($pdf) {
             $pdf->SetFillColor(236, 240, 241);
@@ -590,7 +589,7 @@ class ReportesVentas extends Controller
 
         // Filtro Sucursal
         if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
-            $query->where('users.idsucursal', $request->sucursal);
+            $query->where('ventas.idsucursal', $request->sucursal);
             $sucursal = Sucursales::find($request->sucursal);
             $filtros[] = 'Sucursal: ' . ($sucursal ? $sucursal->nombre : 'Desconocida');
         }
@@ -615,7 +614,7 @@ class ReportesVentas extends Controller
 
         // Filtro Estado
         if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
-            $query->where('ventas.estado', $request->estadoVenta);
+            $this->aplicarFiltroEstadoVenta($query, $request->estadoVenta);
             $filtros[] = 'Estado: ' . $request->estadoVenta;
         }
 
@@ -625,59 +624,61 @@ class ReportesVentas extends Controller
             $filtros[] = 'Cliente ID: ' . $request->idcliente;
         }
 
-        if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
-            $query->where('ventas.idusuario', $request->idusuario);
-            $vendedorObj = User::find($request->idusuario);
+        $idUsuarioFiltro = $this->obtenerIdUsuarioFiltro($request);
+        if ($idUsuarioFiltro) {
+            $query->where('ventas.idusuario', $idUsuarioFiltro);
+            $vendedorObj = User::find($idUsuarioFiltro);
             $filtrosTexto[] = 'Vendedor: ' . ($vendedorObj ? $vendedorObj->usuario : 'Desconocido');
         }
 
         $ventas = $query->orderBy('ventas.fecha_hora', 'desc')->get();
 
-                $pdf = new PDFDetalleVentas();
+        $pdf = new PDFDetalleVentas();
         $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
         $pdf->AddPage();
 
-        $logoPath = null;
-        if (file_exists(public_path('img/logoPrincipal.png'))) {
-            $logoPath = public_path('img/logoPrincipal.png');
-        } elseif (file_exists(public_path('logo.png'))) {
-            $logoPath = public_path('logo.png');
-        } elseif (file_exists(public_path('img/logo.png'))) {
-            $logoPath = public_path('img/logo.png');
-        } elseif (file_exists(public_path('images/logo.png'))) {
-            $logoPath = public_path('images/logo.png');
+        $nombreSucursal = 'Todas';
+        if ($request->filled('sucursal') && $request->sucursal !== 'undefined') {
+            $sucursalObj = Sucursales::find($request->sucursal);
+            $nombreSucursal = $sucursalObj ? $sucursalObj->nombre : 'Desconocida';
         }
 
-        if ($logoPath) {
-            $pdf->Image($logoPath, 10, 8, 30);
+        $nombreVendedor = 'Todos';
+        if ($idUsuarioFiltro) {
+            $vendedorObj = User::find($idUsuarioFiltro);
+            $nombreVendedor = $vendedorObj ? $vendedorObj->usuario : 'Desconocido';
         }
 
-        $filtrosPdf = array_values(array_filter(array_merge($filtros ?? [], $filtrosTexto ?? [])));
+        $periodoTexto = 'Todos';
+        $tipoDetalleTexto = 'VENTAS DETALLADAS';
+        if ($request->tipoReporte === 'dia' && $request->filled('fechaSeleccionada')) {
+            $periodoTexto = $request->fechaSeleccionada;
+            $tipoDetalleTexto = 'VENTAS DIARIAS DETALLADAS';
+        } elseif ($request->tipoReporte === 'mes' && $request->filled('mesSeleccionado')) {
+            $periodoTexto = date('F Y', strtotime($request->mesSeleccionado . '-01'));
+            $tipoDetalleTexto = 'VENTAS MENSUALES DETALLADAS';
+        }
 
-        $pdf->SetFont('Arial', 'B', 16);
-        $pdf->SetTextColor(52, 73, 94);
-        $pdf->SetXY(50, 15);
-        $pdf->Cell(140, 10, utf8_decode('REPORTE DE VENTAS'), 0, 1, 'L');
+        $filtroExtra = [];
+        if ($request->filled('estadoVenta') && $request->estadoVenta !== 'Todos' && $request->estadoVenta !== 'undefined') {
+            $filtroExtra[] = 'Estado: ' . $request->estadoVenta;
+        }
+        if ($request->filled('idcliente') && $request->idcliente !== 'undefined') {
+            $cliente = Persona::find($request->idcliente);
+            $filtroExtra[] = 'Cliente: ' . ($cliente ? $cliente->nombre : $request->idcliente);
+        }
+        $filtroExtraTexto = !empty($filtroExtra) ? implode(' | ', $filtroExtra) : 'Sin filtros';
 
-        $pdf->SetFont('Arial', '', 11);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetXY(50, 26);
-        $pdf->Cell(140, 6, utf8_decode('Tipo: Ventas Detalladas'), 0, 1, 'L');
-        $pdf->SetXY(50, 33);
-        $pdf->Cell(140, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'L');
-
-        $pdf->Ln(8);
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetFillColor(52, 73, 94);
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->Cell(190, 7, utf8_decode('FILTROS APLICADOS'), 0, 1, 'L', true);
-
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetTextColor(100, 100, 100);
-        $pdf->SetFillColor(236, 240, 241);
-        $textoFiltros = count($filtrosPdf) > 0 ? implode(' | ', $filtrosPdf) : 'Sin filtros adicionales';
-        $pdf->MultiCell(190, 6, utf8_decode($textoFiltros), 1, 'L', true);
-        $pdf->Ln(4);
+        $this->renderVentasPdfHeader(
+            $pdf,
+            'REPORTE DE ' . $tipoDetalleTexto,
+            $nombreSucursal,
+            $nombreVendedor,
+            $periodoTexto,
+            $filtroExtraTexto
+        );
 
         $totalVentasRegistradas = 0;
 
@@ -819,6 +820,83 @@ class ReportesVentas extends Controller
 
         $pdf->Output('D', 'ventas_detalladas_' . date('Ymd_His') . '.pdf');
         exit;
+    }
+
+    private function renderVentasPdfHeader($pdf, $titulo, $sucursal, $vendedor, $periodo, $filtros)
+    {
+        $rutaLogo = public_path('img/logoPrincipal.png');
+        if (!file_exists($rutaLogo)) {
+            $rutaLogo = public_path('logo.png');
+        }
+        if (!file_exists($rutaLogo)) {
+            $rutaLogo = public_path('img/logo.png');
+        }
+        if (!file_exists($rutaLogo)) {
+            $rutaLogo = public_path('images/logo.png');
+        }
+
+        if (file_exists($rutaLogo)) {
+            $pdf->Image($rutaLogo, 10, 5, 20);
+        }
+
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(44, 62, 80);
+        $pdf->Cell(0, 10, utf8_decode($titulo), 0, 1, 'C');
+
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, utf8_decode('Fecha de generación: ' . date('d/m/Y H:i:s')), 0, 1, 'C');
+        $pdf->Ln(5);
+
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Rect(10, $pdf->GetY(), 190, 16, 'F');
+
+        $pdf->SetX(12);
+        $pdf->Cell(25, 8, utf8_decode('Sucursal:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(70, 8, utf8_decode(substr($sucursal, 0, 35)), 0, 0, 'L');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Vendedor:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(58, 8, utf8_decode(substr($vendedor, 0, 30)), 0, 1, 'L');
+
+        $pdf->SetX(12);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Período:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(70, 8, utf8_decode(substr($periodo, 0, 35)), 0, 0, 'L');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 8, utf8_decode('Filtros:'), 0, 0, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(58, 8, utf8_decode(substr($filtros, 0, 30)), 0, 1, 'L');
+        $pdf->Ln(5);
+    }
+
+    private function aplicarFiltroEstadoVenta($query, $estadoVenta)
+    {
+        if ($estadoVenta === 'Registrado') {
+            $query->where('ventas.estado', 1);
+        } elseif ($estadoVenta === 'Anulado') {
+            $query->where('ventas.estado', 0);
+        } elseif ($estadoVenta !== '' && $estadoVenta !== 'undefined' && $estadoVenta !== 'Todos') {
+            $query->where('ventas.estado', $estadoVenta);
+        }
+    }
+
+    private function obtenerIdUsuarioFiltro(Request $request)
+    {
+        if ($request->filled('idusuario') && $request->idusuario !== 'undefined') {
+            return $request->idusuario;
+        }
+
+        if ($request->filled('ejecutivoCuentas') && $request->ejecutivoCuentas !== 'undefined') {
+            return $request->ejecutivoCuentas;
+        }
+
+        return null;
     }
 
     public function exportarVentasGeneralExcel(Request $request)
