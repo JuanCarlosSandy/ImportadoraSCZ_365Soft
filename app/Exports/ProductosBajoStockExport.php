@@ -3,15 +3,15 @@
 namespace App\Exports;
 
 use App\Inventario;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\WithStyles;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\Exportable;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Illuminate\Support\Facades\DB;
 
 class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWidths, WithStyles, WithEvents
 {
@@ -24,7 +24,6 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
 
     public function __construct($almacen_id, $medicamento, $laboratorio, $codigo = null)
     {
-        
         $this->almacen_id = ($almacen_id === 'null' || $almacen_id === '') ? null : $almacen_id;
         $this->medicamento = ($medicamento === 'null') ? '' : $medicamento;
         $this->laboratorio = ($laboratorio === 'null') ? '' : $laboratorio;
@@ -35,29 +34,30 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
     {
         $usuario = \Auth::user();
 
-       $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-    ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-    ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-    ->join('personas', 'proveedores.id', '=', 'personas.id')
-    ->select(
-        'articulos.codigo',
-        'almacens.nombre_almacen',
-        'articulos.nombre as nombre_producto',
-        'articulos.stock as stock_minimo',
-        DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
-        DB::raw('(CASE 
-            WHEN SUM(inventarios.saldo_stock) = 0 THEN "Sin Stock" 
-            ELSE "Bajo Stock" 
-        END) as estado')
-    )
-    ->groupBy(
-        'articulos.codigo',
-        'almacens.nombre_almacen',
-        'articulos.nombre',
-        'articulos.stock'
-    )
-    ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
-
+        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
+            ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
+            ->select(
+                'articulos.codigo',
+                'almacens.nombre_almacen',
+                'articulos.nombre as nombre_producto',
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
+                'articulos.stock as stock_minimo',
+                DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
+                DB::raw('(CASE
+                    WHEN SUM(inventarios.saldo_stock) = 0 THEN "Sin Stock"
+                    ELSE "Bajo Stock"
+                END) as estado')
+            )
+            ->groupBy(
+                'articulos.codigo',
+                'almacens.nombre_almacen',
+                'articulos.nombre',
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor')"),
+                'articulos.stock'
+            )
+            ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
 
         if ($usuario && $usuario->idrol != 4) {
             $query->where('almacens.sucursal', $usuario->idsucursal);
@@ -70,7 +70,7 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
             $query->where('articulos.nombre', 'like', '%' . $this->medicamento . '%');
         }
         if ($this->laboratorio) {
-            $query->where('personas.nombre', 'like', '%' . $this->laboratorio . '%');
+            $query->whereRaw("COALESCE(personas.nombre, 'Sin proveedor') like ?", ['%' . $this->laboratorio . '%']);
         }
         if ($this->codigo) {
             $query->where('articulos.codigo', 'like', '%' . $this->codigo . '%');
@@ -78,22 +78,22 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
 
         return $query
             ->orderBy('almacens.nombre_almacen', 'asc')
-            ->orderBy('personas.nombre', 'asc');
+            ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc");
     }
 
     public function headings(): array
     {
-        return ['Código', 'Almacén', 'Producto', 'Stock Mínimo', 'Stock Actual', 'Estado'];
+        return ['Codigo', 'Almacen', 'Producto', 'Proveedor', 'Stock Minimo', 'Stock Actual', 'Estado'];
     }
 
     public function columnWidths(): array
     {
-        return ['A' => 18, 'B' => 25, 'C' => 38, 'D' => 15, 'E' => 15, 'F' => 15];
+        return ['A' => 18, 'B' => 25, 'C' => 34, 'D' => 28, 'E' => 15, 'F' => 15, 'G' => 15];
     }
 
     public function styles(Worksheet $sheet)
     {
-        return [ 1 => ['font' => ['bold' => true, 'size' => 12]] ];
+        return [1 => ['font' => ['bold' => true, 'size' => 12]]];
     }
 
     public function registerEvents(): array
@@ -102,74 +102,64 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                
                 $sheet->insertNewRowBefore(1, 4);
 
                 $sheet->setCellValue('A1', 'INFORME DE PRODUCTOS BAJO STOCK');
-                $sheet->mergeCells('A1:F1');
+                $sheet->mergeCells('A1:G1');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
 
                 $sheet->setCellValue('A2', 'Generado el ' . date('d/m/Y H:i'));
-                $sheet->mergeCells('A2:F2');
+                $sheet->mergeCells('A2:G2');
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal('center');
 
-                
                 $filtrosTexto = [];
                 if ($this->almacen_id) {
-                   $nombre = DB::table('almacens')->where('id', $this->almacen_id)->value('nombre_almacen');
-                   $filtrosTexto[] = "Almacén: " . ($nombre ?? 'Desconocido');
-                     } else { $filtrosTexto[] = "Almacén: Todos"; }
-                     $filtrosTexto[] = "Producto: " . ($this->medicamento ?: 'Todos');
-                     $filtrosTexto[] = "Laboratorio: " . ($this->laboratorio ?: 'Todos');
-                     $filtrosTexto[] = "Código: " . ($this->codigo ?: 'Todos');
-                
-                $sheet->setCellValue('A3', "Filtros: " . implode(" | ", $filtrosTexto));
-                    $sheet->mergeCells('A3:F3');
+                    $nombre = DB::table('almacens')->where('id', $this->almacen_id)->value('nombre_almacen');
+                    $filtrosTexto[] = 'Almacen: ' . ($nombre ?? 'Desconocido');
+                } else {
+                    $filtrosTexto[] = 'Almacen: Todos';
+                }
+                $filtrosTexto[] = 'Producto: ' . ($this->medicamento ?: 'Todos');
+                $filtrosTexto[] = 'Laboratorio: ' . ($this->laboratorio ?: 'Todos');
+                $filtrosTexto[] = 'Codigo: ' . ($this->codigo ?: 'Todos');
+
+                $sheet->setCellValue('A3', 'Filtros: ' . implode(' | ', $filtrosTexto));
+                $sheet->mergeCells('A3:G3');
                 $sheet->getStyle('A3')->getFont()->setItalic(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('555555'));
                 $sheet->getStyle('A3')->getAlignment()->setHorizontal('center');
 
-
-                
                 $highestRow = $sheet->getHighestRow();
                 $lastAlmacen = '';
-                
-                
+
                 for ($row = 6; $row <= $highestRow; $row++) {
-                    
                     $almacen = $sheet->getCell("B$row")->getValue();
 
-                    
                     if ($almacen !== $lastAlmacen && $almacen != '') {
                         $sheet->insertNewRowBefore($row, 1);
-                        $sheet->setCellValue("A$row", 'ALMACÉN: ' . $almacen);
-                        $sheet->mergeCells("A$row:F$row");
-                        
+                        $sheet->setCellValue("A$row", 'ALMACEN: ' . $almacen);
+                        $sheet->mergeCells("A$row:G$row");
+
                         $sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(12);
                         $sheet->getStyle("A$row")->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                            ->getStartColor()->setARGB('D9D9D9'); 
-                        
+                            ->getStartColor()->setARGB('D9D9D9');
+
                         $lastAlmacen = $almacen;
-                        $row++; 
-                        $highestRow++; 
+                        $row++;
+                        $highestRow++;
                     }
 
-                    
-                    
-                    $estado = $sheet->getCell("F$row")->getValue();
-                    
+                    $estado = $sheet->getCell("G$row")->getValue();
+
                     if ($estado === 'Sin Stock') {
-                        
-                        $sheet->getStyle("A$row:F$row")->getFill()
+                        $sheet->getStyle("A$row:G$row")->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                            ->getStartColor()->setARGB('FF9999'); 
-                    } 
-                    elseif ($estado === 'Bajo Stock') {
-                        
-                        $sheet->getStyle("A$row:F$row")->getFill()
+                            ->getStartColor()->setARGB('FF9999');
+                    } elseif ($estado === 'Bajo Stock') {
+                        $sheet->getStyle("A$row:G$row")->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                            ->getStartColor()->setARGB('FFFF99'); 
+                            ->getStartColor()->setARGB('FFFF99');
                     }
                 }
             }

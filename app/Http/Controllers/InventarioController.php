@@ -306,8 +306,8 @@ class InventarioController extends Controller
 
         $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
         ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-        ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-        ->join('personas', 'proveedores.id', '=', 'personas.id')
+        ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+        ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
         ->select(
             'inventarios.idarticulo',
             'inventarios.idalmacen',
@@ -318,7 +318,7 @@ class InventarioController extends Controller
             'articulos.unidad_envase',
             'articulos.stock',
             'articulos.precio_costo_unid',
-            'personas.nombre as nombre_proveedor',
+            DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
             \DB::raw('SUM(inventarios.saldo_stock) as saldo_stock')
         )
         ->groupBy(
@@ -331,7 +331,7 @@ class InventarioController extends Controller
             'articulos.unidad_envase',
             'articulos.stock',
             'articulos.precio_costo_unid',
-            'personas.nombre'
+            DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
         )
         ->havingRaw('articulos.stock > SUM(inventarios.saldo_stock)');
 
@@ -357,7 +357,7 @@ class InventarioController extends Controller
 
         
         if (!empty($laboratorio)) {
-            $query->where('personas.nombre', 'like', '%' . $laboratorio . '%');
+            $query->whereRaw("COALESCE(personas.nombre, 'Sin proveedor') like ?", ['%' . $laboratorio . '%']);
         }
 
         if ($codigo !== '') {
@@ -366,7 +366,7 @@ class InventarioController extends Controller
 
         $inventarios = $query
             ->orderBy('almacens.nombre_almacen', 'asc')
-            ->orderBy('personas.nombre', 'asc')
+            ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc")
             ->paginate(6);
 
         return [
@@ -1171,8 +1171,8 @@ class InventarioController extends Controller
         // Quitamos los GROUP BY y SUM sql, usamos la lógica fila por fila
       $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
         ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-        ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-        ->join('personas', 'proveedores.id', '=', 'personas.id')
+        ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+        ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
         ->select(
             'inventarios.idarticulo',
             'inventarios.idalmacen',
@@ -1183,7 +1183,7 @@ class InventarioController extends Controller
             'articulos.unidad_envase',
             'articulos.stock as stock_minimo',
             DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
-            'personas.nombre as nombre_proveedor'
+            DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor")
         )
         ->groupBy(
             'inventarios.idarticulo',
@@ -1194,7 +1194,7 @@ class InventarioController extends Controller
             'articulos.nombre',
             'articulos.unidad_envase',
             'articulos.stock',
-            'personas.nombre'
+            DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
         )
         ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
 
@@ -1212,7 +1212,7 @@ class InventarioController extends Controller
             $query->where('articulos.nombre', 'like', '%' . $medicamento . '%');
         }
         if (!empty($laboratorio) && $laboratorio !== 'null') {
-            $query->where('personas.nombre', 'like', '%' . $laboratorio . '%');
+            $query->whereRaw("COALESCE(personas.nombre, 'Sin proveedor') like ?", ['%' . $laboratorio . '%']);
         }
         if (!empty($codigo) && $codigo !== 'null') {
             $query->where('articulos.codigo', 'like', '%' . $codigo . '%');
@@ -1225,7 +1225,7 @@ class InventarioController extends Controller
 
         // 4. OBTENER DATOS (Sin paginar)
         $data = $query->orderBy('almacens.nombre_almacen', 'asc')
-                    ->orderBy('personas.nombre', 'asc')
+                    ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc")
                     ->get();
 
         // 5. AGRUPAR PARA EL PDF (Visualmente)
@@ -1339,8 +1339,8 @@ class InventarioController extends Controller
         $pdf->SetTextColor(52, 73, 94);
 
         // Ancho útil total en A4 horizontal con márgenes 10/10 = 277 mm
-        $widths = [30, 128, 20, 25, 25, 49];
-        $headers = ['Código', 'Producto', 'Unidad', 'Mínimo', 'Actual', 'Estado'];
+        $widths = [28, 82, 62, 20, 20, 20, 45];
+        $headers = ['Código', 'Producto', 'Proveedor', 'Unidad', 'Mínimo', 'Actual', 'Estado'];
 
         $x = 10;
         foreach ($headers as $i => $header) {
@@ -1370,9 +1370,15 @@ class InventarioController extends Controller
                 $pdf->SetTextColor(0, 0, 0);
             }
 
+            $nombreProveedor = $inv->nombre_proveedor;
+            if (empty($nombreProveedor)) {
+                $nombreProveedor = 'Sin proveedor';
+            }
+
             $data = [
                 utf8_decode($inv->codigo),
                 utf8_decode($this->truncateText($inv->nombre_producto, 40)),
+                utf8_decode($this->truncateText($nombreProveedor, 30)),
                 utf8_decode($inv->unidad_envase),
                 utf8_decode($inv->stock_minimo),
                 utf8_decode($inv->saldo_stock),
@@ -1380,7 +1386,7 @@ class InventarioController extends Controller
 
             $x = 10;
             foreach ($data as $i => $item) {
-                $align = in_array($i, [2, 3, 4]) ? 'C' : 'L';
+                $align = in_array($i, [3, 4, 5]) ? 'C' : 'L';
                 $pdf->SetXY($x, $y);
                 $pdf->Cell($widths[$i], 7, $item, 1, 0, $align, true);
                 $x += $widths[$i];
@@ -1389,7 +1395,7 @@ class InventarioController extends Controller
             // Agregar columna de Estado
             $estado = $inv->saldo_stock == 0 ? 'Sin Stock' : 'Bajo Stock';
             $pdf->SetXY($x, $y);
-            $pdf->Cell($widths[5], 7, utf8_decode($estado), 1, 0, 'C', true);
+            $pdf->Cell($widths[6], 7, utf8_decode($estado), 1, 0, 'C', true);
 
             $pdf->Ln();
             $fill = !$fill;

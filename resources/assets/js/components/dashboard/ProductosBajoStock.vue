@@ -134,6 +134,13 @@
 
       <Column field="codigo" header="Código"></Column>
       <Column field="nombre_producto" header="Producto"></Column>
+      <Column field="nombre_proveedor" header="Proveedor">
+        <template #body="slotProps">
+          <span>
+            {{ slotProps.data.nombre_proveedor || "Sin proveedor" }}
+          </span>
+        </template>
+      </Column>
       <Column field="stock" header="Stock Minimo">
         <template #body="slotProps">
           <span style="font-weight: bold; font-size: 1.1em;">
