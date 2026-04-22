@@ -957,17 +957,21 @@ class InventarioController extends Controller
 
         // Obtener nombre de almacén
         $almacen = \DB::table('almacens')->where('id', $idAlmacen)->first();
-        $nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Todos';
+        $nombreAlmacen = 'Todos';
+        if ($almacen) {
+            $nombreAlmacen = $almacen->nombre_almacen;
+        }
 
         // Obtener inventario según modo
         if ($modo === 'item') {
             $query = \DB::table('articulos')
                 ->join('inventarios', 'articulos.id', '=', 'inventarios.idarticulo')
                 ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-                ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+                ->leftJoin('categorias', 'articulos.idcategoria', '=', 'categorias.id')
                 ->select(
+                    'articulos.codigo',
                     'articulos.nombre as item',
-                    'categorias.nombre as categoria',
+                    \DB::raw("COALESCE(categorias.nombre, 'Sin categoria') as categoria"),
                     'proveedores.contacto as proveedor',
                     'articulos.unidad_envase',
                     \DB::raw('CAST(SUM(inventarios.saldo_stock) as UNSIGNED) as stock_unidades'),
@@ -983,7 +987,7 @@ class InventarioController extends Controller
                 });
             }
 
-            $inventarios = $query->groupBy('articulos.id', 'articulos.nombre', 'categorias.nombre', 'proveedores.contacto', 'articulos.unidad_envase')
+            $inventarios = $query->groupBy('articulos.id', 'articulos.codigo', 'articulos.nombre', 'categorias.nombre', 'proveedores.contacto', 'articulos.unidad_envase')
                 ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre')
                 ->get();
@@ -992,10 +996,11 @@ class InventarioController extends Controller
             $query = \DB::table('articulos')
                 ->join('inventarios', 'articulos.id', '=', 'inventarios.idarticulo')
                 ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-                ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+                ->leftJoin('categorias', 'articulos.idcategoria', '=', 'categorias.id')
                 ->select(
+                    'articulos.codigo',
                     'articulos.nombre as item',
-                    'categorias.nombre as categoria',
+                    \DB::raw("COALESCE(categorias.nombre, 'Sin categoria') as categoria"),
                     'proveedores.contacto as proveedor',
                     'articulos.unidad_envase',
                     'inventarios.saldo_stock as stock_unidades',
@@ -1050,7 +1055,11 @@ class InventarioController extends Controller
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(30, 8, utf8_decode('Búsqueda:'), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(100, 8, utf8_decode(substr($buscar_filtro ?: 'Ninguna', 0, 60)), 0, 1, 'L');
+        $textoBusqueda = $buscar_filtro;
+        if ($textoBusqueda === null || $textoBusqueda === '') {
+            $textoBusqueda = 'Ninguna';
+        }
+        $pdf->Cell(100, 8, utf8_decode(substr($textoBusqueda, 0, 60)), 0, 1, 'L');
 
         $pdf->Ln(5);
 
@@ -1075,22 +1084,40 @@ class InventarioController extends Controller
                 $pdf->SetFillColor(52, 73, 94); // Azul oscuro corporativo
                 $pdf->SetTextColor(255, 255, 255);
                 
-                $pdf->Cell(130, 8, utf8_decode('Producto'), 1, 0, 'C', true);
-                $pdf->Cell(70, 8, utf8_decode('Proveedor'), 1, 0, 'C', true);
-                $pdf->Cell(37, 8, utf8_decode('Unid/Paq'), 1, 0, 'C', true);
-                $pdf->Cell(40, 8, utf8_decode('Stock Actual'), 1, 1, 'C', true);
+                $pdf->Cell(30, 8, utf8_decode('Codigo'), 1, 0, 'C', true);
+                $pdf->Cell(82, 8, utf8_decode('Producto'), 1, 0, 'C', true);
+                $pdf->Cell(50, 8, utf8_decode('Categoria'), 1, 0, 'C', true);
+                $pdf->Cell(60, 8, utf8_decode('Proveedor'), 1, 0, 'C', true);
+                $pdf->Cell(20, 8, utf8_decode('Unid/Paq'), 1, 0, 'C', true);
+                $pdf->Cell(35, 8, utf8_decode('Stock Actual'), 1, 1, 'C', true);
 
                 $pdf->SetFont('Arial', '', 8);
                 $pdf->SetTextColor(0, 0, 0);
 
                 $fill = false;
                 foreach ($items as $inv) {
-                    $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+                    $fillColor = 255;
+                    if ($fill) {
+                        $fillColor = 245;
+                    }
+                    $pdf->SetFillColor($fillColor, $fillColor, $fillColor);
+
+                    $codigoProducto = $inv->codigo;
+                    if ($codigoProducto === null || $codigoProducto === '') {
+                        $codigoProducto = '-';
+                    }
+
+                    $nombreCategoria = $inv->categoria;
+                    if ($nombreCategoria === null || $nombreCategoria === '') {
+                        $nombreCategoria = 'Sin categoria';
+                    }
                     
-                    $pdf->Cell(130, 7, utf8_decode(substr($inv->item, 0, 80)), 1, 0, 'L', true);
-                    $pdf->Cell(70, 7, utf8_decode(substr($inv->proveedor, 0, 45)), 1, 0, 'L', true);
-                    $pdf->Cell(37, 7, $inv->unidad_envase, 1, 0, 'C', true);
-                    $pdf->Cell(40, 7, number_format($inv->stock_unidades, 0), 1, 1, 'R', true);
+                    $pdf->Cell(30, 7, utf8_decode(substr($codigoProducto, 0, 18)), 1, 0, 'L', true);
+                    $pdf->Cell(82, 7, utf8_decode(substr($inv->item, 0, 45)), 1, 0, 'L', true);
+                    $pdf->Cell(50, 7, utf8_decode(substr($nombreCategoria, 0, 28)), 1, 0, 'L', true);
+                    $pdf->Cell(60, 7, utf8_decode(substr($inv->proveedor, 0, 35)), 1, 0, 'L', true);
+                    $pdf->Cell(20, 7, $inv->unidad_envase, 1, 0, 'C', true);
+                    $pdf->Cell(35, 7, number_format($inv->stock_unidades, 0), 1, 1, 'R', true);
                     $fill = !$fill;
                 }
                 $pdf->Ln(5);
@@ -1101,11 +1128,12 @@ class InventarioController extends Controller
             $pdf->SetFillColor(52, 73, 94);
             $pdf->SetTextColor(255, 255, 255);
             
-            $pdf->Cell(70, 8, utf8_decode('PRODUCTO'), 1, 0, 'C', true);
-            $pdf->Cell(50, 8, utf8_decode('PROVEEDOR'), 1, 0, 'C', true);
-            $pdf->Cell(47, 8, utf8_decode('CATEGORÍA'), 1, 0, 'C', true);
-            $pdf->Cell(25, 8, utf8_decode('UNID/PAQ'), 1, 0, 'C', true);
-            $pdf->Cell(25, 8, utf8_decode('STOCK UND'), 1, 0, 'C', true);
+            $pdf->Cell(30, 8, utf8_decode('CODIGO'), 1, 0, 'C', true);
+            $pdf->Cell(60, 8, utf8_decode('PRODUCTO'), 1, 0, 'C', true);
+            $pdf->Cell(42, 8, utf8_decode('CATEGORIA'), 1, 0, 'C', true);
+            $pdf->Cell(45, 8, utf8_decode('PROVEEDOR'), 1, 0, 'C', true);
+            $pdf->Cell(20, 8, utf8_decode('UNID/PAQ'), 1, 0, 'C', true);
+            $pdf->Cell(20, 8, utf8_decode('STOCK UND'), 1, 0, 'C', true);
             $pdf->Cell(30, 8, utf8_decode('F. INGRESO'), 1, 0, 'C', true);
             $pdf->Cell(30, 8, utf8_decode('F. VENCIM'), 1, 1, 'C', true);
 
@@ -1114,13 +1142,28 @@ class InventarioController extends Controller
 
             $fill = false;
             foreach ($inventarios as $inv) {
-                $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+                $fillColor = 255;
+                if ($fill) {
+                    $fillColor = 245;
+                }
+                $pdf->SetFillColor($fillColor, $fillColor, $fillColor);
+
+                $codigoProducto = $inv->codigo;
+                if ($codigoProducto === null || $codigoProducto === '') {
+                    $codigoProducto = '-';
+                }
+
+                $nombreCategoria = $inv->categoria;
+                if ($nombreCategoria === null || $nombreCategoria === '') {
+                    $nombreCategoria = 'Sin categoria';
+                }
                 
-                $pdf->Cell(70, 7, utf8_decode(substr($inv->item, 0, 40)), 1, 0, 'L', true);
-                $pdf->Cell(50, 7, utf8_decode(substr($inv->proveedor, 0, 30)), 1, 0, 'L', true);
-                $pdf->Cell(47, 7, utf8_decode(substr($inv->categoria, 0, 30)), 1, 0, 'L', true);
-                $pdf->Cell(25, 7, $inv->unidad_envase, 1, 0, 'C', true);
-                $pdf->Cell(25, 7, number_format($inv->stock_unidades, 0), 1, 0, 'R', true);
+                $pdf->Cell(30, 7, utf8_decode(substr($codigoProducto, 0, 18)), 1, 0, 'L', true);
+                $pdf->Cell(60, 7, utf8_decode(substr($inv->item, 0, 35)), 1, 0, 'L', true);
+                $pdf->Cell(42, 7, utf8_decode(substr($nombreCategoria, 0, 24)), 1, 0, 'L', true);
+                $pdf->Cell(45, 7, utf8_decode(substr($inv->proveedor, 0, 28)), 1, 0, 'L', true);
+                $pdf->Cell(20, 7, $inv->unidad_envase, 1, 0, 'C', true);
+                $pdf->Cell(20, 7, number_format($inv->stock_unidades, 0), 1, 0, 'R', true);
                 $pdf->Cell(30, 7, date('d/m/Y', strtotime($inv->created_at)), 1, 0, 'C', true);
                 $pdf->Cell(30, 7, date('d/m/Y', strtotime($inv->fecha_vencimiento)), 1, 1, 'C', true);
                 $fill = !$fill;
