@@ -52,23 +52,26 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
             $query->where(function ($q) {
                 $q->where('articulos.nombre', 'like', '%' . $this->buscar . '%')
                   ->orWhere('categorias.nombre', 'like', '%' . $this->buscar . '%')
-                  ->orWhere('personas.nombre', 'like', '%' . $this->buscar . '%');
+                  ->orWhere('personas.nombre', 'like', '%' . $this->buscar . '%')
+                  ->orWhere('articulos.codigo', 'like', '%' . $this->buscar . '%');
             });
         }
 
         if ($this->modo === 'item') {
             return $query->select(
+                    'articulos.codigo',
                     'articulos.nombre as nombre_producto',
                     'categorias.nombre as categoria',
                     'personas.nombre as proveedor',
                     'articulos.unidad_envase',
                     DB::raw('SUM(inventarios.saldo_stock) as stock_unidades')
                 )
-                ->groupBy('articulos.id', 'articulos.nombre', 'personas.nombre', 'articulos.unidad_envase', 'categorias.nombre')
+                ->groupBy('articulos.id', 'articulos.codigo', 'articulos.nombre', 'personas.nombre', 'articulos.unidad_envase', 'categorias.nombre')
                 ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre');
         } else {
             return $query->select(
+                    'articulos.codigo',
                     'articulos.nombre as nombre_producto',
                     'categorias.nombre as categoria',
                     'personas.nombre as proveedor',
@@ -85,15 +88,18 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
 
     public function headings(): array
     {
+        // Se agrega "Código" al inicio de los encabezados
         return $this->modo === 'item'
-            ? ['Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock Actual']
-            : ['Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock en unidades', 'Stock en cajas', 'Fecha Ingreso', 'Fecha Vencimiento'];
+            ? ['Código', 'Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock Actual']
+            : ['Código', 'Nombre del producto', 'Categoría', 'Proveedor', 'Unidades por paquete', 'Stock en unidades', 'Stock en cajas', 'Fecha Ingreso', 'Fecha Vencimiento'];
     }
 
     public function map($row): array
     {
+        // Se agrega el valor del código al inicio del mapeo
         if ($this->modo === 'item') {
             return [
+                $row->codigo,
                 $row->nombre_producto,
                 $row->categoria ?? 'Sin categoría',
                 $row->proveedor,
@@ -102,6 +108,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
             ];
         } else {
             return [
+                $row->codigo,
                 $row->nombre_producto,
                 $row->categoria ?? 'Sin categoría',
                 $row->proveedor,
@@ -117,14 +124,15 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
     public function columnWidths(): array
     {
         return [
-            'A' => 45, // Nombre del producto
-            'B' => 25, // Categoría
-            'C' => 30, // Proveedor
-            'D' => 20, // Unidades por paquete
-            'E' => 15, // Stock Actual / Unidades
-            'F' => 15, // Stock en cajas (solo lote)
-            'G' => 20, // Fecha Ingreso (solo lote)
-            'H' => 20, // Fecha Vencimiento (solo lote)
+            'A' => 20, // Código (Nueva columna)
+            'B' => 45, // Nombre del producto
+            'C' => 25, // Categoría
+            'D' => 30, // Proveedor
+            'E' => 20, // Unidades por paquete
+            'F' => 15, // Stock Actual / Unidades
+            'G' => 15, // Stock en cajas (solo lote)
+            'H' => 20, // Fecha Ingreso (solo lote)
+            'I' => 20, // Fecha Vencimiento (solo lote)
         ];
     }
 
@@ -153,7 +161,8 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
 
     public function styles(Worksheet $sheet)
     {
-        $lastColumn = $this->modo === 'item' ? 'E' : 'H';
+        // Ajustamos la última columna según el modo (F para item, I para lote por el código extra)
+        $lastColumn = $this->modo === 'item' ? 'F' : 'I';
         $highestRow = $sheet->getHighestRow();
 
         // Estilo para el encabezado de la tabla (fila 8)
@@ -175,8 +184,11 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
             ]);
 
-            // Alinear columnas numéricas a la derecha (desde D en adelante)
-            $sheet->getStyle('D9:' . $lastColumn . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            // Alinear columnas numéricas a la derecha (Desde E que es 'Unidades por paquete' en adelante)
+            $sheet->getStyle('E9:' . $lastColumn . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            
+            // Alinear código al centro
+            $sheet->getStyle('A9:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
         
         return [];
@@ -187,7 +199,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
         return [
             AfterSheet::class => function(AfterSheet $event) {
                 $sheet = $event->sheet;
-                $lastColumn = $this->modo === 'item' ? 'E' : 'H';
+                $lastColumn = $this->modo === 'item' ? 'F' : 'I';
 
                 // Título
                 $sheet->mergeCells('C2:' . $lastColumn . '2');
@@ -203,7 +215,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
                 // Filtros
                 $sheet->setCellValue('A5', 'Almacén: ' . $this->nombreAlmacen);
                 $sheet->setCellValue('A6', 'Búsqueda: ' . (!empty($this->buscar) ? $this->buscar : 'Ninguna'));
-                $sheet->getStyle('A5:H6')->getFont()->setBold(true);
+                $sheet->getStyle('A5:A6')->getFont()->setBold(true);
             },
         ];
     }
