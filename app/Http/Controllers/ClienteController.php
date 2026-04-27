@@ -35,10 +35,7 @@ class ClienteController extends Controller
     {
         $buscar = $request->buscar;
 
-        $idsExcluidos = DB::table('users')->select('id')
-            ->union(DB::table('proveedores')->select('id'));
-
-        $usuarios = Persona::whereNotIn('id', $idsExcluidos)
+        $usuarios = $this->clientesActivosBaseQuery()
             ->when(!empty($buscar), function ($query) use ($buscar) {
                 $query->where(function ($q) use ($buscar) {
                     $q->where('nombre', 'like', "%{$buscar}%")

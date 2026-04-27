@@ -759,8 +759,10 @@ export default {
         const response = await axios.get(url);
         const respuesta = response.data;
 
-        // Ahora 'usuarios' es un array plano
-        this.arrayPersona = respuesta.usuarios;
+        // Salvaguarda visual: el modulo solo debe mostrar clientes activos.
+        this.arrayPersona = (respuesta.usuarios || []).filter(
+          (persona) => Number(persona.estado) === 1
+        );
 
       } catch (error) {
         console.error("Error al listar clientes:", error);
