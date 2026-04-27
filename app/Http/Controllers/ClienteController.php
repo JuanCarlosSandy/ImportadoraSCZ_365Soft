@@ -19,6 +19,18 @@ use Exception;
 
 class ClienteController extends Controller
 {
+    private function clientesExcluidosSubquery()
+    {
+        return DB::table('users')->select('id')
+            ->union(DB::table('proveedores')->select('id'));
+    }
+
+    private function clientesActivosBaseQuery()
+    {
+        return Persona::whereNotIn('id', $this->clientesExcluidosSubquery())
+            ->where('estado', 1);
+    }
+
     public function index(Request $request)
     {
         $buscar = $request->buscar;
@@ -220,10 +232,11 @@ class ClienteController extends Controller
             return redirect('/');
 
         $filtro = $request->filtro;
-        $clientes = Persona::where('nombre', 'like', '%' . $filtro . '%')
+        $clientes = $this->clientesActivosBaseQuery()
+            ->where('nombre', 'like', '%' . $filtro . '%')
             ->whereNull('direccion')
             ->where('usuario', '>', 0)
-            ->select('id', 'nombre', 'tipo_documento', 'num_documento', 'complemento_id', 'email', 'telefono')
+            ->select('id', 'nombre', 'tipo_documento', 'num_documento', 'complemento_id', 'email', 'telefono', 'estado')
             ->orderBy('nombre', 'asc')
             ->take(5)
             ->get();
@@ -246,10 +259,11 @@ class ClienteController extends Controller
             return redirect('/');
 
         $filtro = $request->numero;
-        $clientes = Persona::where('num_documento', 'like', '%' . $filtro . '%')
+        $clientes = $this->clientesActivosBaseQuery()
+            ->where('num_documento', 'like', '%' . $filtro . '%')
             ->whereNull('direccion')
             ->where('usuario', '>', 0)
-            ->select('id', 'nombre', 'tipo_documento', 'num_documento', 'email', 'telefono')
+            ->select('id', 'nombre', 'tipo_documento', 'num_documento', 'email', 'telefono', 'estado')
             ->orderBy('tipo_documento', 'desc')
             ->take(5)
             ->get();
@@ -273,9 +287,17 @@ class ClienteController extends Controller
             return redirect('/');
 
         // Verificar si ya existe un cliente con este número de documento
-        $clienteExistente = Persona::where('num_documento', $request->num_documento)->first();
+        $clienteExistente = !empty($request->num_documento)
+            ? Persona::where('num_documento', $request->num_documento)->first()
+            : null;
 
         if ($clienteExistente) {
+            if ((int) $clienteExistente->estado !== 1) {
+                return response()->json([
+                    'message' => 'El cliente con ese documento está inactivo y no puede usarse en ventas.'
+                ], 422);
+            }
+
             // Si ya existe, devolver ese ID
             return ['id' => $clienteExistente->id];
         }
@@ -439,6 +461,14 @@ class ClienteController extends Controller
         $cliente = Persona::where('num_documento', $documento)->first();
 
         if ($cliente) {
+            if ((int) $cliente->estado !== 1) {
+                return response()->json([
+                    'existe' => false,
+                    'inactivo' => true,
+                    'message' => 'El cliente existe pero está inactivo.'
+                ]);
+            }
+
             return response()->json(['existe' => true, 'cliente' => $cliente]);
         } else {
             return response()->json(['existe' => false]);
@@ -452,6 +482,14 @@ class ClienteController extends Controller
         $cliente = Persona::where('num_documento', $documento)->first();
 
         if ($cliente) {
+            if ((int) $cliente->estado !== 1) {
+                return response()->json([
+                    'existe' => false,
+                    'inactivo' => true,
+                    'message' => 'El cliente existe pero está inactivo.'
+                ]);
+            }
+
             return response()->json(['existe' => true, 'cliente' => $cliente]);
         } else {
             return response()->json(['existe' => false]);
@@ -466,13 +504,9 @@ class ClienteController extends Controller
             return response()->json([], 400);
         }
 
-        // IDs a excluir (usuarios y proveedores)
-        $idsExcluidos = DB::table('users')->select('id')
-            ->union(DB::table('proveedores')->select('id'));
-
         $palabras = preg_split('/\s+/', trim($busqueda));
 
-        $clientes = Persona::whereNotIn('id', $idsExcluidos)
+        $clientes = $this->clientesActivosBaseQuery()
             ->where(function ($query) use ($palabras) {
                 foreach ($palabras as $palabra) {
                     $query->where(function ($subquery) use ($palabra) {

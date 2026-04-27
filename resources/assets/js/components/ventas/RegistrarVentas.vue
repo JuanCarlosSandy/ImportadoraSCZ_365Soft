@@ -2408,9 +2408,16 @@ export default {
             axios.get(url).then(function (response) {
                 let respuesta = response.data;
                 q: numero;
-                me.arrayCliente = respuesta.clientes;
-                
-                me.getDatosCliente(me.arrayCliente[0])
+                me.arrayCliente = (respuesta.clientes || []).filter(cliente => Number(cliente.estado) === 1);
+
+                if (me.arrayCliente.length > 0) {
+                    me.getDatosCliente(me.arrayCliente[0])
+                    return;
+                }
+
+                me.idcliente = 0;
+                me.nombreCliente = '';
+                me.documento = numero;
             }).catch(function (error) {
                 console.log(error);
             });
@@ -2436,6 +2443,10 @@ export default {
         getDatosCliente(val1) {
             let me = this;
             me.loading = true;
+            if (!val1 || Number(val1.estado) !== 1) {
+                me.loading = false;
+                return;
+            }
             console.log("DATOS GET CLIENTE ",val1.id)
             if (!val1.id && this.arrayCotizacionSeleccionado){
                 this.selectCliente(this.arrayCotizacionSeleccionado.num_documento)

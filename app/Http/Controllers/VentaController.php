@@ -57,6 +57,29 @@ use function Ramsey\Uuid\v1;
 
 class VentaController extends Controller
 {
+    private function validarClienteActivoParaVenta($idCliente)
+    {
+        if (empty($idCliente)) {
+            throw new \Exception('Seleccione un cliente activo para registrar la venta.');
+        }
+
+        $clienteActivo = Persona::where('id', $idCliente)
+            ->where('estado', 1)
+            ->first();
+
+        if ($clienteActivo) {
+            return $clienteActivo;
+        }
+
+        $cliente = Persona::find($idCliente);
+
+        if ($cliente && (int) $cliente->estado !== 1) {
+            throw new \Exception('El cliente seleccionado está inactivo y no puede usarse en ventas.');
+        }
+
+        throw new \Exception('El cliente seleccionado no existe.');
+    }
+
     private $fecha_formato;
     private $ventasMontoColumnsCache = null;
 
@@ -775,6 +798,7 @@ class VentaController extends Controller
         $idtipoventa = (int) $request->idtipo_venta;
 
         try {
+            $this->validarClienteActivoParaVenta($request->idcliente);
             DB::beginTransaction();
 
             if (!$this->validarCajaAbierta()) {
@@ -1099,6 +1123,7 @@ class VentaController extends Controller
 
 
         try {
+            $this->validarClienteActivoParaVenta($request->idcliente);
             DB::beginTransaction();
 
             if (!$this->validarCajaAbierta()) {

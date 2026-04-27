@@ -3828,7 +3828,9 @@ export default {
         .then(function (response) {
           let respuesta = response.data;
           q: numero;
-          me.arrayCliente = respuesta.clientes;
+          me.arrayCliente = (respuesta.clientes || []).filter(
+            (cliente) => Number(cliente.estado) === 1
+          );
           console.log(me.arrayCliente);
           me.cantidadClientes = me.arrayCliente.length;
         })
@@ -5058,6 +5060,13 @@ export default {
           `/api/clientes/existe?documento=${this.documento}`
         );
 
+        if (response.data && response.data.inactivo) {
+          throw new Error(
+            response.data.message ||
+            "El cliente ingresado está inactivo y no puede usarse en ventas."
+          );
+        }
+
         // =============================
         // ✅ CLIENTE EXISTE
         // =============================
@@ -6109,9 +6118,13 @@ export default {
               ? response.data
               : [response.data];
 
-            if (clientes.length > 0) {
+            const clientesActivos = clientes.filter(
+              (cliente) => Number(cliente.estado) === 1
+            );
+
+            if (clientesActivos.length > 0) {
               // 🔸 Cliente encontrado
-              this.resultadosClientes = clientes;
+              this.resultadosClientes = clientesActivos;
               this.mostrarDesplegableCliente = true;
               this.mensajeRazonSocial = false;
             } else {
@@ -6149,6 +6162,16 @@ export default {
     },
 
     seleccionarCliente(cliente) {
+      if (Number(cliente.estado) !== 1) {
+        this.$toast.add({
+          severity: "warn",
+          summary: "Cliente inactivo",
+          detail: "Solo se pueden seleccionar clientes activos.",
+          life: 3000
+        });
+        return;
+      }
+
       this.direccionCliente = cliente.direccion;
       this.documento = cliente.num_documento;
       this.nombreCliente = cliente.nombre;
