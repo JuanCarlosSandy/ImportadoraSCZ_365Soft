@@ -77,6 +77,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get("/proveedor", "ProveedorController@index");
         Route::post("/proveedor/registrar", "ProveedorController@store");
         Route::put("/proveedor/actualizar", "ProveedorController@update");
+        Route::put("/proveedor/desactivar", "ProveedorController@desactivar");
         Route::get(
             "/proveedor/selectProveedor",
             "ProveedorController@selectProveedor"
@@ -299,6 +300,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get("/proveedor", "ProveedorController@index");
         Route::post("/proveedor/registrar", "ProveedorController@store");
         Route::put("/proveedor/actualizar", "ProveedorController@update");
+        Route::put("/proveedor/desactivar", "ProveedorController@desactivar");
         Route::get(
             "/proveedor/selectProveedor",
             "ProveedorController@selectProveedor"

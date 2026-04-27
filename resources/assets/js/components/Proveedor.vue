@@ -61,6 +61,12 @@
               style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
               @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"
             />
+            <Button
+              icon="pi pi-trash"
+              class="p-button-danger p-button-sm"
+              style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset; margin-left: 5px;"
+              @click="desactivarProveedor(slotProps.data)" v-tooltip.top="'Eliminar'"
+            />
           </template>
         </Column>
         <Column field="nombre" header="Nombre Proveedor"></Column>
@@ -528,6 +534,43 @@ toastInfo(mensaje) {
       } catch (error) {
         console.error("Error al actualizar:", error);
         swal("Error", "No se pudo actualizar el proveedor", "error");
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    desactivarProveedor(data) {
+      if (this.idrol == 2) {
+        this.toastWarning("Esta acción solo está permitida para Administradores.");
+        return;
+      }
+      this.$swal.fire({
+        title: "¿Estás seguro de eliminar permanentemente el proveedor?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "OK",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#28a745",
+        cancelButtonColor: "#dc3545",
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.ejecutarDesactivarProveedor(data.id);
+        }
+      });
+    },
+    async ejecutarDesactivarProveedor(id) {
+      try {
+        this.isLoading = true;
+        const response = await axios.put("/proveedor/desactivar", { id: id });
+        if (response.data.success) {
+          this.toastSuccess(response.data.message);
+          await this.listarProveedor(this.pagination.current_page, this.buscar, this.criterio);
+        } else {
+          this.toastError(response.data.message || "Error al eliminar el proveedor");
+        }
+      } catch (error) {
+        console.error("Error al eliminar proveedor:", error);
+        this.toastError("No se pudo eliminar el proveedor");
       } finally {
         this.isLoading = false;
       }

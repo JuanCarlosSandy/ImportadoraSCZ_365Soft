@@ -42,6 +42,7 @@ class ProveedorController extends Controller
                 'proveedores.contacto',
                 'proveedores.telefono_contacto'
             )
+            ->where('personas.estado', '=', 1)
             ->where(function ($query) use ($buscar) {
                 $query->where('personas.nombre', 'like', '%' . $buscar . '%')
                     ->orWhere('personas.num_documento', 'like', '%' . $buscar . '%')
@@ -82,6 +83,7 @@ class ProveedorController extends Controller
                 'proveedores.contacto',
                 'proveedores.telefono_contacto'
             )
+            ->where('personas.estado', '=', 1)
             ->where(function ($query) use ($buscar) {
                 $query->where('personas.nombre', 'like', '%' . $buscar . '%')
                     ->orWhere('personas.num_documento', 'like', '%' . $buscar . '%')
@@ -101,8 +103,11 @@ class ProveedorController extends Controller
 
         $filtro = $request->filtro;
         $proveedores = Proveedor::join('personas', 'proveedores.id', '=', 'personas.id')
-            ->where('personas.nombre', 'like', '%' . $filtro . '%')
-            ->orWhere('personas.num_documento', 'like', '%' . $filtro . '%')
+            ->where('personas.estado', '=', 1)
+            ->where(function ($query) use ($filtro) {
+                $query->where('personas.nombre', 'like', '%' . $filtro . '%')
+                    ->orWhere('personas.num_documento', 'like', '%' . $filtro . '%');
+            })
             ->select('personas.id', 'personas.nombre', 'personas.num_documento')
             ->orderBy('personas.nombre', 'asc')->get();
 
@@ -118,6 +123,7 @@ class ProveedorController extends Controller
         $filtro = $request->filtro;
 
         $proveedores = Proveedor::join('personas', 'proveedores.id', '=', 'personas.id')
+            ->where('personas.estado', '=', 1)
             ->where('personas.nombre', 'like', '%' . $filtro . '%')
             ->select(
                 'proveedores.id',
@@ -242,6 +248,48 @@ class ProveedorController extends Controller
             Log::error('Error en la importación: ' . $e->getMessage());
 
             return response()->json(['error' => 'Error en la importación', 'mensaje' => $e->getMessage()], 500);
+        }
+    }
+
+    public function desactivar(Request $request)
+    {
+        if (!$request->ajax()) return redirect('/');
+
+        try {
+            DB::beginTransaction();
+
+            $proveedor = Proveedor::findOrFail($request->id);
+            $persona = Persona::findOrFail($proveedor->id);
+
+            // Actualizar estado en tabla persona
+            $persona->estado = 0;
+
+            // Agregar sufijo -X al nombre si no lo tiene
+            if (substr($persona->nombre, -2) !== '-X') {
+                $persona->nombre = $persona->nombre . '-X';
+            }
+            $persona->save();
+
+            // Agregar sufijo -X al contacto en tabla proveedores si no lo tiene
+            if (substr($proveedor->contacto, -2) !== '-X') {
+                $proveedor->contacto = $proveedor->contacto . '-X';
+            }
+            $proveedor->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Proveedor desactivado correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al desactivar el proveedor.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
