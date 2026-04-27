@@ -97,8 +97,9 @@
         </div>
 
         <div class="p-field input-container">
-          <label for="direccion" class="label-input">
-            Ubicación <span class="text-required">*</span>
+          <label class="optional-field">
+            <i class="pi pi-info-circle optional-icon"></i>
+            Ubicación <span class="optional-tag">Opcional</span>
           </label>
 
           <div class="input-con-desplegable">
@@ -128,7 +129,6 @@
             </ul>
           </div>
 
-          <small v-if="errores.direccion" class="text-error">{{ errores.direccion }}</small>
         </div>
 
 
@@ -876,7 +876,7 @@ export default {
           this.tipoAccion = 2;
           this.datosFormulario = { ...data, usuariodos_id: "" };
           this.activaredit = true;
-          this.verUsuario(data);
+          //this.verUsuario(data);
         }
       }
     },

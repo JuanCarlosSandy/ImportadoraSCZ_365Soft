@@ -229,8 +229,6 @@ export const esquemaCliente = yup.object().shape({
 
   tipo_documento: yup.string().required("El tipo de documento es obligatorio"),
   num_documento: yup.string().required("El número de documento es obligatorio"),
-  direccion: yup.string().required("La ubicación es obligatoria"),
-
 });
 
 export const esquemaPuntoDeVenta = yup.object().shape({

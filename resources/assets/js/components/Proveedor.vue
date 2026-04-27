@@ -397,7 +397,7 @@ toastInfo(mensaje) {
       try {
         this.isLoading = true;
         this.pagination.current_page = page;
-        await this.listarPersona(page, buscar, criterio);
+        await this.listarProveedor(page, buscar, criterio);
       } catch (error) {
         console.error("Error al cambiar página:", error);
         swal("Error", "No se pudo cambiar de página", "error");
@@ -459,9 +459,9 @@ toastInfo(mensaje) {
     },
     cerrarModalImportar() {
       this.modalImportar = false;
-      this.listarPersona(1, "", "nombre");
+      this.listarProveedor(1, "", "nombre");
     },
-    async listarPersona(page, buscar, criterio) {
+    async listarProveedor(page, buscar, criterio) {
       let me = this;
       try {
         this.isLoading = true;
@@ -497,7 +497,7 @@ toastInfo(mensaje) {
 
         this.searchTimeout = setTimeout(async () => {
           this.isLoading = true;
-          await this.listarPersona(1, this.buscar, this.criterio);
+          await this.listarProveedor(1, this.buscar, this.criterio);
         }, 300);
       } catch (error) {
         console.error("Error en la búsqueda:", error);
@@ -509,7 +509,7 @@ toastInfo(mensaje) {
         this.isLoading = true;
         await axios.post("/proveedor/registrar", data);
         this.cerrarModal();
-        await this.listarPersona(1, "", "nombre");
+        await this.listarProveedor(this.pagination.current_page, this.buscar, this.criterio);
         swal("Éxito", "Proveedor registrado correctamente", "success");
       } catch (error) {
         console.error("Error al registrar:", error);
@@ -523,7 +523,7 @@ toastInfo(mensaje) {
         this.isLoading = true;
         await axios.put("/proveedor/actualizar", data);
         this.cerrarModal();
-        await this.listarPersona(1, "", "nombre");
+        await this.listarProveedor(this.pagination.current_page, this.buscar, this.criterio);
         swal("Éxito", "Proveedor actualizado correctamente", "success");
       } catch (error) {
         console.error("Error al actualizar:", error);
@@ -587,7 +587,7 @@ toastInfo(mensaje) {
     
     try {
       this.isLoading = true;
-      await this.listarPersona(1, this.buscar, this.criterio);
+      await this.listarProveedor(1, this.buscar, this.criterio);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
       swal("Error", "Error al cargar los datos iniciales", "error");
