@@ -64,10 +64,12 @@
           </template>
         </Column>
 
-        <Column header="Acciones" style="width: 100px;">
+        <Column header="Acciones" style="width: 140px;">
           <template #body="slotProps">
             <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini"
               @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
+            <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini ml-1"
+              @click="confirmarEliminacion(slotProps.data)" v-tooltip.top="'Eliminar'" />
           </template>
         </Column>
       </DataTable>
@@ -849,6 +851,45 @@ export default {
         });
       } finally {
         this.isLoading = false; // Desactivar loading
+      }
+    },
+    async confirmarEliminacion(cliente) {
+      const result = await Swal.fire({
+        title: "¿Estás seguro de eliminar permanentemente el cliente?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Confirmar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      await this.eliminarCliente(cliente.id);
+    },
+    async eliminarCliente(id) {
+      try {
+        this.isLoading = true;
+        await axios.put("/cliente/desactivar", { id });
+        await this.listarPersona(this.buscar, this.criterio);
+        this.$toast.add({
+          severity: "success",
+          summary: "Cliente eliminado",
+          detail: "El cliente fue desactivado correctamente",
+          life: 2500,
+        });
+      } catch (error) {
+        console.error("Error al eliminar cliente:", error);
+        this.$toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: "No se pudo eliminar el cliente",
+          life: 3000,
+        });
+      } finally {
+        this.isLoading = false;
       }
     },
     cerrarModal() {

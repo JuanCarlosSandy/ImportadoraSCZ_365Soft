@@ -332,6 +332,21 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function desactivar(Request $request)
+    {
+        if (!$request->ajax())
+            return redirect('/');
+
+        $persona = Persona::findOrFail($request->id);
+        $persona->estado = 0;
+        $persona->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cliente desactivado correctamente.'
+        ]);
+    }
+
     public function listarReporteClienteExcel()
     {
         return Excel::download(new ClientExport, 'clientes.xlsx');
