@@ -112,6 +112,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get("/cliente2", "ClienteController@indexConSaldoCredito");
         Route::post("/cliente/registrar", "ClienteController@store");
         Route::put("/cliente/actualizar", "ClienteController@update");
+        Route::put("/cliente/desactivar", "ClienteController@desactivar");
         Route::get("/cliente/selectCliente", "ClienteController@selectCliente");
         Route::get('/cliente/ubicaciones', "ClienteController@listarUbicaciones");
 
@@ -313,6 +314,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get("/cliente", "ClienteController@index");
         Route::post("/cliente/registrar", "ClienteController@store");
         Route::put("/cliente/actualizar", "ClienteController@update");
+        Route::put("/cliente/desactivar", "ClienteController@desactivar");
         Route::get("/cliente/selectCliente", "ClienteController@selectCliente");
         Route::post("/cliente/importar", "ClienteController@importar")->name(
             "clientes.importar"

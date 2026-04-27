@@ -35,10 +35,7 @@ class ClienteController extends Controller
     {
         $buscar = $request->buscar;
 
-        $idsExcluidos = DB::table('users')->select('id')
-            ->union(DB::table('proveedores')->select('id'));
-
-        $usuarios = Persona::whereNotIn('id', $idsExcluidos)
+        $usuarios = $this->clientesActivosBaseQuery()
             ->when(!empty($buscar), function ($query) use ($buscar) {
                 $query->where(function ($q) use ($buscar) {
                     $q->where('nombre', 'like', "%{$buscar}%")
@@ -332,6 +329,21 @@ class ClienteController extends Controller
         $persona->save();
         Log::info('DAtOS ACTU8ALIZAR!!:', [
             'DATOS' => $persona,
+        ]);
+    }
+
+    public function desactivar(Request $request)
+    {
+        if (!$request->ajax())
+            return redirect('/');
+
+        $persona = Persona::findOrFail($request->id);
+        $persona->estado = 0;
+        $persona->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cliente desactivado correctamente.'
         ]);
     }
 
