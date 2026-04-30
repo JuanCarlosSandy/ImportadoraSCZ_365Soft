@@ -80,7 +80,7 @@
                 </template>
               </Column>
 
-              <Column field="stock_actual" header="Stock Actual">
+              <!--<Column field="stock_actual" header="Stock Actual">
                 <template #body="slotProps">
                   <span class="badge badge-info">
 
@@ -94,7 +94,7 @@
                     </template>
 
                   </span> </template>
-              </Column>
+              </Column>-->
               <Column header="Stock Real">
                 <template #body="slotProps">
                   <InputText type="number" v-model="slotProps.data.stock_real"
@@ -107,7 +107,7 @@
                   </small>
                 </template>
               </Column>
-              <Column header="Diferencia (Ajuste)">
+              <!--<Column header="Diferencia (Ajuste)">
                 <template #body="slotProps">
                   <div class="text-center">
                     <span style="font-size: 1.1em; font-weight: bold;"
@@ -124,7 +124,7 @@
                     </div>
                   </div>
                 </template>
-              </Column>
+              </Column>-->
 
               <Column header="Acciones">
                 <template #body="slotProps">
