@@ -19,38 +19,42 @@
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText v-model="buscar" placeholder="Texto a buscar" class="p-inputtext-sm" @keyup="buscarArticulo" />
+            <InputText v-model="buscar" placeholder="Buscar artículo" class="p-inputtext-sm" @keyup="buscarArticulo" />
+          </span>
+
+          <!-- 🔥 NUEVO BUSCADOR -->
+          <span style="margin-left: 10px; width: 280px; display: inline-block;">
+            <Dropdown v-model="comprobanteSeleccionado" :options="listaComprobantes" optionLabel="num_comprobante"
+              optionValue="num_comprobante" placeholder="Seleccione N° de DIM" class="p-inputtext-sm"
+              style="width: 100%;" @change="buscarPorComprobante" filter showClear />
           </span>
         </div>
         <div class="toolbar">
-          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
-            class="p-button-secondary p-button-sm" @click="abrirModal('articulo', 'registrar')" />
+          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm"
+            @click="abrirModal('articulo', 'registrar')" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm"
             @click="descargarReporteExcel()" :disabled="isLoading" />
           <Button :label="mostrarLabel ? 'PDF' : ''" icon="pi pi-file-pdf" class="p-button-danger p-button-sm"
             @click="descargarReportePDF()" :disabled="isLoading" />
-          <Button 
-            :label="mostrarLabel ? 'Importar' : ''" 
-            icon="pi pi-upload" 
-            class="p-button-help p-button-sm"
-            @click="validarPermisoImportar()" 
-          />
+          <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm"
+            @click="validarPermisoImportar()" />
         </div>
       </div>
       <DataTable :value="arrayArticulo" class="p-datatable-gridlines p-datatable-sm tabla-pro"
         responsiveLayout="scroll">
         <Column v-for="(column, index) in computedColumns" :key="index" :field="column.field" :header="column.header">
           <template #body="slotProps">
-            <span v-if="column.type === 'button'"
-              class="d-flex align-items-center justify-content-center gap-1">
+            <span v-if="column.type === 'button'" class="d-flex align-items-center justify-content-center gap-1">
               <Button v-if="column.field === 'acciones'" icon="pi pi-pencil" class="p-button-warning btn-mini"
-                @click="abrirModal('articulo', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
+                @click="abrirModal('articulo', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
               <Button v-if="column.field === 'acciones' && slotProps.data.condicion" icon="pi pi-ban"
-                class="p-button-danger btn-mini" @click="desactivarArticulo(slotProps.data.id)" v-tooltip.top="'Desactivar'"/>
+                class="p-button-danger btn-mini" @click="desactivarArticulo(slotProps.data.id)"
+                v-tooltip.top="'Desactivar'" />
               <Button v-if="column.field === 'acciones' && !slotProps.data.condicion" icon="pi pi-check-circle"
-                class="p-button-success btn-mini" @click="activarArticulo(slotProps.data.id)" v-tooltip.top="'Activar'"/>
+                class="p-button-success btn-mini" @click="activarArticulo(slotProps.data.id)"
+                v-tooltip.top="'Activar'" />
               <Button v-if="column.field === 'detalles'" label="Ver Detalles" icon="pi pi-info-circle"
-                class="p-button-info btn-mini" @click="mostrarDetalles(slotProps.data)" v-tooltip.top="'Ver'"/>
+                class="p-button-info btn-mini" @click="mostrarDetalles(slotProps.data)" v-tooltip.top="'Ver'" />
             </span>
             <span v-else-if="column.field === 'codigo'" :class="slotProps.data.descuento > 0 ? 'codigo-descuento' : ''"
               :title="slotProps.data.codigo">
@@ -102,7 +106,7 @@
                   </label>
                   <InputText id="nombreProducto" v-model="datosFormulario.nombre" placeholder="Ej. Pelota de Futbol"
                     class="form-control p-inputtext-sm input-full" :class="{ 'input-error': errores.nombre }"
-                    @input="validarCampo('nombre')" autocomplete="off"/>
+                    @input="validarCampo('nombre')" autocomplete="off" />
                 </div>
               </div>
               <div class="col-md-6">
@@ -112,7 +116,7 @@
                   <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
                 </label>
                 <InputText id="codigo" v-model="datosFormulario.codigo_alfanumerico" placeholder="Ej. 1000001101011"
-                  class="form-control p-inputtext-sm input-full" autocomplete="off"/>
+                  class="form-control p-inputtext-sm input-full" autocomplete="off" />
                 <div class="barcode-container mt-4">
                   <barcode :value="datosFormulario.codigo_alfanumerico" :options="{ format: 'EAN-13' }"></barcode>
                 </div>
@@ -127,7 +131,7 @@
                   </label>
                   <InputText id="codigo" v-model="datosFormulario.codigo" placeholder="Ej. 309C"
                     class="form-control p-inputtext-sm input-full" :class="{ 'input-error': errores.codigo }"
-                    @input="validarCampo('codigo')" autocomplete="off"/>
+                    @input="validarCampo('codigo')" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -182,8 +186,8 @@
 
                   <InputText id="nombreProducto" v-model="datosFormulario.descripcion_fabrica"
                     placeholder="Ej. Unid (Unidades)" class="form-control p-inputtext-sm input-full"
-                    :class="{ 'input-error': errores.descripcion_fabrica }"
-                    @input="validarCampo('descripcion_fabrica')"autocomplete="off" />
+                    :class="{ 'input-error': errores.descripcion_fabrica }" @input="validarCampo('descripcion_fabrica')"
+                    autocomplete="off" />
                 </div>
               </div>
 
@@ -201,7 +205,7 @@
                 <div class="p-inputgroup">
                   <InputNumber id="unidadEnvase" v-model="datosFormulario.unidad_envase" placeholder="Ej: 24"
                     class="p-inputtext-sm input-number-full" :class="{ 'input-error': errores.unidad_envase }"
-                    @input="validarCampo('unidad_envase')" autocomplete="off"/>
+                    @input="validarCampo('unidad_envase')" autocomplete="off" />
                 </div>
               </div>
 
@@ -217,7 +221,7 @@
                   <InputNumber id="preciounitario" v-model="datosFormulario.precio_costo_unid" placeholder="Ej: 12.50"
                     locale="es-ES" class="p-inputtext-sm bold-input input-number-full" mode="decimal"
                     :minFractionDigits="2" :maxFractionDigits="2" :class="{ 'input-error': errores.precio_costo_unid }"
-                    @value-change="onPrecioPaqChange" @keydown.native="convertirPuntoComa" autocomplete="off"/>
+                    @value-change="onPrecioPaqChange" @keydown.native="convertirPuntoComa" autocomplete="off" />
 
                   <!-- 🔥 Aquí se agrega el texto “Bs” al final -->
                   <span class="p-inputgroup-addon addon-precio">Bs</span>
@@ -239,9 +243,9 @@
             </div>
 
             <div class="p-col-12" style="margin-top: 20px; margin-bottom: 10px;">
-                <h5 style="font-weight: bold; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">
-                    <i class="pi pi-tags"></i> Precios de Venta Unitarios
-                </h5>
+              <h5 style="font-weight: bold; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 8px;">
+                <i class="pi pi-tags"></i> Precios de Venta Unitarios
+              </h5>
             </div>
 
             <div v-for="(precio, index) in precios" :key="precio.id" class="p-grid p-ai-start p-mb-3 mobile-responsive">
@@ -263,23 +267,13 @@
 
                   <div class="p-col-12 p-md-6">
                     <div class="p-inputgroup" style="width: 100%;">
-                      
-                      <InputNumber 
-                        v-model.number="precio.porcentaje" 
-                        mode="decimal" 
-                        :min="0" 
-                        :max="1000"
-                        :useGrouping="false" 
-                        :allowEmpty="true" 
-                        :minFractionDigits="2" 
-                        :maxFractionDigits="2"
-                        placeholder="0.00"
-                        class="p-inputtext-sm w-full input-number-full" 
-                        @focus="onPorcentajeFocus(precio)"
-                        @input="onPorcentajeInput(precio)"
-                        @keydown.native="convertirPuntoComa" 
-                      />
-                      
+
+                      <InputNumber v-model.number="precio.porcentaje" mode="decimal" :min="0" :max="1000"
+                        :useGrouping="false" :allowEmpty="true" :minFractionDigits="2" :maxFractionDigits="2"
+                        placeholder="0.00" class="p-inputtext-sm w-full input-number-full"
+                        @focus="onPorcentajeFocus(precio)" @input="onPorcentajeInput(precio)"
+                        @keydown.native="convertirPuntoComa" />
+
                       <span class="p-inputgroup-addon addon-precio">%</span>
                     </div>
                   </div>
@@ -306,7 +300,7 @@
                 <InputNumber id="cantidadStock" v-model="unidadStock" placeholder="Ej: 10"
                   class="p-inputtext-sm input-number-full" mode="decimal"
                   :class="{ 'input-error': erroresinventario.unidadStock }"
-                  @input="validarCampoInventario('unidadStock')" autocomplete="off"/>
+                  @input="validarCampoInventario('unidadStock')" autocomplete="off" />
               </div>
 
               <div v-if="agregarStock" class="col-md-4">
@@ -326,10 +320,9 @@
             <div class="form-group row align-items-center">
               <div class="col-12 col-md-6">
                 <label for="descuento">Descuento (BS)</label>
-                <InputNumber id="descuento" ref="descuentoInput" v-model="datosFormulario.descuento"
-                  mode="decimal" :min="0" :max="100" :minFractionDigits="2" :maxFractionDigits="2" suffix="Bs"
-                  :allowEmpty="true" :useGrouping="false" placeholder="Ingrese descuento (Bs)"
-                  class="w-100" @input="validarDescuento" />
+                <InputNumber id="descuento" ref="descuentoInput" v-model="datosFormulario.descuento" mode="decimal"
+                  :min="0" :max="100" :minFractionDigits="2" :maxFractionDigits="2" suffix="Bs" :allowEmpty="true"
+                  :useGrouping="false" placeholder="Ingrese descuento (Bs)" class="w-100" @input="validarDescuento" />
               </div>
 
               <div class="col-12 col-md-6">
@@ -409,7 +402,8 @@
             <!-- Stock mínimo -->
             <div class="detalle-row detalle-stock">
               <span class="detalle-label"><i class="pi pi-box"></i> Stock mínimo:</span>
-              <span class="badge-stock">{{ articuloSeleccionado.stock }} {{ articuloSeleccionado.descripcion_fabrica }}</span>
+              <span class="badge-stock">{{ articuloSeleccionado.stock }} {{ articuloSeleccionado.descripcion_fabrica
+              }}</span>
             </div>
             <!-- Medida Producto -->
             <div class="detalle-row detalle-stock">
@@ -421,7 +415,7 @@
               <span class="detalle-label">
                 <i class="pi pi-box"></i>
                 {{ articuloSeleccionado.descripcion_fabrica ? articuloSeleccionado.descripcion_fabrica + ' x Caja:' :
-                'Unidades x Caja:' }}
+                  'Unidades x Caja:' }}
               </span> <span class="badge-uxc">{{ articuloSeleccionado.unidad_envase }}</span>
             </div>
             <!-- Descuento -->
@@ -539,11 +533,15 @@ export default {
     ImportarExcelNewView,
     TabView,
     TabPanel,
-  },directives: {
+  }, directives: {
     'tooltip': Tooltip
   },
   data() {
     return {
+      buscarComprobante: '',
+      comprobanteSeleccionado: null,
+      listaComprobantes: [],
+
       windowWidth: window.innerWidth,
       limpiandoDescuento: false,
       activeTab: 0,
@@ -615,9 +613,9 @@ export default {
       medidaSeleccionado: [],
       almacenSeleccionado: "Almacen Principal",
       precios: [
-        { id: 1, nombre_precio: 'por Unidad',  valor: null, porcentaje: null, errorVenta: false }, 
-        { id: 2, nombre_precio: 'por Docena',  valor: null, porcentaje: null, errorVenta: false }, 
-        { id: 3, nombre_precio: 'por Paquete', valor: null, porcentaje: null, errorVenta: false }, 
+        { id: 1, nombre_precio: 'por Unidad', valor: null, porcentaje: null, errorVenta: false },
+        { id: 2, nombre_precio: 'por Docena', valor: null, porcentaje: null, errorVenta: false },
+        { id: 3, nombre_precio: 'por Paquete', valor: null, porcentaje: null, errorVenta: false },
         //{ id: 4, nombre_precio: 'Especial',    valor: null, porcentaje: null, errorVenta: false }, 
       ],
       precio_uno: null,
@@ -808,6 +806,21 @@ export default {
     },
   },
   methods: {
+    async obtenerComprobantes() {
+      try {
+        const response = await axios.get('/ingresos/comprobantes-dim');
+        this.listaComprobantes = response.data;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async buscarPorComprobante() {
+      this.isLoading = true;
+
+      await this.listarArticulo(1, this.buscar, 'comprobante');
+
+      this.isLoading = false;
+    },
     validarPermisoVendedor() {
       if (this.idrol === 2) {
         this.$toast.add({
@@ -816,9 +829,9 @@ export default {
           detail: 'Esta acción solo está permitida para Administradores.',
           life: 3000
         });
-        return false; 
+        return false;
       }
-      return true; 
+      return true;
     },
     onPrecioPaqChange(e) {
       this.datosFormulario.precio_costo_paq = e.value;
@@ -1010,7 +1023,7 @@ export default {
 
         const venta1 = preciosConfig.find((p) => p.nombre_precio === "VENTA 1");
         const venta2 = preciosConfig.find((p) => p.nombre_precio === "VENTA 2");
-        const venta3 = preciosConfig.find((p) => p.nombre_precio === "VENTA 3"); 
+        const venta3 = preciosConfig.find((p) => p.nombre_precio === "VENTA 3");
 
         return {
           venta1: venta1 ? venta1.porcentage : 0,
@@ -1043,27 +1056,27 @@ export default {
 
     onPorcentajeFocus(precio, event) {
       if (!precio.porcentaje || precio.porcentaje === 0) {
-         precio.porcentaje = null;
-      } 
+        precio.porcentaje = null;
+      }
       else {
-         if (event && event.target) {
-            event.target.select();
-         }
+        if (event && event.target) {
+          event.target.select();
+        }
       }
     },
 
     onPorcentajeInput(precio) {
-       precio.valor = this.calcularPrecio(precio.porcentaje);
-       const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
-       precio.errorVenta = precio.valor < costo;
-       this.sincronizarPrecios(precio);
+      precio.valor = this.calcularPrecio(precio.porcentaje);
+      const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
+      precio.errorVenta = precio.valor < costo;
+      this.sincronizarPrecios(precio);
     },
 
     onPrecioChange(precio) {
-       const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
-       precio.porcentaje = this.calcularPorcentaje(precio.valor);
-       precio.errorVenta = precio.valor < costo;
-       this.sincronizarPrecios(precio);
+      const costo = Number(this.datosFormulario.precio_costo_unid) || 0;
+      precio.porcentaje = this.calcularPorcentaje(precio.valor);
+      precio.errorVenta = precio.valor < costo;
+      this.sincronizarPrecios(precio);
     },
 
     sincronizarPrecios(precio) {
@@ -1072,7 +1085,7 @@ export default {
       switch (precio.id) {
         case 1:
           this.precio_uno = valorNumerico;
-          this.datosFormulario.precio_uno = valorNumerico; 
+          this.datosFormulario.precio_uno = valorNumerico;
           break;
         case 2:
           this.precio_dos = valorNumerico;
@@ -1220,18 +1233,18 @@ export default {
     },
 
     validarPermisoImportar() {
-        const rolUsuario = parseInt(this.idrol);
+      const rolUsuario = parseInt(this.idrol);
 
-        if (rolUsuario === 1 || rolUsuario === 4) {
-            this.abrirDialogos('Importar');
-        } else {
-            this.$toast.add({
-                severity: 'error',
-                summary: 'Acceso Denegado',
-                detail: 'Esta acción solo está permitida para Administradores.',
-                life: 3000
-            });
-        }
+      if (rolUsuario === 1 || rolUsuario === 4) {
+        this.abrirDialogos('Importar');
+      } else {
+        this.$toast.add({
+          severity: 'error',
+          summary: 'Acceso Denegado',
+          detail: 'Esta acción solo está permitida para Administradores.',
+          life: 3000
+        });
+      }
     },
 
     abrirDialogos(dialogo) {
@@ -1312,12 +1325,27 @@ export default {
         }
 
         this.searchTimeout = setTimeout(async () => {
-          this.isLoading = true; // Activar loading
-          await this.listarArticulo(1, this.buscar);
+          this.isLoading = true;
+
+          let criterio = '';
+
+          // 🔥 PRIORIDAD: comprobante
+          if (this.comprobanteSeleccionado) {
+            criterio = 'comprobante';
+          }
+
+          await this.listarArticulo(
+            1,
+            this.buscar,
+            criterio
+          );
+
           setTimeout(() => {
-            this.isLoading = false; // Desactivar loading
+            this.isLoading = false;
           }, 500);
+
         }, 300);
+
       } catch (error) {
         console.error("Error en la búsqueda:", error);
         this.isLoading = false;
@@ -1325,22 +1353,22 @@ export default {
     },
     asignarCamposPrecios() {
       const precioUnitario = this.precios.find(p => p.id === 1);
-      const precioDocena   = this.precios.find(p => p.id === 2);
-      const precioPaquete  = this.precios.find(p => p.id === 3);
+      const precioDocena = this.precios.find(p => p.id === 2);
+      const precioPaquete = this.precios.find(p => p.id === 3);
       const precioEspecial = this.precios.find(p => p.id === 4);
 
       this.datosFormulario.precio_uno = this.convertDolar(precioUnitario ? precioUnitario.valor : 0);
       this.datosFormulario.precio_dos = this.convertDolar(precioDocena ? precioDocena.valor : 0);
-      
+
       this.datosFormulario.precio_tres = this.convertDolar(precioPaquete ? precioPaquete.valor : 0);
-      
+
       this.datosFormulario.precio_cuatro = this.convertDolar(precioEspecial ? precioEspecial.valor : 0);
       this.datosFormulario.precio_costo_unid = this.convertDolar(this.datosFormulario.precio_costo_unid);
-      
-      if(!this.datosFormulario.precio_costo_paq || this.datosFormulario.precio_costo_paq == 0) {
-           this.datosFormulario.precio_costo_paq = this.datosFormulario.precio_costo_unid * this.datosFormulario.unidad_envase;
+
+      if (!this.datosFormulario.precio_costo_paq || this.datosFormulario.precio_costo_paq == 0) {
+        this.datosFormulario.precio_costo_paq = this.datosFormulario.precio_costo_unid * this.datosFormulario.unidad_envase;
       } else {
-           this.datosFormulario.precio_costo_paq = this.convertDolar(this.datosFormulario.precio_costo_paq);
+        this.datosFormulario.precio_costo_paq = this.convertDolar(this.datosFormulario.precio_costo_paq);
       }
 
       this.datosFormulario.precio_venta = this.datosFormulario.precio_uno; // Normalmente el precio venta base es el precio 1
@@ -1455,7 +1483,7 @@ export default {
               </ul>
             </div>
           `;
-          
+
           Swal.fire({
             icon: 'warning',
             title: 'Campos incompletos',
@@ -1463,7 +1491,7 @@ export default {
             confirmButtonText: 'Entendido',
             confirmButtonColor: '#3085d6',
           });
-          
+
           this.isLoading = false;
           return;
         }
@@ -1574,20 +1602,19 @@ export default {
     },
     listarArticulo(page, buscar, criterio) {
       let me = this;
+
       var url =
-        "/articulo?page=" +
-        page +
-        "&buscar=" +
-        buscar +
-        "&criterio=" +
-        criterio;
-      axios
-        .get(url)
+        "/articulo?page=" + page +
+        "&buscar=" + buscar +
+        "&criterio=" + criterio +
+        "&num_comprobante=" + (this.comprobanteSeleccionado || '');
+
+      axios.get(url)
         .then(function (response) {
           var respuesta = response.data;
           me.arrayArticulo = respuesta.articulos.data;
           me.pagination = respuesta.pagination;
-          me.idrol = respuesta.idrol; // 👈 guardar idrol
+          me.idrol = respuesta.idrol;
         })
         .catch(function (error) {
           console.log(error);
@@ -1631,173 +1658,173 @@ export default {
         Swal.fire('ERROR AL GENERAR EL REPORTE', '', 'error');
       }
     },
-async descargarReporteExcel() {
-  if (!this.validarPermisoVendedor()) return;
-  
-  const fecha = new Date().toISOString().slice(0, 10);
-  const buscarQuery = this.buscar ? `?buscar=${encodeURIComponent(this.buscar)}` : '';
-  const url = `/articulo/reporteExcel${buscarQuery}`;
-  const nombreArchivo = `MisProductos_${fecha}.xlsx`;
-  
-  this.isLoading = true;
-  try {
-    const response = await axios.get(url, {
-      responseType: 'blob',
-      timeout: 600000 // 10 minutos
-    });
+    async descargarReporteExcel() {
+      if (!this.validarPermisoVendedor()) return;
 
-    // Verificar si la respuesta es realmente un Excel y no un error JSON
-    const contentType = response.headers['content-type'];
-    if (contentType && contentType.includes('application/json')) {
-      // El blob contiene JSON de error
-      const text = await new Response(response.data).text();
-      const error = JSON.parse(text);
-      this.$toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: error.message || 'No se pudo generar el reporte Excel', 
-        life: 5000 
-      });
-      this.isLoading = false;
-      return;
-    }
+      const fecha = new Date().toISOString().slice(0, 10);
+      const buscarQuery = this.buscar ? `?buscar=${encodeURIComponent(this.buscar)}` : '';
+      const url = `/articulo/reporteExcel${buscarQuery}`;
+      const nombreArchivo = `MisProductos_${fecha}.xlsx`;
 
-    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = nombreArchivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(link.href);
-
-    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
-  } catch (error) {
-    console.error('Error al descargar Excel:', error);
-    
-    // Detectar errores de permiso específicamente
-    if (error.response && error.response.status === 403) {
-      this.$toast.add({ 
-        severity: 'warn', 
-        summary: 'Acceso Denegado', 
-        detail: 'Esta acción solo está permitida para Administradores.', 
-        life: 5000 
-      });
-    } else if (error.response && error.response.data) {
-      // Intenta obtener mensaje de error del servidor
+      this.isLoading = true;
       try {
-        const text = await new Response(error.response.data).text();
-        const errorData = JSON.parse(text);
-        this.$toast.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: errorData.message || 'No se pudo generar el reporte Excel', 
-          life: 5000 
+        const response = await axios.get(url, {
+          responseType: 'blob',
+          timeout: 600000 // 10 minutos
         });
-      } catch (error){
-        this.$toast.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: 'No se pudo generar el reporte Excel', 
-          life: 5000 
-        });
-      }
-    } else {
-      this.$toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: error.message || 'No se pudo generar el reporte Excel', 
-        life: 5000 
-      });
-    }
-  } finally {
-    this.isLoading = false;
-  }
-},
 
-async descargarReportePDF() {
-  if (!this.validarPermisoVendedor()) return;
-  
-  const fecha = new Date().toISOString().slice(0, 10);
-  const buscarQuery = this.buscar ? `?buscar=${encodeURIComponent(this.buscar)}` : '';
-  const url = `/articulo/reportePDF${buscarQuery}`;
-  const nombreArchivo = `MisProductos_${fecha}.pdf`;
+        // Verificar si la respuesta es realmente un Excel y no un error JSON
+        const contentType = response.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+          // El blob contiene JSON de error
+          const text = await new Response(response.data).text();
+          const error = JSON.parse(text);
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.message || 'No se pudo generar el reporte Excel',
+            life: 5000
+          });
+          this.isLoading = false;
+          return;
+        }
 
-  this.isLoading = true;
-  try {
-    const response = await axios.get(url, {
-      responseType: 'blob',
-      timeout: 600000
-    });
+        const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = nombreArchivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(link.href);
 
-    // Verificar si la respuesta es realmente un PDF y no un error JSON
-    const contentType = response.headers['content-type'];
-    if (contentType && contentType.includes('application/json')) {
-      // El blob contiene JSON de error
-      const text = await new Response(response.data).text();
-      const error = JSON.parse(text);
-      this.$toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: error.message || 'No se pudo generar el reporte PDF', 
-        life: 5000 
-      });
-      this.isLoading = false;
-      return;
-    }
-
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = nombreArchivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(link.href);
-
-    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
-  } catch (error) {
-    console.error('Error al descargar PDF:', error);
-    
-    // Detectar errores de permiso específicamente
-    if (error.response && error.response.status === 403) {
-      this.$toast.add({ 
-        severity: 'warn', 
-        summary: 'Acceso Denegado', 
-        detail: 'Esta acción solo está permitida para Administradores.', 
-        life: 5000 
-      });
-    } else if (error.response && error.response.data) {
-      // Intenta obtener mensaje de error del servidor
-      try {
-        const text = await new Response(error.response.data).text();
-        const errorData = JSON.parse(text);
-        this.$toast.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: errorData.message || 'No se pudo generar el reporte PDF', 
-          life: 5000 
-        });
+        this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
       } catch (error) {
-        this.$toast.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: 'No se pudo generar el reporte PDF', 
-          life: 5000 
-        });
+        console.error('Error al descargar Excel:', error);
+
+        // Detectar errores de permiso específicamente
+        if (error.response && error.response.status === 403) {
+          this.$toast.add({
+            severity: 'warn',
+            summary: 'Acceso Denegado',
+            detail: 'Esta acción solo está permitida para Administradores.',
+            life: 5000
+          });
+        } else if (error.response && error.response.data) {
+          // Intenta obtener mensaje de error del servidor
+          try {
+            const text = await new Response(error.response.data).text();
+            const errorData = JSON.parse(text);
+            this.$toast.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: errorData.message || 'No se pudo generar el reporte Excel',
+              life: 5000
+            });
+          } catch (error) {
+            this.$toast.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo generar el reporte Excel',
+              life: 5000
+            });
+          }
+        } else {
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.message || 'No se pudo generar el reporte Excel',
+            life: 5000
+          });
+        }
+      } finally {
+        this.isLoading = false;
       }
-    } else {
-      this.$toast.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: error.message || 'No se pudo generar el reporte PDF', 
-        life: 5000 
-      });
-    }
-  } finally {
-    this.isLoading = false;
-  }
-},
+    },
+
+    async descargarReportePDF() {
+      if (!this.validarPermisoVendedor()) return;
+
+      const fecha = new Date().toISOString().slice(0, 10);
+      const buscarQuery = this.buscar ? `?buscar=${encodeURIComponent(this.buscar)}` : '';
+      const url = `/articulo/reportePDF${buscarQuery}`;
+      const nombreArchivo = `MisProductos_${fecha}.pdf`;
+
+      this.isLoading = true;
+      try {
+        const response = await axios.get(url, {
+          responseType: 'blob',
+          timeout: 600000
+        });
+
+        // Verificar si la respuesta es realmente un PDF y no un error JSON
+        const contentType = response.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+          // El blob contiene JSON de error
+          const text = await new Response(response.data).text();
+          const error = JSON.parse(text);
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.message || 'No se pudo generar el reporte PDF',
+            life: 5000
+          });
+          this.isLoading = false;
+          return;
+        }
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = nombreArchivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(link.href);
+
+        this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
+      } catch (error) {
+        console.error('Error al descargar PDF:', error);
+
+        // Detectar errores de permiso específicamente
+        if (error.response && error.response.status === 403) {
+          this.$toast.add({
+            severity: 'warn',
+            summary: 'Acceso Denegado',
+            detail: 'Esta acción solo está permitida para Administradores.',
+            life: 5000
+          });
+        } else if (error.response && error.response.data) {
+          // Intenta obtener mensaje de error del servidor
+          try {
+            const text = await new Response(error.response.data).text();
+            const errorData = JSON.parse(text);
+            this.$toast.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: errorData.message || 'No se pudo generar el reporte PDF',
+              life: 5000
+            });
+          } catch (error) {
+            this.$toast.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo generar el reporte PDF',
+              life: 5000
+            });
+          }
+        } else {
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.message || 'No se pudo generar el reporte PDF',
+            life: 5000
+          });
+        }
+      } finally {
+        this.isLoading = false;
+      }
+    },
     cambiarPagina(page, buscar, criterio) {
       let me = this;
       me.pagination.current_page = page;
@@ -1811,174 +1838,201 @@ async descargarReportePDF() {
       const valor = parseFloat(precio) || 0;
       return Number((valor * tasa).toFixed(2));
     },
-    registrarArticulo(data) {
-      let me = this;
-      var formulario = new FormData();
+registrarArticulo(data) {
+  let me = this;
+  var formulario = new FormData();
 
-      for (var key in data) {
-        if (data.hasOwnProperty(key)) {
-          formulario.append(key, data[key]);
-        }
+  for (var key in data) {
+    if (data.hasOwnProperty(key)) {
+      formulario.append(key, data[key]);
+    }
+  }
+
+  axios
+    .post("/articulo/registrar", formulario, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then(function (response) {
+
+      var respuesta = response.data;
+      me.idarticulo = respuesta.idArticulo;
+
+      me.$toast.add({
+        severity: "success",
+        summary: "Registrado",
+        detail: "El producto fue registrado correctamente.",
+        life: 2500,
+      });
+
+      me.cerrarModal();
+
+      // 🔥 COMPATIBLE VUE 2 (SIN OPTIONAL CHAINING)
+      var criterio = '';
+      var num = '';
+
+      if (me.comprobanteSeleccionado !== null && me.comprobanteSeleccionado !== '') {
+        criterio = 'comprobante';
+        num = me.comprobanteSeleccionado;
       }
 
-      axios
-        .post("/articulo/registrar", formulario, {
-          headers: {
-            "Content-Type": "multipart/form-data",
+      me.listarArticulo(1, me.buscar, criterio, num);
+
+      // 🔵 Inventario
+      if (me.agregarStock === true) {
+        let arrayArticulos = [
+          {
+            idarticulo: me.idarticulo,
+            idalmacen: me.almacenSeleccionado.id,
+            cantidad: me.unidadStock,
+            fecha_vencimiento: me.fechaVencimientoAlmacen,
           },
-        })
-        .then(function (response) {
-          var respuesta = response.data;
-          me.idarticulo = respuesta.idArticulo;
+        ];
 
-          // 🔵 Toast de éxito
-          me.$toast.add({
-            severity: "success",
-            summary: "Registrado",
-            detail: "El producto fue registrado correctamente.",
-            life: 2500,
-          });
-
-          me.cerrarModal();
-          me.listarArticulo(1, me.buscar);
-
-          // Verificar si se debe registrar inventario
-          if (me.agregarStock === true) {
-            let arrayArticulos = [
-              {
-                idarticulo: me.idarticulo,
-                idalmacen: me.almacenSeleccionado.id,
-                cantidad: me.unidadStock,
-                fecha_vencimiento: me.fechaVencimientoAlmacen,
-              },
-            ];
-
-            return axios.post("/inventarios/registrar", {
-              inventarios: arrayArticulos,
-            });
-          }
-        })
-        .then(function (response) {
-          if (response) {
-            console.log("Inventario registrado:", response.data);
-          }
-        })
-        .catch(function (error) {
-
-          // 🔴 Error específico 409 con mensaje desde servidor
-          if (error.response && error.response.status === 409 && error.response.data && error.response.data.message) {
-            me.$toast.add({
-              severity: "error",
-              summary: "Error",
-              detail: error.response.data.message,
-              life: 3000,
-            });
-          }
-          else {
-            // 🔴 Error general
-            me.$toast.add({
-              severity: "error",
-              summary: "Error",
-              detail: "Hubo un error al registrar el producto o el inventario.",
-              life: 3000,
-            });
-          }
-
-          console.log(error);
+        return axios.post("/inventarios/registrar", {
+          inventarios: arrayArticulos,
         });
-    },
-
-    actualizarArticulo(data) {
-      var formulario = new FormData();
-      let me = this;
-
-      for (var key in data) {
-        if (data.hasOwnProperty(key)) {
-          formulario.append(key, data[key]);
-        }
       }
 
-      axios
-        .post("/articulo/actualizar", formulario, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        .then(function (response) {
-          console.log("respuesta = ", response.data);
+    })
+    .then(function (response) {
+      if (response) {
+        console.log("Inventario registrado:", response.data);
+      }
+    })
+    .catch(function (error) {
 
-          // 🔵 Toast de éxito
-          me.$toast.add({
-            severity: "success",
-            summary: "Actualizado",
-            detail: "El producto fue actualizado correctamente.",
-            life: 2500,
-          });
-
-          me.cerrarModal();
-          me.listarArticulo(1, me.buscar);
-        })
-        .catch(function (error) {
-          console.log(error);
-
-          // 🔴 Toast de error
-          me.$toast.add({
-            severity: "error",
-            summary: "Error",
-            detail: "No se pudo actualizar el producto.",
-            life: 3000,
-          });
-        });
-    },
-
-    async desactivarArticulo(id) {
-            if (!this.validarPermisoVendedor()) return;
-      try {
-        const result = await Swal.fire({
-          title: "¿Está seguro de ELIMINAR este producto?",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#22c55e",
-          cancelButtonColor: "#ef4444",
-          confirmButtonText: "Aceptar!",
-          cancelButtonText: "Cancelar",
-          reverseButtons: true,
-          customClass: {
-            confirmButton: "swal2-confirm-articulonew",
-            cancelButton: "swal2-cancel-articulonew",
-          },
-        });
-
-        if (result.value) {
-          this.isLoading = true;
-
-          await axios.put("/articulo/desactivar", { id: id });
-          await this.listarArticulo(1, this.buscar);
-
-          // 🔵 TOAST DE ÉXITO
-          this.$toast.add({
-            severity: "success",
-            summary: "Eliminado",
-            detail: "El producto fue eliminado correctamente.",
-            life: 2500,
-          });
-        }
-
-      } catch (error) {
-        console.error("Error al desactivar:", error);
-
-        // 🔴 TOAST DE ERROR
-        this.$toast.add({
+      if (
+        error.response &&
+        error.response.status === 409 &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        me.$toast.add({
           severity: "error",
           summary: "Error",
-          detail: "No se pudo eliminar el producto.",
-          life: 3500,
+          detail: error.response.data.message,
+          life: 3000,
         });
-
-      } finally {
-        this.isLoading = false;
+      } else {
+        me.$toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: "Hubo un error al registrar el producto o el inventario.",
+          life: 3000,
+        });
       }
-    },
+
+      console.log(error);
+    });
+},
+
+   actualizarArticulo(data) {
+  var formulario = new FormData();
+  let me = this;
+
+  for (var key in data) {
+    if (data.hasOwnProperty(key)) {
+      formulario.append(key, data[key]);
+    }
+  }
+
+  axios
+    .post("/articulo/actualizar", formulario, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then(function (response) {
+
+      me.$toast.add({
+        severity: "success",
+        summary: "Actualizado",
+        detail: "El producto fue actualizado correctamente.",
+        life: 2500,
+      });
+
+      me.cerrarModal();
+
+      // 🔥 IMPORTANTE: mantener filtro activo
+      let criterio = me.comprobanteSeleccionado ? 'comprobante' : '';
+      let num = me.comprobanteSeleccionado || '';
+
+      me.listarArticulo(1, me.buscar, criterio, num);
+
+    })
+    .catch(function (error) {
+      console.log(error);
+
+      me.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "No se pudo actualizar el producto.",
+        life: 3000,
+      });
+    });
+},
+
+    async desactivarArticulo(id) {
+  if (!this.validarPermisoVendedor()) return;
+
+  try {
+    const result = await Swal.fire({
+      title: "¿Está seguro de ELIMINAR este producto?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Aceptar!",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      customClass: {
+        confirmButton: "swal2-confirm-articulonew",
+        cancelButton: "swal2-cancel-articulonew",
+      },
+    });
+
+    // ⚠️ VUE 2 usa result.value
+    if (result.value) {
+
+      this.isLoading = true;
+
+      await axios.put("/articulo/desactivar", { id: id });
+
+      // 🔥 MANTENER FILTRO (DIM o normal)
+      var criterio = '';
+      var num = '';
+
+      if (this.comprobanteSeleccionado !== null && this.comprobanteSeleccionado !== '') {
+        criterio = 'comprobante';
+        num = this.comprobanteSeleccionado;
+      }
+
+      await this.listarArticulo(1, this.buscar, criterio, num);
+
+      this.$toast.add({
+        severity: "success",
+        summary: "Eliminado",
+        detail: "El producto fue eliminado correctamente.",
+        life: 2500,
+      });
+    }
+
+  } catch (error) {
+    console.error("Error al desactivar:", error);
+
+    this.$toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No se pudo eliminar el producto.",
+      life: 3500,
+    });
+
+  } finally {
+    this.isLoading = false;
+  }
+},
 
     activarArticulo(id) {
       if (!this.validarPermisoVendedor()) return;
@@ -2067,7 +2121,7 @@ async descargarReportePDF() {
       this.fecha_venc_descuento = null;
       this.intentoEnviar = false;
     },
-   async abrirModal(modelo, accion, data = []) {
+    async abrirModal(modelo, accion, data = []) {
       if (modelo === 'articulo' && (accion === 'actualizar' || accion === 'registrar')) {
         if (!this.validarPermisoVendedor()) return;
       }
@@ -2088,29 +2142,29 @@ async descargarReportePDF() {
                 const preciosGlobales = await this.cargarPreciosGlobales();
 
                 this.precios = [
-  {
-    id: 1,
-    nombre_precio: "por Unidad",
-    valor: null,
-    porcentaje: parseFloat(preciosGlobales.venta1) || null,
-    errorVenta: false,
-  },
-  {
-    id: 2,
-    nombre_precio: "por Docena",
-    valor: null,
-    porcentaje: parseFloat(preciosGlobales.venta2) || null,
-    errorVenta: false,
-  },
-  {
-    id: 3,
-    nombre_precio: "por Paquete",
-    valor: null,
-    porcentaje: parseFloat(preciosGlobales.venta3) || null,
-    errorVenta: false,
-  },
+                  {
+                    id: 1,
+                    nombre_precio: "por Unidad",
+                    valor: null,
+                    porcentaje: parseFloat(preciosGlobales.venta1) || null,
+                    errorVenta: false,
+                  },
+                  {
+                    id: 2,
+                    nombre_precio: "por Docena",
+                    valor: null,
+                    porcentaje: parseFloat(preciosGlobales.venta2) || null,
+                    errorVenta: false,
+                  },
+                  {
+                    id: 3,
+                    nombre_precio: "por Paquete",
+                    valor: null,
+                    porcentaje: parseFloat(preciosGlobales.venta3) || null,
+                    errorVenta: false,
+                  },
 
-];
+                ];
 
                 this.datosFormulario = {
                   nombre: "",
@@ -2170,9 +2224,9 @@ async descargarReportePDF() {
                     precio_costo_unid: this.calcularPrecioValorMoneda(articulo.precio_costo_unid),
                     precio_costo_paq: this.calcularPrecioValorMoneda(articulo.precio_costo_paq),
                     precio_venta: this.calcularPrecioValorMoneda(articulo.precio_venta),
-                    precio_uno: 0, 
+                    precio_uno: 0,
                     precio_dos: 0,
-                    precio_tres: 0, 
+                    precio_tres: 0,
                     precio_cuatro: 0,
                     stock:
                       this.tipo_stock == "paquetes" && articulo.unidad_envase > 0
@@ -2279,6 +2333,7 @@ async descargarReportePDF() {
     window.addEventListener("resize", this.handleResize);
     try {
       await Promise.all([
+        this.obtenerComprobantes(),
         this.datosConfiguracion(),
         this.listarArticulo(1, this.buscar),
         this.listarPrecio(),

@@ -1075,6 +1075,8 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::put('/detalle-controlinventario/cancelar/{id}', 'ControlInventarioController@cancelarDetalle');
         Route::post('/ajusteinventario/registrar', 'ControlInventarioController@registrarAjuste');
 
+        Route::get('/ingresos/comprobantes-dim', 'IngresoController@comprobantesDim');
+
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

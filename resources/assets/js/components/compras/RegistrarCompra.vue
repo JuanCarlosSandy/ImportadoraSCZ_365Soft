@@ -284,9 +284,9 @@ export default {
       isEditing: false, // se activa cuando cargamos datos para editar
       tipoComprobanteOptions: [
         { label: "Seleccione", value: "0" },
+        { label: "DIM", value: "DIM" },
         { label: "Boleta", value: "BOLETA" },
         { label: "Factura", value: "FACTURA" },
-        { label: "Ticket", value: "TICKET" },
       ],
       editarPrecioOptions: [
         { label: "Costo unitario", value: "1" },
@@ -312,7 +312,7 @@ export default {
       idrolUsuario: null,
       arrayAlmacenes: [],
       idproveedor: 0,
-      tipo_comprobante: "BOLETA",
+      tipo_comprobante: "DIM",
       num_comprobante: "",
       impuesto: 0.18,
       total: 0.0,
@@ -469,7 +469,7 @@ export default {
   this.listado = 0;
 
   this.idproveedor = data.idproveedor || 0;
-  this.tipo_comprobante = data.tipo_comprobante || "BOLETA";
+  this.tipo_comprobante = data.tipo_comprobante || "DIM";
   this.serie_comprobante = data.serie_comprobante || "";
   this.num_comprobante = data.num_comprobante || "";
   this.impuesto = parseFloat(data.impuesto) || 0.18;

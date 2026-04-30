@@ -439,8 +439,8 @@ class IngresoController extends Controller
                 // 🔹 Cantidad real según tipo de compra
                 // Si es por Caja: cantidad * unidad_envase
                 // Si es por Unidad: cantidad directa
-                $cantidadReal = $tipoCompra === 'Caja' 
-                    ? $det['cantidad'] * $articulo->unidad_envase 
+                $cantidadReal = $tipoCompra === 'Caja'
+                    ? $det['cantidad'] * $articulo->unidad_envase
                     : $det['cantidad'];
 
                 // 🔹 Buscar inventario existente
@@ -631,127 +631,136 @@ class IngresoController extends Controller
         ]);
     }
 
-   public function obtenerIngreso($id)
-{
-    $ingreso = Ingreso::with('detallesIngreso.articulo') // trae detalles y datos del artículo
-        ->findOrFail($id); // más simple que where+firstOrFail
+    public function obtenerIngreso($id)
+    {
+        $ingreso = Ingreso::with('detallesIngreso.articulo') // trae detalles y datos del artículo
+            ->findOrFail($id); // más simple que where+firstOrFail
 
-    // Preparar datos para frontend
-    return [
+        // Preparar datos para frontend
+        return [
             'id' => $ingreso->id,
-        'idproveedor' => $ingreso->idproveedor,
-        'tipo_comprobante' => $ingreso->tipo_comprobante,
-        'serie_comprobante' => $ingreso->serie_comprobante,
-        'num_comprobante' => $ingreso->num_comprobante,
-        'impuesto' => $ingreso->impuesto,
-        'total' => $ingreso->total,
-        'idalmacen' => $ingreso->idalmacen,
-        'detalles' => $ingreso->detallesIngreso->map(function ($detalle) {
-            return [
-                'id' => $detalle->id,
-                'idarticulo' => $detalle->idarticulo,
-                'articulo' => $detalle->articulo->nombre ?? '',
-                'cantidad' => $detalle->cantidad,
-                'precio' => $detalle->precio,
-                'descuento' => $detalle->descuento,
-                'unidad_x_paquete' => $detalle->articulo->unidad_envase ?? 1,
-                'codigo' => $detalle->articulo->codigo ?? '',
+            'idproveedor' => $ingreso->idproveedor,
+            'tipo_comprobante' => $ingreso->tipo_comprobante,
+            'serie_comprobante' => $ingreso->serie_comprobante,
+            'num_comprobante' => $ingreso->num_comprobante,
+            'impuesto' => $ingreso->impuesto,
+            'total' => $ingreso->total,
+            'idalmacen' => $ingreso->idalmacen,
+            'detalles' => $ingreso->detallesIngreso->map(function ($detalle) {
+                return [
+                    'id' => $detalle->id,
+                    'idarticulo' => $detalle->idarticulo,
+                    'articulo' => $detalle->articulo->nombre ?? '',
+                    'cantidad' => $detalle->cantidad,
+                    'precio' => $detalle->precio,
+                    'descuento' => $detalle->descuento,
+                    'unidad_x_paquete' => $detalle->articulo->unidad_envase ?? 1,
+                    'codigo' => $detalle->articulo->codigo ?? '',
 
-                'precio_uno' => $detalle->articulo->precio_uno ?? $detalle->precio,
-                'precio_dos' => $detalle->articulo->precio_dos ?? $detalle->precio,
-            ];
-        }),
-    ];
-}
-public function actualizar(Request $request)
-{
-    if (!$request->ajax()) {
-        return redirect("/");
+                    'precio_uno' => $detalle->articulo->precio_uno ?? $detalle->precio,
+                    'precio_dos' => $detalle->articulo->precio_dos ?? $detalle->precio,
+                ];
+            }),
+        ];
     }
+    public function actualizar(Request $request)
+    {
+        if (!$request->ajax()) {
+            return redirect("/");
+        }
 
-    $id = $request->id; // <--- Obtenemos el id del ingreso desde el body
-    if (!$id) {
-        return response()->json(['success' => false, 'message' => 'ID del ingreso no proporcionado'], 400);
-    }
+        $id = $request->id; // <--- Obtenemos el id del ingreso desde el body
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'ID del ingreso no proporcionado'], 400);
+        }
 
-    try {
-        DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-        $ingreso = Ingreso::findOrFail($id);
+            $ingreso = Ingreso::findOrFail($id);
 
-        // 1️⃣ Revertir inventario actual
-        foreach ($ingreso->detallesIngreso as $detalle) {
-            $articulo = Articulo::find($detalle->idarticulo);
-            if ($articulo) {
-                $cantidadReal = $detalle->cantidad * $articulo->unidad_envase;
+            // 1️⃣ Revertir inventario actual
+            foreach ($ingreso->detallesIngreso as $detalle) {
+                $articulo = Articulo::find($detalle->idarticulo);
+                if ($articulo) {
+                    $cantidadReal = $detalle->cantidad * $articulo->unidad_envase;
 
-                $inventario = Inventario::where('idarticulo', $detalle->idarticulo)
-                    ->orderBy('id', 'desc')
-                    ->first();
+                    $inventario = Inventario::where('idarticulo', $detalle->idarticulo)
+                        ->orderBy('id', 'desc')
+                        ->first();
 
-                if ($inventario) {
-                    $inventario->saldo_stock -= $cantidadReal;
-                    $inventario->cantidad -= $cantidadReal;
+                    if ($inventario) {
+                        $inventario->saldo_stock -= $cantidadReal;
+                        $inventario->cantidad -= $cantidadReal;
+                        $inventario->save();
+                    }
+                }
+            }
+
+            // 2️⃣ Actualizar datos generales
+            $ingreso->idalmacen = $request->idalmacen;
+            $ingreso->tipo_comprobante = $request->tipo_comprobante;
+            $ingreso->serie_comprobante = $request->serie_comprobante;
+            $ingreso->num_comprobante = $request->num_comprobante;
+            $ingreso->impuesto = $request->impuesto;
+            $ingreso->total = $request->total;
+            $ingreso->save();
+
+            // 3️⃣ Eliminar detalles anteriores
+            $ingreso->detallesIngreso()->delete();
+
+            // 4️⃣ Crear nuevos detalles y actualizar inventario
+            foreach ($request->data as $det) {
+                $detalle = new DetalleIngreso();
+                $detalle->idingreso = $ingreso->id;
+                $detalle->idarticulo = $det['idarticulo'];
+                $detalle->cantidad = $det['cantidad'];
+                $detalle->precio = $det['precio'];
+                $detalle->descuento = $det['descuento'] ?? 0;
+                $detalle->save();
+
+                $articulo = Articulo::find($det['idarticulo']);
+                if ($articulo) {
+                    $cantidadReal = $det['cantidad'] * $articulo->unidad_envase;
+
+                    $inventario = Inventario::firstOrCreate(
+                        [
+                            'idarticulo' => $det['idarticulo'],
+                            'idalmacen' => $request->idalmacen,
+                            'fecha_vencimiento' => '2099-12-31' // Fecha por defecto si no se maneja vencimiento,
+                        ],
+                        ['saldo_stock' => 0, 'cantidad' => 0]
+                    );
+
+                    $inventario->saldo_stock += $cantidadReal;
+                    $inventario->cantidad += $cantidadReal;
                     $inventario->save();
                 }
             }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Compra actualizada correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("Error al actualizar ingreso", ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
-
-        // 2️⃣ Actualizar datos generales
-        $ingreso->idalmacen = $request->idalmacen;
-        $ingreso->tipo_comprobante = $request->tipo_comprobante;
-        $ingreso->serie_comprobante = $request->serie_comprobante;
-        $ingreso->num_comprobante = $request->num_comprobante;
-        $ingreso->impuesto = $request->impuesto;
-        $ingreso->total = $request->total;
-        $ingreso->save();
-
-        // 3️⃣ Eliminar detalles anteriores
-        $ingreso->detallesIngreso()->delete();
-
-        // 4️⃣ Crear nuevos detalles y actualizar inventario
-        foreach ($request->data as $det) {
-            $detalle = new DetalleIngreso();
-            $detalle->idingreso = $ingreso->id;
-            $detalle->idarticulo = $det['idarticulo'];
-            $detalle->cantidad = $det['cantidad'];
-            $detalle->precio = $det['precio'];
-            $detalle->descuento = $det['descuento'] ?? 0;
-            $detalle->save();
-
-            $articulo = Articulo::find($det['idarticulo']);
-            if ($articulo) {
-                $cantidadReal = $det['cantidad'] * $articulo->unidad_envase;
-
-                $inventario = Inventario::firstOrCreate(
-                    [
-                        'idarticulo' => $det['idarticulo'],
-                        'idalmacen' => $request->idalmacen,
-                        'fecha_vencimiento' => '2099-12-31' // Fecha por defecto si no se maneja vencimiento,
-                    ],
-                    ['saldo_stock' => 0, 'cantidad' => 0]
-                );
-
-                $inventario->saldo_stock += $cantidadReal;
-                $inventario->cantidad += $cantidadReal;
-                $inventario->save();
-            }
-        }
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Compra actualizada correctamente'
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error("Error al actualizar ingreso", ['error' => $e->getMessage()]);
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
-}
 
+    public function comprobantesDim()
+    {
+        $comprobantes = \DB::table('ingresos')
+            ->select('num_comprobante')
+            ->where('tipo_comprobante', 'DIM')
+            ->distinct()
+            ->orderBy('num_comprobante', 'desc')
+            ->get();
 
-
+        return $comprobantes;
+    }
 }

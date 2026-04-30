@@ -28,6 +28,8 @@ class ArticuloController extends Controller
         $buscar = $request->buscar;
         $usuario = \Auth::user();
         $idrol = $usuario->idrol;
+        $criterio = $request->criterio;
+        $num_comprobante = $request->num_comprobante;
 
         $query = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
             ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
@@ -64,10 +66,22 @@ class ArticuloController extends Controller
                 'articulos.descuento',
                 'articulos.fecha_venc_descuento'
             )
-            ->where('articulos.condicion', '=', 1);
+            ->where('articulos.condicion', 1);
 
+        // 🔵 FILTRO POR COMPROBANTE (DIM)
+        if ($criterio === 'comprobante' && !empty($num_comprobante)) {
+
+            $query->join('detalle_ingresos', 'articulos.id', '=', 'detalle_ingresos.idarticulo')
+                ->join('ingresos', 'detalle_ingresos.idingreso', '=', 'ingresos.id')
+                ->where('ingresos.tipo_comprobante', 'DIM')
+                ->where('ingresos.num_comprobante', $num_comprobante);
+        }
+
+        // 🔍 BÚSQUEDA (FUNCIONA TAMBIÉN DENTRO DEL DIM)
         if (!empty($buscar)) {
+
             $palabras = explode(' ', $buscar);
+
             $query->where(function ($q) use ($palabras) {
                 foreach ($palabras as $palabra) {
                     $q->where(function ($sub) use ($palabra) {
@@ -80,14 +94,18 @@ class ArticuloController extends Controller
                 }
             });
         }
-        $articulos = $query->distinct()->orderBy('articulos.id', 'desc')->paginate(10);
 
-        // Formatear decimales + añadir " Bs"
+        $articulos = $query->distinct()
+            ->orderBy('articulos.id', 'desc')
+            ->paginate(10);
+
+        // 💰 Formateo de precios
         $articulos->getCollection()->transform(function ($item) {
-            $item->precio_costo_unid = number_format((float)$item->precio_costo_unid, 2, '.', '') . ' Bs';
-            $item->precio_costo_paq = number_format((float)$item->precio_costo_paq, 2, '.', '') . ' Bs';
+            $item->precio_costo_unid = number_format((float) $item->precio_costo_unid, 2, '.', '') . ' Bs';
+            $item->precio_costo_paq = number_format((float) $item->precio_costo_paq, 2, '.', '') . ' Bs';
             return $item;
         });
+
         return [
             'pagination' => [
                 'total' => $articulos->total(),
@@ -101,7 +119,7 @@ class ArticuloController extends Controller
             'idrol' => $idrol
         ];
     }
-     public function detalle($id)
+    public function detalle($id)
     {
         $articulo = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
             ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
@@ -425,8 +443,8 @@ class ArticuloController extends Controller
                 'articulos.precio_dos',      // Precio Docena
                 'articulos.precio_tres',     // Precio Caja 
                 'articulos.precio_cuatro',
-                'articulos.unidad_envase',   
-                'articulos.stock',          
+                'articulos.unidad_envase',
+                'articulos.stock',
                 'articulos.fotografia',
                 'articulos.descripcion_fabrica',
                 'articulos.condicion',
@@ -464,9 +482,9 @@ class ArticuloController extends Controller
             'articulos.precio_venta',
             'articulos.precio_uno',
             'articulos.precio_dos',
-            'articulos.precio_tres', 
+            'articulos.precio_tres',
             'articulos.precio_cuatro',
-            'articulos.unidad_envase', 
+            'articulos.unidad_envase',
             'articulos.stock',
             'articulos.fotografia',
             'articulos.descripcion_fabrica',
@@ -489,7 +507,7 @@ class ArticuloController extends Controller
                 ELSE 3
             END
         ", ["{$buscar}%", "{$buscar}%"]);
-        
+
         $articulos->orderBy('articulos.nombre', 'asc');
 
         return ['articulos' => $articulos->get()];
@@ -499,7 +517,7 @@ class ArticuloController extends Controller
     {
         set_time_limit(300);
         ini_set('memory_limit', '1024M');
-        
+
         $user = auth()->user();
         if (!$user || !in_array($user->idrol, [1, 4])) {
             return response()->json([
@@ -507,7 +525,7 @@ class ArticuloController extends Controller
                 'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
             ], 403);
         }
-        
+
         $buscar = $request->buscar;
         return Excel::download(new ProductExport($buscar), 'articulos.xlsx');
     }
@@ -521,7 +539,7 @@ class ArticuloController extends Controller
                 'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
             ], 403);
         }
-        
+
         $buscar = $request->buscar;
 
         $query = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
@@ -532,7 +550,7 @@ class ArticuloController extends Controller
                 'articulos.id',
                 'articulos.codigo',
                 'articulos.nombre',
-                'articulos.nombre_generico', 
+                'articulos.nombre_generico',
                 'articulos.precio_venta',
                 'articulos.stock',
                 'categorias.nombre as nombre_categoria',
@@ -560,9 +578,9 @@ class ArticuloController extends Controller
             });
         }
 
-        $articulos = $query->orderBy('articulos.nombre', 'asc')->get(); 
+        $articulos = $query->orderBy('articulos.nombre', 'asc')->get();
 
-        $pdf = new ArticuloPDFConFooter('L', 'mm', 'A4'); 
+        $pdf = new ArticuloPDFConFooter('L', 'mm', 'A4');
         $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 15);
@@ -625,17 +643,17 @@ class ArticuloController extends Controller
         $fill = false;
         foreach ($articulos as $row) {
             $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
-            
+
             $pdf->Cell(22, 7, utf8_decode(substr($row->codigo, 0, 15)), 1, 0, 'C', true);
             $pdf->SetFont('Arial', 'B', 7);
             $pdf->Cell(85, 7, utf8_decode(substr($row->nombre, 0, 55)), 1, 0, 'L', true);
             $pdf->SetFont('Arial', '', 7);
             $pdf->Cell(45, 7, utf8_decode(substr($row->nombre_categoria, 0, 30)), 1, 0, 'L', true);
             $pdf->Cell(35, 7, utf8_decode(substr($row->nombre_proveedor, 0, 22)), 1, 0, 'L', true);
-            $pdf->Cell(22, 7, number_format((float)$row->precio_costo_unid, 2) . ' Bs', 1, 0, 'R', true);
-            $pdf->Cell(22, 7, number_format((float)$row->precio_uno, 2) . ' Bs', 1, 0, 'R', true);
-            $pdf->Cell(23, 7, number_format((float)$row->precio_dos, 2) . ' Bs', 1, 0, 'R', true);
-            $pdf->Cell(23, 7, number_format((float)$row->precio_tres, 2) . ' Bs', 1, 1, 'R', true);
+            $pdf->Cell(22, 7, number_format((float) $row->precio_costo_unid, 2) . ' Bs', 1, 0, 'R', true);
+            $pdf->Cell(22, 7, number_format((float) $row->precio_uno, 2) . ' Bs', 1, 0, 'R', true);
+            $pdf->Cell(23, 7, number_format((float) $row->precio_dos, 2) . ' Bs', 1, 0, 'R', true);
+            $pdf->Cell(23, 7, number_format((float) $row->precio_tres, 2) . ' Bs', 1, 1, 'R', true);
             $fill = !$fill;
         }
 
@@ -658,98 +676,115 @@ class ArticuloController extends Controller
 
         return ['articulos' => $articulos];
     }
-   public function buscarArticuloVenta(Request $request)
-{
-    if (!$request->ajax())
-        return redirect('/');
+    public function buscarArticuloVenta(Request $request)
+    {
+        if (!$request->ajax())
+            return redirect('/');
 
-    $filtro = trim($request->filtro);
-    $idAlmacen = $request->idalmacen;
+        $filtro = trim($request->filtro);
+        $idAlmacen = $request->idalmacen;
 
-    // 🔹 Obtener configuración
-    $config = DB::table('configuracion_trabajos')->first();
-    $permitir_ofertas = $config->permitir_ofertas ?? 0;
+        // 🔹 Obtener configuración
+        $config = DB::table('configuracion_trabajos')->first();
+        $permitir_ofertas = $config->permitir_ofertas ?? 0;
 
-    $articulos = Articulo::join('medidas', 'articulos.idmedida', '=', 'medidas.id')
-        ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
-        ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-        ->join('personas', 'proveedores.id', '=', 'personas.id')
-        ->leftJoin('inventarios', function ($join) use ($idAlmacen) {
-            $join->on('inventarios.idarticulo', '=', 'articulos.id')
-                 ->where('inventarios.idalmacen', '=', $idAlmacen);
-        })
-        ->select(
-            'articulos.id',
-            'articulos.nombre',
-            'articulos.codigo',
-            'articulos.codigo_alfanumerico',
-            'articulos.descripcion',
-            'articulos.precio_uno',
-            'articulos.precio_dos',
-            'articulos.precio_tres',
-            'articulos.precio_cuatro',
-            'articulos.precio_costo_unid',
-            'articulos.precio_costo_paq',
-            'articulos.fotografia',
-            'articulos.condicion',
-            'categorias.nombre as nombre_categoria',
-            'medidas.descripcion_medida as medida',
-            'medidas.codigoClasificador as codigoClasificador',
-            'categorias.codigoProductoSin',
-            'categorias.actividadEconomica',
-            'unidad_envase',
-            'articulos.descripcion_fabrica',
-            'personas.nombre as nombre_proveedor',
-            'articulos.descuento',
-            'articulos.fecha_venc_descuento',
-            DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock'),
-            DB::raw('ROUND(IFNULL(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0), 0), 2) as saldo_stock_cajas')
-            )        
-        ->where('articulos.condicion', '=', 1)
-        ->where(function ($query) use ($filtro) {
-            $palabras = preg_split('/\s+/', $filtro);
-            foreach ($palabras as $palabra) {
-                $query->where(function ($sub) use ($palabra) {
-                    $sub->where('articulos.nombre', 'LIKE', "%{$palabra}%")
-                        ->orWhere('articulos.codigo', 'LIKE', "%{$palabra}%")
-                        ->orWhere('articulos.descripcion', 'LIKE', "%{$palabra}%")
-                        ->orWhere('articulos.codigo_alfanumerico', 'LIKE', "%{$palabra}%");
-                });
-            }
-        })
-        ->groupBy(
-            'articulos.id','articulos.nombre','articulos.codigo','articulos.codigo_alfanumerico',
-            'articulos.descripcion','articulos.precio_uno','articulos.precio_dos','articulos.precio_tres',
-            'articulos.precio_cuatro','articulos.precio_costo_unid','articulos.precio_costo_paq',
-            'articulos.fotografia','articulos.condicion','categorias.nombre','medidas.descripcion_medida',
-            'medidas.codigoClasificador','categorias.codigoProductoSin','categorias.actividadEconomica',
-            'unidad_envase','articulos.descripcion_fabrica','personas.nombre','articulos.descuento',
-            'articulos.fecha_venc_descuento'
-        )
-        ->orderByRaw("
+        $articulos = Articulo::join('medidas', 'articulos.idmedida', '=', 'medidas.id')
+            ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
+            ->join('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->join('personas', 'proveedores.id', '=', 'personas.id')
+            ->leftJoin('inventarios', function ($join) use ($idAlmacen) {
+                $join->on('inventarios.idarticulo', '=', 'articulos.id')
+                    ->where('inventarios.idalmacen', '=', $idAlmacen);
+            })
+            ->select(
+                'articulos.id',
+                'articulos.nombre',
+                'articulos.codigo',
+                'articulos.codigo_alfanumerico',
+                'articulos.descripcion',
+                'articulos.precio_uno',
+                'articulos.precio_dos',
+                'articulos.precio_tres',
+                'articulos.precio_cuatro',
+                'articulos.precio_costo_unid',
+                'articulos.precio_costo_paq',
+                'articulos.fotografia',
+                'articulos.condicion',
+                'categorias.nombre as nombre_categoria',
+                'medidas.descripcion_medida as medida',
+                'medidas.codigoClasificador as codigoClasificador',
+                'categorias.codigoProductoSin',
+                'categorias.actividadEconomica',
+                'unidad_envase',
+                'articulos.descripcion_fabrica',
+                'personas.nombre as nombre_proveedor',
+                'articulos.descuento',
+                'articulos.fecha_venc_descuento',
+                DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock'),
+                DB::raw('ROUND(IFNULL(SUM(inventarios.saldo_stock) / NULLIF(articulos.unidad_envase, 0), 0), 2) as saldo_stock_cajas')
+            )
+            ->where('articulos.condicion', '=', 1)
+            ->where(function ($query) use ($filtro) {
+                $palabras = preg_split('/\s+/', $filtro);
+                foreach ($palabras as $palabra) {
+                    $query->where(function ($sub) use ($palabra) {
+                        $sub->where('articulos.nombre', 'LIKE', "%{$palabra}%")
+                            ->orWhere('articulos.codigo', 'LIKE', "%{$palabra}%")
+                            ->orWhere('articulos.descripcion', 'LIKE', "%{$palabra}%")
+                            ->orWhere('articulos.codigo_alfanumerico', 'LIKE', "%{$palabra}%");
+                    });
+                }
+            })
+            ->groupBy(
+                'articulos.id',
+                'articulos.nombre',
+                'articulos.codigo',
+                'articulos.codigo_alfanumerico',
+                'articulos.descripcion',
+                'articulos.precio_uno',
+                'articulos.precio_dos',
+                'articulos.precio_tres',
+                'articulos.precio_cuatro',
+                'articulos.precio_costo_unid',
+                'articulos.precio_costo_paq',
+                'articulos.fotografia',
+                'articulos.condicion',
+                'categorias.nombre',
+                'medidas.descripcion_medida',
+                'medidas.codigoClasificador',
+                'categorias.codigoProductoSin',
+                'categorias.actividadEconomica',
+                'unidad_envase',
+                'articulos.descripcion_fabrica',
+                'personas.nombre',
+                'articulos.descuento',
+                'articulos.fecha_venc_descuento'
+            )
+            ->orderByRaw("
             CASE
                 WHEN articulos.nombre LIKE ? THEN 1
                 WHEN articulos.nombre LIKE ? THEN 2
                 ELSE 3
             END
         ", ["{$filtro}%", "%{$filtro}%"])
-        ->orderBy('articulos.nombre', 'asc')
-        ->take(10)
-        ->get();
+            ->orderBy('articulos.nombre', 'asc')
+            ->take(10)
+            ->get();
 
-    // 🔹 Aplicar regla: si NO se permite ofertas, descuento = "0.00"
-    if ($permitir_ofertas == 0) {
-        foreach ($articulos as $art) {
-            $art->descuento = "0.00";
+        // 🔹 Aplicar regla: si NO se permite ofertas, descuento = "0.00"
+        if ($permitir_ofertas == 0) {
+            foreach ($articulos as $art) {
+                $art->descuento = "0.00";
+            }
         }
-    }
 
-    return ['articulos' => $articulos];
-}
+        return ['articulos' => $articulos];
+    }
 
     public function store(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $user = auth()->user();
         if (!$user || !in_array($user->idrol, [1, 4])) {
@@ -770,31 +805,31 @@ class ArticuloController extends Controller
         $articulo = new Articulo();
         $articulo->idcategoria = $request->idcategoria;
         $articulo->vencimiento = $request->fechaVencimientoSeleccion;
-        
+
         if ($request->idmedida && $request->idmedida !== 'undefined') {
             $articulo->idmedida = $request->idmedida;
         } else {
             $articulo->idmedida = 1;
-        } 
-        
+        }
+
         $articulo->codigo = $request->codigo;
         $articulo->nombre = $request->nombre;
         $articulo->nombre_generico = $request->nombre;
         $articulo->unidad_envase = $request->unidad_envase;
-        
-        $articulo->precio_venta = $request->precio_uno; 
+
+        $articulo->precio_venta = $request->precio_uno;
         $articulo->precio_uno = $request->precio_uno;
         $articulo->precio_dos = $request->precio_dos;
-        
-        $articulo->precio_tres = $request->precio_tres; 
+
+        $articulo->precio_tres = $request->precio_tres;
         $articulo->precio_cuatro = $request->precio_cuatro;
 
         $articulo->costo_compra = $request->costo_compra;
         $articulo->stock = $request->stock;
         $articulo->idproveedor = $request->idproveedor;
-        
+
         $articulo->precio_costo_unid = $request->precio_costo_unid;
-        $articulo->precio_costo_paq = $request->precio_costo_paq; 
+        $articulo->precio_costo_paq = $request->precio_costo_paq;
 
         $articulo->descripcion = $request->descripcion;
         $articulo->codigo_alfanumerico = $request->codigo_alfanumerico;
@@ -805,12 +840,12 @@ class ArticuloController extends Controller
         if ($request->hasFile('fotografia')) {
             $imagen = $request->file("fotografia");
             $nombreimagen = Str::slug($request->nombre) . "." . $imagen->guessExtension();
-            
+
             $ruta = public_path("img/articulo/");
             if (!File::isDirectory($ruta)) {
                 File::makeDirectory($ruta, 0755, true);
             }
-            
+
             copy($imagen->getRealPath(), $ruta . $nombreimagen);
             $articulo->fotografia = $nombreimagen;
         }
@@ -821,7 +856,8 @@ class ArticuloController extends Controller
     }
     public function update(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $user = auth()->user();
         if (!$user || !in_array($user->idrol, [1, 4])) {
@@ -837,9 +873,14 @@ class ArticuloController extends Controller
             $articulo = Articulo::findOrFail($request->id);
 
             $originalPrices = $articulo->only([
-                'precio_venta', 'precio_uno', 'precio_dos', 
-                'precio_tres', 'precio_cuatro', 
-                'precio_costo_paq', 'precio_costo_unid', 'costo_compra'
+                'precio_venta',
+                'precio_uno',
+                'precio_dos',
+                'precio_tres',
+                'precio_cuatro',
+                'precio_costo_paq',
+                'precio_costo_unid',
+                'costo_compra'
             ]);
 
             $articulo->idcategoria = $request->idcategoria;
@@ -850,36 +891,39 @@ class ArticuloController extends Controller
             $articulo->precio_venta = $request->precio_venta;
             $articulo->precio_uno = $request->precio_uno;
             $articulo->precio_dos = $request->precio_dos;
-            
-            $articulo->precio_tres = $request->precio_tres; 
+
+            $articulo->precio_tres = $request->precio_tres;
             $articulo->precio_cuatro = $request->precio_cuatro;
 
             $articulo->precio_costo_unid = $request->precio_costo_unid;
-            $articulo->precio_costo_paq = $request->precio_costo_paq; 
+            $articulo->precio_costo_paq = $request->precio_costo_paq;
             $articulo->costo_compra = $request->costo_compra;
 
             $articulo->stock = $request->stock;
             $articulo->descripcion = $request->descripcion;
             $articulo->vencimiento = $request->fechaVencimientoSeleccion;
-            
+
             $articulo->idproveedor = $request->idproveedor;
-            $articulo->idmedida = $request->idmedida ? $request->idmedida : $articulo->idmedida; 
-            
+            $articulo->idmedida = $request->idmedida ? $request->idmedida : $articulo->idmedida;
+
             $articulo->codigo_alfanumerico = $request->codigo_alfanumerico;
             $articulo->descripcion_fabrica = $request->descripcion_fabrica;
 
             if ($request->hasFile('fotografia')) {
                 if ($articulo->fotografia != '') {
-                     $rutaAnterior = public_path("img/articulo/" . $articulo->fotografia);
-                     if(file_exists($rutaAnterior)) { @unlink($rutaAnterior); }
+                    $rutaAnterior = public_path("img/articulo/" . $articulo->fotografia);
+                    if (file_exists($rutaAnterior)) {
+                        @unlink($rutaAnterior);
+                    }
                 }
 
                 $imagen = $request->file("fotografia");
                 $nombreimagen = Str::slug($request->nombre) . "." . $imagen->guessExtension();
                 $ruta = public_path("img/articulo/");
-                
-                if (!File::isDirectory($ruta)) File::makeDirectory($ruta, 0755, true);
-                
+
+                if (!File::isDirectory($ruta))
+                    File::makeDirectory($ruta, 0755, true);
+
                 copy($imagen->getRealPath(), $ruta . $nombreimagen);
                 $articulo->fotografia = $nombreimagen;
             }
@@ -899,7 +943,7 @@ class ArticuloController extends Controller
 
             $articulo->save();
             DB::commit();
-            
+
             return response()->json(['status' => 'success']);
 
         } catch (\Exception $e) {
@@ -914,7 +958,7 @@ class ArticuloController extends Controller
     {
         if (!$request->ajax())
             return redirect('/');
-        
+
         $user = auth()->user();
         if (!$user || !in_array($user->idrol, [1, 4])) {
             return response()->json([
@@ -922,7 +966,7 @@ class ArticuloController extends Controller
                 'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
             ], 403);
         }
-        
+
         $articulo = Articulo::findOrFail($request->id);
         $articulo->condicion = '0';
         $articulo->save();
@@ -932,7 +976,7 @@ class ArticuloController extends Controller
     {
         if (!$request->ajax())
             return redirect('/');
-        
+
         $user = auth()->user();
         if (!$user || !in_array($user->idrol, [1, 4])) {
             return response()->json([
@@ -940,7 +984,7 @@ class ArticuloController extends Controller
                 'message' => 'Acceso denegado. Esta acción solo está permitida para Administradores.'
             ], 403);
         }
-        
+
         $articulo = Articulo::findOrFail($request->id);
         $articulo->condicion = '1';
         $articulo->save();
@@ -1003,13 +1047,13 @@ class ArticuloController extends Controller
 
     public function importar(Request $request)
     {
-        $user = auth()->user(); 
+        $user = auth()->user();
 
         if (!$user || !in_array($user->idrol, [1, 4])) {
             return response()->json([
                 'error' => 'Acceso Restringido',
                 'mensaje' => 'No tienes permisos para realizar importaciones masivas.'
-            ], 403); 
+            ], 403);
         }
 
         try {
@@ -1079,7 +1123,8 @@ class ArticuloController extends Controller
 
     public function indexAjusteInven(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $buscar = trim($request->buscar);
         $idAlmacen = $request->idAlmacen;
@@ -1110,9 +1155,9 @@ class ArticuloController extends Controller
                 'personas.nombre as nombre_proveedor',
 
                 DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as stock_total_unidades'),
-                
+
                 DB::raw('FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)) as stock_total_cajas'),
-                
+
                 DB::raw('(IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase) as stock_total_unidades_sueltas'),
 
                 DB::raw("CONCAT(
@@ -1157,13 +1202,13 @@ class ArticuloController extends Controller
 
         foreach ($articulos as $articulo) {
             $lotes = \DB::table('inventarios')
-                ->select('id', 'fecha_vencimiento', 'saldo_stock') 
+                ->select('id', 'fecha_vencimiento', 'saldo_stock')
                 ->where('idarticulo', $articulo->id)
                 ->where('idalmacen', $idAlmacen)
                 ->where('saldo_stock', '>', 0)
                 ->orderBy('fecha_vencimiento', 'asc')
                 ->get();
-                
+
             $articulo->lotes = $lotes;
         }
 
