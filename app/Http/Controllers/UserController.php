@@ -271,6 +271,7 @@ class UserController extends Controller
 
         return ['usuarios' => $usuarios];
     }
+    
 
     public function selectUsuariosPorRol(Request $request)
     {

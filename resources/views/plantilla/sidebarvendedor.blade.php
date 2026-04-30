@@ -56,6 +56,9 @@
                     <li @click="menu=73" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Ajuste de Inventario</a>
                     </li>
+                    <li @click="menu=104" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Control de Inventario</a>
+                    </li>
                 </ul>
             </li>
             <li class="nav-item nav-dropdown">

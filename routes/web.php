@@ -1058,6 +1058,23 @@ Route::group(["middleware" => ["auth"]], function () {
             "/inventarios/exportproductosbajostock",
             "InventarioController@exportarBajoStockPDF"
         );
+        Route::delete('/llaves/eliminar-vencidas', 'LlaveAccesoController@eliminarVencidas');
+        Route::get('/llaves', 'LlaveAccesoController@index');
+        Route::post('/llaves', 'LlaveAccesoController@store');
+        Route::put('/llaves/{id}', 'LlaveAccesoController@update');
+        Route::delete('/llaves/{id}', 'LlaveAccesoController@destroy');
+        Route::post('/llaves/verificar', 'LlaveAccesoController@verificar');
+        
+        Route::get('/controlinventario', 'ControlInventarioController@index');
+        Route::get('/controlinventario/{id}', 'ControlInventarioController@verDetalle');
+        Route::post('/controlinventario', 'ControlInventarioController@store');
+        Route::delete('/controlinventario/{id}', 'ControlInventarioController@destroy');
+        Route::get('/controlinventario/pdf/{id}', 'ControlInventarioController@generarPdf');
+        Route::get('/controlinventario/excel/{id}', 'ControlInventarioController@exportExcel');
+        
+        Route::put('/detalle-controlinventario/cancelar/{id}', 'ControlInventarioController@cancelarDetalle');
+        Route::post('/ajusteinventario/registrar', 'ControlInventarioController@registrarAjuste');
+
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

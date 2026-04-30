@@ -86,6 +86,9 @@
                     <li @click="menu=30" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Traspasos</a>
                     </li>
+                    <li @click="menu=101" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Control de Inventario</a>
+                    </li>
                 </ul>
             </li>
             <li class="nav-item nav-dropdown">

@@ -508,6 +508,9 @@
 <template v-if="menu==73">
     <ajusteinventarios></ajusteinventarios>
 </template>
+<template v-if="menu==104">
+    <controlinventario></controlinventario>
+</template>
 @elseif (Auth::user()->idrol == 3)
 <template v-if="menu==0">
     <dashboard></dashboard>
@@ -794,6 +797,10 @@
 </template>
 <template v-if="menu==100">
     <kardexproducto></kardexproducto>
+</template>
+
+<template v-if="menu==101">
+    <controlinventario></controlinventario>
 </template>
 @else
 

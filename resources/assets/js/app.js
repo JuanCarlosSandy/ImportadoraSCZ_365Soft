@@ -318,6 +318,7 @@ Vue.component("itemscompuestos", require("./components/ItemCompuestos/ItemsCompu
 Vue.component("medicamentosbajostock", require("./components/productos/MedicamentosBajoStock.vue"));
 Vue.component("reportestock", require("./components/ReporteProductosBajoStock.vue"));
 Vue.component("kardexproducto", require("./components/ResumenKardexProducto.vue"));
+Vue.component("controlinventario", require("./components/ControlInventario.vue"));
 
 Vue.use(BootstrapVue);
 Vue.use(Toasted);
