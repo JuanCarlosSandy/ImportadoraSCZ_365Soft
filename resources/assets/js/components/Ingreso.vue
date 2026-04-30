@@ -166,7 +166,7 @@
     <Dialog v-model:visible="showModalArticulos" modal :style="{ width: '80vw' }"
       header="Seleccione los artículos que desee">
       <modalagregarproductos @cerrar="cerrarModal" @agregarArticulo="agregarArticuloSeleccionado"
-        :idproveedor="idproveedor" :monedaPrincipal="monedaCompra" />
+        :idproveedor="idproveedor" :monedaPrincipal="monedaCompra"/>
     </Dialog>
 
    <div v-if="listado == 0">
@@ -178,6 +178,7 @@
     :arrayArticuloSeleccionado="arrayArticuloSeleccionado"
     :monedaCompra="monedaCompra"
     :editarIngresoData="ingresoSeleccionado"
+    :monedaPrincipal="monedaPrincipal"
   />
 </div>
   </div>
@@ -214,6 +215,7 @@ export default {
   },
   data() {
     return {
+      monedaPrincipal: 'BOB',
       ingresoSeleccionado: null, // <-- aquí guardamos el ingreso a editar
       isEditing: false, // se activa cuando cargamos datos para editar
 

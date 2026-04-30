@@ -513,10 +513,7 @@ class IngresoController extends Controller
                 if (!$articulo)
                     continue;
 
-                $unidadEnvase = $articulo->unidad_envase ?? 1;
-
-                // 4️⃣ Cantidad real que se ingresó al inventario
-                $cantidadReal = $detalle->cantidad * $unidadEnvase;
+                $cantidadReal = $detalle->cantidad;
 
                 // 5️⃣ Revertir inventario
                 DB::table('inventarios')
@@ -683,8 +680,7 @@ class IngresoController extends Controller
             foreach ($ingreso->detallesIngreso as $detalle) {
                 $articulo = Articulo::find($detalle->idarticulo);
                 if ($articulo) {
-                    $cantidadReal = $detalle->cantidad * $articulo->unidad_envase;
-
+                    $cantidadReal = $detalle->cantidad;
                     $inventario = Inventario::where('idarticulo', $detalle->idarticulo)
                         ->orderBy('id', 'desc')
                         ->first();
@@ -717,11 +713,12 @@ class IngresoController extends Controller
                 $detalle->cantidad = $det['cantidad'];
                 $detalle->precio = $det['precio'];
                 $detalle->descuento = $det['descuento'] ?? 0;
+                $detalle->tipo_compra = 'Unidad';
                 $detalle->save();
 
                 $articulo = Articulo::find($det['idarticulo']);
                 if ($articulo) {
-                    $cantidadReal = $det['cantidad'] * $articulo->unidad_envase;
+                    $cantidadReal = $det['cantidad'];
 
                     $inventario = Inventario::firstOrCreate(
                         [

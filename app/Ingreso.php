@@ -31,10 +31,10 @@ class Ingreso extends Model
         return $this->belongsTo('App\Caja', 'id');
     }
     
-public function detallesIngreso()
-{
-    return $this->hasMany(DetalleIngreso::class, 'idingreso'); // <--- clave correcta
-}
+    public function detallesIngreso()
+    {
+        return $this->hasMany(DetalleIngreso::class, 'idingreso'); // <--- clave correcta
+    }
 
 
     public function cuotas()
