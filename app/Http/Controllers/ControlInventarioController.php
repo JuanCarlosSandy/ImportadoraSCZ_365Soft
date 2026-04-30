@@ -231,9 +231,30 @@ class ControlInventarioController extends Controller
             ->where('idarticulo', $detalle['idarticulo'])
             ->first();
 
-        if (!$inventario)
-            return;
+        // 🔥 SI NO EXISTE, CREARLO
+        if (!$inventario) {
 
+            $inventario = new Inventario();
+            $inventario->idalmacen = $idalmacen;
+            $inventario->idarticulo = $detalle['idarticulo'];
+
+            // 🔵 STOCK INICIAL SEGÚN TIPO MOVIMIENTO
+            if ($detalle['tipo_movimiento'] == 'entrada') {
+                $inventario->saldo_stock = $detalle['cantidad'];
+                $inventario->cantidad = $detalle['cantidad'];
+
+            } else {
+                // si es salida, inicia en negativo o 0
+                $inventario->saldo_stock = -$detalle['cantidad'];
+                $inventario->cantidad = -$detalle['cantidad'];
+
+            }
+
+            $inventario->save();
+            return;
+        }
+
+        // 🔵 SI YA EXISTE, ACTUALIZAR
         if ($detalle['tipo_movimiento'] == 'entrada') {
             $inventario->saldo_stock += $detalle['cantidad'];
         } else {
@@ -283,7 +304,7 @@ class ControlInventarioController extends Controller
     }
 
     public function exportExcel($id)
-{
-    return Excel::download(new ControlInventarioExport($id), 'control_inventario.xlsx');
-}
+    {
+        return Excel::download(new ControlInventarioExport($id), 'control_inventario.xlsx');
+    }
 }

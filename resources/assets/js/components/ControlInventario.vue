@@ -1607,13 +1607,6 @@ export default {
 
         await this.registrarControlInventario(data);
 
-        this.$toast.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Control de inventario registrado correctamente.',
-          life: 2000
-        });
-
         setTimeout(() => {
           this.vistaActual = 'tabla';
           this.productosSeleccionados = [];
