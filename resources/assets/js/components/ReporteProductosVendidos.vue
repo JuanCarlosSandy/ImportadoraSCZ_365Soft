@@ -11,137 +11,109 @@
     <Panel>
       <!-- Encabezado del Panel -->
       <template #header>
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
-        >
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <i class="pi pi-bars panel-icon" style="color: blue;"></i>
             <h4 class="panel-title" style="margin: 0;">
-              REPORTE DE VENTAS DIARIAS Y MENSUALES
+              REPORTE DE PRODUCTOS VENDIDOS
             </h4>
           </div>
         </div>
       </template>
-      
+
       <!-- Tabla de Ventas -->
       <template v-if="listado == 1">
         <!-- Sección de Filtros Aplicados, Total de Ventas y Botones -->
-      <div
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;"
-      >
         <div
-          style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;"
-        >
-          <!-- Tarjeta de Sucursal -->
-          <div
-            style="display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-          >
-            <i class="pi pi-home" style="font-size: 1.2rem; color: blue;"></i>
-            <div>
-              <div style="font-weight: bold; font-size: 0.9rem;">Sucursal</div>
-              <div>{{ sucursalseleccionada.nombre }}</div>
-            </div>
-          </div>
-          <!-- Tarjeta de Tipo de Reporte -->
-          <div
-            style="display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-          >
-            <i
-              :class="
-                tipoReporte === 'dia'
-                  ? 'pi pi-calendar'
-                  : 'pi pi-calendar-times'
-              "
-              style="font-size: 1.2rem; color: blue;"
-            ></i>
-            <div>
-              <div style="font-weight: bold; font-size: 0.9rem;">Tipo</div>
-              <div>{{ tipoReporte === "dia" ? "Por Día" : "Por Mes" }}</div>
-            </div>
-          </div>
-          <!-- Tarjeta de Fecha o Mes/Año -->
-          <div
-            style="display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-          >
-            <i
-              class="pi pi-calendar"
-              style="font-size: 1.2rem; color: blue;"
-            ></i>
-            <div>
-              <div style="font-weight: bold; font-size: 0.9rem;">
-                {{ tipoReporte === "dia" ? "Fecha" : "Mes/Año" }}
-              </div>
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+
+            <!-- Tarjeta de Sucursal -->
+            <div
+              style="display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <i class="pi pi-home" style="font-size: 1.2rem; color: blue;"></i>
               <div>
-                {{
-                  tipoReporte === "dia" ? fechaSeleccionada : mesSeleccionado
-                }}
+                <div style="font-weight: bold; font-size: 0.9rem;">Sucursal</div>
+                <div>{{ sucursalseleccionada.nombre }}</div>
               </div>
             </div>
+
+            <!-- Tarjeta Fecha Inicio -->
+            <div
+              style="display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <i class="pi pi-calendar-plus" style="font-size: 1.2rem; color: green;"></i>
+              <div>
+                <div style="font-weight: bold; font-size: 0.9rem;">Fecha Inicio</div>
+                <div>{{ fechaInicio }}</div>
+              </div>
+            </div>
+
+            <!-- Tarjeta Fecha Fin -->
+            <div
+              style="display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.5rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <i class="pi pi-calendar-times" style="font-size: 1.2rem; color: red;"></i>
+              <div>
+                <div style="font-weight: bold; font-size: 0.9rem;">Fecha Fin</div>
+                <div>{{ fechaFin }}</div>
+              </div>
+            </div>
+
+          </div>
+          <div style="font-weight: bold; font-size: 1.1rem;">
+            Total Ventas: {{ totalImporte }} {{ monedaPrincipal[1] }}
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <Button icon="pi pi-filter" :label="mostrarLabel ? 'Filtros' : ''" class="p-button-secondary p-button-sm"
+              @click="modal = true" />
+            <Button icon="pi pi-file-excel" label="EXCEL" class="p-button-success" @click="exportarExcel"
+              :disabled="isLoading" />
+            <Button icon="pi pi-file-pdf" label="PDF" class="p-button-danger" @click="exportarPDF"
+              :disabled="isLoading" />
           </div>
         </div>
-        <div style="font-weight: bold; font-size: 1.1rem;">
-          Total Ventas: {{ totalVentas }} {{ monedaPrincipal[1] }}
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <Button
-            icon="pi pi-filter"
-            :label="mostrarLabel ? 'Filtros' : ''"
-            class="p-button-secondary p-button-sm"
-            @click="modal = true"
-          />
-            <Button
-              icon="pi pi-file-excel"
-              label="EXCEL"
-              class="p-button-success"
-              @click="exportarExcelDialog"
-              :disabled="isLoading"
-            />
-            <Button
-              icon="pi pi-file-pdf"
-              label="PDF"
-              class="p-button-danger"
-              @click="descargarPDFDialog"
-              :disabled="isLoading"
-            />
-        </div>
-      </div>
         <div style="overflow-y: auto;">
           <div class="mb-2 d-flex" style="gap: 0.5rem;">
-            <input
-              type="text"
-              v-model="busquedaVentas"
-              class="form-control input-full"
-              placeholder="Buscar en reporte de ventas..."
-            />
-            <Button
-              icon="pi pi-times"
-              class="p-button-secondary p-button-sm btn-sm-input"
-              @click="busquedaVentas = ''"
-              title="Reset"
-            />
+            <input type="text" v-model="busquedaVentas" class="form-control input-full"
+              placeholder="Buscar en reporte de ventas..." />
+            <Button icon="pi pi-times" class="p-button-secondary p-button-sm btn-sm-input" @click="busquedaVentas = ''"
+              v-if="busquedaVentas" title="Reset" />
           </div>
-          <DataTable
-            :value="arrayReporte"
-            :paginator="true"
-            :rows="10"
-            dataKey="id"
-            responsiveLayout="scroll"
-            class="p-datatable-gridlines p-datatable-sm tabla-pro"
-          >
-            <Column header="Acciones" style="width: 120px; text-align:center">
+          <DataTable :value="filteredVentas" :paginator="true" :rows="12" dataKey="id" responsiveLayout="scroll"
+            class="p-datatable-gridlines p-datatable-sm tabla-pro">
+
+            <Column header="Producto">
               <template #body="slotProps">
-                <Button
-                  icon="pi pi-eye"
-                  class="p-button-sm p-button-primary btn-mini"
-                  title="Ver Venta"
-                  @click="verVentaDesdeReporte(slotProps.data.id)"
-                />
+                {{ slotProps.data.producto }}
+              </template>
+            </Column>
+
+            <Column header="Cantidad">
+              <template #body="slotProps">
+                {{ slotProps.data.cantidad }}
+              </template>
+            </Column>
+
+            <Column header="Precio Unit.">
+              <template #body="slotProps">
+                {{ Number(slotProps.data.precio_unitario).toFixed(2) }} Bs
+              </template>
+            </Column>
+
+            <Column header="Total de Venta">
+              <template #body="slotProps">
+                {{ Number(slotProps.data.subtotal).toFixed(2) }} Bs
+              </template>
+            </Column>
+
+            <Column header="Tipo de Pago">
+              <template #body="slotProps">
+                <Tag :value="slotProps.data.tipo_pago" :severity="getTipoPagoSeverity(slotProps.data.tipo_pago)" />
               </template>
             </Column>
 
             <Column header="N° de Comprobante">
               <template #body="slotProps">
-                {{ slotProps.data.Factura }}
+                {{ slotProps.data.num_comprobante }}
               </template>
             </Column>
 
@@ -153,1094 +125,82 @@
 
             <Column header="Vendedor">
               <template #body="slotProps">
-                {{ slotProps.data.usuario }}
-              </template>
-            </Column>
-
-            <Column header="Cliente">
-              <template #body="slotProps">
-                {{ slotProps.data.nombre }}
-              </template>
-            </Column>
-
-            <Column header="Total de Venta">
-              <template #body="slotProps">
-                {{ Number(slotProps.data.importe_BS).toFixed(2) }} Bs
-              </template>
-            </Column>
-
-            <Column header="Tipo de Venta">
-              <template #body="slotProps">
-                <span
-                  v-if="slotProps.data.idtipo_venta == 1"
-                  class="badge badge-primary"
-                >
-                  Contado
-                </span>
-                <span
-                  v-else-if="slotProps.data.idtipo_venta == 2"
-                  class="badge badge-warning"
-                >
-                  Crédito
-                </span>
-                <span v-else class="badge badge-secondary">
-                  -
-                </span>
+                {{ slotProps.data.vendedor }}
               </template>
             </Column>
 
             <Column header="Estado">
               <template #body="slotProps">
-                <!-- Venta a Crédito -->
-                <template v-if="slotProps.data.idtipo_venta == 2">
-                  <span
-                    v-if="slotProps.data.estado == 0"
-                    class="badge badge-danger"
-                  >
-                    Anulado
-                  </span>
-                  <span
-                    v-else-if="Number(slotProps.data.saldo_restante) > 0"
-                    class="badge badge-warning"
-                  >
-                    Saldo Restante:
-                    {{ Number(slotProps.data.saldo_restante).toFixed(2) }} Bs
-                  </span>
-                  <span v-else class="badge badge-success">
-                    Pagado
-                  </span>
-                </template>
-                <!-- Venta al Contado -->
-                <template v-else>
-                  <span
-                    v-if="slotProps.data.estado == 1"
-                    class="badge badge-success"
-                  >
-                    Registrado
-                  </span>
-                  <span
-                    v-else-if="slotProps.data.estado == 0"
-                    class="badge badge-danger"
-                  >
-                    Anulado
-                  </span>
-                  <span v-else class="badge badge-secondary">
-                    Desconocido
-                  </span>
-                </template>
+                <Tag class="tag-mini" :value="slotProps.data.estado == 1 ? 'Registrado' : 'Anulado'"
+                  :severity="slotProps.data.estado == 1 ? 'success' : 'danger'" />
               </template>
             </Column>
+
           </DataTable>
-        </div>
-      </template>
-      <template v-else-if="listado == 2">
-        <div class="detalle-venta-pro">
-          <!-- ENCABEZADO -->
-          <div class="detalle-header-pro">
-            <div class="detalle-section-pro">
-              <h3 class="detalle-titulo-pro">Detalle de Comprobante</h3>
-              <p class="detalle-subtitulo-pro">
-                Resumen completo de la venta registrada
-              </p>
-            </div>
-            <div class="detalle-meta-pro">
-              <div>
-                <span class="label-pro">Tipo Comprobante</span>
-                <p class="valor-pro">{{ tipo_comprobante }}</p>
-              </div>
-              <div>
-                <span class="label-pro">N° Comprobante</span>
-                <p class="valor-pro">#{{ num_comprobante }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- CLIENTE -->
-          <div class="detalle-cliente-pro">
-            <span class="label-pro">Cliente</span>
-            <p class="valor-pro">{{ cliente }}</p>
-          </div>
-
-          <!-- TABLA DE ARTÍCULOS -->
-          <div class="detalle-tabla-pro">
-            <DataTable :value="arrayDetalle" class="p-datatable-sm p-datatable-gridlines">
-              <Column field="codigo" header="Codigo"></Column>
-              <Column field="articulo" header="Producto"></Column>
-              <!--<Column field="unidad_envase" header="Cant x Caja">
-                <template #body="slotProps">
-                  <span v-if="slotProps.data.modo_venta === 'caja'">
-                    {{ slotProps.data.unidad_envase }}
-                  </span>
-
-                  <span v-else>-</span>
-                </template>
-</Column>-->
-
-              <Column header="Precio Unit.">
-                <template #body="slotProps">
-                  {{ (slotProps.data.precio * parseFloat(monedaVenta[0])).toFixed(2) }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-              <Column field="cantidad" header="Cant Vendida">
-                <template #body="slotProps">
-                  <span :style="{
-                    backgroundColor:
-                      slotProps.data.modo_venta === 'caja'
-                        ? '#0d6efd'
-                        : slotProps.data.modo_venta === 'docena'
-                          ? '#6f42c1'
-                          : '#198754',
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontWeight: 'bold'
-                  }">
-                    {{
-                      slotProps.data.cantidad + ' ' +
-                      (
-                        slotProps.data.modo_venta === 'caja'
-                          ? (slotProps.data.cantidad == 1 ? 'caja' : 'cajas')
-                          : slotProps.data.modo_venta === 'docena'
-                            ? (slotProps.data.cantidad == 1 ? 'docena' : 'docenas')
-                            : (slotProps.data.cantidad == 1 ? 'unidad' : 'unidades')
-                      )
-                    }}
-                  </span>
-                </template>
-              </Column>
-              <Column header="Subtotal sin Descuento">
-                <template #body="slotProps">
-                  {{ (slotProps.data.subtotal_sin_descuento * parseFloat(monedaVenta[0])).toFixed(2) }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-
-              <Column header="Descuento por Producto">
-                <template #body="slotProps">
-                  {{ slotProps.data.descuento }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-
-              <Column header="Descuento Total">
-                <template #body="slotProps">
-                  {{ slotProps.data.descuento_total_producto }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-
-              <Column field="subtotal" header="Subtotal">
-                <template #body="slotProps">
-                  {{ (slotProps.data.subtotal * parseFloat(monedaVenta[0])).toFixed(2) }}
-                  {{ monedaVenta[1] }}
-                </template>
-              </Column>
-            </DataTable>
-          </div>
-          <div v-if="idtipo_venta == 2" class="mt-4">
-            <h4 class="mb-3">Cuotas del Crédito</h4>
-            <DataTable
-              :value="cuotas"
-              class="p-datatable-sm p-datatable-gridlines"
-            >
-              <Column field="numero_cuota" header="# Cuota"></Column>
-
-              <Column field="fecha_pago" header="Fecha Pago">
-                <template #body="slotProps">
-                  <!-- MODO EDICIÓN -->
-                  <div v-if="editarCuotas && slotProps.data.idtipo_pago !== 5">
-                    <input
-                      type="date"
-                      class="form-control form-control-sm"
-                      style="max-width: 160px"
-                      v-model="slotProps.data.fecha_pago"
-                    />
-                  </div>
-
-                  <!-- MODO LECTURA -->
-                  <div v-else>
-                    {{
-                      slotProps.data.fecha_pago
-                        ? slotProps.data.fecha_pago.substring(0, 10)
-                        : "-"
-                    }}
-                  </div>
-                </template>
-              </Column>
-              <Column field="precio_cuota" header="Monto Cuota">
-                <template #body="slotProps">
-                  <!-- MODO EDICIÓN -->
-                  <div v-if="editarCuotas && slotProps.data.idtipo_pago !== 5">
-                    <InputNumber
-                      v-model="slotProps.data.precio_cuota"
-                      mode="decimal"
-                      :min="0"
-                      :minFractionDigits="2"
-                      :maxFractionDigits="2"
-                      class="p-inputtext-sm w-8rem"
-                      @input="recalcularSaldo(slotProps.data)"
-                    />
-                    <span class="ms-1">{{ monedaVenta[1] }}</span>
-                  </div>
-
-                  <!-- MODO LECTURA -->
-                  <div v-else>
-                    {{ slotProps.data.precio_cuota }} {{ monedaVenta[1] }}
-                  </div>
-                </template>
-              </Column>
-
-              <Column field="saldo_restante" header="Saldo Restante">
-                <template #body="slotProps">
-                  {{ slotProps.data.saldo_restante }} {{ monedaVenta[1] }}
-                </template>
-              </Column>
-
-              <Column field="estado" header="Estado">
-                <template #body="slotProps">
-                  <span
-                    v-if="
-                      slotProps.data.idtipo_pago === 5 &&
-                        slotProps.data.descuento > 0
-                    "
-                    class="badge bg-info"
-                  >
-                    Liquidado {{ slotProps.data.descuento }}
-                    {{ monedaVenta[1] }}
-                  </span>
-
-                  <span
-                    v-else-if="slotProps.data.estado === 'Pagado'"
-                    class="badge bg-success"
-                  >
-                    Pagado
-                  </span>
-
-                  <span v-else class="badge bg-warning">
-                    {{ slotProps.data.estado }}
-                  </span>
-                </template>
-              </Column>
-              <Column header="Tipo de Pago">
-                <template #body="slotProps">
-                  <!-- MODO EDICIÓN -->
-                  <div v-if="editarCuotas" class="d-flex flex-column gap-1">
-                    <!-- SELECT TIPO DE PAGO -->
-                    <Dropdown
-                      v-if="slotProps.data.idtipo_pago !== 5"
-                      v-model="slotProps.data.idtipo_pago"
-                      :options="tiposPagoOptions"
-                      optionLabel="label"
-                      optionValue="value"
-                      placeholder="Seleccione"
-                      class="p-inputtext-sm"
-                    />
-
-                    <!-- TEXTO FIJO CUANDO ES LIQUIDACIÓN -->
-                    <span v-else class="badge bg-info p-2 text-center">
-                      🔒 Liquidación
-                    </span>
-                    <Dropdown
-                      v-if="slotProps.data.idtipo_pago === 7"
-                      v-model="slotProps.data.bancoSeleccionado"
-                      :options="bancosOptions"
-                      dataKey="id"
-                      placeholder="Seleccione un banco"
-                      class="w-full custom-dropdown mt-1"
-                      @change="onBancoSelectCuota(slotProps.data)"
-                    >
-                      <!-- OPTION -->
-                      <template #option="slotPropsOpt">
-                        <div class="banco-opcion">
-                          <img
-                            :src="getBankUrl(slotPropsOpt.option.nombre_banco)"
-                            class="banco-logo"
-                          />
-                          <div class="banco-detalles">
-                            <div class="cuenta">
-                              {{ slotPropsOpt.option.nombre_cuenta }}
-                            </div>
-                            <div class="numero">
-                              {{ slotPropsOpt.option.numero_cuenta }}
-                            </div>
-                            <div class="tipo">
-                              {{ slotPropsOpt.option.tipo_cuenta }}
-                            </div>
-                          </div>
-                        </div>
-                      </template>
-
-                      <!-- VALUE -->
-                      <template #value="slotPropsVal">
-                        <div v-if="slotPropsVal.value" class="banco-value">
-                          <img
-                            :src="getBankUrl(slotPropsVal.value.nombre_banco)"
-                            class="banco-logo"
-                          />
-                          <span class="cuenta">{{
-                            slotPropsVal.value.nombre_cuenta
-                          }}</span>
-                        </div>
-                        <span v-else>-</span>
-                      </template>
-                    </Dropdown>
-                  </div>
-
-                  <!-- MODO LECTURA -->
-                  <div v-else>
-                    <span
-                      v-if="slotProps.data.idtipo_pago === 1"
-                      class="badge bg-success"
-                    >
-                      💵 Efectivo
-                    </span>
-
-                    <span
-                      v-else-if="slotProps.data.idtipo_pago === 5"
-                      class="badge bg-info"
-                    >
-                      🔒 Liquidación
-                    </span>
-
-                    <span
-                      v-else-if="slotProps.data.idtipo_pago === 7"
-                      class="badge bg-primary"
-                    >
-                      🏦 {{ slotProps.data.nombre_cuenta || "Cuenta bancaria" }}
-                    </span>
-
-                    <span v-else class="badge bg-dark">
-                      No definido
-                    </span>
-                  </div>
-                </template>
-              </Column>
-            </DataTable>
-          </div>
-
-          <!-- RESUMEN DE TOTALES -->
-          <div class="detalle-resumen-pro">
-            <div class="resumen-linea-pro">
-              <span>SubTotal General</span>
-              <strong
-                >{{ (subtotalVista * parseFloat(monedaVenta[0])).toFixed(2) }}
-                {{ monedaVenta[1] }}</strong
-              >
-            </div>
-            <div class="resumen-linea-pro">
-              <span>Descuento Adicional</span>
-              <strong
-                >{{
-                  (
-                    descuentoAdicionalvista * parseFloat(monedaVenta[0])
-                  ).toFixed(2)
-                }}
-                {{ monedaVenta[1] }}</strong
-              >
-            </div>
-            <div class="resumen-linea-pro total-final-pro">
-              <span>Total Neto</span>
-              <strong
-                >{{ (total * parseFloat(monedaVenta[0])).toFixed(2) }}
-                {{ monedaVenta[1] }}</strong
-              >
-            </div>
-          </div>
-
-          <!-- BOTÓN -->
-          <div class="detalle-footer-pro">
-            <Button
-              @click="ocultarDetalle()"
-              label="Cerrar"
-              icon="pi pi-times"
-              severity="danger"
-              class="p-button-danger p-button-sm btn-mini"
-            />
-          </div>
         </div>
       </template>
     </Panel>
 
     <!-- MODAL DE FILTROS -->
-    <div
-      class="modal"
-      tabindex="-1"
-      :class="{ mostrar: modal }"
-      role="dialog"
-      aria-labelledby="myModalLabel"
-      style="display: none;"
-      aria-hidden="true"
-    >
+    <div class="modal" tabindex="-1" :class="{ mostrar: modal }" role="dialog" aria-labelledby="myModalLabel"
+      style="display: none;" aria-hidden="true">
       <div class="modal-dialog modal-primary modal-lg" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <h4 class="modal-title">FILTRO DE REPORTES</h4>
-            <button
-              type="button"
-              class="close"
-              @click="modal = false"
-              aria-label="Close"
-            >
+            <button type="button" class="close" @click="modal = false" aria-label="Close">
               <span aria-hidden="true">×</span>
             </button>
           </div>
           <form @submit.prevent="procesarReporte">
             <div class="modal-body">
               <div class="form-group row">
-                <div class="col-md-6">
+
+                <!-- Sucursal -->
+                <div class="col-md-4">
                   <label class="font-weight-bold">
                     Sucursal <span class="text-danger">*</span>
                   </label>
 
-                  <div class="input-group">
-                    <select
-                      class="form-control"
-                      v-model="sucursalseleccionada"
-                    >
-                      <option value="" disabled>Seleccione una sucursal</option>
+                  <select class="form-control" v-model="sucursalseleccionada">
+                    <option value="" disabled>Seleccione una sucursal</option>
 
-                      <option
-                        v-for="sucursal in arraySucursal"
-                        :key="sucursal.id"
-                        :value="sucursal"
-                      >
-                        {{ sucursal.nombre }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="font-weight-bold"
-                    >Estado Venta <span class="text-danger">*</span></label
-                  >
-                  <div class="input-group">
-                    <select
-                      class="form-control col-md-12"
-                      v-model="criterioEstado"
-                    >
-                      <option value="Todos">Todos</option>
-                      <option value="Registrado">Registrado</option>
-                      <option value="Anulado">Anulado</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-group row">
-                <div class="col-md-6">
-                  <label class="font-weight-bold"
-                    >Tipo de Reporte <span class="text-danger">*</span></label
-                  >
-                  <div class="input-group">
-                    <select
-                      class="form-control col-md-12"
-                      v-model="tipoReporte"
-                    >
-                      <option value="dia">Por Día</option>
-                      <option value="mes">Por Mes</option>
-                    </select>
-                  </div>
+                    <option v-for="sucursal in arraySucursal" :key="sucursal.id" :value="sucursal">
+                      {{ sucursal.nombre }}
+                    </option>
+                  </select>
                 </div>
 
-                <div class="col-md-6" v-if="tipoReporte === 'dia'">
-                  <label class="font-weight-bold"
-                    >Fecha: <span class="text-danger">*</span></label
-                  >
-                  <input
-                    class="form-control"
-                    type="date"
-                    v-model="fechaSeleccionada"
-                  />
+                <!-- Fecha Inicio -->
+                <div class="col-md-4">
+                  <label class="font-weight-bold">
+                    Fecha Inicio <span class="text-danger">*</span>
+                  </label>
+
+                  <input type="date" class="form-control" v-model="fechaInicio" :max="hoy" />
                 </div>
 
-                <div class="col-md-6" v-if="tipoReporte === 'mes'">
-                  <label class="font-weight-bold"
-                    >Mes y Año: <span class="text-danger">*</span></label
-                  >
-                  <input
-                    class="form-control"
-                    type="month"
-                    v-model="mesSeleccionado"
-                  />
+                <!-- Fecha Fin -->
+                <div class="col-md-4">
+                  <label class="font-weight-bold">
+                    Fecha Fin <span class="text-danger">*</span>
+                  </label>
+
+                  <input type="date" class="form-control" v-model="fechaFin" :min="fechaInicio" :max="hoy" />
                 </div>
+
               </div>
             </div>
 
             <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-danger"
-                @click="modal = false"
-              >
+              <button type="button" class="btn btn-danger" @click="modal = false">
                 Cerrar
               </button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                @click="procesarReporte"
-              >
+              <button type="button" class="btn btn-primary" @click="procesarReporte">
                 Visualizar Reporte
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </div>
-
-    <div
-      class="modal "
-      tabindex="-1"
-      :class="{ mostrar: modal6 }"
-      role="dialog"
-      aria-labelledby="myModalLabel"
-      style="display: none;"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-primary modal-lg" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title" v-text="tituloModal6"></h4>
-            <button
-              type="button"
-              class="close"
-              @click="modal6 = false"
-              aria-label="Close"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group row">
-              <div class="col-md-6">
-                <div class="input-group">
-                  <button
-                    v-show="tituloModal6 == 'Medidas'"
-                    type="button"
-                    @click="abrirModal7('medida', 'registrarMed')"
-                    class="btn btn-secondary"
-                  >
-                    <i class="icon-plus"></i>&nbsp;Nuevo
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-bordered table-striped table-sm">
-                <thead>
-                  <tr>
-                    <th style="display: none;">ID</th>
-                    <th>Opciones</th>
-                    <th>Medida</th>
-                    <th>Descripción Corta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="arrayelemento in arrayBuscador"
-                    :key="arrayelemento.id"
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        @click="seleccionar2(arrayelemento)"
-                        class="btn btn-success btn-sm"
-                      >
-                        <i class="icon-check"></i>
-                      </button>
-                    </td>
-                    <td v-if="mostrarElemento" v-text="arrayelemento.id"></td>
-                    <td v-text="arrayelemento.descripcion_medida"></td>
-                    <td v-text="arrayelemento.descripcion_corta"></td>
-                    <td v-if="tituloModal6 == 'Medidas'">
-                      <div v-if="arrayelemento.estado">
-                        <span class="badge badge-success">Activo</span>
-                      </div>
-                      <div v-else>
-                        <span class="badge badge-danger">Desactivado</span>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <nav>
-              <ul class="pagination">
-                <li class="page-item" v-if="paginationMedida.current_page > 1">
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaMedida(
-                        paginationMedida.current_page - 2,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Ant</a
-                  >
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in pagesNumberMedida"
-                  :key="page"
-                  :class="[page == isActivedM ? 'active' : '']"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="cambiarPaginaMedida(page, buscar, criterio)"
-                    v-text="page"
-                  ></a>
-                </li>
-                <li
-                  class="page-item"
-                  v-if="
-                    paginationMedida.current_page < paginationMedida.last_page
-                  "
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaMedida(
-                        paginationMedida.current_page + 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Sig</a
-                  >
-                </li>
-              </ul>
-            </nav>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="modal6 = false"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-        <!-- /.modal-content -->
-      </div>
-      <!-- /.modal-dialog -->
-    </div>
-    <!-- HASTA AQUI EL MODAL DE LISTA MEDIDA -->
-
-    <div
-      class="modal "
-      tabindex="-1"
-      :class="{ mostrar: modal2 }"
-      role="dialog"
-      aria-labelledby="myModalLabel"
-      style="display: none;"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-primary modal-lg" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title" v-text="tituloModal2"></h4>
-            <button
-              type="button"
-              class="close"
-              @click="modal2 = false"
-              aria-label="Close"
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group row">
-              <div class="col-md-6">
-                <div class="input-group">
-                  <select class="form-control col-md-3" v-model="criterioA">
-                    <option v-if="tituloModal2 !== 'Grupos'" value="nombre"
-                      >Nombre</option
-                    >
-                    <option
-                      v-if="tituloModal2 == 'Articulo'"
-                      value="descripcion"
-                      >Descripcion</option
-                    >
-                    <option
-                      v-else-if="tituloModal2 == 'Grupos'"
-                      value="nombre_grupo"
-                      >Grupo</option
-                    >
-                  </select>
-                  <input
-                    v-if="tituloModal2 == 'Ejecutivo'"
-                    type="text"
-                    v-model="buscarA"
-                    @keyup="listarEjecutivo(1, buscarA, criterioA)"
-                    class="form-control"
-                    placeholder="Texto a buscar"
-                  />
-                  <input
-                    v-if="tituloModal2 == 'Cliente'"
-                    type="text"
-                    v-model="buscarA"
-                    @keyup="listarPersona(1, buscarA, criterioA)"
-                    class="form-control"
-                    placeholder="Texto a buscar"
-                  />
-                  <input
-                    v-if="tituloModal2 == 'Sucursal'"
-                    type="text"
-                    v-model="buscarA"
-                    @keyup="listarSucursal(1, buscarA, criterioA)"
-                    class="form-control"
-                    placeholder="Texto a buscar"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table
-                class="table table-bordered table-striped table-sm"
-                v-if="tituloModal2 !== 'Grupos'"
-              >
-                <thead>
-                  <tr>
-                    <th>Opciones</th>
-                    <th>Nombre</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="arrayelemento in arrayBuscador"
-                    :key="arrayelemento.id"
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        @click="seleccionar(arrayelemento)"
-                        class="btn btn-success btn-sm"
-                      >
-                        <i class="icon-check"></i>
-                      </button>
-                    </td>
-                    <td v-text="arrayelemento.nombre"></td>
-
-                    <td
-                      v-if="tituloModal2 == 'Cliente'"
-                      v-text="arrayelemento.tipo_documento"
-                    ></td>
-                    <td
-                      v-if="tituloModal2 == 'Cliente'"
-                      v-text="arrayelemento.num_documento"
-                    ></td>
-                    <td
-                      v-if="tituloModal2 == 'Cliente'"
-                      v-text="arrayelemento.telefono"
-                    ></td>
-
-                    <td v-if="tituloModal2 == 'Sucursal'">
-                      <div v-if="arrayelemento.condicion">
-                        <span class="badge badge-success">Activo</span>
-                      </div>
-                      <div v-else>
-                        <span class="badge badge-danger">Desactivado</span>
-                      </div>
-                    </td>
-
-                    <div v-if="tituloModal2 == 'Proveedors'">
-                      <td v-text="arrayelemento.num_documento"></td>
-                    </div>
-                  </tr>
-                </tbody>
-              </table>
-
-              <table
-                class="table table-bordered table-striped table-sm"
-                v-else-if="tituloModal2 == 'Grupos'"
-              >
-                <thead>
-                  <tr>
-                    <th>Opciones</th>
-                    <th>Id</th>
-                    <th>Nombre</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="arrayelemento in arrayBuscador"
-                    :key="arrayelemento.id"
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        @click="seleccionar(arrayelemento)"
-                        class="btn btn-success btn-sm"
-                      >
-                        <i class="icon-check"></i>
-                      </button>
-                    </td>
-                    <td v-text="arrayelemento.id"></td>
-                    <td v-text="arrayelemento.nombre_grupo"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <nav v-if="tituloModal2 == 'Marcas'">
-              <ul class="pagination">
-                <li class="page-item" v-if="pagination.current_page > 1">
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaMarca(
-                        pagination.current_page - 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Ant</a
-                  >
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in pagesNumber"
-                  :key="page"
-                  :class="[page == isActived ? 'active' : '']"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="cambiarPaginaMarca(page, buscar, criterio)"
-                    v-text="page"
-                  ></a>
-                </li>
-                <li
-                  class="page-item"
-                  v-if="pagination.current_page < pagination.last_page"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaMarca(
-                        pagination.current_page + 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Sig</a
-                  >
-                </li>
-              </ul>
-            </nav>
-            <nav v-else-if="tituloModal2 == 'Lineas'">
-              <ul class="pagination">
-                <li class="page-item" v-if="pagination.current_page > 1">
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaLinea(
-                        pagination.current_page - 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Ant</a
-                  >
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in pagesNumber"
-                  :key="page"
-                  :class="[page == isActived ? 'active' : '']"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="cambiarPaginaLinea(page, buscar, criterio)"
-                    v-text="page"
-                  ></a>
-                </li>
-                <li
-                  class="page-item"
-                  v-if="pagination.current_page < pagination.last_page"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaLinea(
-                        pagination.current_page + 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Sig</a
-                  >
-                </li>
-              </ul>
-            </nav>
-            <nav v-else-if="tituloModal2 == 'Cliente'">
-              <ul class="pagination">
-                <li class="page-item" v-if="pagination.current_page > 1">
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaIndustria(
-                        pagination.current_page - 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Ant</a
-                  >
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in pagesNumber"
-                  :key="page"
-                  :class="[page == isActivedMar ? 'active' : '']"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaIndustria(page, buscar, criterio)
-                    "
-                    v-text="page"
-                  ></a>
-                </li>
-                <li
-                  class="page-item"
-                  v-if="pagination.current_page < pagination.last_page"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaIndustria(
-                        pagination.current_page + 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Sig</a
-                  >
-                </li>
-              </ul>
-            </nav>
-            <nav v-else-if="tituloModal2 == 'Proveedors'">
-              <ul class="pagination">
-                <li class="page-item" v-if="pagination.current_page > 1">
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaProveedor(
-                        pagination.current_page - 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Ant</a
-                  >
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in pagesNumber"
-                  :key="page"
-                  :class="[page == isActivedMar ? 'active' : '']"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaProveedor(page, buscar, criterio)
-                    "
-                    v-text="page"
-                  ></a>
-                </li>
-                <li
-                  class="page-item"
-                  v-if="pagination.current_page < pagination.last_page"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaProveedor(
-                        pagination.current_page + 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Sig</a
-                  >
-                </li>
-              </ul>
-            </nav>
-            <nav v-else-if="tituloModal2 == 'Grupos'">
-              <ul class="pagination">
-                <li class="page-item" v-if="pagination.current_page > 1">
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaGrupo(
-                        pagination.current_page - 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Ant</a
-                  >
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in pagesNumber"
-                  :key="page"
-                  :class="[page == isActivedMar ? 'active' : '']"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="cambiarPaginaGrupo(page, buscar, criterio)"
-                    v-text="page"
-                  ></a>
-                </li>
-                <li
-                  class="page-item"
-                  v-if="pagination.current_page < pagination.last_page"
-                >
-                  <a
-                    class="page-link"
-                    href="#"
-                    @click.prevent="
-                      cambiarPaginaGrupo(
-                        pagination.current_page + 1,
-                        buscar,
-                        criterio
-                      )
-                    "
-                    >Sig</a
-                  >
-                </li>
-              </ul>
-            </nav>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="modal2 = false"
-            >
-              Cerrar
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1260,6 +220,7 @@ import { esquemaArticulos } from "../constants/validations";
 import "jspdf-autotable";
 import VueBarcode from "vue-barcode";
 import axios from "axios";
+import Tag from "primevue/tag";
 
 export default {
   components: {
@@ -1271,10 +232,11 @@ export default {
     InputText,
     TabView,
     TabPanel,
+    Tag
   },
   data() {
     return {
-       isLoading: false,
+      isLoading: false,
       // CONTROL DE VISTAS
       listado: 1, // 1 = listado, 2 = detalle
       modoVista: "lectura", // lectura | edicion
@@ -1305,7 +267,7 @@ export default {
 
       // REPORTE
       arrayReporte: [],
-      totalVentas: 0,
+      totalImporte: 0,
 
       // MODALES
       modal: false,
@@ -1541,6 +503,7 @@ export default {
       //fechas
       fechaInicio: "",
       fechaFin: "",
+      hoy: new Date().toISOString().split("T")[0],
 
       arrayDetalle: [],
       arrayReporteDetallado: [],
@@ -1552,42 +515,44 @@ export default {
       tipoReporte: "dia",
       fechaSeleccionada: "",
       mesSeleccionado: "",
-      totalVentas: 0,
+      totalImporte: 0,
       monedaPrincipal: ["1", "BOB"],
     };
   },
 
   computed: {
-    sortedResultados: function() {
+    sortedResultados: function () {
       return Object.values(this.arrayReporte).sort((a, b) => {
         return new Date(a.fecha_hora) - new Date(b.fecha_hora);
       });
     },
     filteredVentas() {
       if (!this.busquedaVentas) return this.arrayReporte;
+
       const texto = this.busquedaVentas.toLowerCase();
+
       return this.arrayReporte.filter((item) => {
         return Object.values(item).some((val) =>
-          String(val)
+          String(val || '')
             .toLowerCase()
             .includes(texto)
         );
       });
     },
-    isActived: function() {
+    isActived: function () {
       return this.pagination.current_page;
     },
-    isActivedM: function() {
+    isActivedM: function () {
       return this.pagination.current_page;
     },
-    isActivedMar: function() {
+    isActivedMar: function () {
       return this.pagination.current_page;
     },
 
-    pagesNumber: function() {
+    pagesNumber: function () {
       return this.calculatePages(this.pagination, this.offset.pagination);
     },
-    pagesNumberMedida: function() {
+    pagesNumberMedida: function () {
       return this.calculatePages(
         this.paginationMedida,
         this.offset.paginationMedida
@@ -1597,23 +562,23 @@ export default {
       console.log(this.fotoMuestra);
       return this.fotoMuestra;
     },
-    calcularTotal: function() {
+    calcularTotal: function () {
       var resultado = 0.0;
       for (var i = 0; i < this.arrayDetalle.length; i++) {
         resultado +=
           this.arrayDetalle[i].precioseleccionado *
-            this.arrayDetalle[i].cantidad -
+          this.arrayDetalle[i].cantidad -
           (this.arrayDetalle[i].precioseleccionado *
             this.arrayDetalle[i].cantidad *
             this.arrayDetalle[i].descuento) /
-            100;
+          100;
       }
       resultado -= this.descuentoAdicional;
       resultado -= this.descuentoGiftCard;
       return resultado;
     },
 
-    calcularSubTotal: function() {
+    calcularSubTotal: function () {
       var resultado = 0.0;
       for (var i = 0; i < this.arrayDetalle.length; i++) {
         resultado =
@@ -1623,7 +588,7 @@ export default {
             (this.arrayDetalle[i].precioseleccionado *
               this.arrayDetalle[i].cantidad *
               this.arrayDetalle[i].descuento) /
-              100);
+            100);
       }
       return resultado;
     },
@@ -1633,7 +598,18 @@ export default {
     previewCsv: "parseCsv", // Llama a parseCsv cuando previewCsv cambie
   },
   methods: {
-  selectSucursal() {
+    getTipoPagoSeverity(tipo) {
+      if (!tipo) return null;
+
+      tipo = tipo.toLowerCase();
+
+      if (tipo.includes('efectivo')) return 'success';   // verde
+      if (tipo.includes('qr')) return 'info';           // azul
+      if (tipo.includes('compuesto')) return 'warning'; // amarillo/naranja
+
+      return null; // por si aparece otro tipo
+    },
+    selectSucursal() {
       let me = this;
       var url = "/sucursal/selectSucursal";
       axios
@@ -1685,7 +661,7 @@ export default {
       let me = this;
 
       // CABECERA
-      axios.get("/venta/obtenerCabecera?id=" + id).then(function(response) {
+      axios.get("/venta/obtenerCabecera?id=" + id).then(function (response) {
         const venta = response.data.venta[0];
         console.log("VENTA:", venta);
         me.cliente = venta.nombre;
@@ -1707,14 +683,14 @@ export default {
       });
 
       // DETALLES
-      axios.get("/venta/obtenerDetalles?id=" + id).then(function(response) {
+      axios.get("/venta/obtenerDetalles?id=" + id).then(function (response) {
         me.arrayDetalle = response.data.detalles;
 
-         me.descuentoTotalDetalle = me.arrayDetalle.reduce((acc, item) => {
-            const cantidad = parseFloat(item.cantidad) || 1;
-            const descuentoUnidad = parseFloat(item.descuento_monto) || 0; // monto por unidad
-            return acc + (descuentoUnidad * cantidad);
-          }, 0);
+        me.descuentoTotalDetalle = me.arrayDetalle.reduce((acc, item) => {
+          const cantidad = parseFloat(item.cantidad) || 1;
+          const descuentoUnidad = parseFloat(item.descuento_monto) || 0; // monto por unidad
+          return acc + (descuentoUnidad * cantidad);
+        }, 0);
 
         me.descuentoAdicionalvista =
           (me.descuentoAdicionalvista || 0) - me.descuentoTotalDetalle;
@@ -1729,11 +705,11 @@ export default {
 
       axios
         .get("/venta/obtenerCuotas?id=" + id)
-        .then(function(response) {
+        .then(function (response) {
           me.cuotas = response.data.cuotas;
           console.log("Cuotas cargadas:", me.cuotas);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -1751,8 +727,8 @@ export default {
     <div style="height: 60px;font-size:16px;">
         <br>
         ` +
-          mensaje +
-          `.<br>
+        mensaje +
+        `.<br>
     </div>`,
         {
           type: "success",
@@ -1767,8 +743,8 @@ export default {
     <div style="height: 60px;font-size:16px;">
         <br>
         ` +
-          mensaje +
-          `<br>
+        mensaje +
+        `<br>
     </div>`,
         {
           type: "error",
@@ -2087,7 +1063,7 @@ export default {
           }
         });
     },
-    calculatePages: function(paginationObject, offset) {
+    calculatePages: function (paginationObject, offset) {
       if (!paginationObject.to) {
         return [];
       }
@@ -2224,13 +1200,13 @@ export default {
         "/cliente?page=" + page + "&buscar=" + buscar + "&criterio=" + criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayBuscador = respuesta.usuarios.data;
           me.pagination = respuesta.pagination;
           console.log("hola", me.arrayBuscador);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2246,12 +1222,12 @@ export default {
         criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayBuscador = respuesta.categorias.data;
           me.pagination = respuesta.pagination;
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2262,12 +1238,12 @@ export default {
         "/medida?page=" + page + "&buscar=" + buscar + "&criterio=" + criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayBuscador = respuesta.medidas.data;
           me.paginationMedida = respuesta.paginationMedida;
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2325,7 +1301,7 @@ export default {
         criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayBuscador = respuesta.sucursales.data;
           me.pagination = respuesta.pagination;
@@ -2334,7 +1310,7 @@ export default {
             me.sucursalseleccionada = me.arrayBuscador[0];
           }
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2344,12 +1320,12 @@ export default {
       var url = "/user/selectUser/rol?filtro=" + 2;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayBuscador = respuesta.usuarios;
           console.log("Ejecutivos", me.arrayBuscador);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2362,7 +1338,7 @@ export default {
 
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           console.log(respuesta);
 
@@ -2370,7 +1346,7 @@ export default {
           me.pagination = respuesta.pagination;
           console.log("Listad0");
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2383,25 +1359,25 @@ export default {
         "/grupos?page=" + page + "&buscar=" + buscar + "&criterio=" + criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           console.log(respuesta);
           me.arrayBuscador = respuesta.grupos.data;
           me.pagination = respuesta.pagination;
           console.log("Listad::");
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log("ERRORES", error);
         });
     },
 
     listaReporte() {
       let me = this;
-       me.isLoading = true;
-            
-       me.modal = false; 
+      me.isLoading = true;
 
-      var url = "/resumen-ventas-documento?";
+      me.modal = false;
+
+      var url = "/reporte-productos-vendidos?";
 
       url += "sucursal=" + this.sucursalseleccionada.id;
 
@@ -2416,18 +1392,8 @@ export default {
       }
 
       url += "&moneda=" + this.monedaPrincipal[0];
-
-      let fechaInicio, fechaFin;
-
-      if (this.tipoReporte === "dia") {
-        fechaInicio = this.fechaSeleccionada;
-        fechaFin = this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        const [year, month] = this.mesSeleccionado.split("-");
-        fechaInicio = `${year}-${month}-01`;
-        const ultimoDia = new Date(year, month, 0).getDate();
-        fechaFin = `${year}-${month}-${String(ultimoDia).padStart(2, "0")}`;
-      }
+      let fechaInicio = this.fechaInicio;
+      let fechaFin = this.fechaFin;
 
       url += "&fechaInicio=" + fechaInicio + "&fechaFin=" + fechaFin;
 
@@ -2435,44 +1401,45 @@ export default {
 
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
-          me.totalVentas = respuesta.total_BS;
-          me.arrayReporte = respuesta.ventas;
-          me.cantidadVentasRegistradasContado =
-            respuesta.ventas_registradas_contado || 0;
-          me.cantidadVentasRegistradasCredito =
-            respuesta.ventas_registradas_credito || 0;
-          me.cantidadVentasAnuladas = respuesta.ventas_anuladas || 0;
+
+          me.arrayReporte = respuesta.productos;
+          me.totalCantidad = respuesta.total_cantidad;
+          me.totalImporte = respuesta.total_importe;
+
+          me.cantidadRegistrados = respuesta.ventas_registradas || 0;
+          me.cantidadAnuladas = respuesta.ventas_anuladas || 0;
 
           console.log("Array reporte:", me.arrayReporte);
 
-          if (me.arrayReporte.length === 0) {
+          if (!me.arrayReporte || me.arrayReporte.length === 0) {
             me.$swal.fire(
               "Sin resultados",
-              "No se encontraron ventas para los filtros seleccionados",
+              "No se encontraron productos para los filtros seleccionados",
               "info"
             );
           } else {
-            let mensaje = `Se encontraron ${me.arrayReporte.length} ventas<br>`;
-            mensaje += `Registradas Contado: ${me.cantidadVentasRegistradasContado}<br>`;
-            mensaje += `Anuladas: ${me.cantidadVentasAnuladas}`;
+            let mensaje = `Se encontraron ${me.arrayReporte.length} registros<br>`;
+            mensaje += `Productos vendidos: ${me.totalCantidad}<br>`;
+            mensaje += `Ventas anuladas: ${me.cantidadAnuladas}`;
+
             me.$swal.fire("Éxito", mensaje, "success");
           }
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.error("ERROR:", error);
           me.$swal.fire("Error", "No se pudo generar el reporte", "error");
-        }) .finally(function() {
-                    setTimeout(() => {
-                        me.isLoading = false;
-                    }, 500);
-          });
+        }).finally(function () {
+          setTimeout(() => {
+            me.isLoading = false;
+          }, 500);
+        });
     },
 
     calcularTotalVentas() {
-      this.totalVentas = this.arrayReporte.reduce((total, venta) => {
-        return total + parseFloat(venta.importe_BS || 0);
+      this.totalImporte = this.arrayReporte.reduce((total, venta) => {
+        return total + parseFloat(venta.total_importe || 0);
       }, 0);
     },
 
@@ -2509,12 +1476,12 @@ export default {
 
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.arrayReporteDetallado = respuesta.ventas;
           console.log("array reporte detallado", me.arrayReporteDetallado);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log("ERRORES", error);
         });
     },
@@ -2537,45 +1504,45 @@ export default {
       url += "&fechaInicio=" + me.fechaInicio + "&fechaFin=" + me.fechaFin;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           me.articulosVendidos = response.data.articulos_vendidos;
           console.log("articulos vendidos", me.articulosVendidos);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log("ERRORES articulos vendidos", error);
         });
     },
 
-async descargarArchivoReporte(url, nombreArchivo) {
-  this.isLoading = true;
-  try {
-    const response = await axios.get(url, {
-      responseType: 'blob',
-      timeout: 600000 // 10 minutos
-    });
+    async descargarArchivoReporte(url, nombreArchivo) {
+      this.isLoading = true;
+      try {
+        const response = await axios.get(url, {
+          responseType: 'blob',
+          timeout: 600000 // 10 minutos
+        });
 
-    const blob = new Blob([response.data]);
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = nombreArchivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(link.href);
+        const blob = new Blob([response.data]);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = nombreArchivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(link.href);
 
-    // Opcional: mensaje de éxito (puedes omitirlo o usar un toast)
-    // this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte descargado', life: 3000 });
-  } catch (error) {
-    console.error('Error al descargar archivo:', error);
-    let mensaje = 'No se pudo generar el reporte';
-    if (error.code === 'ECONNABORTED') {
-      mensaje = 'La solicitud excedió el tiempo de espera.';
-    }
-    Swal.fire('Error', mensaje, 'error');
-  } finally {
-    this.isLoading = false;
-  }
-},
+        // Opcional: mensaje de éxito (puedes omitirlo o usar un toast)
+        // this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte descargado', life: 3000 });
+      } catch (error) {
+        console.error('Error al descargar archivo:', error);
+        let mensaje = 'No se pudo generar el reporte';
+        if (error.code === 'ECONNABORTED') {
+          mensaje = 'La solicitud excedió el tiempo de espera.';
+        }
+        Swal.fire('Error', mensaje, 'error');
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
     cargarSucursalUsuario() {
       console.log("Iniciando carga de sucursal del usuario...");
@@ -2605,19 +1572,36 @@ async descargarArchivoReporte(url, nombreArchivo) {
       if (!this.sucursalseleccionada || !this.sucursalseleccionada.id) {
         this.$swal.fire(
           "Error",
-          "No se ha cargado la sucursal del usuario",
+          "Debe seleccionar una sucursal",
           "warning"
         );
         return false;
       }
 
-      if (this.tipoReporte === "dia" && !this.fechaSeleccionada) {
-        this.$swal.fire("Error", "Debe seleccionar una fecha", "warning");
+      if (!this.fechaInicio) {
+        this.$swal.fire(
+          "Error",
+          "Debe seleccionar la fecha de inicio",
+          "warning"
+        );
         return false;
       }
 
-      if (this.tipoReporte === "mes" && !this.mesSeleccionado) {
-        this.$swal.fire("Error", "Debe seleccionar un mes y año", "warning");
+      if (!this.fechaFin) {
+        this.$swal.fire(
+          "Error",
+          "Debe seleccionar la fecha fin",
+          "warning"
+        );
+        return false;
+      }
+
+      if (this.fechaFin < this.fechaInicio) {
+        this.$swal.fire(
+          "Error",
+          "La fecha fin no puede ser menor a la fecha inicio",
+          "warning"
+        );
         return false;
       }
 
@@ -2655,293 +1639,92 @@ async descargarArchivoReporte(url, nombreArchivo) {
       return true;
     },
 
-    descargarPDFDialog() {
-      Swal.fire({
-        title: "¿Qué tipo de reporte quiere descargar?",
-        showCancelButton: true,
-        confirmButtonText: "GENERAL",
-        cancelButtonText: "DETALLADO",
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#10B481",
-        reverseButtons: true,
-        allowOutsideClick: true,
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.descargarPDFGeneral();
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-          this.descargarVentasDetalladasPDF();
-        }
-      });
+    exportarPDF() {
+  var me = this;
+
+  if (!this.validarFiltrosVisualizarReporte()) return;
+
+  me.isLoading = true;
+
+  axios({
+    url: "/reporte-productos-vendidos-pdf",
+    method: "GET",
+    responseType: "blob",
+    params: {
+      sucursal: this.sucursalseleccionada.id,
+      fechaInicio: this.fechaInicio,
+      fechaFin: this.fechaFin,
+      moneda: this.monedaPrincipal[0],
+      ejecutivoCuentas: this.ejecutivoseleccionado
+        ? this.ejecutivoseleccionado.id
+        : null,
+      idcliente: this.clienteseleccionada
+        ? this.clienteseleccionada.id
+        : null,
+      estadoVenta: this.criterioEstado,
     },
-    exportarExcelDialog() {
-      Swal.fire({
-        title: "¿Qué tipo de reporte Excel quiere exportar?",
-        showCancelButton: true,
-        confirmButtonText: "GENERAL",
-        cancelButtonText: "DETALLADO",
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#10B481",
-        reverseButtons: true,
-        allowOutsideClick: true,
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.descargarExcelGeneral();
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-          this.exportarExcelDetallado();
-        }
-      });
+  })
+    .then(function (response) {
+      var blob = new Blob([response.data], { type: "application/pdf" });
+
+      var link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "ReporteProductosVendidos.pdf";
+      link.click();
+    })
+    .catch(function (error) {
+      console.error(error);
+      me.$swal.fire("Error", "No se pudo generar el PDF", "error");
+    })
+    .finally(function () {
+      me.isLoading = false;
+    });
+},
+    exportarExcel() {
+  var me = this;
+
+  if (!this.validarFiltrosVisualizarReporte()) return;
+
+  me.isLoading = true;
+
+  axios({
+    url: "/reporte-productos-vendidos-excel",
+    method: "GET",
+    responseType: "blob",
+    params: {
+      sucursal: this.sucursalseleccionada.id,
+      nombreSucursal: this.sucursalseleccionada.nombre,
+      fechaInicio: this.fechaInicio,
+      fechaFin: this.fechaFin,
+      moneda: this.monedaPrincipal[0],
+      ejecutivoCuentas: this.ejecutivoseleccionado
+        ? this.ejecutivoseleccionado.id
+        : null,
+      idcliente: this.clienteseleccionada
+        ? this.clienteseleccionada.id
+        : null,
+      estadoVenta: this.criterioEstado,
     },
-
-    async descargarPDFGeneral() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire(
-          "No hay datos del filtro para generar reporte",
-          "",
-          "warning"
-        );
-        return;
-      }
-
-      let url = "/descargar-reporte-general-pdf?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
-
-      let tipo = "General";
-      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
-
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-        tipo = "Dia";
-        fecha = this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-        tipo = "Mes";
-        fecha = this.mesSeleccionado;
-      }
-
-      url += "&estadoVenta=" + this.criterioEstado;
-
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
-
-      url += "&moneda=" + this.monedaPrincipal[0];
-
-      // 🔹 Nombre sucursal sin optional chaining
-      let nombreSucursal = "Todas";
-      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
-        nombreSucursal = this.sucursalseleccionada.nombre;
-      }
-
-      // Limpiar caracteres problemáticos
-      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
-
-      // 🔹 Nombre final
-      let nombreArchivo =
-        "ReporteVentasGeneral_" +
-        tipo +
-        "_" +
-        fecha +
-        "_" +
-        nombreSucursal +
-        ".pdf";
-
-      await this.descargarArchivoReporte(url, nombreArchivo);
-    },
-
-    async descargarVentasDetalladasPDF() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire("No hay datos del filtro para generar reporte", "", "warning");
-        return;
-      }
-
-      let url = "/descargar-ventas-detalladas-pdf?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
-
-      let tipo = "General";
-      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
-
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-        tipo = "Dia";
-        fecha = this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-        tipo = "Mes";
-        fecha = this.mesSeleccionado;
-      }
-
-      url += "&estadoVenta=" + this.criterioEstado;
-
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
-
-      url += "&moneda=" + this.monedaPrincipal[0];
-
-      // 🔹 Nombre sucursal seguro para Vue 2
-      let nombreSucursal = "Todas";
-      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
-        nombreSucursal = this.sucursalseleccionada.nombre;
-      }
-
-      // Limpiar caracteres problemáticos
-      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
-
-      // 🔹 Nombre final
-      let nombreArchivo =
-        "ReporteVentasDetalladas_" +
-        tipo +
-        "_" +
-        fecha +
-        "_" +
-        nombreSucursal +
-        ".pdf";
-
-      await this.descargarArchivoReporte(url, nombreArchivo);
-    },
-
-   async descargarExcelGeneral() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire(
-          "No hay datos del filtro para generar reporte",
-          "",
-          "warning"
-        );
-        return;
-      }
-
-      let url = "/descargar-ventas-general-excel?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
-
-      let tipo = "General";
-      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
-
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-        tipo = "Dia";
-        fecha = this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-        tipo = "Mes";
-        fecha = this.mesSeleccionado;
-      }
-
-      url += "&estadoVenta=" + this.criterioEstado;
-
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
-
-      url += "&moneda=" + this.monedaPrincipal[0];
-
-      // 🔹 Nombre sucursal compatible con Vue 2
-      let nombreSucursal = "Todas";
-      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
-        nombreSucursal = this.sucursalseleccionada.nombre;
-      }
-
-      // Limpiar caracteres problemáticos
-      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
-
-      // 🔹 Nombre final
-      let nombreArchivo =
-        "ReporteVentasGeneral_" +
-        tipo +
-        "_" +
-        fecha +
-        "_" +
-        nombreSucursal +
-        ".xlsx";
-
-      await this.descargarArchivoReporte(url, nombreArchivo);
-    },
-
-    async exportarExcelDetallado() {
-      if (!this.validarFiltrosExportacion()) {
-        Swal.fire(
-          "No hay datos del filtro para generar reporte",
-          "",
-          "warning"
-        );
-        return;
-      }
-
-      let url = "/descargar-ventas-detalladas-excel?";
-      url += "sucursal=" + this.sucursalseleccionada.id;
-      url += "&tipoReporte=" + this.tipoReporte;
-
-      let tipo = "General";
-      let fecha = new Date().toISOString().slice(0, 10); // hoy por defecto
-
-      if (this.tipoReporte === "dia") {
-        url += "&fechaSeleccionada=" + this.fechaSeleccionada;
-        tipo = "Dia";
-        fecha = this.fechaSeleccionada;
-      } else if (this.tipoReporte === "mes") {
-        url += "&mesSeleccionado=" + this.mesSeleccionado;
-        tipo = "Mes";
-        fecha = this.mesSeleccionado;
-      }
-
-      url += "&estadoVenta=" + this.criterioEstado;
-
-      if (this.clienteseleccionada && this.clienteseleccionada.id) {
-        url += "&idcliente=" + this.clienteseleccionada.id;
-      }
-
-      url += "&moneda=" + this.monedaPrincipal[0];
-
-      // 🔹 Nombre sucursal compatible con Vue 2
-      let nombreSucursal = "Todas";
-      if (this.sucursalseleccionada && this.sucursalseleccionada.nombre) {
-        nombreSucursal = this.sucursalseleccionada.nombre;
-      }
-
-      // Limpiar caracteres problemáticos
-      nombreSucursal = nombreSucursal.replace(/[\s\/\\]+/g, "_");
-
-      // 🔹 Nombre final
-      let nombreArchivo =
-        "ReporteVentasDetalladas_" +
-        tipo +
-        "_" +
-        fecha +
-        "_" +
-        nombreSucursal +
-        ".xlsx";
-
-      await this.descargarArchivoReporte(url, nombreArchivo);
-    },
-
-    formateaKardex() {
-      let saldo = 0;
-      let me = this;
-      me.arrayReporte = this.arrayReporte.map((item) => {
-        if (item.tipo === "Ingreso") {
-          saldo += item.cantidad;
-          return {
-            fecha_hora: item.fecha_hora,
-            entrada: item.cantidad,
-            salida: 0,
-            saldo,
-          };
-        } else if (item.tipo === "Salida") {
-          saldo -= item.cantidad;
-          return {
-            fecha_hora: item.fecha_hora,
-            entrada: 0,
-            salida: item.cantidad,
-            saldo,
-          };
-        }
-        // Si hay más tipos, puedes agregar condiciones aquí
+  })
+    .then(function (response) {
+      var blob = new Blob([response.data], {
+        type:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
 
-      console.log("KARDEX", me.arrayReporte);
-    },
+      var link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "ReporteProductosVendidos.xlsx";
+      link.click();
+    })
+    .catch(function (error) {
+      console.error(error);
+      me.$swal.fire("Error", "No se pudo generar el Excel", "error");
+    })
+    .finally(function () {
+      me.isLoading = false;
+    });
+},
 
     //----listar precio 4_julio-------
     listarPrecio() {
@@ -2949,13 +1732,13 @@ async descargarArchivoReporte(url, nombreArchivo) {
       var url = "/precios";
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.precios = respuesta.precio.data;
           console.log("PRECIOS", me.precios);
           //me.precioCount = me.arrayBuscador.length;
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -2966,12 +1749,12 @@ async descargarArchivoReporte(url, nombreArchivo) {
       var url = "/medida/selectMedida";
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           //console.log(response);
           var respuesta = response.data;
           me.arrayMedida = respuesta.medidas;
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -3658,7 +2441,7 @@ async descargarArchivoReporte(url, nombreArchivo) {
 
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           me.mostrarSaldosStock =
             respuesta.configuracionTrabajo.mostrarSaldosStock;
@@ -3676,7 +2459,7 @@ async descargarArchivoReporte(url, nombreArchivo) {
           console.log("Moneda principal; ", me.monedaPrincipal);
           console.log("Moneda; ", me.monedaPrincipal[0]);
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -3690,7 +2473,7 @@ async descargarArchivoReporte(url, nombreArchivo) {
     window.addEventListener("resize", this.handleResize);
     this.recuperarIdRol();
     this.selectSucursal(),
-    this.datosConfiguracion();
+      this.datosConfiguracion();
     this.obtenerConfiguracionTrabajo();
     this.listarPrecio(); //aumenTe 6julio
     this.cargarSucursalUsuario();
@@ -4039,6 +2822,7 @@ body.modal-open {
   font-size: 0.65rem;
   margin-right: 4px;
 }
+
 /* Estilo uniforme para Dropdown (igual que InputText) */
 .dropdown-full {
   width: 100% !important;
@@ -4119,6 +2903,7 @@ body.modal-open {
   border-color: #6c9ffe;
   outline: none;
 }
+
 .tabla-pro {
   width: 100%;
   white-space: nowrap;
@@ -4157,6 +2942,7 @@ body.modal-open {
   padding: 0.35rem 0.4rem;
   font-size: 0.75rem;
 }
+
 .custom-loading-overlay {
   position: fixed;
   top: 0;
@@ -4229,37 +3015,37 @@ body.modal-open {
   margin-top: 0;
 }
 
->>> .p-panel .p-panel-content {
+>>>.p-panel .p-panel-content {
   padding: 1rem;
 }
 
->>> .p-panel .p-panel-header {
+>>>.p-panel .p-panel-header {
   padding: 0.75rem 1rem;
   background: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
 }
 
->>> .p-panel .p-panel-header .p-panel-title {
+>>>.p-panel .p-panel-header .p-panel-title {
   font-weight: 600;
 }
 
-.responsive-dialog >>> .p-dialog {
+.responsive-dialog>>>.p-dialog {
   margin: 0.75rem;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   overflow-x: auto;
   padding: 0.75rem 1rem;
 }
 
-.responsive-dialog >>> .p-dialog-header {
+.responsive-dialog>>>.p-dialog-header {
   padding: 0.75rem 1.5rem;
   font-size: 1.1rem;
 }
 
-.responsive-dialog >>> .p-dialog-footer {
+.responsive-dialog>>>.p-dialog-footer {
   padding: 0.5rem 1.5rem;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -4292,15 +3078,15 @@ body.modal-open {
   margin-right: 1rem;
 }
 
-.form-compact >>> .p-field {
+.form-compact>>>.p-field {
   margin-bottom: 0.25rem !important;
 }
 
->>> .p-fluid .p-field {
+>>>.p-fluid .p-field {
   margin-bottom: 0.25rem;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   padding: 0.75rem 1rem !important;
 }
 
@@ -4359,21 +3145,21 @@ body.modal-open {
   z-index: 9990 !important;
 }
 
->>> .swal2-container {
+>>>.swal2-container {
   z-index: 99999 !important;
 }
 
->>> .swal2-popup {
+>>>.swal2-popup {
   z-index: 99999 !important;
 }
 
 @media (max-width: 1024px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.5rem;
     max-height: 95vh;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.85rem;
   }
 }
@@ -4383,21 +3169,21 @@ body.modal-open {
     display: none;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.25rem;
     max-height: 98vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.5rem 0.75rem;
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.5rem 1rem;
     font-size: 1rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.4rem 1rem;
     justify-content: flex-end;
   }
@@ -4406,26 +3192,26 @@ body.modal-open {
     gap: 0.5rem;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.8rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.4rem 0.3rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.5rem 0.3rem;
     font-size: 0.75rem;
   }
 
-  >>> .p-button-sm {
+  >>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
     min-width: auto !important;
   }
 
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -4443,9 +3229,9 @@ body.modal-open {
     font-size: 0.6rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
@@ -4461,26 +3247,26 @@ body.modal-open {
     display: none;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.1rem;
     max-height: 99vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.4rem 0.5rem;
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.4rem 0.75rem;
     font-size: 0.95rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.3rem 0.75rem;
     justify-content: flex-end;
   }
 
-  .responsive-dialog >>> .p-dialog-footer .p-button {
+  .responsive-dialog>>>.p-dialog-footer .p-button {
     width: auto;
     margin-bottom: 0.25rem;
   }
@@ -4500,7 +3286,7 @@ body.modal-open {
     min-width: 0;
   }
 
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -4510,15 +3296,15 @@ body.modal-open {
     font-size: 0.8rem !important;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.75rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.3rem 0.2rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
   }
@@ -4531,14 +3317,14 @@ body.modal-open {
     font-size: 0.55rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.85rem;
     padding: 0.4rem;
   }
 
-  >>> .p-tag {
+  >>>.p-tag {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
@@ -4550,18 +3336,18 @@ body.modal-open {
 }
 
 @media (max-width: 768px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     flex-wrap: wrap !important;
     justify-content: center;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 32px !important;
     height: 32px !important;
     font-size: 0.85rem !important;
@@ -4571,16 +3357,16 @@ body.modal-open {
 }
 
 @media (max-width: 480px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 28px !important;
     height: 28px !important;
     font-size: 0.8rem !important;
@@ -4589,117 +3375,107 @@ body.modal-open {
   }
 }
 
->>> .p-datatable .p-button {
+>>>.p-datatable .p-button {
   margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
-  >>> .p-datatable .p-button {
+  >>>.p-datatable .p-button {
     margin-right: 0.15rem;
     margin-bottom: 0.15rem;
   }
 }
 
->>> .p-fileupload .p-button.p-fileupload-choose {
+>>>.p-fileupload .p-button.p-fileupload-choose {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
   color: #ffffff !important;
   transition: all 0.2s ease-in-out !important;
 }
 
->>> .p-fileupload .p-button.p-fileupload-choose:enabled:hover {
+>>>.p-fileupload .p-button.p-fileupload-choose:enabled:hover {
   background-color: #16a34a !important;
   border-color: #16a34a !important;
 }
 
->>> .p-fileupload .p-button.p-fileupload-choose:focus {
+>>>.p-fileupload .p-button.p-fileupload-choose:focus {
   box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.5) !important;
 }
 
->>> .p-fileupload .p-button.p-fileupload-choose:enabled:active {
+>>>.p-fileupload .p-button.p-fileupload-choose:enabled:active {
   background-color: #15803d !important;
   border-color: #15803d !important;
 }
 
->>> .p-fileupload .p-button.p-fileupload-choose:disabled {
+>>>.p-fileupload .p-button.p-fileupload-choose:disabled {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
   opacity: 0.6;
 }
 
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose) {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose) {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
   transition: all 0.2s ease-in-out !important;
 }
 
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
 }
 
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):focus {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):focus {
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
 }
 
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):enabled:active {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):enabled:active {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
 }
 
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):disabled {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):disabled {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   opacity: 0.6;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button {
+>>>.p-fileupload .p-fileupload-files .p-button {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
   transition: all 0.2s ease-in-out !important;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button:enabled:hover {
+>>>.p-fileupload .p-fileupload-files .p-button:enabled:hover {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button:focus {
+>>>.p-fileupload .p-fileupload-files .p-button:focus {
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button:enabled:active {
+>>>.p-fileupload .p-fileupload-files .p-button:enabled:active {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button:disabled {
+>>>.p-fileupload .p-fileupload-files .p-button:disabled {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   opacity: 0.6;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button .p-button-icon {
+>>>.p-fileupload .p-fileupload-files .p-button .p-button-icon {
   color: #ffffff !important;
 }
 
->>> .p-fileupload-row > div:first-child {
+>>>.p-fileupload-row>div:first-child {
   display: none !important;
 }
 
->>> .p-dialog .p-dialog-content {
+>>>.p-dialog .p-dialog-content {
   padding: 0 1.5rem 1.5rem 1.5rem;
 }
 
@@ -4755,6 +3531,7 @@ body.modal-open {
 .modal-footer-buttons {
   padding-top: 1rem;
 }
+
 /* ===== CONTENEDOR GENERAL ===== */
 .detalle-venta-pro {
   background: #ffffff;
@@ -4776,6 +3553,7 @@ body.modal-open {
   padding-bottom: 0.1rem;
   margin-bottom: 1rem;
 }
+
 .detalle-titulo-pro {
   font-size: 1.2rem;
   font-weight: 700;
@@ -4858,6 +3636,7 @@ body.modal-open {
   margin-top: 2rem;
   text-align: right;
 }
+
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -4898,7 +3677,12 @@ body.modal-open {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

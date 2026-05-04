@@ -157,6 +157,9 @@
                     <li @click="menu=62" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Ventas Diarias y Mensuales</a>
                     </li>
+                    <li @click="menu=102" class="nav-item">
+                        <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Productos Vendidos</a>
+                    </li>
                 </ul>
             </li>            
     </nav>

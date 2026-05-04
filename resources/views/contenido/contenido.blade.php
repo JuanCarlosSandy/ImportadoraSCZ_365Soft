@@ -802,6 +802,10 @@
 <template v-if="menu==101">
     <controlinventario></controlinventario>
 </template>
+
+<template v-if="menu==102">
+    <reporteproductosvendidos></reporteproductosvendidos>
+</template>
 @else
 
 @endif

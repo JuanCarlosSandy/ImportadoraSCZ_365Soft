@@ -14,6 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use FPDF;
+use App\Exports\ReporteProductosVendidosExport;
 
 
 class ReportesVentas extends Controller
@@ -927,6 +928,132 @@ class ReportesVentas extends Controller
         ]);
         $filename = 'ventas_detalladas_' . date('Ymd_His') . '.xlsx';
         return Excel::download(new VentasDetalladasExport($filters), $filename);
+    }
+
+    public function ReporteProductosVendidos(Request $request)
+    {
+        $fechaInicio = $request->fechaInicio . ' 00:00:00';
+        $fechaFin = $request->fechaFin . ' 23:59:59';
+        $moneda = $request->moneda;
+
+        $query = DB::table('detalle_ventas as dv')
+            ->join('ventas as v', 'dv.idventa', '=', 'v.id')
+            ->join('articulos as a', 'dv.idarticulo', '=', 'a.id')
+            ->join('users as u', 'v.idusuario', '=', 'u.id')
+            ->join('sucursales as s', 'v.idsucursal', '=', 's.id')
+            ->select(
+                'a.nombre as producto',
+                'dv.cantidad',
+                'dv.precio as precio_unitario',
+                DB::raw('(dv.cantidad * dv.precio) as subtotal'),
+                'v.num_comprobante',
+                'v.fecha_hora',
+                'u.usuario as vendedor',
+                'v.estado',
+                DB::raw("
+                CASE 
+                    WHEN v.idtipo_pago = 1 THEN 'Efectivo'
+                    WHEN v.idtipo_pago = 7 THEN 'QR'
+                    WHEN v.idtipo_pago = 13 THEN 'Compuesto'
+                    ELSE 'Otro'
+                END as tipo_pago
+            ")
+            )
+            ->whereBetween('v.fecha_hora', [$fechaInicio, $fechaFin])
+            ->orderBy('v.fecha_hora', 'desc');
+
+        // ✅ Filtro sucursal
+        if ($request->has('sucursal') && $request->sucursal !== 'undefined') {
+            $query->where('v.idsucursal', $request->sucursal);
+        }
+
+        // ✅ Filtro cliente
+        if ($request->has('idcliente') && $request->idcliente !== 'undefined') {
+            $query->where('v.idcliente', $request->idcliente);
+        }
+
+        // ✅ Filtro usuario
+        if ($request->has('ejecutivoCuentas') && $request->ejecutivoCuentas !== 'undefined') {
+            $query->where('v.idusuario', $request->ejecutivoCuentas);
+        }
+
+        // ✅ Filtro estado
+        if ($request->has('estadoVenta') && $request->estadoVenta !== 'Todos') {
+            if ($request->estadoVenta === 'Registrado') {
+                $query->where('v.estado', 1);
+            } elseif ($request->estadoVenta === 'Anulado') {
+                $query->where('v.estado', 0);
+            }
+        }
+
+        $datos = $query->get();
+
+        // 🔢 Totales
+        $totalCantidad = 0;
+        $totalImporte = 0;
+
+        foreach ($datos as $item) {
+            if ($item->estado == 1) { // solo ventas válidas
+                $totalCantidad += $item->cantidad;
+                $totalImporte += $item->subtotal;
+            }
+        }
+
+        return [
+            'productos' => $datos,
+            'total_cantidad' => $totalCantidad,
+            'total_importe' => number_format($totalImporte, 2, '.', ''),
+            'total_registros' => $datos->count(),
+            'ventas_registradas' => $datos->where('estado', 1)->count(),
+            'ventas_anuladas' => $datos->where('estado', 0)->count()
+        ];
+    }
+    public function ReporteProductosVendidosPDF(Request $request)
+    {
+        ini_set('max_execution_time', 600);
+        ini_set('memory_limit', '1024M');
+
+        try {
+
+            $data = $this->ReporteProductosVendidos($request);
+
+            $productos = $data['productos'];
+
+            if (count($productos) === 0) {
+                return response()->json(['error' => 'No hay datos'], 404);
+            }
+
+            $sucursal = \DB::table('sucursales')
+                ->where('id', $request->sucursal)
+                ->value('nombre') ?? 'Todos';
+
+            $pdf = \PDF::loadView('pdf.reporte_productos', [
+                'productos' => $productos,
+                'fechaInicio' => $request->fechaInicio,
+                'fechaFin' => $request->fechaFin,
+                'sucursal' => $sucursal
+            ]);
+
+            $pdf->setPaper('A4', 'landscape');
+            $pdf->getDomPDF()->set_option("isPhpEnabled", true);
+            return $pdf->download('ReporteProductosVendidos.pdf');
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function exportarExcel(Request $request)
+    {
+        return Excel::download(
+            new ReporteProductosVendidosExport(
+                $request->sucursal,
+                $request->fechaInicio,
+                $request->fechaFin,
+                $request->nombreSucursal // 🔥 nuevo
+            ),
+            'ReporteProductosVendidos.xlsx'
+        );
     }
 }
 class PDFVentas extends FPDF

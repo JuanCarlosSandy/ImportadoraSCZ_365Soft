@@ -1077,6 +1077,9 @@ Route::group(["middleware" => ["auth"]], function () {
 
         Route::get('/ingresos/comprobantes-dim', 'IngresoController@comprobantesDim');
 
+        Route::get('/reporte-productos-vendidos', 'ReportesVentas@ReporteProductosVendidos');
+        Route::get('/reporte-productos-vendidos-pdf', 'ReportesVentas@ReporteProductosVendidosPDF');
+        Route::get('/reporte-productos-vendidos-excel', 'ReportesVentas@exportarExcel');
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA
