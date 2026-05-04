@@ -14,13 +14,13 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-briefcase"></i> EMPRESA </a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=13" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-building" style="font-size: 19px;"></i> Info Empresa</a>
+                        <a class="nav-link" href="#"><i class="fa fa-building"></i> Info Empresa</a>
                     </li>
                     <li @click="menu=14" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-sitemap" style="font-size: 19px;"></i> Mis Sucursales</a>
+                        <a class="nav-link" href="#"><i class="fa fa-sitemap"></i> Mis Sucursales</a>
                     </li>
                    <!--<li @click="menu=41" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Puntos de
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Puntos de
                             Venta</a>
                     </li>-->
 
@@ -45,18 +45,18 @@
                     VENTAS</a>
                 <ul class="nav-dropdown-items">
                      <li @click="menu=0" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-shopping-cart"></i> Vender</a>
+                        <a class="nav-link" href="#"><i class="fa fa-cart-plus"></i> Vender</a>
                     </li>
                     <!--
                     <li @click="menu=75" class="nav-item">
                         <a class="nav-link" href="#"><i class="fa fa-credit-card"></i> Deudores/Acreedores</a>
                     </li>
                     <li @click="menu=74" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Reporte Deudores</a>
+                        <a class="nav-link" href="#"><i class="fa fa-calendar-check-o"></i> Reporte Deudores</a>
                     </li>
 -->
                     <li @click="menu=6" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-users" style="font-size: 16px;"></i> Mis Clientes</a>
+                        <a class="nav-link" href="#"><i class="fa fa-users"></i> Mis Clientes</a>
                     </li>
                 </ul>
             </li>
@@ -66,7 +66,7 @@
                     COMPRAS</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=3" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Comprar</a>
+                        <a class="nav-link" href="#"><i class="fa fa-shopping-basket"></i> Comprar</a>
                     </li>
                 </ul>
             </li>
@@ -75,19 +75,19 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-file-text"></i> ALMACEN</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=24" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-building" style="font-size: 19px;"></i> Mis Almacenes</a>
+                        <a class="nav-link" href="#"><i class="fa fa-building"></i> Mis Almacenes</a>
                     </li>
                     <li @click="menu=25" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-cubes" style="font-size: 19px;"></i> Mi Inventario</a>
+                        <a class="nav-link" href="#"><i class="fa fa-cubes"></i> Mi Inventario</a>
                     </li>
                     <li @click="menu=73" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Ajuste de Inventario</a>
+                        <a class="nav-link" href="#"><i class="fa fa-cog"></i> Ajuste de Inventario</a>
                     </li>
                     <li @click="menu=30" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Traspasos</a>
+                        <a class="nav-link" href="#"><i class="fa fa-exchange"></i> Traspasos</a>
                     </li>
                     <li @click="menu=101" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-line-chart" style="font-size: 19px;"></i> Control de Inventario</a>
+                        <a class="nav-link" href="#"><i class="fa fa-line-chart"></i> Control de Inventario</a>
                     </li>
                 </ul>
             </li>
@@ -95,15 +95,15 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-tags"></i> PRODUCTOS</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=71" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Mis Productos</a>
+                        <a class="nav-link" href="#"><i class="fa fa-product-hunt"></i> Mis Productos</a>
                     </li>
 
                     <li @click="menu=19" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-tags" style="font-size: 19px;"></i> Categoria</a>
+                        <a class="nav-link" href="#"><i class="fa fa-th-list"></i> Categoria</a>
                     </li>
                     
                     <li @click="menu=4" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Mis Proveedores</a>
+                        <a class="nav-link" href="#"><i class="fa fa-globe"></i> Mis Proveedores</a>
                     </li>
                 </ul>
             </li>
@@ -112,10 +112,10 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-h-square"></i> OFERTAR/COMBOS</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=76" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Mis Ofertas</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Mis Ofertas</a>
                     </li>
                     <!--<li @click="menu=75" class="nav-item">
-                        <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i> Categoria Servicios</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Categoria Servicios</a>
                     </li>-->
                 </ul>
             </li>
@@ -125,28 +125,28 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-lock"></i> ACCESO</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=7" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-user" style="font-size: 19px;"></i> Mis Usuarios</a>
+                        <a class="nav-link" href="#"><i class="fa fa-user"></i> Mis Usuarios</a>
                     </li>
                     <li @click="menu=8" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-id-badge" style="font-size: 19px;"></i> Roles</a>
+                        <a class="nav-link" href="#"><i class="fa fa-id-badge"></i> Roles</a>
                     </li>
                 </ul>
             </li>
             
             <li class="nav-item nav-dropdown">
-                <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-line-chart"></i> REPORTE INVENTARIO</a>
+                <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-book"></i> REPORTE INVENTARIO</a>
                 <ul class="nav-dropdown-items">
                     <!--<li @click="menu=100" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Kardex Fisico de Inventario</a>
+                        <a class="nav-link" href="#"><i class="fa fa-list-alt"></i> Kardex Fisico de Inventario</a>
                     </li>-->
                     <li @click="menu=92" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-list-alt" style="font-size: 19px;"></i> Productos Bajo Stock</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Productos Bajo Stock</a>
                     </li>
                     <li @click="menu=63" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-archive" style="font-size: 19px;"></i> Inventario Fisico Valorado</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Inventario Fisico Valorado</a>
                     </li>
                     <li @click="menu=64" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-cubes" style="font-size: 19px;"></i> Inventario Fisico</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Inventario Fisico</a>
                     </li>
                 </ul>
             </li>
@@ -155,10 +155,10 @@
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-line-chart"></i> REPORTE VENTAS</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=62" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Ventas Diarias y Mensuales</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Ventas Diarias y Mensuales</a>
                     </li>
                     <li @click="menu=102" class="nav-item">
-                        <a class="nav-link" href="#"><i class="fa fa-calendar-check-o" style="font-size: 19px;"></i> Productos Vendidos</a>
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Productos Vendidos</a>
                     </li>
                 </ul>
             </li>            
