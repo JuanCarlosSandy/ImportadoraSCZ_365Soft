@@ -109,6 +109,7 @@
 <table>
     <thead>
         <tr>
+            <th>Codigo</th>
             <th>Producto</th>
             <th>Cant.</th>
             <th>Precio</th>
@@ -124,6 +125,7 @@
     <tbody>
         @foreach($productos as $item)
         <tr>
+            <td>{{ $item->codigo_producto }}</td>
             <td>{{ $item->producto }}</td>
             <td class="text-center">{{ $item->cantidad }}</td>
             <td class="text-right">{{ number_format($item->precio_unitario, 2) }}</td>

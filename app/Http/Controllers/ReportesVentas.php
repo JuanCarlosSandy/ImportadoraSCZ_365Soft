@@ -943,6 +943,7 @@ class ReportesVentas extends Controller
             ->join('sucursales as s', 'v.idsucursal', '=', 's.id')
             ->select(
                 'a.nombre as producto',
+                'a.codigo as codigo_producto',
                 'dv.cantidad',
                 'dv.precio as precio_unitario',
                 DB::raw('(dv.cantidad * dv.precio) as subtotal'),

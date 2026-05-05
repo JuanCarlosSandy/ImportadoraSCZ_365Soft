@@ -80,6 +80,12 @@
           </div>
           <DataTable :value="filteredVentas" :paginator="true" :rows="12" dataKey="id" responsiveLayout="scroll"
             class="p-datatable-gridlines p-datatable-sm tabla-pro">
+            
+            <Column header="Codigo">
+              <template #body="slotProps">
+                {{ slotProps.data.codigo_producto }}
+              </template>
+            </Column>
 
             <Column header="Producto">
               <template #body="slotProps">
@@ -1724,7 +1730,7 @@ export default {
     .finally(function () {
       me.isLoading = false;
     });
-},
+} ,
 
     //----listar precio 4_julio-------
     listarPrecio() {

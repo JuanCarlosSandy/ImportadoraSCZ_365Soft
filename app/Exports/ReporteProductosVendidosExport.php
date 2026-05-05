@@ -45,6 +45,7 @@ class ReporteProductosVendidosExport implements
             ->join('users as u', 'v.idusuario', '=', 'u.id')
             ->join('sucursales as s', 'v.idsucursal', '=', 's.id')
             ->select(
+                'a.codigo as codigo_producto',
                 'a.nombre as producto',
                 'dv.cantidad',
                 'dv.precio as precio_unitario',
@@ -75,6 +76,7 @@ class ReporteProductosVendidosExport implements
     public function headings(): array
     {
         return [
+            'Codigo',
             'Producto',
             'Cantidad',
             'Precio',
@@ -91,6 +93,7 @@ class ReporteProductosVendidosExport implements
     public function map($row): array
     {
         return [
+            $row->codigo_producto,
             $row->producto,
             $row->cantidad,
             $row->precio_unitario,
@@ -107,15 +110,16 @@ class ReporteProductosVendidosExport implements
     public function columnWidths(): array
     {
         return [
-            'A' => 40,
-            'B' => 12,
-            'C' => 15,
-            'D' => 18,
-            'E' => 20,
-            'F' => 22,
-            'G' => 25,
-            'H' => 15,
-            'I' => 18,
+            'A' => 12,
+            'B' => 40,
+            'C' => 12,
+            'D' => 15,
+            'E' => 18,
+            'F' => 20,
+            'G' => 22,
+            'H' => 25,
+            'I' => 15,
+            'J' => 18,
         ];
     }
 
@@ -165,7 +169,7 @@ class ReporteProductosVendidosExport implements
                 $sheet->setCellValue('E5', 'Desde: ' . $this->fechaInicio);
                 $sheet->setCellValue('A6', 'Hasta: ' . $this->fechaFin);
 
-                $sheet->getStyle('A5:H6')->getFont()->setBold(true);
+                $sheet->getStyle('A5:J6')->getFont()->setBold(true);
             }
         ];
     }
@@ -174,14 +178,14 @@ class ReporteProductosVendidosExport implements
     public function styles(Worksheet $sheet)
     {
         // HEADER TABLA
-        $sheet->getStyle('A8:I8')->applyFromArray([
+        $sheet->getStyle('A8:J8')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '34495E']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
         // BORDES
-        $sheet->getStyle('A9:I' . $sheet->getHighestRow())->applyFromArray([
+        $sheet->getStyle('A9:J' . $sheet->getHighestRow())->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
