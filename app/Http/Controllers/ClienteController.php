@@ -283,23 +283,36 @@ class ClienteController extends Controller
         if (!$request->ajax())
             return redirect('/');
 
-        // Verificar si ya existe un cliente con este número de documento
-        $clienteExistente = !empty($request->num_documento)
-            ? Persona::where('num_documento', $request->num_documento)->first()
-            : null;
+        // 🔍 Buscar por tipo + número de documento
+        $clienteExistente = Persona::where('tipo_documento', $request->tipo_documento)
+            ->where('num_documento', $request->num_documento)
+            ->first();
 
         if ($clienteExistente) {
-            if ((int) $clienteExistente->estado !== 1) {
-                return response()->json([
-                    'message' => 'El cliente con ese documento está inactivo y no puede usarse en ventas.'
-                ], 422);
+
+            // 🔄 Si está desactivado → reactivar
+            if ((int) $clienteExistente->estado === 0) {
+                $clienteExistente->estado = 1;
+                $clienteExistente->nombre = $request->nombre;
+                $clienteExistente->usuario = Auth::user()->iduse;
+                $clienteExistente->complemento_id = $request->complemento ?? null;
+                $clienteExistente->telefono = $request->telefono ?? null;
+                $clienteExistente->direccion = $request->direccion ?? null;
+                $clienteExistente->save();
+
+                return [
+                    'id' => $clienteExistente->id,
+                    'message' => 'Cliente reactivado correctamente'
+                ];
             }
 
-            // Si ya existe, devolver ese ID
-            return ['id' => $clienteExistente->id];
+            // 🚫 Si ya existe activo → bloquear
+            return response()->json([
+                'message' => 'Ya existe un cliente activo con el mismo Tipo y N° de Documento.'
+            ], 409);
         }
 
-        // Si no existe, crear uno nuevo
+        // ✅ Crear nuevo
         $persona = new Persona();
         $persona->nombre = $request->nombre;
         $persona->usuario = Auth::user()->iduse;
@@ -308,15 +321,48 @@ class ClienteController extends Controller
         $persona->complemento_id = $request->complemento ?? null;
         $persona->telefono = $request->telefono ?? null;
         $persona->direccion = $request->direccion ?? null;
+        $persona->estado = 1;
         $persona->save();
 
-        return ['id' => $persona->id];
+        return [
+            'id' => $persona->id,
+            'message' => 'Cliente registrado correctamente'
+        ];
     }
 
     public function update(Request $request)
     {
         if (!$request->ajax())
             return redirect('/');
+
+        // 🔴 1. Validar duplicado de documento (más importante)
+        $docDuplicado = Persona::where('tipo_documento', $request->tipo_documento)
+            ->where('num_documento', $request->num_documento)
+            ->where('id', '!=', $request->id)
+            ->where('estado', 1)
+            ->exists();
+
+        if ($docDuplicado) {
+            return response()->json([
+                'message' => 'Ya existe un cliente activo con el mismo Tipo y N° de Documento.'
+            ], 409);
+        }
+
+        // 🟠 2. Validar duplicado completo (nombre + doc)
+        $existeDuplicado = Persona::where('nombre', $request->nombre)
+            ->where('tipo_documento', $request->tipo_documento)
+            ->where('num_documento', $request->num_documento)
+            ->where('id', '!=', $request->id)
+            ->where('estado', 1)
+            ->exists();
+
+        if ($existeDuplicado) {
+            return response()->json([
+                'message' => 'Ya existe un cliente activo con los mismos datos (Nombre, Tipo y N° Documento).'
+            ], 409);
+        }
+
+        // ✅ 3. Actualizar
         $persona = Persona::findOrFail($request->id);
         $persona->nombre = $request->nombre;
         $persona->usuario = $request->usuariodos_id;
@@ -325,11 +371,13 @@ class ClienteController extends Controller
         $persona->complemento_id = $request->complemento;
         $persona->telefono = $request->telefono;
         $persona->direccion = $request->direccion;
-
         $persona->save();
-        Log::info('DAtOS ACTU8ALIZAR!!:', [
+
+        Log::info('DATOS ACTUALIZADOS:', [
             'DATOS' => $persona,
         ]);
+
+        return ['message' => 'Cliente actualizado correctamente'];
     }
 
     public function desactivar(Request $request)
@@ -467,45 +515,70 @@ class ClienteController extends Controller
 
     public function verificarExistencia(Request $request)
     {
-        //$venta = Venta::findOrFail($request->documento);
-        //$documento = $venta->cliente->num_documento;
+        $tipo = $request->tipo_documento ?? 'CI';
         $documento = $request->documento;
-        $cliente = Persona::where('num_documento', $documento)->first();
+
+        $cliente = Persona::where('tipo_documento', $tipo)
+            ->where('num_documento', $documento)
+            ->first();
 
         if ($cliente) {
-            if ((int) $cliente->estado !== 1) {
+
+            // 🔄 Reactivar si está inactivo
+            if ((int) $cliente->estado === 0) {
+                $cliente->estado = 1;
+                $cliente->save();
+
                 return response()->json([
-                    'existe' => false,
-                    'inactivo' => true,
-                    'message' => 'El cliente existe pero está inactivo.'
+                    'existe' => true,
+                    'reactivado' => true,
+                    'cliente' => $cliente,
+                    'message' => 'Cliente reactivado automáticamente'
                 ]);
             }
 
-            return response()->json(['existe' => true, 'cliente' => $cliente]);
-        } else {
-            return response()->json(['existe' => false]);
+            return response()->json([
+                'existe' => true,
+                'cliente' => $cliente
+            ]);
         }
+
+        return response()->json(['existe' => false]);
     }
 
     public function verificarExistencia2(Request $request)
     {
         $venta = Venta::findOrFail($request->documento);
+
+        $tipo = $venta->cliente->tipo_documento ?? 'CI';
         $documento = $venta->cliente->num_documento;
-        $cliente = Persona::where('num_documento', $documento)->first();
+
+        $cliente = Persona::where('tipo_documento', $tipo)
+            ->where('num_documento', $documento)
+            ->first();
 
         if ($cliente) {
-            if ((int) $cliente->estado !== 1) {
+
+            // 🔄 Reactivar si está inactivo
+            if ((int) $cliente->estado === 0) {
+                $cliente->estado = 1;
+                $cliente->save();
+
                 return response()->json([
-                    'existe' => false,
-                    'inactivo' => true,
-                    'message' => 'El cliente existe pero está inactivo.'
+                    'existe' => true,
+                    'reactivado' => true,
+                    'cliente' => $cliente,
+                    'message' => 'Cliente reactivado automáticamente'
                 ]);
             }
 
-            return response()->json(['existe' => true, 'cliente' => $cliente]);
-        } else {
-            return response()->json(['existe' => false]);
+            return response()->json([
+                'existe' => true,
+                'cliente' => $cliente
+            ]);
         }
+
+        return response()->json(['existe' => false]);
     }
 
     public function buscarPorDocumento(Request $request)

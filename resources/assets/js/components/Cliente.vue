@@ -815,42 +815,72 @@ export default {
       try {
         this.isLoading = true;
         console.log("Datos a registrar:", datos);
-        await axios.post("/cliente/registrar", datos);
+
+        const response = await axios.post("/cliente/registrar", datos);
+
         this.cerrarModal();
         await this.listarPersona(this.buscar, this.criterio);
+
         this.$toast.add({
           severity: "success",
           summary: "Cliente Registrado",
-          detail: "El registro fue exitoso",
+          detail: response.data.message ? response.data.message : "El registro fue exitoso",
           life: 2500,
         });
+
       } catch (error) {
-        this.toastError("No se pudo registrar el cliente");
+
+        let mensaje = "No se pudo registrar el cliente";
+
+        if (error.response && error.response.data && error.response.data.message) {
+          mensaje = error.response.data.message;
+        }
+
+        this.$toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: mensaje,
+          life: 3000,
+        });
+
       } finally {
-        this.isLoading = false; // Desactivar loading
+        this.isLoading = false;
       }
     },
     async actualizarPersona(datos) {
       try {
-        this.isLoading = true; // Activar loading
-        await axios.put("/cliente/actualizar", datos);
+        this.isLoading = true;
+
+        const response = await axios.put("/cliente/actualizar", datos);
+
         this.cerrarModal();
         await this.listarPersona(this.buscar, this.criterio);
+
         this.$toast.add({
           severity: "success",
           summary: "Cliente Actualizado",
-          detail: "Actualizacion exitosa",
+          detail: response.data.message || "Actualización exitosa",
           life: 2500,
         });
+
       } catch (error) {
+
+        let mensaje = "No se pudo actualizar";
+
+        // ✅ Capturar mensaje del backend
+        if (error.response && error.response.data && error.response.data.message) {
+          mensaje = error.response.data.message;
+        }
+
         this.$toast.add({
           severity: "error",
           summary: "Error",
-          detail: "No se pudo actualizar",
+          detail: mensaje,
           life: 3000,
         });
+
       } finally {
-        this.isLoading = false; // Desactivar loading
+        this.isLoading = false;
       }
     },
     async confirmarEliminacion(cliente) {
