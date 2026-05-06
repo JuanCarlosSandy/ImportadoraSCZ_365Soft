@@ -518,8 +518,8 @@ class ClienteController extends Controller
         $tipo = $request->tipo_documento ?? 'CI';
         $documento = $request->documento;
 
-        $cliente = Persona::where('tipo_documento', $tipo)
-            ->where('num_documento', $documento)
+        $cliente = Persona::
+            where('num_documento', $documento)
             ->first();
 
         if ($cliente) {
@@ -553,8 +553,8 @@ class ClienteController extends Controller
         $tipo = $venta->cliente->tipo_documento ?? 'CI';
         $documento = $venta->cliente->num_documento;
 
-        $cliente = Persona::where('tipo_documento', $tipo)
-            ->where('num_documento', $documento)
+        $cliente = Persona::
+            where('num_documento', $documento)
             ->first();
 
         if ($cliente) {
