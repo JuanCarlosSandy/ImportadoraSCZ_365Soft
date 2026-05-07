@@ -25,11 +25,15 @@
                 Almacén <span class="text-danger">*</span>
               </label>
               <Dropdown id="almacen" v-model="idAlmacenSeleccionado" :options="arrayAlmacenes"
-                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione un almacén" class="form-control"
+                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione un almacén" class="dropdown-full"
                 @change="limpiarProductosSeleccionados" />
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6 d-flex align-items-end">
+            <Button label="Agregar Producto" icon="pi pi-plus" class="p-button-success w-100 btn-sm-input"
+              @click="abrirDialogoProductos" :disabled="!idAlmacenSeleccionado" />
+          </div>
+          <!--<div class="col-md-6">
             <div class="form-group">
               <label class="font-weight-bold">Proveedor</label>
               <div class="input-con-desplegable">
@@ -37,8 +41,7 @@
                   <input type="text" v-model="proveedorSeleccionado.nombre" @input="buscarProveedores($event)"
                     @keydown.down="moverSeleccionProveedor('abajo')" @keydown.up="moverSeleccionProveedor('arriba')"
                     @keydown.enter="seleccionarProveedorConEnter" placeholder="Buscar proveedor..."
-                    class="p-inputtext p-component" />
-                  <!-- Botón para limpiar el proveedor seleccionado -->
+                    class="p-inputtext p-component input-full" />
                   <Button v-if="proveedorSeleccionado.nombre" icon="pi pi-times" class="p-button-danger p-button-sm"
                     @click="limpiarProveedorSeleccionado" style="margin-left: 5px;" />
                 </div>
@@ -51,84 +54,53 @@
                 </ul>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- PARTE 2: BOTÓN AGREGAR PRODUCTO -->
-        <div class="row mt-3">
-          <div class="col-md-4 d-flex align-items-end">
-            <Button label="Agregar Producto" icon="pi pi-plus" class="p-button-success w-100"
-              @click="abrirDialogoProductos" :disabled="!idAlmacenSeleccionado" />
-          </div>
+          </div>-->
         </div>
 
         <!-- Tabla de Productos Seleccionados -->
-        <div class="row mt-3" v-if="productosSeleccionados.length > 0">
+        <div class="row mt-3">
           <div class="col-md-12">
             <label class="font-weight-bold">Productos Seleccionados para Ajuste</label>
-            <DataTable :value="productosSeleccionados" class="p-datatable-sm p-datatable-gridlines"
+            <DataTable :value="productosSeleccionados" class="p-datatable-sm p-datatable-gridlines tabla-pro"
               responsiveLayout="scroll">
+
+              <Column field="codigo" header="Codigo">
+                <template #body="slotProps">
+                  <div>
+                    {{ slotProps.data.codigo }}
+                  </div>
+                </template>
+              </Column>
+
               <Column field="nombre" header="Producto">
                 <template #body="slotProps">
                   <div>
-                    <strong>{{ slotProps.data.nombre }}</strong>
-                    <br>
-                    <small class="text-muted">
-                      <i class="pi pi-building"></i> {{ slotProps.data.nombre_proveedor || 'Sin proveedor' }}
-                    </small>
+                    {{ slotProps.data.nombre }}
                   </div>
                 </template>
               </Column>
 
-              <!--<Column field="stock_actual" header="Stock Actual">
+              <Column field="nombre_proveedor" header="Proveedor">
                 <template #body="slotProps">
-                  <span class="badge badge-info">
+                  <div>
+                    {{ slotProps.data.nombre_proveedor || 'Sin proveedor' }}
+                  </div>
+                </template>
+              </Column>
 
-                    <template v-if="slotProps.data.modo_ajuste === 'unidad'">
-                      {{ slotProps.data.stock_actual_unidades }} unidades
-                    </template>
-
-                    <template v-else>
-                      {{ slotProps.data.stock_actual_cajas }} cajas y
-                      {{ slotProps.data.stock_actual_unidades_sueltas }} u.
-                    </template>
-
-                  </span> </template>
-              </Column>-->
               <Column header="Stock Real">
                 <template #body="slotProps">
                   <InputText type="number" v-model="slotProps.data.stock_real"
-                    class="form-control text-center font-weight-bold" placeholder="0" :min="0"
+                    class="form-control text-center font-weight-bold input-full" placeholder="0" :min="0"
                     @input="calcularDiferencia(slotProps.data)"
                     @keydown.tab.prevent="moverFoco(slotProps.index, $event, 'stock_real')"
                     :ref="'stock_real-' + slotProps.index" />
-                  <small class="text-muted d-block text-center mt-1">
-                    {{ slotProps.data.modo_ajuste === 'unidad' ? 'Unidades' : 'Cajas' }}
-                  </small>
                 </template>
               </Column>
-              <!--<Column header="Diferencia (Ajuste)">
-                <template #body="slotProps">
-                  <div class="text-center">
-                    <span style="font-size: 1.1em; font-weight: bold;"
-                      :class="slotProps.data.es_aumento ? 'text-success' : 'text-danger'">
-                      {{ slotProps.data.cantidad_ajuste }}
-                    </span>
-
-                    <div class="mt-1">
-                      <span v-if="slotProps.data.cantidad_ajuste > 0" class="badge"
-                        :class="slotProps.data.es_aumento ? 'badge-success' : 'badge-danger'">
-                        {{ slotProps.data.es_aumento ? 'ENTRADA (+)' : 'SALIDA (-)' }}
-                      </span>
-                      <span v-else class="badge badge-secondary">Sin cambios</span>
-                    </div>
-                  </div>
-                </template>
-              </Column>-->
 
               <Column header="Acciones">
                 <template #body="slotProps">
-                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
+                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini"
                     @click="eliminarProducto(slotProps.index)" title="Eliminar producto" />
                 </template>
               </Column>
@@ -158,9 +130,9 @@
 
           <!-- Derecha (cancelar y procesar) -->
           <div class="col-md-6 d-flex justify-content-end">
-            <Button label="Cancelar" icon="pi pi-times" class="p-button-danger mr-2" @click="confirmarCancelar" />
+            <Button label="Cancelar" icon="pi pi-times" class="p-button-danger mr-2 btn-sm" @click="confirmarCancelar" />
 
-            <Button label="Guardar Control" icon="pi pi-check" class="p-button-success" @click="enviarFormulario"
+            <Button label="Guardar Control" icon="pi pi-check" class="p-button-success btn-sm" @click="enviarFormulario"
               :disabled="!puedeEnviarFormulario()" :loading="isLoading" />
           </div>
 
@@ -284,15 +256,13 @@
         <div class="search-bar p-flex-grow-1">
           <span class="p-input-icon-left p-w-full">
             <i class="pi pi-search" />
-            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control p-w-full" placeholder="Texto a buscar"
+            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control p-w-full input-full" placeholder="Texto a buscar"
               @keyup="filtrarProductos" />
           </span>
         </div>
         <div class="p-d-flex p-gap-2">
-          <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaProductos" class="p-button-help p-button-sm"
+          <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaProductos" class="p-button-help p-button-sm btn-sm"
             title="Limpiar" :disabled="!buscarA" />
-          <Button label="Agregar Todos" icon="pi pi-plus" class="p-button-success p-button-sm"
-            @click="agregarTodosProductos" :disabled="!proveedorSeleccionado.id || arrayBuscador.length === 0" />
         </div>
       </div>
 
@@ -302,35 +272,40 @@
           <!-- Columnas de la tabla (sin cambios) -->
           <Column header="Seleccionar" style="width: 12%">
             <template #body="slotProps">
-              <Button icon="pi pi-plus" class="p-button-primary p-button-sm"
+              <Button icon="pi pi-plus" class="p-button-primary p-button-sm btn-mini "
                 @click="seleccionarProducto(slotProps.data)"
                 :disabled="productosSeleccionados.some(p => p.id === slotProps.data.id)"
                 :title="productosSeleccionados.some(p => p.id === slotProps.data.id) ? 'Ya seleccionado' : 'Agregar producto'" />
             </template>
           </Column>
-          <Column field="nombre" header="Producto">
+
+          <Column field="codigo" header="Código">
             <template #body="slotProps">
               <div>
-                <strong>{{ slotProps.data.nombre }}</strong>
-                <br>
-                <small class="text-muted">{{ slotProps.data.nombre_proveedor || 'Sin proveedor' }}</small>
+                {{ slotProps.data.codigo }}
               </div>
             </template>
           </Column>
 
-          <!-- Solo Unidades -->
-          <Column header="Stock (Unidades)">
+          <Column field="nombre" header="Producto">
             <template #body="slotProps">
-              <span style="
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 4px;
-        background: #DCFCE7;   /* verde claro */
-        color: #065F46;        /* verde oscuro texto */
-        font-weight: bold;
-      ">
-                {{ slotProps.data.stock_total_unidades }}
-              </span>
+              <div>
+                <strong>{{ slotProps.data.nombre }}</strong>
+              </div>
+            </template>
+          </Column>
+
+          <!-- NUEVA COLUMNA -->
+          <Column header="Stock Real">
+            <template #body="slotProps">
+
+              <!-- INPUT -->
+              <InputText v-if="!productosSeleccionados.some(p => p.id === slotProps.data.id)" type="number"
+                v-model="slotProps.data.stock_ingresado" class="form-control text-center input-full" placeholder="0" min="0" />
+
+              <!-- TAG -->
+              <Tag v-else severity="success" value="Ya agregado" class="tag-mini" />
+
             </template>
           </Column>
         </DataTable>
@@ -764,6 +739,7 @@ import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
 import Swal from "sweetalert2";
 import Tooltip from 'primevue/tooltip';
+import Tag from 'primevue/tag';
 
 export default {
   components: {
@@ -781,6 +757,7 @@ export default {
     Calendar,
     ToastService,
     Toast,
+    Tag
   }, directives: {
     'tooltip': Tooltip
   },
@@ -1411,15 +1388,27 @@ export default {
     },
     async cancelarDetalle(detalle) {
       try {
-        await axios.put(`/detalle-controlinventario/cancelar/${detalle.id}`);
+
+        const resp = await axios.put(
+          `/detalle-controlinventario/cancelar/${detalle.id}`
+        );
+
         this.toastSuccess('Detalle cancelado correctamente');
+
+        // 🔥 SI EL CONTROL CAMBIÓ → RECARGAR LISTA
+        if (resp.data.control_actualizado) {
+          await this.listarControles(1, "", "");
+        }
 
         // 🔄 REFRESCAR DETALLE
         await this.verDetalleControl(this.controlSeleccionado.id);
 
       } catch (error) {
+
         console.error("Error:", error);
+
         this.toastError('No se pudo cancelar el detalle');
+
       }
     },
     getEstadoClase(estado) {
@@ -1582,8 +1571,7 @@ export default {
     async enviarFormulario() {
 
       const productosAProcesar = this.productosSeleccionados.filter(p => {
-        const cantidad = parseFloat(p.stock_real) || 0;
-        return cantidad > 0;
+        return p.stock_real >= 0;
       });
 
       if (productosAProcesar.length === 0) {
@@ -1958,8 +1946,11 @@ export default {
       if (this.productosSeleccionados.length === 0) return false;
 
       const hayCambios = this.productosSeleccionados.some(p => {
-        const cantidad = parseFloat(p.cantidad_ajuste) || 0;
-        return cantidad > 0;
+
+        return p.cantidad_ajuste !== null &&
+              p.cantidad_ajuste !== '' &&
+              p.cantidad_ajuste !== undefined;
+
       });
 
       if (!hayCambios) return false;
@@ -2232,7 +2223,13 @@ export default {
     },
 
     seleccionarProducto(producto) {
-      const productoExistente = this.productosSeleccionados.find(p => p.id === producto.id);
+
+      this.buscarA = '';
+      this.filtrarProductos();
+
+      const productoExistente = this.productosSeleccionados.find(
+        p => p.id === producto.id
+      );
 
       if (!productoExistente) {
 
@@ -2240,8 +2237,11 @@ export default {
         let stockCajas = parseFloat(producto.stock_total_cajas) || 0;
         let stockSueltas = parseFloat(producto.stock_total_unidades_sueltas) || 0;
 
+        let stockRealIngresado = parseFloat(producto.stock_ingresado) || 0;
+
         this.productosSeleccionados.push({
           ...producto,
+
           cantidad_ajuste: 0,
 
           stock_actual_unidades: stockTotal,
@@ -2252,17 +2252,31 @@ export default {
           es_paquete: false,
           es_aumento: true,
 
-          stock_real: stockTotal,
+          stock_real: stockRealIngresado,
+
           stock_restante: stockTotal
         });
 
-        this.$toast.add({ severity: 'success', summary: 'Agregado', detail: 'Producto listo para ajustar', life: 1000 });
+        this.$toast.add({
+          severity: 'success',
+          summary: 'Agregado',
+          detail: 'Producto listo para ajustar',
+          life: 1000
+        });
+
       } else {
-        this.$toast.add({ severity: 'warn', summary: 'Atención', detail: 'El producto ya está en la lista' });
+
+        this.$toast.add({
+          severity: 'warn',
+          summary: 'Atención',
+          detail: 'El producto ya está en la lista'
+        });
+
       }
+
+      this.enfocarInputBusqueda();
+
     },
-
-
 
     cambiarPagina(page) {
       let me = this;

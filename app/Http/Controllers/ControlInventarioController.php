@@ -154,18 +154,43 @@ class ControlInventarioController extends Controller
     public function cancelarDetalle($id)
     {
         try {
+
+            $cambioEstadoControl = false;
+
             $detalle = DetalleControlInventario::findOrFail($id);
+
             $detalle->estado = 0; // CANCELADO
             $detalle->save();
 
+            // 🔥 VALIDAR SI TODAVÍA EXISTEN PENDIENTES
+            $existenPendientes = DetalleControlInventario::where('idcontrol', $detalle->idcontrol)
+                ->where('estado', 1)
+                ->exists();
+
+            // 🔥 SI YA NO HAY PENDIENTES → CERRAR CONTROL
+            if (!$existenPendientes) {
+
+                $control = ControlInventario::find($detalle->idcontrol);
+
+                if ($control) {
+                    $control->estado = 2; // VERIFICADO
+                    $control->save();
+
+                    $cambioEstadoControl = true;
+                }
+            }
+
             return response()->json([
-                'message' => 'Detalle cancelado correctamente'
+                'message' => 'Detalle cancelado correctamente',
+                'control_actualizado' => $cambioEstadoControl
             ]);
 
         } catch (\Exception $e) {
+
             return response()->json([
                 'error' => $e->getMessage()
             ], 500);
+
         }
     }
     public function registrarAjuste(Request $request)
