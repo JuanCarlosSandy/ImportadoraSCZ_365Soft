@@ -486,14 +486,14 @@
         </Column>
 
         <!-- 📊 STOCK SISTEMA -->
-        <Column header="STOCK SISTEMA ANTERIOR" style="text-align: center;">
+        <Column v-if="Number(rolUsuario) === 4" header="STOCK SISTEMA ANTERIOR" style="text-align: center;">
           <template slot="body" slot-scope="slotProps">
             {{ slotProps.data.stocksistema }}
           </template>
         </Column>
 
         <!-- 📊 STOCK SISTEMA ACTUAL -->
-        <Column header="STOCK SISTEMA ACTUAL" style="text-align: center;">
+        <Column v-if="Number(rolUsuario) === 4" header="STOCK SISTEMA ACTUAL" style="text-align: center;">
           <template slot="body" slot-scope="slotProps">
             {{ slotProps.data.stock_actual }}
           </template>
@@ -520,7 +520,7 @@
         </Column>
 
         <!-- 📉 DIFERENCIA -->
-        <Column header="DIFERENCIA" style="text-align: center;">
+        <Column v-if="Number(rolUsuario) === 4" header="DIFERENCIA" style="text-align: center;">
           <template slot="body" slot-scope="slotProps">
             <span :style="getColorDiferencia(slotProps.data)">
               {{ calcularDiferenciaDialog(slotProps.data) }}
