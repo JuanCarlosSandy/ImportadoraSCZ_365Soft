@@ -471,6 +471,13 @@
       <DataTable :value="controlSeleccionado.detalles" class="p-datatable-sm p-datatable-gridlines tabla-pro"
         responsiveLayout="scroll">
 
+        <!-- 📦 CODIGO -->
+        <Column header="CÓDIGO">
+          <template slot="body" slot-scope="slotProps">
+            {{ slotProps.data.articulo ? slotProps.data.articulo.codigo : '' }}
+          </template>
+        </Column>
+
         <!-- 📦 ARTICULO -->
         <Column header="ARTÍCULO">
           <template slot="body" slot-scope="slotProps">

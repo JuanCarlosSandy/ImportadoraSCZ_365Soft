@@ -44,6 +44,7 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
 
         foreach ($this->control->detalles as $d) {
             $data[] = [
+                $d->articulo->codigo,
                 $d->articulo->nombre,
                 $d->stocksistema,
                 $d->stock_actual,
@@ -60,6 +61,7 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
     {
         if ($estado == 1) return 'NO AJUSTADO';
         if ($estado == 2) return 'VERIFICADO';
+        if ($estado == 3) return 'SIN DIFERENCIA';
         return 'ANULADO';
     }
 
@@ -132,15 +134,16 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
                 $sheet->getStyle('A7:H7')->getFont()->setBold(true);
 
                 // 🔷 HEADERS TABLA
-                $sheet->setCellValue('A10', 'Artículo');
-                $sheet->setCellValue('B10', 'Stock Sistema');
-                $sheet->setCellValue('C10', 'Stock Actual');
-                $sheet->setCellValue('D10', 'Stock Físico');
-                $sheet->setCellValue('E10', 'Diferencia');
-                $sheet->setCellValue('F10', 'Estado');
+                $sheet->setCellValue('A10', 'Codigo');
+                $sheet->setCellValue('B10', 'Artículo');
+                $sheet->setCellValue('C10', 'Stock Sistema');
+                $sheet->setCellValue('D10', 'Stock Actual');
+                $sheet->setCellValue('E10', 'Stock Físico');
+                $sheet->setCellValue('F10', 'Diferencia');
+                $sheet->setCellValue('G10', 'Estado');
 
                 // 🔷 ESTILO HEADER
-                $sheet->getStyle('A10:F10')->applyFromArray([
+                $sheet->getStyle('A10:G10')->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
@@ -154,7 +157,7 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
                 // 🔷 BORDES Y ESTILO TABLA
                 $lastRow = 10 + $control->detalles->count();
 
-                $sheet->getStyle("A10:F{$lastRow}")->applyFromArray([
+                $sheet->getStyle("A10:G{$lastRow}")->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -164,17 +167,17 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
                 ]);
 
                 // 🔷 ALINEACIONES
-                $sheet->getStyle("B11:E{$lastRow}")
+                $sheet->getStyle("B11:G{$lastRow}")
                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // 🔷 COLORES DINÁMICOS (DIFERENCIA)
                 for ($i = 11; $i <= $lastRow; $i++) {
-                    $valor = $sheet->getCell("E{$i}")->getValue();
+                    $valor = $sheet->getCell("G{$i}")->getValue();
 
                     if ($valor > 0) {
-                        $sheet->getStyle("E{$i}")->getFont()->getColor()->setRGB('008000'); // verde
+                        $sheet->getStyle("G{$i}")->getFont()->getColor()->setRGB('008000'); // verde
                     } elseif ($valor < 0) {
-                        $sheet->getStyle("E{$i}")->getFont()->getColor()->setRGB('FF0000'); // rojo
+                        $sheet->getStyle("G{$i}")->getFont()->getColor()->setRGB('FF0000'); // rojo
                     }
                 }
             }
@@ -183,12 +186,13 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getColumnDimension('A')->setWidth(40);
-        $sheet->getColumnDimension('B')->setWidth(18);
+        $sheet->getColumnDimension('A')->setWidth(20);
+        $sheet->getColumnDimension('B')->setWidth(40);
         $sheet->getColumnDimension('C')->setWidth(18);
         $sheet->getColumnDimension('D')->setWidth(18);
-        $sheet->getColumnDimension('E')->setWidth(15);
-        $sheet->getColumnDimension('F')->setWidth(20);
+        $sheet->getColumnDimension('E')->setWidth(18);
+        $sheet->getColumnDimension('F')->setWidth(15);
+        $sheet->getColumnDimension('G')->setWidth(20);
 
         return [];
     }

@@ -236,6 +236,7 @@
     <table>
         <thead>
             <tr>
+                <th>Codigo</th>
                 <th>Artículo</th>
                 <th>Stock Sistema</th>
                 <th>Stock Actual</th>
@@ -248,6 +249,7 @@
         <tbody>
             @foreach($control->detalles as $d)
                 <tr>
+                    <td style="text-align:left;">{{ $d->articulo->codigo }}</td>
                     <td style="text-align:left;">{{ $d->articulo->nombre }}</td>
                     <td>{{ $d->stocksistema }}</td>
                     <td>{{ $d->stock_actual }}</td>
@@ -263,6 +265,8 @@
                             <span class="estado pendiente">NO AJUSTADO</span>
                         @elseif($d->estado == 2)
                             <span class="estado verificado">VERIFICADO</span>
+                        @elseif($d->estado == 3)
+                            <span class="estado sin diferencia">SIN DIFERENCIA</span>
                         @else
                             <span class="estado anulado">ANULADO</span>
                         @endif
