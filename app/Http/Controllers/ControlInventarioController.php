@@ -11,6 +11,7 @@ use App\AjusteInvetario;
 use Barryvdh\DomPDF\Facade as PDF;
 use App\Exports\ControlInventarioExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Auth;
 class ControlInventarioController extends Controller
 {
     public function index(Request $request)
@@ -365,8 +366,12 @@ class ControlInventarioController extends Controller
             'detalles.articulo'
         )->findOrFail($id);
 
+        // 🔥 ROL USUARIO LOGUEADO
+        $rolUsuario = Auth::user()->idrol;
+
         // 🔥 agregar stock actual
         foreach ($control->detalles as $detalle) {
+
             $inventario = Inventario::where('idalmacen', $control->idalmacen)
                 ->where('idarticulo', $detalle->idarticulo)
                 ->first();
@@ -374,14 +379,12 @@ class ControlInventarioController extends Controller
             $detalle->stock_actual = $inventario ? $inventario->saldo_stock : 0;
         }
 
-        // 🔥 RESUMEN
         $total = $control->detalles->count();
 
         $verificados = $control->detalles->where('estado', 2)->count();
         $pendientes = $control->detalles->where('estado', 1)->count();
         $anulados = $control->detalles->where('estado', 0)->count();
 
-        // 🔥 ESTADO GENERAL
         $estadoGeneral = ($pendientes == 0) ? 'AJUSTADO' : 'PENDIENTE';
 
         $pdf = PDF::loadView('pdf.control_inventario', compact(
@@ -390,7 +393,8 @@ class ControlInventarioController extends Controller
             'verificados',
             'pendientes',
             'anulados',
-            'estadoGeneral'
+            'estadoGeneral',
+            'rolUsuario'
         ));
 
         return $pdf->download('control_inventario_' . $control->id . '.pdf');

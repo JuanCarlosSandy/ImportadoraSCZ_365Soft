@@ -238,10 +238,14 @@
             <tr>
                 <th>Codigo</th>
                 <th>Artículo</th>
-                <th>Stock Sistema</th>
-                <th>Stock Actual</th>
+                @if($rolUsuario == 4)
+                    <th>Stock Sistema</th>
+                    <th>Stock Actual</th>
+                @endif
                 <th>Stock Físico</th>
-                <th>Diferencia</th>
+                @if($rolUsuario == 4)
+                    <th>Diferencia</th>
+                @endif
                 <th>Estado</th>
             </tr>
         </thead>
@@ -251,14 +255,18 @@
                 <tr>
                     <td style="text-align:left;">{{ $d->articulo->codigo }}</td>
                     <td style="text-align:left;">{{ $d->articulo->nombre }}</td>
-                    <td>{{ $d->stocksistema }}</td>
-                    <td>{{ $d->stock_actual }}</td>
+                    @if($rolUsuario == 4)
+                        <td>{{ $d->stocksistema }}</td>
+                        <td>{{ $d->stock_actual }}</td>
+                    @endif
                     <td>{{ $d->stockfisico }}</td>
-                    <td>
-                        <strong style="color: {{ ($d->stockfisico - $d->stocksistema) >= 0 ? 'green' : 'red' }}">
-                            {{ $d->stockfisico - $d->stocksistema }}
-                        </strong>
-                    </td>
+                    @if($rolUsuario == 4)
+                        <td>
+                            <strong style="color: {{ ($d->stockfisico - $d->stocksistema) >= 0 ? 'green' : 'red' }}">
+                                {{ $d->stockfisico - $d->stocksistema }}
+                            </strong>
+                        </td>
+                    @endif
 
                     <td>
                         @if($d->estado == 1)

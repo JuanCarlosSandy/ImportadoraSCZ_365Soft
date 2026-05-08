@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\ControlInventario;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -19,39 +20,57 @@ use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 class ControlInventarioExport implements FromCollection, WithStyles, WithEvents, WithDrawings, WithCustomStartCell
 {
     protected $control;
+    protected $rolUsuario;
 
    public function __construct($id)
-{
-    $this->control = ControlInventario::with(
-        'usuario',
-        'almacen',
-        'detalles.articulo'
-    )->findOrFail($id);
+    {
+        $this->control = ControlInventario::with(
+            'usuario',
+            'almacen',
+            'detalles.articulo'
+        )->findOrFail($id);
 
-    // 🔥 AGREGAR STOCK ACTUAL IGUAL QUE EN PDF
-    foreach ($this->control->detalles as $detalle) {
-        $inventario = \App\Inventario::where('idalmacen', $this->control->idalmacen)
-            ->where('idarticulo', $detalle->idarticulo)
-            ->first();
+        $this->rolUsuario = Auth::user()->idrol;
 
-        $detalle->stock_actual = $inventario ? $inventario->saldo_stock : 0;
+        // 🔥 AGREGAR STOCK ACTUAL IGUAL QUE EN PDF
+        foreach ($this->control->detalles as $detalle) {
+            $inventario = \App\Inventario::where('idalmacen', $this->control->idalmacen)
+                ->where('idarticulo', $detalle->idarticulo)
+                ->first();
+
+            $detalle->stock_actual = $inventario ? $inventario->saldo_stock : 0;
+        }
     }
-}
 
     public function collection()
     {
         $data = [];
 
         foreach ($this->control->detalles as $d) {
-            $data[] = [
-                $d->articulo->codigo,
-                $d->articulo->nombre,
-                $d->stocksistema,
-                $d->stock_actual,
-                $d->stockfisico,
-                $d->stockfisico - $d->stocksistema,
-                $this->getEstadoTexto($d->estado)
+
+            $fila = [
+                $d->articulo ? $d->articulo->codigo : '',
+                $d->articulo ? $d->articulo->nombre : '',
             ];
+
+            // 🔥 SOLO ADMIN
+            if ($this->rolUsuario == 4) {
+
+                $fila[] = $d->stocksistema;
+                $fila[] = $d->stock_actual;
+            }
+
+            $fila[] = $d->stockfisico;
+
+            // 🔥 SOLO ADMIN
+            if ($this->rolUsuario == 4) {
+
+                $fila[] = $d->stockfisico - $d->stocksistema;
+            }
+
+            $fila[] = $this->getEstadoTexto($d->estado);
+
+            $data[] = $fila;
         }
 
         return new Collection($data);
@@ -136,14 +155,25 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
                 // 🔷 HEADERS TABLA
                 $sheet->setCellValue('A10', 'Codigo');
                 $sheet->setCellValue('B10', 'Artículo');
-                $sheet->setCellValue('C10', 'Stock Sistema');
-                $sheet->setCellValue('D10', 'Stock Actual');
-                $sheet->setCellValue('E10', 'Stock Físico');
-                $sheet->setCellValue('F10', 'Diferencia');
-                $sheet->setCellValue('G10', 'Estado');
+
+                if ($this->rolUsuario == 4) {
+
+                    $sheet->setCellValue('C10', 'Stock Sistema');
+                    $sheet->setCellValue('D10', 'Stock Actual');
+                    $sheet->setCellValue('E10', 'Stock Físico');
+                    $sheet->setCellValue('F10', 'Diferencia');
+                    $sheet->setCellValue('G10', 'Estado');
+
+                } else {
+
+                    $sheet->setCellValue('C10', 'Stock Físico');
+                    $sheet->setCellValue('D10', 'Estado');
+                }
 
                 // 🔷 ESTILO HEADER
-                $sheet->getStyle('A10:G10')->applyFromArray([
+                $ultimaColumna = $this->rolUsuario == 4 ? 'G' : 'D';
+
+                $sheet->getStyle("A10:{$ultimaColumna}10")->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
@@ -157,7 +187,7 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
                 // 🔷 BORDES Y ESTILO TABLA
                 $lastRow = 10 + $control->detalles->count();
 
-                $sheet->getStyle("A10:G{$lastRow}")->applyFromArray([
+                $sheet->getStyle("A10:{$ultimaColumna}{$lastRow}")->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -171,13 +201,26 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // 🔷 COLORES DINÁMICOS (DIFERENCIA)
-                for ($i = 11; $i <= $lastRow; $i++) {
-                    $valor = $sheet->getCell("G{$i}")->getValue();
+                if ($this->rolUsuario == 4) {
 
-                    if ($valor > 0) {
-                        $sheet->getStyle("G{$i}")->getFont()->getColor()->setRGB('008000'); // verde
-                    } elseif ($valor < 0) {
-                        $sheet->getStyle("G{$i}")->getFont()->getColor()->setRGB('FF0000'); // rojo
+                    for ($i = 11; $i <= $lastRow; $i++) {
+
+                        $valor = $sheet->getCell("F{$i}")->getValue();
+
+                        if ($valor > 0) {
+
+                            $sheet->getStyle("F{$i}")
+                                ->getFont()
+                                ->getColor()
+                                ->setRGB('008000');
+
+                        } elseif ($valor < 0) {
+
+                            $sheet->getStyle("F{$i}")
+                                ->getFont()
+                                ->getColor()
+                                ->setRGB('FF0000');
+                        }
                     }
                 }
             }
@@ -188,11 +231,20 @@ class ControlInventarioExport implements FromCollection, WithStyles, WithEvents,
     {
         $sheet->getColumnDimension('A')->setWidth(20);
         $sheet->getColumnDimension('B')->setWidth(40);
-        $sheet->getColumnDimension('C')->setWidth(18);
-        $sheet->getColumnDimension('D')->setWidth(18);
-        $sheet->getColumnDimension('E')->setWidth(18);
-        $sheet->getColumnDimension('F')->setWidth(15);
-        $sheet->getColumnDimension('G')->setWidth(20);
+
+        if ($this->rolUsuario == 4) {
+
+            $sheet->getColumnDimension('C')->setWidth(18);
+            $sheet->getColumnDimension('D')->setWidth(18);
+            $sheet->getColumnDimension('E')->setWidth(18);
+            $sheet->getColumnDimension('F')->setWidth(15);
+            $sheet->getColumnDimension('G')->setWidth(20);
+
+        } else {
+
+            $sheet->getColumnDimension('C')->setWidth(18);
+            $sheet->getColumnDimension('D')->setWidth(20);
+        }
 
         return [];
     }
