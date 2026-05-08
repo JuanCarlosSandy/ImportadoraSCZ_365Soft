@@ -130,7 +130,8 @@
 
           <!-- Derecha (cancelar y procesar) -->
           <div class="col-md-6 d-flex justify-content-end">
-            <Button label="Cancelar" icon="pi pi-times" class="p-button-danger mr-2 btn-sm" @click="confirmarCancelar" />
+            <Button label="Cancelar" icon="pi pi-times" class="p-button-danger mr-2 btn-sm"
+              @click="confirmarCancelar" />
 
             <Button label="Guardar Control" icon="pi pi-check" class="p-button-success btn-sm" @click="enviarFormulario"
               :disabled="!puedeEnviarFormulario()" :loading="isLoading" />
@@ -233,8 +234,8 @@
           <!-- 🔄 ESTADO -->
           <Column header="ESTADO" style="text-align: center;">
             <template #body="slotProps">
-              <span :class="getEstadoClase(slotProps.data.estado)" style="padding: 5px 10px;">
-                {{ getEstadoTexto(slotProps.data.estado) }}
+              <span :class="getEstadoClaseGeneral(slotProps.data.estado)" style="padding: 5px 10px;">
+                {{ getEstadoTextoGeneral(slotProps.data.estado) }}
               </span>
             </template>
           </Column>
@@ -256,13 +257,13 @@
         <div class="search-bar p-flex-grow-1">
           <span class="p-input-icon-left p-w-full">
             <i class="pi pi-search" />
-            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control p-w-full input-full" placeholder="Texto a buscar"
-              @keyup="filtrarProductos" />
+            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control p-w-full input-full"
+              placeholder="Texto a buscar" @keyup="filtrarProductos" />
           </span>
         </div>
         <div class="p-d-flex p-gap-2">
-          <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaProductos" class="p-button-help p-button-sm btn-sm"
-            title="Limpiar" :disabled="!buscarA" />
+          <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaProductos"
+            class="p-button-help p-button-sm btn-sm" title="Limpiar" :disabled="!buscarA" />
         </div>
       </div>
 
@@ -301,7 +302,8 @@
 
               <!-- INPUT -->
               <InputText v-if="!productosSeleccionados.some(p => p.id === slotProps.data.id)" type="number"
-                v-model="slotProps.data.stock_ingresado" class="form-control text-center input-full" placeholder="0" min="0" />
+                v-model="slotProps.data.stock_ingresado" class="form-control text-center input-full" placeholder="0"
+                min="0" />
 
               <!-- TAG -->
               <Tag v-else severity="success" value="Ya agregado" class="tag-mini" />
@@ -508,8 +510,8 @@
 
         <Column header="ESTADO" style="text-align: center;">
           <template slot="body" slot-scope="slotProps">
-            <span :class="getEstadoClase(slotProps.data.estado)" style="padding: 5px 10px;">
-              {{ getEstadoTexto(slotProps.data.estado) }}
+            <span :class="getEstadoClase(slotProps.data)" style="padding: 5px 10px;">
+              {{ getEstadoTexto(slotProps.data) }}
             </span>
           </template>
         </Column>
@@ -524,17 +526,33 @@
               <template v-if="Number(rolUsuario) === 4">
 
                 <template v-if="slotProps.data.estado == 1">
-                  <Button icon="pi pi-refresh" class="p-button-warning p-button-sm btn-mini"
-                    @click="ajustarProducto(slotProps.data)" v-tooltip.top="'Ajustar stock'" />
 
-                  <Button icon="pi pi-times" class="p-button-danger p-button-sm btn-mini" style="margin-left: 5px;"
-                    @click="confirmarCancelacion(slotProps.data)" v-tooltip.top="'Cancelar ajuste'" />
+                  <!-- 🔵 SIN DIFERENCIA -->
+                  <template v-if="sinDiferencia(slotProps.data)">
+
+                    <Button icon="pi pi-arrow-right" class="p-button-info p-button-sm btn-mini"
+                      @click="confirmarPasarEstado(slotProps.data)" v-tooltip.top="'Pasar estado'" />
+
+                  </template>
+
+                  <!-- 🟡 CON DIFERENCIA -->
+                  <template v-else>
+
+                    <Button icon="pi pi-refresh" class="p-button-warning p-button-sm btn-mini"
+                      @click="ajustarProducto(slotProps.data)" v-tooltip.top="'Ajustar stock'" />
+
+                    <Button icon="pi pi-times" class="p-button-danger p-button-sm btn-mini" style="margin-left: 5px;"
+                      @click="confirmarCancelacion(slotProps.data)" v-tooltip.top="'Cancelar ajuste'" />
+
+                  </template>
+
                 </template>
 
                 <template v-else>
                   <i :class="{
                     'pi pi-check-circle text-success': slotProps.data.estado == 2,
-                    'pi pi-times-circle text-danger': slotProps.data.estado == 0
+                    'pi pi-times-circle text-danger': slotProps.data.estado == 0,
+                    'pi pi-info-circle text-info': slotProps.data.estado == 3
                   }" v-tooltip.top="slotProps.data.estado == 2 ? 'Verificado' : 'Anulado'" />
                 </template>
 
@@ -547,6 +565,9 @@
 
                 <i v-else-if="slotProps.data.estado == 2" class="pi pi-check-circle text-success"
                   v-tooltip.top="'Verificado'" />
+
+                <i v-else-if="slotProps.data.estado == 3" class="pi pi-info-circle text-info"
+                  v-tooltip.top="'Sin diferencia'" />
 
                 <i v-else class="pi pi-times-circle text-danger" v-tooltip.top="'Anulado'" />
 
@@ -1032,6 +1053,78 @@ export default {
   },
 
   methods: {
+    sinDiferencia(det) {
+      return (
+        parseFloat(det.stockfisico) - parseFloat(det.stock_actual)
+      ) === 0;
+    },
+        async confirmarPasarEstado(detalle) {
+      setTimeout(async () => {
+
+        const result = await Swal.fire({
+          title: '¿Está seguro?',
+          text: '¿Desea marcar este registro como SIN DIFERENCIA?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, continuar',
+          cancelButtonText: 'No',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          backdrop: true,
+          didOpen: (modal) => {
+            modal.parentElement.style.zIndex = '99999';
+            const backdrop = document.querySelector('.swal2-container');
+            if (backdrop) {
+              backdrop.style.zIndex = '99998';
+            }
+          }
+        });
+
+        if (result.isConfirmed) {
+
+          try {
+            // 🔥 ACTIVAR TU LOADING GLOBAL
+            this.isLoading = true;
+
+            await this.pasarDetalle(detalle);
+
+          } catch (error) {
+            console.error(error);
+          } finally {
+            // 🔥 DESACTIVAR LOADING
+            this.isLoading = false;
+          }
+
+        } else {
+        }
+
+      }, 100);
+    },
+    async pasarDetalle(detalle) {
+      try {
+
+        const resp = await axios.put(
+          `/detalle-controlinventario/pasarEstado/${detalle.id}`
+        );
+
+        this.toastSuccess('Estado actualizado correctamente');
+
+        // 🔥 SI EL CONTROL CAMBIÓ → RECARGAR LISTA
+        if (resp.data.control_actualizado) {
+          await this.listarControles(1, "", "");
+        }
+
+        // 🔄 REFRESCAR DETALLE
+        await this.verDetalleControl(this.controlSeleccionado.id);
+
+      } catch (error) {
+
+        console.error("Error:", error);
+
+        this.toastError('No se pudo actualizar el estado');
+
+      }
+    },
     descargarPdf(id) {
       window.open(`/controlinventario/pdf/${id}`, '_blank');
     },
@@ -1331,14 +1424,14 @@ export default {
         life: 2000,
       });
     },
-    getEstadoTexto(estado) {
+    getEstadoTextoGeneral(estado) {
       if (estado == 1) return 'NO VERIFICADO';
       if (estado == 2) return 'VERIFICADO';
       if (estado == 0) return 'ANULADO';
       return '';
     },
 
-    getEstadoClase(estado) {
+    getEstadoClaseGeneral(estado) {
       if (estado == 1) return 'badge badge-warning';   // 🟡
       if (estado == 2) return 'badge badge-success';   // 🟢
       if (estado == 0) return 'badge badge-danger';    // 🔴
@@ -1411,16 +1504,32 @@ export default {
 
       }
     },
-    getEstadoClase(estado) {
-      if (estado == 1) return 'badge badge-warning';
-      if (estado == 2) return 'badge badge-success';
-      if (estado == 0) return 'badge badge-danger';
+    getEstadoClase(det) {
+      const diferencia = parseFloat(det.stockfisico) - parseFloat(det.stock_actual);
+
+      if (diferencia === 0 && det.estado == 1) {
+        return 'badge badge-info';
+      }
+
+      if (det.estado == 1) return 'badge badge-warning';
+      if (det.estado == 2) return 'badge badge-success';
+      if (det.estado == 3) return 'badge badge-info';
+      if (det.estado == 0) return 'badge badge-danger';
+
       return 'badge badge-secondary';
     },
-    getEstadoTexto(estado) {
-      if (estado == 1) return 'NO AJUSTADO';
-      if (estado == 2) return 'AJUSTADO';
-      if (estado == 0) return 'CANCELADO';
+    getEstadoTexto(det) {
+      const diferencia = parseFloat(det.stockfisico) - parseFloat(det.stock_actual);
+
+      if (diferencia === 0 && det.estado == 1) {
+        return 'SIN DIFERENCIA';
+      }
+
+      if (det.estado == 1) return 'NO AJUSTADO';
+      if (det.estado == 2) return 'AJUSTADO';
+      if (det.estado == 3) return 'SIN DIFERENCIA';
+      if (det.estado == 0) return 'CANCELADO';
+
       return '';
     },
     async ajustarProducto(detalle) {
@@ -1948,8 +2057,8 @@ export default {
       const hayCambios = this.productosSeleccionados.some(p => {
 
         return p.cantidad_ajuste !== null &&
-              p.cantidad_ajuste !== '' &&
-              p.cantidad_ajuste !== undefined;
+          p.cantidad_ajuste !== '' &&
+          p.cantidad_ajuste !== undefined;
 
       });
 
