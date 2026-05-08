@@ -495,7 +495,20 @@
         <!-- 📊 STOCK FISICO -->
         <Column header="STOCK FÍSICO" style="text-align: center;">
           <template slot="body" slot-scope="slotProps">
-            {{ slotProps.data.stockfisico }}
+
+            <!-- ✏️ MODO EDICIÓN -->
+            <template v-if="filaEditando === slotProps.data.id">
+
+              <InputNumber v-model="stockFisicoEditado" mode="decimal" :minFractionDigits="2" :maxFractionDigits="2"
+                inputStyle="width:100px; text-align:center;" class="input-number-full" />
+
+            </template>
+
+            <!-- 👁️ NORMAL -->
+            <template v-else>
+              {{ slotProps.data.stockfisico }}
+            </template>
+
           </template>
         </Column>
 
@@ -527,22 +540,44 @@
 
                 <template v-if="slotProps.data.estado == 1">
 
-                  <!-- 🔵 SIN DIFERENCIA -->
-                  <template v-if="sinDiferencia(slotProps.data)">
+                  <!-- ✏️ SI ESTÁ EDITANDO -->
+                  <template v-if="filaEditando === slotProps.data.id">
 
-                    <Button icon="pi pi-arrow-right" class="p-button-info p-button-sm btn-mini"
-                      @click="confirmarPasarEstado(slotProps.data)" v-tooltip.top="'Pasar estado'" />
+                    <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                      @click="guardarEdicion(slotProps.data)" v-tooltip.top="'Guardar'" />
+
+                    <Button icon="pi pi-times" class="p-button-secondary p-button-sm btn-mini" style="margin-left: 5px;"
+                      @click="cancelarEdicion()" v-tooltip.top="'Cancelar'" />
 
                   </template>
 
-                  <!-- 🟡 CON DIFERENCIA -->
+                  <!-- 👁️ NORMAL -->
                   <template v-else>
 
-                    <Button icon="pi pi-refresh" class="p-button-warning p-button-sm btn-mini"
-                      @click="ajustarProducto(slotProps.data)" v-tooltip.top="'Ajustar stock'" />
+                    <!-- ✏️ EDITAR -->
+                    <Button icon="pi pi-pencil" class="p-button-primary p-button-sm btn-mini"
+                      @click="editarStockFisico(slotProps.data)" v-tooltip.top="'Editar stock físico'" />
 
-                    <Button icon="pi pi-times" class="p-button-danger p-button-sm btn-mini" style="margin-left: 5px;"
-                      @click="confirmarCancelacion(slotProps.data)" v-tooltip.top="'Cancelar ajuste'" />
+                    <!-- 🔵 SIN DIFERENCIA -->
+                    <template v-if="sinDiferencia(slotProps.data)">
+
+                      <Button icon="pi pi-arrow-right" class="p-button-help p-button-sm btn-mini"
+                        style="margin-left: 5px;" @click="confirmarPasarEstado(slotProps.data)"
+                        v-tooltip.top="'Pasar estado'" />
+
+                    </template>
+
+                    <!-- 🟡 CON DIFERENCIA -->
+                    <template v-else>
+
+                      <Button icon="pi pi-refresh" class="p-button-warning p-button-sm btn-mini"
+                        style="margin-left: 5px;" @click="ajustarProducto(slotProps.data)"
+                        v-tooltip.top="'Ajustar stock'" />
+
+                      <Button icon="pi pi-times" class="p-button-danger p-button-sm btn-mini" style="margin-left: 5px;"
+                        @click="confirmarCancelacion(slotProps.data)" v-tooltip.top="'Cancelar ajuste'" />
+
+                    </template>
 
                   </template>
 
@@ -745,6 +780,7 @@
 <script>
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
+import InputNumber from "primevue/inputnumber";
 import Dropdown from "primevue/dropdown";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -766,6 +802,7 @@ export default {
   components: {
     Button,
     InputText,
+    InputNumber,
     Dropdown,
     DataTable,
     Column,
@@ -784,6 +821,9 @@ export default {
   },
   data() {
     return {
+      filaEditando: null,
+      stockFisicoEditado: null,
+
       mostrarClave: false,
       mostrarDialogClave: false,
       claveAcceso: '',
@@ -1053,12 +1093,68 @@ export default {
   },
 
   methods: {
+    async guardarEdicion(det) {
+
+      try {
+
+        this.isLoading = true;
+
+        await axios.put(
+          `/controlinventario/editarStockFisico/${det.id}`,
+          {
+            stockfisico: this.stockFisicoEditado
+          }
+        );
+
+        // actualizar valor local
+        det.stockfisico = this.stockFisicoEditado;
+
+        this.$toast.add({
+          severity: 'success',
+          summary: 'Correcto',
+          detail: 'Stock físico actualizado',
+          life: 3000
+        });
+
+        this.filaEditando = null;
+        this.stockFisicoEditado = null;
+
+      } catch (error) {
+
+        console.error(error);
+
+        this.$toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar',
+          life: 3000
+        });
+
+      } finally {
+
+        this.isLoading = false;
+
+      }
+
+    },
+    cancelarEdicion() {
+
+      this.filaEditando = null;
+      this.stockFisicoEditado = null;
+
+    },
+    editarStockFisico(det) {
+
+      this.filaEditando = det.id;
+      this.stockFisicoEditado = parseFloat(det.stockfisico);
+
+    },
     sinDiferencia(det) {
       return (
         parseFloat(det.stockfisico) - parseFloat(det.stock_actual)
       ) === 0;
     },
-        async confirmarPasarEstado(detalle) {
+    async confirmarPasarEstado(detalle) {
       setTimeout(async () => {
 
         const result = await Swal.fire({

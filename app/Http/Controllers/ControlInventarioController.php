@@ -335,6 +335,28 @@ class ControlInventarioController extends Controller
         $inventario->save();
     }
 
+    public function editarStockFisico(Request $request, $id)
+    {
+        try {
+
+            $detalle = DetalleControlInventario::findOrFail($id);
+
+            $detalle->stockfisico = $request->stockfisico;
+            $detalle->save();
+
+            return response()->json([
+                'message' => 'Stock físico actualizado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+
+        }
+    }
+
     public function generarPdf($id)
     {
         $control = ControlInventario::with(

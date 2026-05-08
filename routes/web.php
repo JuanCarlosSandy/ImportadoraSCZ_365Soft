@@ -1075,6 +1075,7 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::put('/detalle-controlinventario/cancelar/{id}', 'ControlInventarioController@cancelarDetalle');
         Route::post('/ajusteinventario/registrar', 'ControlInventarioController@registrarAjuste');
         Route::put('/detalle-controlinventario/pasarEstado/{id}', 'ControlInventarioController@pasarEstado');
+        Route::put('/controlinventario/editarStockFisico/{id}','ControlInventarioController@editarStockFisico');
 
         Route::get('/ingresos/comprobantes-dim', 'IngresoController@comprobantesDim');
 
