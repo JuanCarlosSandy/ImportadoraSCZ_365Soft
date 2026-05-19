@@ -11,6 +11,7 @@ class DetalleTraspaso extends Model
         'idtraspaso', 
         'idinventario',
         'cantidad_traspaso',
+        'stock_actual_destino',
     ];
     public $timestamps = false;
 }

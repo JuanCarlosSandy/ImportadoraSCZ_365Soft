@@ -115,6 +115,7 @@ class TraspasoController extends Controller
                     $detalletraspaso->idtraspaso = $traspasos->id;
                     $detalletraspaso->idinventario = $inventarioDestino->id;
                     $detalletraspaso->cantidad_traspaso = $cantidadADescontar;
+                    $detalletraspaso->stock_actual_destino = $inventarioDestino->saldo_stock;
                     $detalletraspaso->save();
 
                     $cantidadRestante -= $cantidadADescontar;
@@ -171,7 +172,8 @@ class TraspasoController extends Controller
                 'articulos.nombre as nombre_producto',
                 'articulos.unidad_envase',
                 'articulos.precio_costo_unid',
-                'proveedores.contacto'
+                'proveedores.contacto',
+                'detalle_traspasos.stock_actual_destino'
             )
             ->where('detalle_traspasos.idtraspaso', $idtraspaso)
             ->get();
@@ -258,7 +260,8 @@ class TraspasoController extends Controller
                 'articulos.codigo',
                 'articulos.nombre',
                 'articulos.descripcion_fabrica',
-                'detalle_traspasos.cantidad_traspaso as cantidad'
+                'detalle_traspasos.cantidad_traspaso as cantidad',
+                'detalle_traspasos.stock_actual_destino as stock_actual_destino'
             )
             ->where('detalle_traspasos.idtraspaso', $id)
             ->get();
@@ -323,8 +326,10 @@ class TraspasoController extends Controller
         $pdf->SetFillColor(230, 230, 230);
 
         $pdf->Cell(25, 8, utf8_decode('CÓDIGO'), 1, 0, 'C', true);
-        $pdf->Cell(135, 8, 'PRODUCTO', 1, 0, 'C', true);
+        $pdf->Cell(105, 8, 'PRODUCTO', 1, 0, 'C', true);
+        $pdf->Cell(30, 8, 'STOCK DESTINO', 1, 0, 'C', true);
         $pdf->Cell(30, 8, 'CANTIDAD', 1, 1, 'C', true);
+
 
         // Cuerpo
         $pdf->SetFont('Arial', '', 9);
@@ -339,9 +344,9 @@ class TraspasoController extends Controller
             $nombreProducto = substr($nombreProducto, 0, 80);
 
             $pdf->Cell(25, 7, utf8_decode($det->codigo), 1, 0, 'C');
-            $pdf->Cell(135, 7, $nombreProducto, 1, 0, 'L');
+            $pdf->Cell(105, 7, $nombreProducto, 1, 0, 'L');
+            $pdf->Cell(30, 7, number_format($det->stock_actual_destino, 0), 1, 0, 'C');
             $pdf->Cell(30, 7, number_format($det->cantidad, 0), 1, 1, 'C');
-
             $totalCantidad += $det->cantidad;
         }
 

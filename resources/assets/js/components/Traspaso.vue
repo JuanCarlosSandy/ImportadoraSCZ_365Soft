@@ -256,6 +256,7 @@
         <Column field="nombre_producto" header="Producto" />
         <Column field="contacto" header="Proveedor" />
         <Column field="cantidad_traspaso" header="Total Traspasado" />
+        <Column field="stock_actual_destino" header="Stock Actual del Destino" />
       </DataTable>
 
       <!-- FOOTER -->
