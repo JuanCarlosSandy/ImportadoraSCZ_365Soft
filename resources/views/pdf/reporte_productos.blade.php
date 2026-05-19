@@ -103,6 +103,20 @@
     <span><strong>Sucursal:</strong> {{ $sucursal }}</span>
     <span><strong>Desde:</strong> {{ $fechaInicio }}</span>
     <span><strong>Hasta:</strong> {{ $fechaFin }}</span>
+        <span style="margin-left: 30px;">
+        <strong>Total Efectivo:</strong>
+        {{ number_format($totalEfectivo, 2) }}
+    </span>
+
+    <span>
+        <strong>Total QR:</strong>
+        {{ number_format($totalQR, 2) }}
+    </span>
+
+    <span>
+        <strong>Total Compuesto:</strong>
+        {{ number_format($totalCompuesto, 2) }}
+    </span>
 </div>
 
 <!-- TABLA -->

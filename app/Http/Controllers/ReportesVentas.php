@@ -989,6 +989,38 @@ class ReportesVentas extends Controller
 
         $datos = $query->get();
 
+        // 🔢 Totales generales
+        $totalCantidad = 0;
+        $totalImporte = 0;
+
+        // 💰 Totales por tipo de pago
+        $totalEfectivo = 0;
+        $totalQR = 0;
+        $totalCompuesto = 0;
+
+        foreach ($datos as $item) {
+
+            // Solo ventas válidas
+            if ($item->estado == 1) {
+
+                $totalCantidad += $item->cantidad;
+                $totalImporte += $item->subtotal;
+
+                // Totales por tipo de pago
+                if ($item->tipo_pago == 'Efectivo') {
+                    $totalEfectivo += $item->subtotal;
+                }
+
+                if ($item->tipo_pago == 'QR') {
+                    $totalQR += $item->subtotal;
+                }
+
+                if ($item->tipo_pago == 'Compuesto') {
+                    $totalCompuesto += $item->subtotal;
+                }
+            }
+        }
+
         // 🔢 Totales
         $totalCantidad = 0;
         $totalImporte = 0;
@@ -1006,7 +1038,11 @@ class ReportesVentas extends Controller
             'total_importe' => number_format($totalImporte, 2, '.', ''),
             'total_registros' => $datos->count(),
             'ventas_registradas' => $datos->where('estado', 1)->count(),
-            'ventas_anuladas' => $datos->where('estado', 0)->count()
+            'ventas_anuladas' => $datos->where('estado', 0)->count(),
+            // 💰 Totales por pago
+            'total_efectivo' => number_format($totalEfectivo, 2, '.', ''),
+            'total_qr' => number_format($totalQR, 2, '.', ''),
+            'total_compuesto' => number_format($totalCompuesto, 2, '.', ''),
         ];
     }
     public function ReporteProductosVendidosPDF(Request $request)
@@ -1032,7 +1068,10 @@ class ReportesVentas extends Controller
                 'productos' => $productos,
                 'fechaInicio' => $request->fechaInicio,
                 'fechaFin' => $request->fechaFin,
-                'sucursal' => $sucursal
+                'sucursal' => $sucursal,
+                'totalEfectivo' => $data['total_efectivo'],
+                'totalQR' => $data['total_qr'],
+                'totalCompuesto' => $data['total_compuesto'],
             ]);
 
             $pdf->setPaper('A4', 'landscape');

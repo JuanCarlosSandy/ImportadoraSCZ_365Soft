@@ -4,9 +4,14 @@ namespace App\Exports;
 
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\{
-    FromCollection, WithHeadings, WithMapping,
-    WithColumnWidths, WithStyles, WithCustomStartCell,
-    WithEvents, WithDrawings
+    FromCollection,
+    WithHeadings,
+    WithMapping,
+    WithColumnWidths,
+    WithStyles,
+    WithCustomStartCell,
+    WithEvents,
+    WithDrawings
 };
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -16,15 +21,23 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 
 class ReporteProductosVendidosExport implements
-    FromCollection, WithHeadings, WithMapping,
-    WithColumnWidths, WithStyles, WithCustomStartCell,
-    WithEvents, WithDrawings
+    FromCollection,
+    WithHeadings,
+    WithMapping,
+    WithColumnWidths,
+    WithStyles,
+    WithCustomStartCell,
+    WithEvents,
+    WithDrawings
 {
     protected $sucursal;
     protected $fechaInicio;
     protected $fechaFin;
     protected $fechaGeneracion;
     protected $nombreSucursal;
+    protected $totalEfectivo = 0;
+    protected $totalQR = 0;
+    protected $totalCompuesto = 0;
 
 
     public function __construct($sucursal, $fechaInicio, $fechaFin, $nombreSucursal)
@@ -39,7 +52,7 @@ class ReporteProductosVendidosExport implements
     // 🔥 DATA
     public function collection()
     {
-        return DB::table('detalle_ventas as dv')
+        $datos = DB::table('detalle_ventas as dv')
             ->join('ventas as v', 'dv.idventa', '=', 'v.id')
             ->join('articulos as a', 'dv.idarticulo', '=', 'a.id')
             ->join('users as u', 'v.idusuario', '=', 'u.id')
@@ -55,13 +68,13 @@ class ReporteProductosVendidosExport implements
                 'u.usuario as vendedor',
                 'v.estado',
                 DB::raw("
-                    CASE 
-                        WHEN v.idtipo_pago = 1 THEN 'Efectivo'
-                        WHEN v.idtipo_pago = 7 THEN 'QR'
-                        WHEN v.idtipo_pago = 13 THEN 'Compuesto'
-                        ELSE 'Otro'
-                    END as tipo_pago
-                ")
+            CASE 
+                WHEN v.idtipo_pago = 1 THEN 'Efectivo'
+                WHEN v.idtipo_pago = 7 THEN 'QR'
+                WHEN v.idtipo_pago = 13 THEN 'Compuesto'
+                ELSE 'Otro'
+            END as tipo_pago
+        ")
             )
             ->whereBetween('v.fecha_hora', [
                 $this->fechaInicio . ' 00:00:00',
@@ -70,6 +83,28 @@ class ReporteProductosVendidosExport implements
             ->where('v.idsucursal', $this->sucursal)
             ->orderBy('v.fecha_hora', 'desc')
             ->get();
+
+
+        // 🔥 calcular totales válidos
+        foreach ($datos as $item) {
+
+            if ($item->estado == 1) {
+
+                if ($item->tipo_pago == 'Efectivo') {
+                    $this->totalEfectivo += $item->subtotal;
+                }
+
+                if ($item->tipo_pago == 'QR') {
+                    $this->totalQR += $item->subtotal;
+                }
+
+                if ($item->tipo_pago == 'Compuesto') {
+                    $this->totalCompuesto += $item->subtotal;
+                }
+            }
+        }
+
+        return $datos;
     }
 
     // 🔹 HEADERS
@@ -151,7 +186,7 @@ class ReporteProductosVendidosExport implements
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
 
                 $sheet = $event->sheet;
 
@@ -168,6 +203,20 @@ class ReporteProductosVendidosExport implements
                 $sheet->setCellValue('A5', 'Sucursal: ' . $this->nombreSucursal);
                 $sheet->setCellValue('E5', 'Desde: ' . $this->fechaInicio);
                 $sheet->setCellValue('A6', 'Hasta: ' . $this->fechaFin);
+                $sheet->setCellValue(
+                    'E6',
+                    'Efectivo: ' . number_format($this->totalEfectivo, 2)
+                );
+
+                $sheet->setCellValue(
+                    'G6',
+                    'QR: ' . number_format($this->totalQR, 2)
+                );
+
+                $sheet->setCellValue(
+                    'I6',
+                    'Compuesto: ' . number_format($this->totalCompuesto, 2)
+                );
 
                 $sheet->getStyle('A5:J6')->getFont()->setBold(true);
             }
