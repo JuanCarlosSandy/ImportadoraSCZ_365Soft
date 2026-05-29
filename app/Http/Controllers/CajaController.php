@@ -13,7 +13,8 @@ class CajaController extends Controller
 {
     public function index(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $buscar = $request->buscar;
         $criterio = $request->criterio;
@@ -92,12 +93,12 @@ class CajaController extends Controller
 
         return [
             'pagination' => [
-                'total'        => $cajas->total(),
+                'total' => $cajas->total(),
                 'current_page' => $cajas->currentPage(),
-                'per_page'     => $cajas->perPage(),
-                'last_page'    => $cajas->lastPage(),
-                'from'         => $cajas->firstItem(),
-                'to'           => $cajas->lastItem(),
+                'per_page' => $cajas->perPage(),
+                'last_page' => $cajas->lastPage(),
+                'from' => $cajas->firstItem(),
+                'to' => $cajas->lastItem(),
             ],
             'cajas' => $cajas
         ];
@@ -106,8 +107,9 @@ class CajaController extends Controller
 
     public function store(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
-        
+        if (!$request->ajax())
+            return redirect('/');
+
         $usuario = \Auth::user();
         $idSucursalAsignada = $usuario->idsucursal;
 
@@ -129,22 +131,23 @@ class CajaController extends Controller
         $caja->saldoCaja = $request->saldoInicial;
         $caja->estado = '1';
         $caja->save();
-        
+
         return response()->json(['message' => 'Caja registrada correctamente']);
     }
 
     public function depositar(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
         $caja = Caja::findOrFail($request->id);
-        $caja->depositos = ($request->depositos)+($caja->depositos);
+        $caja->depositos = ($request->depositos) + ($caja->depositos);
         $caja->saldoCaja += $request->depositos;
         $caja->saldototalventas += $request->depositos;
         $caja->save();
 
         $transacciones = new TransaccionesCaja();
         $transacciones->idcaja = $request->id;
-        $transacciones->idusuario = \Auth::user()->id; 
+        $transacciones->idusuario = \Auth::user()->id;
         $transacciones->fecha = now()->setTimezone('America/La_Paz');
         $transacciones->transaccion = $request->transaccion;
         $transacciones->importe = ($request->depositos);
@@ -159,9 +162,10 @@ class CajaController extends Controller
         $transacciones->save();
     }
 
-   public function retirar(Request $request)
+    public function retirar(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $caja = Caja::findOrFail($request->id);
         $caja->salidas += floatval($request->salidas);
@@ -190,10 +194,11 @@ class CajaController extends Controller
 
     public function arqueoCaja(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
         $arqueoCaja = new ArqueoCaja();
         $arqueoCaja->idcaja = $request->idcaja;
-        $arqueoCaja->idusuario = \Auth::user()->id; 
+        $arqueoCaja->idusuario = \Auth::user()->id;
         $arqueoCaja->billete200 = $request->billete200;
         $arqueoCaja->billete100 = $request->billete100;
         $arqueoCaja->billete50 = $request->billete50;
@@ -210,292 +215,381 @@ class CajaController extends Controller
     }
 
     public function cerrar(Request $request)
-{
-    if (!$request->ajax()) return redirect('/');
+    {
+        if (!$request->ajax())
+            return redirect('/');
 
-    $caja = Caja::findOrFail($request->id);
-    $caja->fechaCierre = now()->setTimezone('America/La_Paz');
-    $caja->estado = '0';
+        $caja = Caja::findOrFail($request->id);
+        $caja->fechaCierre = now()->setTimezone('America/La_Paz');
+        $caja->estado = '0';
 
-    // Guardar el monto de arqueo (el monto que realizas del arqueo)
-    $caja->monto_arqueo = $request->saldoFaltante;
+        // Guardar el monto de arqueo (el monto que realizas del arqueo)
+        $caja->monto_arqueo = $request->saldoFaltante;
 
-    // Calcular diferencia: monto arqueo (lo que contaste) - saldo caja (lo que debería haber en caja)
-    $montoArqueo = floatval($request->saldoFaltante);
-    $saldoCaja = floatval($caja->saldoCaja);
-    $diferencia = $montoArqueo - $saldoCaja;
+        // Calcular diferencia: monto arqueo (lo que contaste) - saldo caja (lo que debería haber en caja)
+        $montoArqueo = floatval($request->saldoFaltante);
+        $saldoCaja = floatval($caja->saldoCaja);
+        $diferencia = $montoArqueo - $saldoCaja;
 
-    if ($diferencia > 0) {
-        // Si contaste más que lo que dice el sistema → HAY SOBRANTE
-        $caja->saldoFaltante = 0; // Asegurar que no se registre faltante
-        $caja->saldoSobrante = abs($diferencia);
-    } elseif ($diferencia < 0) {
-        // Si contaste menos que lo que dice el sistema → HAY FALTANTE
-        $caja->saldoSobrante = 0; // Asegurar que no se registre sobrante
-        $caja->saldoFaltante = abs($diferencia);
+        if ($diferencia > 0) {
+            // Si contaste más que lo que dice el sistema → HAY SOBRANTE
+            $caja->saldoFaltante = 0; // Asegurar que no se registre faltante
+            $caja->saldoSobrante = abs($diferencia);
+        } elseif ($diferencia < 0) {
+            // Si contaste menos que lo que dice el sistema → HAY FALTANTE
+            $caja->saldoSobrante = 0; // Asegurar que no se registre sobrante
+            $caja->saldoFaltante = abs($diferencia);
 
-    } else {
-        // Si no hay diferencia, ambos quedan en 0
-        $caja->saldoFaltante = 0;
-        $caja->saldoSobrante = 0;
+        } else {
+            // Si no hay diferencia, ambos quedan en 0
+            $caja->saldoFaltante = 0;
+            $caja->saldoSobrante = 0;
+        }
+
+        $caja->save();
     }
 
-    $caja->save();
-}
+    public function generarReporte($idCaja, Request $request)
+    {
+        $tipo = trim(strtolower($request->query('tipo', 'completo'))); // efectivo, qr o completo
+        $caja = Caja::findOrFail($idCaja);
+        $idsucursal = $caja->idsucursal;
 
-public function generarReporte($idCaja, Request $request)
-{
-    $tipo = trim(strtolower($request->query('tipo', 'completo'))); // efectivo, qr o completo
-    $caja = Caja::findOrFail($idCaja);
-    $idsucursal = $caja->idsucursal;
+        $historial = [];
 
-    $historial = [];
+        // =========================
+        // SALDO INICIAL
+        // =========================
+        $historial[] = [
+            'fecha' => $caja->fecha_apertura,
+            'detalle' => 'Saldo Inicial',
+            'tipo_pago' => 'efectivo',
+            'monto' => floatval($caja->saldoInicial),
+            'idbanco' => null,
+            'nombre_banco' => null,
+            'tipo' => 'saldo_inicial',
+            'productos' => '',
+        ];
 
-    // =========================
-    // SALDO INICIAL
-    // =========================
-    $historial[] = [
-        'fecha' => $caja->fecha_apertura,
-        'detalle' => 'Saldo Inicial',
-        'tipo_pago' => 'efectivo',
-        'monto' => floatval($caja->saldoInicial),
-        'idbanco' => null,
-        'nombre_banco' => null,
-        'tipo' => 'saldo_inicial'
-    ];
+        // =========================
+        // VENTAS AL CONTADO
+        // =========================
+        $ventas = \DB::table('ventas')
+            ->where('idtipo_venta', 1)
+            ->where('idcaja', $caja->id)  // 🔥 FILTRAR POR CAJA ESPECÍFICA
+            ->where('estado', '<>', 0) // 👈 solo ventas activas
+            ->get();
 
-    // =========================
-    // VENTAS AL CONTADO
-    // =========================
-    $ventas = \DB::table('ventas')
-        ->where('idtipo_venta', 1)
-        ->where('idcaja', $caja->id)  // 🔥 FILTRAR POR CAJA ESPECÍFICA
-        ->where('estado', '<>', 0) // 👈 solo ventas activas
-        ->get();
+        foreach ($ventas as $venta) {
+            // =========================
+            // OBTENER CODIGOS PRODUCTOS
+            // =========================
 
-    foreach ($ventas as $venta) {
-        $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : ($venta->idtipo_pago == 13 ? 'compuesto' : 'otros'));
+            $productosVendidos = \DB::table('detalle_ventas as dv')
+                ->join('articulos as a', 'a.id', '=', 'dv.idarticulo')
+                ->where('dv.idventa', $venta->id)
+                ->pluck('a.codigo')
+                ->toArray();
 
-        $cliente = \DB::table('personas')->find($venta->idcliente);
-        $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
+            $productosTexto = implode(', ', $productosVendidos);
+            $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : ($venta->idtipo_pago == 13 ? 'compuesto' : 'otros'));
 
-        // 👉 Manejo especial para ventas compuestas
-        if ($venta->idtipo_pago == 13) {
-            // Si es compuesto
-            if ($tipo === 'completo') {
-                // Reporte completo: mostrar la venta como compuesto sin desglosar
+            $cliente = \DB::table('personas')->find($venta->idcliente);
+            $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
+
+            // 👉 Manejo especial para ventas compuestas
+            if ($venta->idtipo_pago == 13) {
+                // Si es compuesto
+                if ($tipo === 'completo') {
+                    // Reporte completo: mostrar la venta como compuesto sin desglosar
+                    $historial[] = [
+                        'fecha' => $venta->fecha_hora,
+                        'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                        'tipo_pago' => 'compuesto',
+                        'monto' => floatval($venta->total),
+                        'idbanco' => null,
+                        'nombre_banco' => null,
+                        'tipo' => 'venta',
+                        'productos' => $productosTexto,
+                    ];
+                } elseif ($tipo === 'qr' && floatval($venta->monto_qr) > 0) {
+                    // Solo QR
+                    $historial[] = [
+                        'fecha' => $venta->fecha_hora,
+                        'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                        'tipo_pago' => 'qr',
+                        'monto' => floatval($venta->monto_qr),
+                        'idbanco' => null,
+                        'nombre_banco' => null,
+                        'tipo' => 'venta',
+                        'productos' => $productosTexto,
+                    ];
+                } elseif ($tipo === 'efectivo' && floatval($venta->monto_efectivo) > 0) {
+                    // Solo Efectivo
+                    $historial[] = [
+                        'fecha' => $venta->fecha_hora,
+                        'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                        'tipo_pago' => 'efectivo',
+                        'monto' => floatval($venta->monto_efectivo),
+                        'idbanco' => null,
+                        'nombre_banco' => null,
+                        'tipo' => 'venta',
+                        'productos' => $productosTexto,
+                    ];
+                }
+            } else {
+                // Ventas normales (no compuestas)
+                if ($tipo !== 'completo' && $tipo_pago !== $tipo)
+                    continue;
+
                 $historial[] = [
                     'fecha' => $venta->fecha_hora,
                     'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
-                    'tipo_pago' => 'compuesto',
+                    'tipo_pago' => $tipo_pago,
                     'monto' => floatval($venta->total),
                     'idbanco' => null,
                     'nombre_banco' => null,
-                    'tipo' => 'venta'
-                ];
-            } elseif ($tipo === 'qr' && floatval($venta->monto_qr) > 0) {
-                // Solo QR
-                $historial[] = [
-                    'fecha' => $venta->fecha_hora,
-                    'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
-                    'tipo_pago' => 'qr',
-                    'monto' => floatval($venta->monto_qr),
-                    'idbanco' => null,
-                    'nombre_banco' => null,
-                    'tipo' => 'venta'
-                ];
-            } elseif ($tipo === 'efectivo' && floatval($venta->monto_efectivo) > 0) {
-                // Solo Efectivo
-                $historial[] = [
-                    'fecha' => $venta->fecha_hora,
-                    'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
-                    'tipo_pago' => 'efectivo',
-                    'monto' => floatval($venta->monto_efectivo),
-                    'idbanco' => null,
-                    'nombre_banco' => null,
-                    'tipo' => 'venta'
+                    'tipo' => 'venta',
+                    'productos' => $productosTexto,
                 ];
             }
-        } else {
-            // Ventas normales (no compuestas)
-            if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
+        }
+
+        // =========================
+        // CUOTAS DE CRÉDITO
+        // =========================
+        $cuotas = \DB::table('cuotas_credito')
+            ->whereIn('idtipo_pago', [1, 7])
+            ->where('idcaja', $caja->id)
+            ->get();
+
+        foreach ($cuotas as $cuota) {
+
+            $tipo_pago = $cuota->idtipo_pago == 1 ? 'efectivo' : 'qr';
+
+            // =========================
+            // 👉 COBRO ADELANTADO (saldo a favor)
+            // =========================
+            if ($cuota->numero_cuota == 0 && is_null($cuota->idcredito)) {
+
+                $cliente = \DB::table('personas')->find($cuota->idcliente);
+                $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
+
+                // Filtrado por tipo de reporte
+                if ($tipo !== 'completo' && $tipo_pago !== $tipo)
+                    continue;
+
+                $historial[] = [
+                    'fecha' => $cuota->fecha_pago,
+                    'detalle' => 'Cobro Adelantado - ' . $nombreCliente,
+                    'tipo_pago' => $tipo_pago,
+                    'monto' => floatval($cuota->precio_cuota), // ✅ suma
+                    'idbanco' => null,
+                    'nombre_banco' => null,
+                    'tipo' => 'cuota',
+                    'productos' => '',
+                ];
+
+                continue;
+            }
+
+            // =========================
+            // 👉 COBRO NORMAL DE CUOTA
+            // =========================
+            $ventaRelacionada = \DB::table('ventas')
+                ->where('id', $cuota->idcredito)
+                ->where('estado', '<>', 0) // 👈 solo ventas activas
+                ->first();
+            // Si la venta está anulada, no se toma en cuenta la cuota
+            if (!$ventaRelacionada) {
+                continue;
+            }
+            $numComprobante = $ventaRelacionada->num_comprobante ?? 'N/A';
+            $idCliente = $ventaRelacionada->idcliente ?? null;
+            $cliente = \DB::table('personas')->find($idCliente);
+            $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
+
+            // Filtrado por tipo de reporte
+            if ($tipo !== 'completo' && $tipo_pago !== $tipo)
+                continue;
 
             $historial[] = [
-                'fecha' => $venta->fecha_hora,
-                'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                'fecha' => $cuota->fecha_pago,
+                'detalle' => 'Cobro Cuota N° ' . $numComprobante . ' - ' . $nombreCliente,
                 'tipo_pago' => $tipo_pago,
-                'monto' => floatval($venta->total),
+                'monto' => floatval($cuota->precio_cuota),
                 'idbanco' => null,
                 'nombre_banco' => null,
-                'tipo' => 'venta'
+                'tipo' => 'cuota',
+                'productos' => '',
             ];
         }
-    }
 
-    // =========================
-// CUOTAS DE CRÉDITO
-// =========================
-$cuotas = \DB::table('cuotas_credito')
-    ->whereIn('idtipo_pago', [1, 7])
-    ->where('idcaja', $caja->id)
-    ->get();
+        // =========================
+        // TRANSACCIONES DE CAJA
+        // =========================
+        $transacciones = \DB::table('transacciones_cajas')
+            ->where('idcaja', $caja->id)
+            ->where(function ($q) {
+                $q->where('transaccion', '<>', 'Anulación de venta')
+                    ->orWhere('transaccion', 'Anulación de venta crédito');
+            })
+            ->get();
 
-foreach ($cuotas as $cuota) {
+        foreach ($transacciones as $trans) {
 
-    $tipo_pago = $cuota->idtipo_pago == 1 ? 'efectivo' : 'qr';
+            $tipo_pago = $trans->tipo_pago == 1 ? 'efectivo' : ($trans->tipo_pago == 7 ? 'qr' : ($trans->tipo_pago == 13 ? 'compuesto' : 'otros'));
 
-    // =========================
-    // 👉 COBRO ADELANTADO (saldo a favor)
-    // =========================
-    if ($cuota->numero_cuota == 0 && is_null($cuota->idcredito)) {
+            // Filtrado por tipo de reporte
+            if ($tipo !== 'completo' && $tipo_pago !== $tipo)
+                continue;
 
-        $cliente = \DB::table('personas')->find($cuota->idcliente);
-        $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
+            $monto = floatval($trans->importe);
 
-        // Filtrado por tipo de reporte
-        if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
-
-        $historial[] = [
-            'fecha' => $cuota->fecha_pago,
-            'detalle' => 'Cobro Adelantado - ' . $nombreCliente,
-            'tipo_pago' => $tipo_pago,
-            'monto' => floatval($cuota->precio_cuota), // ✅ suma
-            'idbanco' => null,
-            'nombre_banco' => null,
-            'tipo' => 'cuota'
-        ];
-
-        continue;
-    }
-
-    // =========================
-    // 👉 COBRO NORMAL DE CUOTA
-    // =========================
-$ventaRelacionada = \DB::table('ventas')
-    ->where('id', $cuota->idcredito)
-    ->where('estado', '<>', 0) // 👈 solo ventas activas
-    ->first();
-    // Si la venta está anulada, no se toma en cuenta la cuota
-if (!$ventaRelacionada) {
-    continue;
-}
-    $numComprobante = $ventaRelacionada->num_comprobante ?? 'N/A';
-    $idCliente = $ventaRelacionada->idcliente ?? null;
-    $cliente = \DB::table('personas')->find($idCliente);
-    $nombreCliente = $cliente->nombre ?? 'Cliente desconocido';
-
-    // Filtrado por tipo de reporte
-    if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
-
-    $historial[] = [
-        'fecha' => $cuota->fecha_pago,
-        'detalle' => 'Cobro Cuota N° ' . $numComprobante . ' - ' . $nombreCliente,
-        'tipo_pago' => $tipo_pago,
-        'monto' => floatval($cuota->precio_cuota),
-        'idbanco' => null,
-        'nombre_banco' => null,
-        'tipo' => 'cuota'
-    ];
-}
-
-    // =========================
-    // TRANSACCIONES DE CAJA
-    // =========================
-    $transacciones = \DB::table('transacciones_cajas')
-    ->where('idcaja', $caja->id)
-    ->where(function ($q) {
-        $q->where('transaccion', '<>', 'Anulación de venta')
-          ->orWhere('transaccion', 'Anulación de venta crédito');
-    })
-    ->get();
-
-foreach ($transacciones as $trans) {
-
-    $tipo_pago = $trans->tipo_pago == 1 ? 'efectivo' : ($trans->tipo_pago == 7 ? 'qr' : ($trans->tipo_pago == 13 ? 'compuesto' : 'otros'));
-
-    // Filtrado por tipo de reporte
-    if ($tipo !== 'completo' && $tipo_pago !== $tipo) continue;
-
-    $monto = floatval($trans->importe);
-
-    // 👉 Todo lo que debe RESTAR
-    if (
-        stripos($trans->transaccion, 'egreso') !== false ||
-        stripos($trans->transaccion, 'gasto') !== false ||
-        stripos($trans->transaccion, 'Anulación de venta crédito') !== false
-    ) {
-        $monto = -abs($monto);
-    } else {
-        $monto = abs($monto);
-    }
-
-    $historial[] = [
-        'fecha' => $trans->fecha,
-        'detalle' => $trans->transaccion,
-        'tipo_pago' => $tipo_pago,
-        'monto' => $monto,
-        'idbanco' => null,
-        'nombre_banco' => null,
-        'tipo' => 'transaccion'
-    ];
-}
-
-    // =========================
-    // ORDENAR TODO POR FECHA
-    // =========================
-    $historial = collect($historial)->sortBy('fecha')->values();
-
-    // =========================
-    // CALCULAR SALDO ACUMULADO
-    // =========================
-$saldoActual = 0;
-$historial = $historial->map(function($item) use (&$saldoActual) {
-
-    // Saldo inicial
-    if ($item['tipo'] === 'saldo_inicial') {
-        $saldoActual = $item['monto'];
-    } elseif (stripos($item['detalle'], 'Anulación de venta') !== false) {
-        // 👉 Las anulaciones NO afectan el saldo actual, se ignoran completamente
-        // El saldo permanece igual
-    } else {
-        // Determinar el monto a sumar o restar según el tipo
-        $monto = $item['monto'];
-
-        if ($item['tipo'] === 'transaccion') {
-            // 👉 Todo lo que DEBE RESTAR del saldo
+            // 👉 Todo lo que debe RESTAR
             if (
-                stripos($item['detalle'], 'egreso') !== false ||
-                stripos($item['detalle'], 'gasto') !== false
+                stripos($trans->transaccion, 'egreso') !== false ||
+                stripos($trans->transaccion, 'gasto') !== false ||
+                stripos($trans->transaccion, 'Anulación de venta crédito') !== false
             ) {
                 $monto = -abs($monto);
             } else {
                 $monto = abs($monto);
             }
+
+            $historial[] = [
+                'fecha' => $trans->fecha,
+                'detalle' => $trans->transaccion,
+                'tipo_pago' => $tipo_pago,
+                'monto' => $monto,
+                'idbanco' => null,
+                'nombre_banco' => null,
+                'tipo' => 'transaccion',
+                'productos' => '',
+            ];
         }
 
-        $saldoActual += $monto;
+        // =========================
+        // ORDENAR TODO POR FECHA
+        // =========================
+        $historial = collect($historial)->sortBy('fecha')->values();
+
+        // =========================
+        // CALCULAR SALDO ACUMULADO
+        // =========================
+        $saldoActual = 0;
+        $historial = $historial->map(function ($item) use (&$saldoActual) {
+
+            // Saldo inicial
+            if ($item['tipo'] === 'saldo_inicial') {
+                $saldoActual = $item['monto'];
+            } elseif (stripos($item['detalle'], 'Anulación de venta') !== false) {
+                // 👉 Las anulaciones NO afectan el saldo actual, se ignoran completamente
+                // El saldo permanece igual
+            } else {
+                // Determinar el monto a sumar o restar según el tipo
+                $monto = $item['monto'];
+
+                if ($item['tipo'] === 'transaccion') {
+                    // 👉 Todo lo que DEBE RESTAR del saldo
+                    if (
+                        stripos($item['detalle'], 'egreso') !== false ||
+                        stripos($item['detalle'], 'gasto') !== false
+                    ) {
+                        $monto = -abs($monto);
+                    } else {
+                        $monto = abs($monto);
+                    }
+                }
+
+                $saldoActual += $monto;
+            }
+
+            $item['saldo_actual'] = $saldoActual;
+
+            return $item;
+        });
+
+        // =========================
+        // RESUMEN DE CAJA
+        // =========================
+
+        // Cobros efectivo
+        $ventasContado = collect($historial)
+            ->whereIn('tipo', ['venta', 'cuota'])
+            ->where('tipo_pago', 'efectivo')
+            ->sum('monto');
+
+        // Cobros QR
+        $ventasQR = collect($historial)
+            ->whereIn('tipo', ['venta', 'cuota'])
+            ->where('tipo_pago', 'qr')
+            ->sum('monto');
+
+        // Cobros Totales
+        $cobrosTotales = $ventasContado + $ventasQR;
+
+        // Depósitos extras
+        $depositos = collect($historial)
+            ->where('tipo', 'transaccion')
+            ->filter(function ($item) {
+                return (
+                    stripos($item['detalle'], 'deposito') !== false ||
+                    stripos($item['detalle'], 'depósito') !== false
+                );
+            })
+            ->sum('monto');
+
+        // Salidas extras
+        $salidas = collect($historial)
+            ->where('tipo', 'transaccion')
+            ->filter(function ($item) {
+                return (
+                    stripos($item['detalle'], 'egreso') !== false ||
+                    stripos($item['detalle'], 'gasto') !== false
+                );
+            })
+            ->sum('monto');
+
+        $salidas = abs($salidas);
+
+        // Saldo caja real guardado en la caja
+        $saldoCaja = floatval($caja->saldoCaja ?? 0);
+
+        // Monto arqueo
+        $montoArqueo = floatval($caja->monto_arqueo ?? 0);
+
+        // Datos reales guardados en caja
+        $saldoFaltante = floatval($caja->saldoFaltante ?? 0);
+        $saldoSobrante = floatval($caja->saldoSobrante ?? 0);
+
+        $resumenCaja = [
+            'fechaApertura' => $caja->fecha_apertura,
+            'fechaCierre' => $caja->fecha_cierre,
+            'saldoInicial' => floatval($caja->saldoInicial),
+            'ventasContado' => $ventasContado,
+            'ventasQR' => $ventasQR,
+            'saldototalventas' => $cobrosTotales,
+            'depositos' => $depositos,
+            'salidas' => $salidas,
+            'saldoCaja' => $saldoCaja,
+            'saldoFaltante' => $saldoFaltante,
+            'saldoSobrante' => $saldoSobrante,
+            'monto_arqueo' => $montoArqueo,
+        ];
+
+        $pdf = Pdf::loadView('pdf.caja', compact('caja', 'historial', 'tipo', 'resumenCaja'))
+            ->setPaper('letter', 'portrait'); // carta, vertical
+
+        $tipoReporte = [
+            'completo' => 'Completo',
+            'qr' => 'QR',
+            'efectivo' => 'Efectivo',
+        ][$tipo] ?? 'Completo';
+
+        $fechaGeneracion = date('Ymd_His');
+        $nombreArchivo = "ReporteCaja_{$tipoReporte}_{$fechaGeneracion}.pdf";
+
+        return $pdf->download($nombreArchivo);
     }
-
-    $item['saldo_actual'] = $saldoActual;
-
-    return $item;
-});
-
-$pdf = Pdf::loadView('pdf.caja', compact('caja', 'historial', 'tipo'))
-          ->setPaper('letter', 'portrait'); // carta, vertical
-
-$tipoReporte = [
-    'completo' => 'Completo',
-    'qr' => 'QR',
-    'efectivo' => 'Efectivo',
-][$tipo] ?? 'Completo';
-
-$fechaGeneracion = date('Ymd_His');
-$nombreArchivo = "ReporteCaja_{$tipoReporte}_{$fechaGeneracion}.pdf";
-
-return $pdf->download($nombreArchivo);}
-
-
-
-
 }
