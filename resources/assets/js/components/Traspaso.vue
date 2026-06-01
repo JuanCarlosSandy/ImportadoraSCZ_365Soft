@@ -35,31 +35,18 @@
         </div>
 
         <div style="flex: 2 1 300px;">
-          <label
-            class="label-fecha"
-            style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;"
-          >
+          <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">
             Productos
           </label>
 
-          <MultiSelect
-            v-model="productosSeleccionados"
-            :options="productos"
-            optionLabel="nombreCompleto"
-            optionValue="id"
-            filter
-            filterBy="codigo,nombre,nombreCompleto"
-            display="chip"
-            placeholder="Buscar producto"
-            @change="listarTraspasos"
-
-              appendTo="body"
-  panelClass="multiselect-panel-small"
-  class="multiselect-full"
-          />
+          <MultiSelect v-model="productosSeleccionados" :options="productos" optionLabel="nombreCompleto"
+            optionValue="id" filter filterBy="codigo,nombre,nombreCompleto" display="chip" placeholder="Buscar producto"
+            @change="listarTraspasos" appendTo="body" panelClass="multiselect-panel-small" class="multiselect-full" />
         </div>
 
         <div style="padding-bottom: 2px;">
+          <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-filter-slash" class="p-button-warning p-button-sm"
+            v-tooltip="'Limpiar filtros'" @click="limpiarFiltros" />
           <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
             @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm"
             v-tooltip="'Nuevo Traspaso'" />
@@ -509,22 +496,31 @@ export default {
     },
   },
   methods: {
+    limpiarFiltros() {
+
+      this.productosSeleccionados = [];
+
+      this.inicializarFechas();
+
+      this.listarTraspasos();
+      this.toastSuccess("Se restablecieron los filtros de búsqueda.");
+    },
     async listarProductosFiltro() {
-  try {
+      try {
 
-    const response = await axios.get('/articulos/todos');
+        const response = await axios.get('/articulos/todos');
 
-    this.productos = response.data.articulos.map(item => ({
-      id: item.id,
-      codigo: item.codigo,
-      nombre: item.nombre,
-      nombreCompleto: `${item.codigo} - ${item.nombre}`
-    }));
+        this.productos = response.data.articulos.map(item => ({
+          id: item.id,
+          codigo: item.codigo,
+          nombre: item.nombre,
+          nombreCompleto: `${item.codigo} - ${item.nombre}`
+        }));
 
-  } catch (error) {
-    console.error('Error al cargar productos:', error);
-  }
-},
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
+      }
+    },
     toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
@@ -1188,6 +1184,7 @@ export default {
 .multiselect-panel-small .p-checkbox-label {
   font-size: 0.8rem !important;
 }
+
 /* Input normal */
 .p-inputgroup>.p-inputtext,
 .p-inputgroup>.p-input-icon-left>.p-inputtext {
