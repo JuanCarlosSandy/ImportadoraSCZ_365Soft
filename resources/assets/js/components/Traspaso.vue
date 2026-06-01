@@ -34,6 +34,31 @@
           <input type="date" v-model="fechaFin" class="form-control input-date-full" @change="listarTraspasos" />
         </div>
 
+        <div style="flex: 2 1 300px;">
+          <label
+            class="label-fecha"
+            style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;"
+          >
+            Productos
+          </label>
+
+          <MultiSelect
+            v-model="productosSeleccionados"
+            :options="productos"
+            optionLabel="nombreCompleto"
+            optionValue="id"
+            filter
+            filterBy="codigo,nombre,nombreCompleto"
+            display="chip"
+            placeholder="Buscar producto"
+            @change="listarTraspasos"
+
+              appendTo="body"
+  panelClass="multiselect-panel-small"
+  class="multiselect-full"
+          />
+        </div>
+
         <div style="padding-bottom: 2px;">
           <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
             @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm"
@@ -331,6 +356,7 @@ import Tag from 'primevue/tag';
 import Swal from "sweetalert2";
 import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
+import MultiSelect from 'primevue/multiselect';
 
 export default {
   components: {
@@ -345,10 +371,13 @@ export default {
     InputText,
     Tag,
     ToastService,
-    Toast
+    Toast,
+    MultiSelect
   },
   data() {
     return {
+      productos: [],
+      productosSeleccionados: [],
       datosTraspaso: {
         almacen_origen: '',
         almacen_destino: '',
@@ -480,6 +509,22 @@ export default {
     },
   },
   methods: {
+    async listarProductosFiltro() {
+  try {
+
+    const response = await axios.get('/articulos/todos');
+
+    this.productos = response.data.articulos.map(item => ({
+      id: item.id,
+      codigo: item.codigo,
+      nombre: item.nombre,
+      nombreCompleto: `${item.codigo} - ${item.nombre}`
+    }));
+
+  } catch (error) {
+    console.error('Error al cargar productos:', error);
+  }
+},
     toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
@@ -520,28 +565,26 @@ export default {
     },
 
     async listarTraspasos() {
-      let me = this;
 
-      me.isLoading = true;
+      this.isLoading = true;
 
       try {
-        let url = "/list/traspasos";
 
-        if (this.fechaInicio && this.fechaFin) {
-          url += `?fechaInicio=${this.fechaInicio}&fechaFin=${this.fechaFin}`;
+        let url = `/list/traspasos?fechaInicio=${this.fechaInicio}&fechaFin=${this.fechaFin}`;
+
+        if (this.productosSeleccionados.length > 0) {
+          url += `&articulos=${this.productosSeleccionados.join(',')}`;
         }
 
         const response = await axios.get(url);
-        const respuesta = response.data;
 
-        me.traspasos = respuesta.traspasos.data;
-        me.pagination = respuesta.pagination;
+        this.traspasos = response.data.traspasos.data;
+        this.pagination = response.data.pagination;
 
       } catch (error) {
-        console.error("Error al obtener traspasos:", error);
-        swal("Error", "No se pudieron cargar los traspasos", "error");
+        console.error(error);
       } finally {
-        me.isLoading = false;
+        this.isLoading = false;
       }
     },
 
@@ -1118,6 +1161,7 @@ export default {
         this.selectAlmacen(),
         this.selectAlmacenDestino(),
         this.inicializarFechas(),
+        this.listarProductosFiltro(),
         this.listarTraspasos(),
       ]);
     } catch (error) {
@@ -1131,6 +1175,19 @@ export default {
 };
 </script>
 <style scoped>
+.multiselect-panel-small .p-multiselect-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+}
+
+.multiselect-panel-small .p-inputtext {
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+}
+
+.multiselect-panel-small .p-checkbox-label {
+  font-size: 0.8rem !important;
+}
 /* Input normal */
 .p-inputgroup>.p-inputtext,
 .p-inputgroup>.p-input-icon-left>.p-inputtext {
@@ -1214,6 +1271,51 @@ export default {
   font-size: 0.8rem !important;
   padding: 6px 10px !important;
   min-height: auto !important;
+}
+
+/* MultiSelect */
+.multiselect-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.multiselect-full>>>.p-multiselect {
+  width: 100% !important;
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.multiselect-full>>>.p-multiselect.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+.multiselect-full>>>.p-multiselect-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem !important;
+  min-height: auto !important;
+}
+
+.multiselect-full>>>.p-multiselect-trigger {
+  width: 2rem !important;
+}
+
+.multiselect-full>>>.p-multiselect-token {
+  font-size: 0.75rem !important;
+  padding: 2px 6px !important;
+}
+
+.multiselect-full>>>.p-multiselect-panel .p-multiselect-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+}
+
+.multiselect-full>>>.p-checkbox {
+  width: 16px;
+  height: 16px;
 }
 
 .input-full {

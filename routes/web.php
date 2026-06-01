@@ -60,6 +60,8 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get("/articulo/reportePDF", "ArticuloController@descargarPDF")->name(
             "articulos_pdf"
         );
+        Route::get('/articulos/todos', 'ArticuloController@listarTodos');
+        
         Route::get("/ajusteinv", "AjusteInventarioController@index");
         Route::post("/ajuste/registrar", "AjusteInventarioController@store");
 

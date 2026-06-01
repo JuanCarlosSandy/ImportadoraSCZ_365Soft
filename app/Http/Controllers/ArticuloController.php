@@ -1225,6 +1225,26 @@ class ArticuloController extends Controller
         ];
     }
 
+    public function listarTodos()
+    {
+        if (!request()->ajax()) {
+            return redirect('/');
+        }
+
+        $articulos = Articulo::select(
+            'id',
+            'codigo',
+            'nombre'
+        )
+        ->where('condicion', 1)
+        ->orderBy('nombre')
+        ->get();
+
+        return [
+            'articulos' => $articulos
+        ];
+    }
+
 }
 
 class ArticuloPDFConFooter extends FPDF

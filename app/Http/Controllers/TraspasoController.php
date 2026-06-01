@@ -14,46 +14,89 @@ use FPDF;
 class TraspasoController extends Controller
 {
     public function index(Request $request)
-    {
-        if (!$request->ajax())
-            return redirect('/');
+{
+    if (!$request->ajax())
+        return redirect('/');
 
-        $fechaInicio = $request->fechaInicio;
-        $fechaFin = $request->fechaFin;
+    $fechaInicio = $request->fechaInicio;
+    $fechaFin = $request->fechaFin;
 
-        $traspasos = Traspaso::select(
-            'traspasos.id',
-            'traspasos.almacen_origen',
-            'traspasos.almacen_destino',
-            'traspasos.fecha_traspaso',
-            'traspasos.idusuario',
-            'traspasos.created_at',
-            'traspasos.estado',
-            'ao.nombre_almacen as nombre_almacen_origen',
-            'ad.nombre_almacen as nombre_almacen_destino',
-            'personas.nombre as nombre_usuario' // ← Aquí sacamos el nombre del usuario
-        )
-            ->join('almacens as ao', 'traspasos.almacen_origen', '=', 'ao.id')
-            ->join('almacens as ad', 'traspasos.almacen_destino', '=', 'ad.id')
-            ->join('users', 'traspasos.idusuario', '=', 'users.id')
-            ->join('personas', 'users.id', '=', 'personas.id') // ← Join con personas
-            ->orderBy('traspasos.created_at', 'desc')
+    $articulos = [];
 
-            ->whereBetween('traspasos.fecha_traspaso', [$fechaInicio, $fechaFin])
-            ->paginate(100);
+    $articulos = collect(explode(',', $request->articulos))
+    ->filter()
+    ->map(function ($id) {
+        return (int) $id;
+    })
+    ->toArray();
 
-        return [
-            'pagination' => [
-                'total' => $traspasos->total(),
-                'current_page' => $traspasos->currentPage(),
-                'per_page' => $traspasos->perPage(),
-                'last_page' => $traspasos->lastPage(),
-                'from' => $traspasos->firstItem(),
-                'to' => $traspasos->lastItem(),
-            ],
-            'traspasos' => $traspasos
-        ];
+    $traspasos = Traspaso::select(
+        'traspasos.id',
+        'traspasos.almacen_origen',
+        'traspasos.almacen_destino',
+        'traspasos.fecha_traspaso',
+        'traspasos.idusuario',
+        'traspasos.created_at',
+        'traspasos.estado',
+        'ao.nombre_almacen as nombre_almacen_origen',
+        'ad.nombre_almacen as nombre_almacen_destino',
+        'personas.nombre as nombre_usuario'
+    )
+        ->join('almacens as ao', 'traspasos.almacen_origen', '=', 'ao.id')
+        ->join('almacens as ad', 'traspasos.almacen_destino', '=', 'ad.id')
+        ->join('users', 'traspasos.idusuario', '=', 'users.id')
+        ->join('personas', 'users.id', '=', 'personas.id');
+
+    // Si hay artículos seleccionados
+    if (!empty($articulos)) {
+
+        $traspasos->whereExists(function ($query) use ($articulos) {
+
+            $query->select(\DB::raw(1))
+                ->from('detalle_traspasos')
+                ->join(
+                    'inventarios',
+                    'detalle_traspasos.idinventario',
+                    '=',
+                    'inventarios.id'
+                )
+                ->whereColumn(
+                    'detalle_traspasos.idtraspaso',
+                    'traspasos.id'
+                )
+                ->whereIn(
+                    'inventarios.idarticulo',
+                    $articulos
+                );
+        });
+
+    } else {
+
+        // Si no hay artículos, filtrar por fecha
+        if ($fechaInicio && $fechaFin) {
+            $traspasos->whereBetween(
+                'traspasos.fecha_traspaso',
+                [$fechaInicio, $fechaFin]
+            );
+        }
     }
+
+    $traspasos = $traspasos
+        ->orderBy('traspasos.created_at', 'desc')
+        ->paginate(100);
+
+    return [
+        'pagination' => [
+            'total' => $traspasos->total(),
+            'current_page' => $traspasos->currentPage(),
+            'per_page' => $traspasos->perPage(),
+            'last_page' => $traspasos->lastPage(),
+            'from' => $traspasos->firstItem(),
+            'to' => $traspasos->lastItem(),
+        ],
+        'traspasos' => $traspasos
+    ];
+}
 
     //--registrando datos de Trapaso luego pasando datosa  inventario para registrar---
     public function store(Request $request)
