@@ -44,12 +44,21 @@
             @change="listarTraspasos" appendTo="body" panelClass="multiselect-panel-small" class="multiselect-full" />
         </div>
 
-        <div style="padding-bottom: 2px;">
-          <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-filter-slash" class="p-button-warning p-button-sm"
-            v-tooltip="'Limpiar filtros'" @click="limpiarFiltros" />
-          <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
-            @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm"
-            v-tooltip="'Nuevo Traspaso'" />
+        <div style="display: flex; flex-direction: column;">
+
+          <label class="label-fecha" style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">
+            Opciones
+          </label>
+
+          <div style="display: flex; gap: 10px;">
+            <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-filter-slash"
+              class="p-button-warning p-button-sm btn-input-sm" v-tooltip="'Limpiar filtros'" @click="limpiarFiltros" />
+
+            <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
+              @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm btn-input-sm"
+              v-tooltip="'Nuevo Traspaso'" />
+          </div>
+
         </div>
 
       </div>
@@ -1209,6 +1218,23 @@ export default {
 .btn-sm .pi {
   font-size: 0.75rem;
   margin-right: 4px;
+}
+
+/* 🔹 Botón con altura simétrica al input */
+.btn-input-sm {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  line-height: 1.2;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tamaño del icono */
+.btn-input-sm .pi {
+  font-size: 0.75rem;
 }
 
 /* 🔹 Label obligatorio */
