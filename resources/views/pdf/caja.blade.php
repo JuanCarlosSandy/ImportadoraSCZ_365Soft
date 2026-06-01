@@ -393,9 +393,9 @@
 
         <thead>
             <tr>
-                <th style="width: 18%;">Fecha / Hora</th>
+                <th style="width: 15%;">Fecha / Hora</th>
                 <th style="width: 28%;">Detalle</th>
-                <th style="width: 22%;">Productos Vendidos</th>
+                <th style="width: 25%;">Productos Vendidos</th>
                 <th style="width: 13%;">Tipo Pago</th>
                 <th style="width: 12%;" class="text-right">Monto</th>
                 <th style="width: 12%;" class="text-right">Saldo</th>
@@ -429,7 +429,7 @@
                     </td>
 
                     <!-- PRODUCTOS -->
-                    <td style="font-size: 8px; color: #475569;">
+                    <td style="font-size: 8px; color: #475569; white-space: pre-line;">
                         {{ $item['productos'] ?? '-' }}
                     </td>
 
@@ -515,13 +515,8 @@
  
        <div class="left">
             Reporte de Caja generado por el sistema
-     </di   v>
- 
-        <div    class="right">
-            Página <span class="pagenum"></span>
-        de
-            <span class="pagecount"></span>
-    </div>
+         </div>
+
 
 </div>
 

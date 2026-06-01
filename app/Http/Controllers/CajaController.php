@@ -288,10 +288,23 @@ class CajaController extends Controller
             $productosVendidos = \DB::table('detalle_ventas as dv')
                 ->join('articulos as a', 'a.id', '=', 'dv.idarticulo')
                 ->where('dv.idventa', $venta->id)
-                ->pluck('a.codigo')
-                ->toArray();
+                ->select(
+                    'a.codigo',
+                    'a.nombre',
+                    'dv.cantidad'
+                )
+                ->get();
 
-            $productosTexto = implode(', ', $productosVendidos);
+            $productosTexto = $productosVendidos
+                ->map(function ($producto) {
+                    return $producto->codigo .
+                        ' - ' .
+                        $producto->nombre .
+                        ' (x' .
+                        $producto->cantidad .
+                        ')';
+                })
+                ->implode("\n");
             $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : ($venta->idtipo_pago == 13 ? 'compuesto' : 'otros'));
 
             $cliente = \DB::table('personas')->find($venta->idcliente);
