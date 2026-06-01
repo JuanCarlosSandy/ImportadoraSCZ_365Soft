@@ -153,7 +153,7 @@
             <label for="tipoTraspaso" class="label-input">
               <span class="text-required">*</span> Buscador
             </label>
-            <Button label="Buscar Medic." icon="pi pi-search" @click="abrirModal2()" class="p-button-outlined btn-sm" />
+            <Button label="Buscar Prod." icon="pi pi-search" @click="abrirModal2()" class="p-button-outlined btn-sm" />
           </div>
         </div>
 
