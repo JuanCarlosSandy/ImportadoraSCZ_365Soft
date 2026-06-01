@@ -280,6 +280,7 @@
       <!-- TABLA -->
       <DataTable :value="arrayInventarioTrasp" responsiveLayout="scroll"
         class="p-datatable-gridlines p-datatable-sm tabla-pro" stripedRows>
+        <Column field="codigo_producto" header="Codigo" />
         <Column field="nombre_producto" header="Producto" />
         <Column field="contacto" header="Proveedor" />
         <Column field="cantidad_traspaso" header="Total Traspasado" />

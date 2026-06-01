@@ -215,6 +215,7 @@ class TraspasoController extends Controller
                 'articulos.nombre as nombre_producto',
                 'articulos.unidad_envase',
                 'articulos.precio_costo_unid',
+                'articulos.codigo as codigo_producto',
                 'proveedores.contacto',
                 'detalle_traspasos.stock_actual_destino'
             )
