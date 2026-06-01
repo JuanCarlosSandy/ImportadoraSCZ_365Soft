@@ -906,31 +906,32 @@ export default {
         }
       }
     },
-    //------------hasta aqui-----------
-    //---------eliminar lo agrgagado----
+
     eliminarDetalle(index) {
       let me = this;
       me.arrayDetalle.splice(index, 1);
     },
-    //------Registrar ------
+
     async registrarTraspaso() {
-      let me = this;
+
+      if (this.arrayDetalle.length === 0) {
+        this.advertenciaSwal();
+        return;
+      }
+
+      this.isLoading = true;
+
       try {
-        if (me.arrayDetalle.length === 0) {
-          this.advertenciaSwal();
-          return;
-        }
 
-        this.isLoading = true; // Activar loading
-
-        let almacenOrigen = me.arrayAlmacenes.find(
-          (almacen) => almacen.id === me.AlmacenSeleccionado
-        );
-        let almacenDestino = me.arrayAlmacenes.find(
-          (almacen) => almacen.id === me.AlmacenDestSeleccionado
+        let almacenOrigen = this.arrayAlmacenes.find(
+          almacen => almacen.id === this.AlmacenSeleccionado
         );
 
-        const response = await axios.post("/traspaso/registrar", {
+        let almacenDestino = this.arrayAlmacenes.find(
+          almacen => almacen.id === this.AlmacenDestSeleccionado
+        );
+
+        await axios.post("/traspaso/registrar", {
           tipo_traspaso: this.tipotraspo,
           almacen_origen: almacenOrigen ? almacenOrigen.id : null,
           almacen_destino: almacenDestino ? almacenDestino.id : null,
@@ -940,17 +941,28 @@ export default {
 
         this.toastSuccess("El traspaso fue registrado con éxito");
 
-        me.cerrarModal_1();
-        me.eliminarDetalle();
-        await me.listarTraspasos(); // Actualizar lista de traspasos
+        this.cerrarModal_1();
+        this.eliminarDetalle();
+
+        await this.listarTraspasos();
+
       } catch (error) {
+
         console.error(error);
-        swal("Error", "No se pudo registrar el traspaso", "error");
+
+        swal(
+          "Error",
+          "No se pudo registrar el traspaso",
+          "error"
+        );
+
       } finally {
-        this.isLoading = false; // Desactivar loading
+
+        this.isLoading = false;
+
       }
     },
-    //-----ver traspaso lo que se registro en un listado----
+
     async verTraspaso(id) {
       try {
         this.dialogTraspasoVisible = true;
