@@ -333,8 +333,9 @@
                 @click="agregarDetalleModal(slotProps.data)" />
             </template>
           </Column>
+          <Column field="codigo" header="Codigo" />
           <Column field="nombre_producto" header="Producto" />
-          <Column field="saldo_stock" header="Cantidad" />
+          <Column field="saldo_stock" header="Stock Actual" />
           <Column field="nombre_proveedor" header="Proveedor" />
         </DataTable>
       </div>
