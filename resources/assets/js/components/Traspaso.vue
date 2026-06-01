@@ -245,9 +245,9 @@
 
       <!-- FOOTER CON BOTONES -->
       <template #footer>
-        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal()"
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="cerrarModal()"
           type="button" />
-        <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm"
+        <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm btn-sm"
           @click="registrarTraspaso()" type="button" />
       </template>
     </Dialog>
@@ -1089,39 +1089,40 @@ export default {
     },
     //------cerrar modal y modal2--
     cerrarModal() {
-      swal({
-        title: "¿Desea Cerrar la ventana y cancelar el Traspaso?",
-        type: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Sí, cancelar",
-        cancelButtonText: "No, mantener",
-        confirmButtonClass: "btn btn-success",
-        cancelButtonClass: "btn btn-danger",
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-      }).then((result) => {
-        if (result.value) {
-          this.modal = false;
-          document.body.style.overflow = "auto";
+      Swal.fire({
+  title: "¿Desea cerrar la ventana y cancelar el traspaso?",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonText: "Sí, cancelar",
+  cancelButtonText: "No, mantener",
+  confirmButtonColor: "#3085d6",
+  cancelButtonColor: "#d33",
+  reverseButtons: true,
+}).then((result) => {
+  if (result.isConfirmed) {
 
-          this.tituloModal = "";
-          this.saldo_stock = "";
-          this.saldoStockTotal = 0;
-          this.idarticulo = 0;
-          this.precio_costo_unid = "";
-          this.nombre_producto = "";
-          this.codigo = "";
-          this.AlmacenSeleccionado = 1;
-          this.cantidad_traspaso = "";
-          this.fecha_vencimiento = 1;
-          this.eliminarDetalle();
-          this.AlmacenDestSeleccionado = 1;
-          this.bloquearAlmacenOrigen = false;
-          if (this.arrayArticuloSeleccionado[0]) {
-            this.arrayArticuloSeleccionado[0].fotografia = "";
-          }
-        }
-      });
+    this.modal = false;
+    document.body.style.overflow = "auto";
+
+    this.tituloModal = "";
+    this.saldo_stock = "";
+    this.saldoStockTotal = 0;
+    this.idarticulo = 0;
+    this.precio_costo_unid = "";
+    this.nombre_producto = "";
+    this.codigo = "";
+    this.AlmacenSeleccionado = 1;
+    this.cantidad_traspaso = "";
+    this.fecha_vencimiento = 1;
+    this.eliminarDetalle();
+    this.AlmacenDestSeleccionado = 1;
+    this.bloquearAlmacenOrigen = false;
+
+    if (this.arrayArticuloSeleccionado[0]) {
+      this.arrayArticuloSeleccionado[0].fotografia = "";
+    }
+  }
+});
     },
     cerrarModal_1() {
       // Cierra el modal
@@ -1187,6 +1188,9 @@ export default {
 };
 </script>
 <style scoped>
+.swal2-container {
+  z-index: 999999 !important;
+}
 .info-tip {
   display: flex;
   align-items: center;
@@ -2045,5 +2049,11 @@ export default {
 :deep(.p-datepicker) {
   z-index: 99999 !important;
   position: absolute !important;
+}
+</style>
+
+<style>
+.swal2-container {
+  z-index: 999999 !important;
 }
 </style>
