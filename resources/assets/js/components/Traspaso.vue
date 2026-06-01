@@ -19,22 +19,22 @@
       <div class="toolbar-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
 
         <div style="flex: 1 1 140px;">
-          <label class="label-fecha"
-            style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Desde</label>
-          <Calendar v-model="fechaInicio" dateFormat="yy-mm-dd" showIcon :appendTo="'body'" class="p-inputtext-sm"
-            style="width: 100%;" />
+          <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">
+            Desde
+          </label>
+
+          <input type="date" v-model="fechaInicio" class="form-control input-date-full" @change="listarTraspasos" />
         </div>
 
         <div style="flex: 1 1 140px;">
-          <label class="label-fecha"
-            style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Hasta</label>
-          <Calendar v-model="fechaFin" dateFormat="yy-mm-dd" showIcon :appendTo="'body'" class="p-inputtext-sm"
-            style="width: 100%;" />
+          <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">
+            Hasta
+          </label>
+
+          <input type="date" v-model="fechaFin" class="form-control input-date-full" @change="listarTraspasos" />
         </div>
 
         <div style="padding-bottom: 2px;">
-          <Button :label="mostrarLabel ? 'Filtrar' : ''" icon="pi pi-filter" class="p-button-help p-button-sm"
-            v-tooltip="'Aplicar Filtros'" @click="listarTraspasos" />
           <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
             @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm"
             v-tooltip="'Nuevo Traspaso'" />
@@ -43,8 +43,8 @@
       </div>
 
       <div class="p-fluid">
-        <DataTable :value="traspasos" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm" paginator
-          :rows="8" showCurrentPageReport>
+        <DataTable :value="traspasos" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro"
+          paginator :rows="13" showCurrentPageReport>
           <Column header="Acciones" style="width: 120px; text-align: center;">
             <template #body="slotProps">
               <Button icon="pi pi-eye" class="p-button-success btn-mini" @click="verTraspaso(slotProps.data.id)"
@@ -193,11 +193,10 @@
 
         <div class="col-12" style="max-height: 300px; overflow-y: auto;">
           <DataTable :value="arrayDetalle" responsiveLayout="scroll" emptyMessage="No hay artículos agregados"
-            class="p-datatable-sm tabla-pro p-datatable-gridlines">
+            class="p-datatable-sm tabla-pro p-datatable-gridlines tabla-pro">
             <Column header="Eliminar" style="width: 80px">
               <template #body="slotProps">
-                <Button icon="pi pi-trash" class="p-button-danger btn-mini"
-                  @click="eliminarDetalle(slotProps.index)" />
+                <Button icon="pi pi-trash" class="p-button-danger btn-mini" @click="eliminarDetalle(slotProps.index)" />
               </template>
             </Column>
             <Column field="codigo" header="Código" />
@@ -481,7 +480,7 @@ export default {
     },
   },
   methods: {
-      toastSuccess(mensaje) {
+    toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
         summary: "Éxito",
@@ -524,19 +523,20 @@ export default {
     //---listado por filtro de fecha--
     async listarTraspasos() {
       let me = this;
+
       try {
         let url = "/list/traspasos";
 
         if (this.fechaInicio && this.fechaFin) {
-          const inicio = this.formatDate(this.fechaInicio);
-          const fin = this.formatDate(this.fechaFin);
-          url += `?fechaInicio=${inicio}&fechaFin=${fin}`;
+          url += `?fechaInicio=${this.fechaInicio}&fechaFin=${this.fechaFin}`;
         }
 
         const response = await axios.get(url);
         const respuesta = response.data;
+
         me.traspasos = respuesta.traspasos.data;
         me.pagination = respuesta.pagination;
+
       } catch (error) {
         console.error("Error al obtener traspasos:", error);
         swal("Error", "No se pudieron cargar los traspasos", "error");
@@ -556,9 +556,10 @@ export default {
     },
     //--inicializasa fecha acTual
     inicializarFechas() {
-      const fechaActual = new Date();
-      this.fechaInicio = new Date(fechaActual); // objeto Date
-      this.fechaFin = new Date(fechaActual); // objeto Date
+      const hoy = new Date().toISOString().split('T')[0];
+
+      this.fechaInicio = hoy;
+      this.fechaFin = hoy;
     },
 
     //-----------------hasta aqui--------------
@@ -1237,6 +1238,20 @@ export default {
   font-size: 0.8rem;
   padding: 6px 8px;
   box-sizing: border-box;
+}
+
+.input-date-full {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  box-sizing: border-box;
+}
+
+.input-date-full:focus {
+  border-color: #6c9ffe;
+  outline: none;
 }
 
 /* Estilo de tabla con scroll horizontal y Responsive*/
