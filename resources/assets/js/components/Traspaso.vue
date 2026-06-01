@@ -16,6 +16,13 @@
         </div>
       </template>
 
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre por fechas o productos para encontrar traspasos rápidamente.
+        </span>
+      </div>
+
       <div class="toolbar-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
 
         <div style="flex: 1 1 140px;">
@@ -1180,6 +1187,25 @@ export default {
 };
 </script>
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .multiselect-panel-small .p-multiselect-item {
   font-size: 0.8rem !important;
   padding: 6px 10px !important;
