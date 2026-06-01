@@ -514,15 +514,15 @@ export default {
         this.tipounipaq = "Paquete";
       }
     },
-    //--------calcular cantidad_traspaso - saldo_stock--
     calcularPrecioP(saldo_stock, cantidad_traspaso) {
       const precioP = parseFloat(saldo_stock) - parseFloat(cantidad_traspaso);
       return Math.floor(precioP); // Convierte el resultado a entero
     },
-    //---------listar por Trasapso por FILTRO DE FECHA---------
-    //---listado por filtro de fecha--
+
     async listarTraspasos() {
       let me = this;
+
+      me.isLoading = true;
 
       try {
         let url = "/list/traspasos";
@@ -540,6 +540,8 @@ export default {
       } catch (error) {
         console.error("Error al obtener traspasos:", error);
         swal("Error", "No se pudieron cargar los traspasos", "error");
+      } finally {
+        me.isLoading = false;
       }
     },
 
