@@ -7,6 +7,10 @@ use App\TransaccionesCaja;
 use Illuminate\Http\Request;
 use App\ArqueoCaja;
 use App\User;
+use App\Venta;
+use App\DetalleVenta;
+use App\Inventario;
+use App\HistorialInventario;
 use Illuminate\Support\Facades\DB;
 use PDF;
 class CajaController extends Controller
@@ -247,6 +251,29 @@ class CajaController extends Controller
         }
 
         $caja->save();
+
+        // Obtener artículos únicos vendidos en la caja
+        $articulosVendidos = DetalleVenta::join('ventas', 'ventas.id', '=', 'detalle_ventas.idventa')
+            ->where('ventas.idcaja', $caja->id)
+            ->select(
+                'detalle_ventas.idarticulo',
+                'ventas.idalmacen'
+            )
+            ->distinct()
+            ->get();
+
+        foreach ($articulosVendidos as $item) {
+
+            $inventario = Inventario::where('idarticulo', $item->idarticulo)
+                ->where('idalmacen', $item->idalmacen)
+                ->first();
+
+            HistorialInventario::create([
+                'idcaja' => $caja->id,
+                'idarticulo' => $item->idarticulo,
+                'stock_historico' => $inventario ? $inventario->saldo_stock : 0
+            ]);
+        }
     }
 
     public function generarReporte($idCaja, Request $request)
