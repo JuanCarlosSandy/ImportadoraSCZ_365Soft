@@ -282,6 +282,11 @@ class CajaController extends Controller
         $caja = Caja::findOrFail($idCaja);
         $idsucursal = $caja->idsucursal;
 
+        $stocksHistoricos = \DB::table('historial_inventario')
+            ->where('idcaja', $caja->id)
+            ->pluck('stock_historico', 'idarticulo')
+            ->toArray();
+
         $historial = [];
 
         // =========================
@@ -316,22 +321,43 @@ class CajaController extends Controller
                 ->join('articulos as a', 'a.id', '=', 'dv.idarticulo')
                 ->where('dv.idventa', $venta->id)
                 ->select(
+                    'a.id',
                     'a.codigo',
                     'a.nombre',
                     'dv.cantidad'
                 )
                 ->get();
 
-            $productosTexto = $productosVendidos
-                ->map(function ($producto) {
-                    return $producto->codigo .
-                        ' - ' .
-                        $producto->nombre .
-                        ' (x' .
-                        $producto->cantidad .
-                        ')';
-                })
-                ->implode("\n");
+            $productosTexto = '';
+
+            foreach ($productosVendidos as $producto) {
+
+                $nombreCorto = mb_strimwidth($producto->nombre, 0, 20, '...');
+
+                $productosTexto .=
+                    $producto->codigo .
+                    ' - ' .
+                    $nombreCorto .
+                    ' (x' .
+                    $producto->cantidad .
+                    ')' . "\n";
+            }
+
+            if ($caja->estado == 0) {
+
+                $stockHistoricoTexto = '';
+
+                foreach ($productosVendidos as $producto) {
+
+                    $stockHistoricoTexto .=
+                        ($stocksHistoricos[$producto->id] ?? 'N/D')
+                        . "\n";
+                }
+
+            } else {
+
+                $stockHistoricoTexto = 'Caja abierta todavía';
+            }
             $tipo_pago = $venta->idtipo_pago == 1 ? 'efectivo' : ($venta->idtipo_pago == 7 ? 'qr' : ($venta->idtipo_pago == 13 ? 'compuesto' : 'otros'));
 
             $cliente = \DB::table('personas')->find($venta->idcliente);
@@ -344,37 +370,40 @@ class CajaController extends Controller
                     // Reporte completo: mostrar la venta como compuesto sin desglosar
                     $historial[] = [
                         'fecha' => $venta->fecha_hora,
-                        'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                        'detalle' => 'Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
                         'tipo_pago' => 'compuesto',
                         'monto' => floatval($venta->total),
                         'idbanco' => null,
                         'nombre_banco' => null,
                         'tipo' => 'venta',
                         'productos' => $productosTexto,
+                        'stock_historico' => $stockHistoricoTexto,
                     ];
                 } elseif ($tipo === 'qr' && floatval($venta->monto_qr) > 0) {
                     // Solo QR
                     $historial[] = [
                         'fecha' => $venta->fecha_hora,
-                        'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                        'detalle' => 'Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
                         'tipo_pago' => 'qr',
                         'monto' => floatval($venta->monto_qr),
                         'idbanco' => null,
                         'nombre_banco' => null,
                         'tipo' => 'venta',
                         'productos' => $productosTexto,
+                        'stock_historico' => $stockHistoricoTexto,
                     ];
                 } elseif ($tipo === 'efectivo' && floatval($venta->monto_efectivo) > 0) {
                     // Solo Efectivo
                     $historial[] = [
                         'fecha' => $venta->fecha_hora,
-                        'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                        'detalle' => 'Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
                         'tipo_pago' => 'efectivo',
                         'monto' => floatval($venta->monto_efectivo),
                         'idbanco' => null,
                         'nombre_banco' => null,
                         'tipo' => 'venta',
                         'productos' => $productosTexto,
+                        'stock_historico' => $stockHistoricoTexto,
                     ];
                 }
             } else {
@@ -384,13 +413,14 @@ class CajaController extends Controller
 
                 $historial[] = [
                     'fecha' => $venta->fecha_hora,
-                    'detalle' => 'Cobro Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
+                    'detalle' => 'Venta N° ' . $venta->num_comprobante . ' - ' . $nombreCliente,
                     'tipo_pago' => $tipo_pago,
                     'monto' => floatval($venta->total),
                     'idbanco' => null,
                     'nombre_banco' => null,
                     'tipo' => 'venta',
                     'productos' => $productosTexto,
+                    'stock_historico' => $stockHistoricoTexto,
                 ];
             }
         }

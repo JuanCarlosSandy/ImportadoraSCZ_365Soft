@@ -147,6 +147,8 @@
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
             word-wrap: break-word;
+            overflow: hidden;
+
         }
 
         .detail-table tbody tr:nth-child(even) {
@@ -393,12 +395,13 @@
 
         <thead>
             <tr>
-                <th style="width: 15%;">Fecha / Hora</th>
-                <th style="width: 28%;">Detalle</th>
-                <th style="width: 25%;">Productos Vendidos</th>
-                <th style="width: 13%;">Tipo Pago</th>
-                <th style="width: 12%;" class="text-right">Monto</th>
-                <th style="width: 12%;" class="text-right">Saldo</th>
+                <th style="width: 13%;">Fecha / Hora</th>
+                <th style="width: 26%;">Detalle</th>
+                <th style="width: 28%;">Productos Vendidos</th>
+                <th style="width: 10%;">Stock Histórico</th>
+                <th style="width: 8%;">Tipo Pago</th>
+                <th style="width: 10%;" class="text-right">Monto</th>
+                <th style="width: 10%;" class="text-right">Saldo</th>
             </tr>
         </thead>
 
@@ -429,10 +432,23 @@
                     </td>
 
                     <!-- PRODUCTOS -->
-                    <td style="font-size: 8px; color: #475569; white-space: pre-line;">
+                    <td style="
+                        font-size: 8px;
+                        color: #475569;
+                        white-space: pre-line;
+                        line-height: 12px;
+                    ">
                         {{ $item['productos'] ?? '-' }}
                     </td>
 
+                    <td class="text-center"
+                        style="
+                            font-size: 8px;
+                            white-space: pre-line;
+                            line-height: 12px;
+                        ">
+                        {{ $item['stock_historico'] ?? '-' }}
+                    </td>
                     <!-- TIPO PAGO -->
                     <td class="text-center">
 
