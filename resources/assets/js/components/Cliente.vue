@@ -15,26 +15,28 @@
           <h4 class="panel-title">CLIENTES</h4>
         </div>
       </template>
-      <div class="toolbar-container" style="margin-top: 0; padding-top: 0;">
+      <div class="toolbar-container">
+
         <div class="search-bar">
-          <div class="p-inputgroup">
-            <span class="p-inputgroup-addon">
-              <i class="pi pi-search"></i>
-            </span>
-            <InputText v-model="buscar" placeholder="Buscar en todos los campos..." class="p-inputtext-sm"
+          <span class="p-input-icon-left">
+            <i class="pi pi-search" />
+            <InputText v-model="buscar" placeholder="Buscar en todos los campos..." class="p-inputtext-sm input-full"
               @input="listarPersona(buscar, criterio)" />
-            <Button icon="pi pi-refresh" class="p-button-help p-button-sm" @click="resetBuscar"
-              v-tooltip="'Limpiar búsqueda'" />
-          </div>
+          </span>
         </div>
+
+
         <div class="toolbar">
-          <Button icon="pi pi-plus" :label="mostrarLabel ? 'Nuevo' : ''" class="p-button-secondary p-button-sm"
+           <Button icon="pi pi-refresh" class="p-button-help p-button-sm btn-sm-input" @click="resetBuscar"
+              v-tooltip="'Limpiar búsqueda'" />
+
+          <Button icon="pi pi-plus" :label="mostrarLabel ? 'Nuevo' : ''" class="p-button-secondary p-button-sm btn-sm-input"
             @click="abrirModal('persona', 'registrar')" />
 
           <!-- 🟢 Nuevo botón Monto Bonificación -->
           <Button v-if="permitir_bonificacion == 1" icon="pi pi-wallet" :label="mostrarLabel ? 'Monto Bonificación' : ''"
-            class="p-button-success p-button-sm ml-2" @click="abrirDialogMontoCliente()" />
-            <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm"
+            class="p-button-success p-button-sm btn-sm-input" @click="abrirDialogMontoCliente()" />
+            <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm btn-sm-input"
             @click="abrirDialogos('Importar')" />
         </div>
       </div>
@@ -64,7 +66,7 @@
           </template>
         </Column>
 
-        <Column header="Acciones" style="width: 140px;">
+        <Column header="Acciones">
           <template #body="slotProps">
             <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini"
               @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
@@ -1084,6 +1086,31 @@ export default {
 </script>
 
 <style scoped>
+/* Arreglar icono de lupa - Centrado perfecto */
+.search-bar .p-input-icon-left {
+  position: relative;
+  width: 100%;
+}
+
+.search-bar .p-input-icon-left i {
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+  height: 1rem;
+  z-index: 2;
+  color: #6c757d;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.search-bar .p-input-icon-left .p-inputtext {
+  padding-left: 2.5rem !important;
+  width: 100%;
+}
 /*estilos extras de bonificacion*/
 .dialog-subtext {
   font-size: 0.85rem;
@@ -1271,6 +1298,19 @@ export default {
   margin-right: 4px;
 }
 
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 .modal-footer-buttons {
   margin-top: 10px;
   padding-top: 0.5rem;
@@ -1436,25 +1476,6 @@ export default {
 
 .search-bar .p-inputgroup {
   width: 100%;
-}
-
-.search-bar .p-inputgroup-addon {
-  background: #f8fafc;
-  border-color: #d1d5db;
-  color: #6b7280;
-}
-
-.search-bar .p-inputtext {
-  border-left: none;
-}
-
-.search-bar .p-inputtext:focus {
-  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.5);
-  border-color: #3b82f6;
-}
-
-.search-bar .p-inputgroup-addon+.p-inputtext:focus {
-  border-left-color: #3b82f6;
 }
 
 /* Responsive Dialog Styles */
