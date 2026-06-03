@@ -634,8 +634,8 @@ class CajaController extends Controller
         $saldoSobrante = floatval($caja->saldoSobrante ?? 0);
 
         $resumenCaja = [
-            'fechaApertura' => $caja->fecha_apertura,
-            'fechaCierre' => $caja->fecha_cierre,
+            'fechaApertura' => $caja->fechaApertura,
+            'fechaCierre' => $caja->fechaCierre,
             'saldoInicial' => floatval($caja->saldoInicial),
             'ventasContado' => $ventasContado,
             'ventasQR' => $ventasQR,
