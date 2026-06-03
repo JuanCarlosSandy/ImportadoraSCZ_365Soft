@@ -7,9 +7,10 @@
         <div class="loading-text">CARGANDO...</div>
       </div>
     </div>
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
 
     <Panel>
-      
       <template #header>
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -17,7 +18,7 @@
             <h4 class="panel-title" style="margin: 0;">DATOS DE EMPRESA</h4>
           </div>
           <Button v-if="estadoInputs" icon="pi pi-pencil" :label="mostrarLabel ? 'Editar' : ''"
-            class="p-button-secondary p-button-sm" @click="estadoCampos"
+            class="p-button-secondary p-button-sm btn-sm-input" @click="estadoCampos"
             style="background-color: #f59e0b; border: none; color: white; padding: 0.75rem 1.5rem; font-weight: bold; font-size: 1rem;" />
         </div>
       </template>
@@ -29,25 +30,37 @@
         </h5>
         <div class="p-fluid formgrid grid">
           <div class="field col-12 md:col-6">
-            <label for="nombre"><strong>Nombre de Empresa</strong></label>
+            <label for="nombre" class="required-field">
+                    <span class="required-icon">*</span>
+                    Nombre de Empresa
+                  </label>
             <InputText id="nombre" v-model="nombre" placeholder="Ingrese el nombre de la empresa"
-              :disabled="estadoInputs" />
+              :disabled="estadoInputs" class="input-full" />
           </div>
 
           <div class="field col-12 md:col-6">
-            <label for="nit"><strong>NIT de Empresa</strong></label>
-            <InputText id="nit" v-model="nit" placeholder="Ingrese el NIT" :disabled="estadoInputs" />
+            <label for="nit" class="required-field">
+                    <span class="required-icon">*</span>
+                    NIT de Empresa
+                  </label>
+            <InputText id="nit" v-model="nit" placeholder="Ingrese el NIT" :disabled="estadoInputs" class="input-full" />
           </div>
 
           <div class="field col-12 md:col-6">
-            <label for="direccion"><strong>Dirección de Empresa</strong></label>
+            <label for="direccion" class="required-field">
+                    <span class="required-icon">*</span>
+                    Dirección de Empresa
+                  </label>
             <InputText id="direccion" v-model="direccion" placeholder="Ingrese la dirección"
-              :disabled="estadoInputs" />
+              :disabled="estadoInputs" class="input-full" />
           </div>
 
           <div class="field col-12 md:col-6">
-            <label for="telefono"><strong>Teléfono de Empresa</strong></label>
-            <InputText id="telefono" v-model="telefono" placeholder="Ingrese el teléfono" :disabled="estadoInputs" />
+            <label for="telefono" class="required-field">
+                    <span class="required-icon">*</span>
+                    Teléfono de Empresa
+                  </label>
+            <InputText id="telefono" v-model="telefono" placeholder="Ingrese el teléfono" :disabled="estadoInputs" class="input-full" />
           </div>
         </div>
       </div>
@@ -104,10 +117,10 @@
       <!-- Botones de Acción -->
       <div class="action-buttons" v-if="!estadoInputs">
         <Button label="Cancelar" icon="pi pi-times" 
-          class="p-button-danger p-button-sm" @click="cancelarEdicion"
+          class="p-button-danger p-button-sm btn-sm" @click="cancelarEdicion"
           style="flex: 1;" />
         <Button label="Actualizar" icon="pi pi-save" 
-          class="p-button-success p-button-sm" @click="actualizarEmpresa"
+          class="p-button-success p-button-sm btn-sm" @click="actualizarEmpresa"
           style="flex: 1;" />
       </div>
     </Panel>
@@ -123,6 +136,8 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Panel from "primevue/panel";
 import Swal from "sweetalert2";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
 
 export default {
   components: {
@@ -133,6 +148,8 @@ export default {
     Button,
     DataTable,
     Column,
+    ToastService,
+    Toast,
   },
   data() {
     return {
@@ -162,21 +179,37 @@ export default {
     };
   },
   methods: {
-    toastSuccess(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 50px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `.<br>
-    </div>`,
-        {
-          type: "success",
-          position: "bottom-right",
-          duration: 2000,
-        }
-      );
+  toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastInfo(mensaje) {
+      this.$toast.add({
+        severity: "info",
+        summary: "Información",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
@@ -202,11 +235,7 @@ export default {
         };
         reader.readAsDataURL(file);
       } else {
-        Swal.fire({
-          title: "Error",
-          text: "Selecciona un archivo de imagen válido",
-          icon: "error"
-        });
+        this.toastError("Selecciona un archivo de imagen válido");
       }
     },
     seleccionarFondo(event) {
@@ -220,11 +249,7 @@ export default {
         };
         reader.readAsDataURL(file);
       } else {
-        Swal.fire({
-          title: "Error",
-          text: "Selecciona un archivo de imagen válido",
-          icon: "error"
-        });
+        this.toastError("Selecciona un archivo de imagen válido");
       }
     },
     cancelarEdicion() {
@@ -340,11 +365,7 @@ export default {
         .catch((error) => {
           console.log(error);
           this.isLoading = false;
-          Swal.fire({
-            title: "Error",
-            text: "Hubo un problema al actualizar",
-            icon: "error"
-          });
+          this.toastError("Hubo un problema al actualizar");
         });
     },
 
@@ -356,51 +377,31 @@ export default {
         this.errorMostrarMsjEmpresa.push(
           "El nombre de la empresa no puede estar vacío."
         );
-        Swal.fire({
-          title: "ALERTA",
-          text: "El nombre no puede estar vacío",
-          icon: "warning"
-        });
+        this.toastInfo("El nombre no puede estar vacío");
       }
       if (!this.direccion) {
         this.errorMostrarMsjEmpresa.push(
           "La direccion de la empresa no puede estar vacío."
         );
-        Swal.fire({
-          title: "ALERTA",
-          text: "La dirección no puede estar vacía",
-          icon: "warning"
-        });
+        this.toastInfo("La dirección no puede estar vacía");
       }
       if (!this.telefono) {
         this.errorMostrarMsjEmpresa.push(
           "El telefono de la empresa no puede estar vacío."
         );
-        Swal.fire({
-          title: "ALERTA",
-          text: "El teléfono no puede estar vacío",
-          icon: "warning"
-        });
+        this.toastInfo("El teléfono no puede estar vacío");
       }
       if (!this.email) {
         this.errorMostrarMsjEmpresa.push(
           "El email de la empresa no puede estar vacío."
         );
-        Swal.fire({
-          title: "ALERTA",
-          text: "El gmail no puede estar vacío",
-          icon: "warning"
-        });
+        this.toastInfo("El email no puede estar vacío");
       }
       if (!this.nit) {
         this.errorMostrarMsjEmpresa.push(
           "El NIT de la empresa no puede estar vacío."
         );
-        Swal.fire({
-          title: "ALERTA",
-          text: "El Nit no puede estar vacío",
-          icon: "warning"
-        });
+        this.toastInfo("El NIT no puede estar vacío");
       }
       if (this.errorMostrarMsjEmpresa.length) this.errorEmpresa = 1;
       return this.errorEmpresa;
@@ -414,6 +415,105 @@ export default {
 };
 </script>
 <style scoped>
+.required-field {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.required-icon {
+  color: #e74c3c;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-right: 0.2rem;
+}
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
 /* Panel Content Spacing */
 >>>.p-panel .p-panel-content {
   padding: 2rem;
