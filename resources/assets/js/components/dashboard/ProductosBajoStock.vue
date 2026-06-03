@@ -18,13 +18,13 @@
           <Button
             icon="pi pi-file"
             label="PDF"
-            class="p-button-secondary p-button-sm bt-pdf p-mr-2"
+            class="p-button-secondary p-button-sm bt-pdf btn-sm"
             @click="exportarPDF"
           />
           <Button
             icon="pi pi-table"
             label="Excel"
-            class="p-button-secondary p-button-sm bt-ex"
+            class="p-button-secondary p-button-sm bt-ex btn-sm"
             @click="cargarExcel"
           />
         </div>
@@ -52,7 +52,7 @@
             placeholder="Todos los almacenes"
             showClear
             @change="listarInventario(1)"
-            class="p-inputtext-sm"
+            class="dropdown-full"
           />
         </div>
 
@@ -64,7 +64,7 @@
             id="laboratorio"
             v-model="filtros.laboratorio"
             placeholder="Escribe para buscar..."
-            class="p-inputtext-sm"
+            class="input-full p-inputtext-sm"
             @input="buscarConRetraso"
           />
         </div>
@@ -77,7 +77,7 @@
             id="medicamento"
             v-model="filtros.medicamento"
             placeholder="Escribe para buscar..."
-            class="p-inputtext-sm"
+            class="input-full p-inputtext-sm"
             @input="buscarConRetraso"
           />
         </div>
@@ -90,7 +90,7 @@
             id="codigo"
             v-model="filtros.codigo"
             placeholder="Escribe código..."
-            class="p-inputtext-sm"
+            class="input-full p-inputtext-sm"
             @input="buscarConRetraso"
           />
         </div>
@@ -98,7 +98,7 @@
         <div style="display: flex;">
           <Button
             icon="pi pi-filter-slash"
-            class="p-button-help p-button-sm p-button-outlined"
+            class="p-button-help p-button-sm p-button-outlined btn-sm-input"
             @click="resetFiltros"
             title="Limpiar todos los filtros"
             label="Limpiar"
@@ -117,6 +117,7 @@
       sortMode="single"
       sortField="nombre_almacen"
       :sortOrder="1"
+      class="p-datatable-sm p-datatable-gridlines tabla-pro"
     >
       <template #groupheader="slotProps">
         <div
@@ -164,12 +165,14 @@
             severity="danger"
             icon="pi pi-times-circle"
             value="Sin Stock"
+            class="tag-mini"
           />
           <Tag
             v-else
             severity="warning"
             icon="pi pi-exclamation-triangle"
             value="Bajo Stock"
+            class="tag-mini"
           />
         </template>
       </Column>
@@ -384,6 +387,126 @@ export default {
 </script>
 
 <style scoped>
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+.tabla-pro img {
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/* DataTable Responsive */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
+/* Estilo uniforme para Dropdown (igual que InputText) */
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input dentro del dropdown */
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+/* Flecha del dropdown */
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+/* Borde al focus */
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* 🔹 Opciones del panel (lista desplegable) */
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
+}
+
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
 /* Arreglar icono de lupa - Centrado perfecto */
 .bt-pdf,
 .bt-ex {
@@ -599,22 +722,6 @@ export default {
 
 .status-badge.inactive {
   background-color: red;
-}
-
-/* DataTable Responsive */
->>> .p-datatable {
-  font-size: 0.9rem;
-}
-
->>> .p-datatable .p-datatable-tbody > tr > td {
-  padding: 0.5rem;
-  word-break: break-word;
-  text-align: left;
-}
-
->>> .p-datatable .p-datatable-thead > tr > th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
 }
 
 .p-dialog-mask {

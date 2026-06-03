@@ -15,27 +15,22 @@
       dataKey="id"
       :sortField="criterioOrdenacion"
       :sortOrder="ordenAscendente ? 1 : -1"
+      class="p-datatable-sm p-datatable-gridlines tabla-pro"
     >
       <Column
         field="nombreUsuario"
         header="Nombre vendedor"
-        sortable
-        @click="ordenar('nombreUsuario')"
         :headerStyle="{ cursor: 'pointer' }"
         :body="nombreTemplate"
       />
       <Column
         field="cantidadVentas"
         header="Cantidad de ventas"
-        sortable
-        @click="ordenar('cantidadVentas')"
         :headerStyle="{ cursor: 'pointer' }"
       />
       <Column
         field="totalVentas"
         header="Monto de ventas"
-        sortable
-        @click="ordenar('totalVentas')"
         :headerStyle="{ cursor: 'pointer' }"
         :body="monedaTemplate"
       />
@@ -138,6 +133,45 @@ export default {
 };
 </script>
 <style scoped>
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+.tabla-pro img {
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/* DataTable Responsive */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
 /* Panel Content Spacing */
 >>> .p-panel .p-panel-content {
   padding: 1rem;
@@ -150,19 +184,7 @@ export default {
 >>> .p-panel .p-panel-header .p-panel-title {
   font-weight: 600;
 }
-/* DataTable Responsive */
->>> .p-datatable {
-  font-size: 0.9rem;
-}
->>> .p-datatable .p-datatable-tbody > tr > td {
-  padding: 0.5rem;
-  word-break: break-word;
-  text-align: left;
-}
->>> .p-datatable .p-datatable-thead > tr > th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
-}
+
 .p-dialog-mask {
   z-index: 9990 !important;
 }
