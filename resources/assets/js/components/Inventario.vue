@@ -246,31 +246,32 @@ export default {
       });
     },
     async descargarArchivoReporte(url, nombreArchivo) {
-      try {
-        Swal.fire({
-          title: 'Generando reporte...',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
+      this.isLoading = true;
 
+      try {
         const response = await axios.get(url, {
           responseType: 'blob'
         });
 
         const blob = new Blob([response.data]);
         const link = document.createElement('a');
+
         link.href = window.URL.createObjectURL(blob);
         link.download = nombreArchivo;
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
 
-        Swal.close();
+        window.URL.revokeObjectURL(link.href);
+
+        this.toastSuccess('La descarga del reporte ha comenzado correctamente.');
+
       } catch (error) {
-        Swal.close();
-        Swal.fire('Error al generar el reporte', '', 'error');
+        console.error(error);
+        this.toastError('Error al generar el reporte.');
+      } finally {
+        this.isLoading = false;
       }
     },
     async exportarInventario() {
