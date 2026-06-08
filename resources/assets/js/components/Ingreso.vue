@@ -334,6 +334,14 @@ export default {
         life: 3500,
       });
     },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     async editarIngreso(id) {
       try {
         const resp = await axios.get(`/ingreso/obtener/${id}`);

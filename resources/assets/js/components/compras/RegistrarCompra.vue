@@ -36,29 +36,32 @@
         <Panel header="Datos de Comprobante y Almacén">
           <div class="p-fluid p-formgrid p-grid">
             <div class="p-field p-col-12 p-md-4">
-              <label for="tipoComprobante" class="font-weight-bold">
-                Tipo comprobante
-                <Tag severity="danger" class="obligatorio-rojo">OBLIG</Tag>
+              <label for="nombre" class="label-input">
+                <span class="text-required">*</span> Tipo comprobante
               </label>
               <Dropdown id="tipoComprobante" v-model="tipo_comprobante" :options="tipoComprobanteOptions"
-                optionLabel="label" optionValue="value" placeholder="Seleccione" class="w-full" />
+                optionLabel="label" optionValue="value" placeholder="Seleccione" class="dropdown-full" />
             </div>
             <div class="p-field p-col-12 p-md-4">
-              <label for="numComprobante" class="font-weight-bold">
-                N° Comprobante
-                <Tag severity="danger" class="obligatorio-rojo">OBLIG</Tag>
+              <label for="numComprobante" class="label-input">
+                <span class="text-required">*</span> {{ labelNumeroComprobante }}
               </label>
-              <InputText id="numComprobante" v-model="num_comprobante" placeholder="000xx" ref="numeroComprobanteRef"
-                class="w-full" />
-              <small>Shift + E</small>
+              <InputText
+                id="numComprobante"
+                v-model="num_comprobante"
+                :placeholder="labelNumeroComprobante"
+                ref="numeroComprobanteRef"
+                class="input-full"
+                autocomplete="off"
+              />
             </div>
             <div class="p-field p-col-12 p-md-4">
-              <label for="almacen" class="font-weight-bold">
-                Almacen Destino
-                <Tag severity="danger" class="obligatorio-rojo">OBLIG</Tag>
+              <label for="almacen" class="label-input">
+                <span class="text-required">*</span> Almacen Destino
               </label>
               <Dropdown id="almacen" v-model="AlmacenSeleccionado" :options="arrayAlmacenes"
-                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione" :disabled="idrolUsuario != 4" />
+                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione" :disabled="idrolUsuario != 4"
+                class="dropdown-full" />
             </div>
           </div>
         </Panel>
@@ -74,18 +77,17 @@
               </button>
             </div>
             <div style="display: flex; align-items: flex-end;">
-              <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm"
+              <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
                 @click="abrirModal('articulo', 'registrar')" title="Nuevo Medicamento" />
             </div>
           </div>
 
           <div class="modal-body">
-            <DataTable :value="arrayArticulo" responsiveLayout="scroll" stripedRows size="small" class="p-datatable-sm"
+            <DataTable :value="arrayArticulo" responsiveLayout="scroll" stripedRows size="small" class="p-datatable-gridlines p-datatable-sm tabla-pro"
               paginator :rows="5">
               <Column header="Opciones">
                 <template #body="slotProps">
-                  <Button icon="pi pi-check" class="p-button-success p-button-sm"
-                    style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
+                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
                     @click="agregarDetalleModal(slotProps.data)" />
                 </template>
               </Column>
@@ -104,12 +106,12 @@
             </DataTable>
           </div>
           <div class="p-col-12">
-            <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-sm">
+            <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro">
 
               <Column header="Acciones" style="width: 50px">
                 <template #body="slotProps">
-                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
-                    style="padding: 0.3rem 0.4rem; width: auto;" @click="eliminarDetalle(slotProps.index)" />
+                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini"
+                    @click="eliminarDetalle(slotProps.index)" />
                 </template>
               </Column>
 
@@ -131,34 +133,24 @@
                 bodyClass="text-center">
               </Column>
 
-              <Column header="Costo" headerStyle="justify-content: flex-start">
+              <Column header="Costo Unitario" headerStyle="justify-content: flex-start">
                 <template #body="slotProps">
                   <div style="display: flex; flex-direction: column;">
                     <InputNumber v-if="slotProps.data.es_paquete" v-model="slotProps.data.precio_paquete"
                       :style="{ width: '120px' }" :min="0" :step="0.01" locale="es-ES" :minFractionDigits="2"
-                      :maxFractionDigits="2" class="p-inputtext-sm text-center"
+                      :maxFractionDigits="2" class="input-number-fullr"
                       @input="sincronizarPrecios(slotProps.data, 'paquete')" />
                     <InputNumber v-else v-model="slotProps.data.precio" :style="{ width: '120px' }" :min="0" :step="0.01"
-                      locale="es-ES" :minFractionDigits="2" :maxFractionDigits="2" class="p-inputtext-sm text-center"
+                      locale="es-ES" :minFractionDigits="2" :maxFractionDigits="2" class="input-number-full"
                       @input="sincronizarPrecios(slotProps.data, 'unidad')" />
-                    <small
-                      :style="{ color: slotProps.data.es_paquete ? '#2196F3' : '#689F38', fontWeight: 'bold', marginTop: '5px', marginLeft: '60px' }">
-                      {{ slotProps.data.es_paquete ? 'Costo Caja' : 'Costo Unit.' }}
-                    </small>
                   </div>
                 </template>
               </Column>
 
-              <Column header="Cantidad">
+              <Column header="Cantidad a Comprar">
                 <template #body="slotProps">
-                  <InputNumber v-model="slotProps.data.cantidad" class="inputnumber-compact" :min="1"
+                  <InputNumber v-model="slotProps.data.cantidad" class="input-number-full" :min="1"
                     :style="{ width: '160px' }" />
-                  <div class="text-center mt-1">
-                    <span class="badge" :class="slotProps.data.es_paquete ? 'bg-primary' : 'bg-success'"
-                      :style="{ marginRight: '50px' }">
-                      {{ slotProps.data.es_paquete ? 'Cajas' : 'Unidades' }}
-                    </span>
-                  </div>
                 </template>
               </Column>
 
@@ -179,23 +171,23 @@
           </div>
           <div class="p-d-flex p-jc-end p-mt-3 compra-action-buttons-row">
             <!-- Botón Cerrar siempre visible -->
-            <Button label="Cerrar" class="p-button-danger p-button-sm compra-btn-custom" @click="cerrarFormulario()" />
+            <Button label="Cerrar" class="p-button-danger p-button-sm compra-btn-custom btn-sm" @click="cerrarFormulario()" />
 
             <!-- Botón Registrar Compra (nuevo) -->
-            <Button v-if="!isEditing" label="Registrar Compra" class="p-button-success p-button-sm compra-btn-custom"
+            <Button v-if="!isEditing" label="Registrar Compra" class="p-button-success p-button-sm compra-btn-custom btn-sm"
               @click="confirmarRegistroCompra" />
 
             <!-- Botón Actualizar Compra (editar) -->
-            <Button v-else label="Actualizar Compra" class="p-button-primary p-button-sm compra-btn-custom"
+            <Button v-else label="Actualizar Compra" class="p-button-primary p-button-sm compra-btn-custom btn-sm"
               @click="actualizarIngreso" />
           </div>
 
         </Panel>
       </div>
       <div class="buttons p-d-flex p-jc-center p-mt-4 step-buttons-row">
-        <Button label="Anterior" class="p-button-secondary p-button-sm step-btn-custom" @click="prevStep"
+        <Button label="Anterior" class="p-button-secondary p-button-sm btn-sm" @click="prevStep"
           :disabled="step === 1" />
-        <Button label="Siguiente" class="p-button-primary p-button-sm step-btn-custom" @click="validarYAvanzar"
+        <Button label="Siguiente" class="p-button-primary p-button-sm btn-sm" @click="validarYAvanzar"
           :disabled="step === 2" />
       </div>
     </Panel>
@@ -399,10 +391,10 @@
         </TabView>
       </form>
       <template #footer>
-        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal" />
-        <Button v-if="tipoAccion == 1" class="p-button-success p-button-sm" label="Guardar" icon="pi pi-check"
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="cerrarModal" />
+        <Button v-if="tipoAccion == 1" class="p-button-success p-button-sm btn-sm" label="Guardar" icon="pi pi-check"
           @click="enviarFormulario()" />
-        <Button v-if="tipoAccion == 2" class="p-button-warning p-button-sm" label="Actualizar" icon="pi pi-check"
+        <Button v-if="tipoAccion == 2" class="p-button-warning p-button-sm btn-sm" label="Actualizar" icon="pi pi-check"
           @click="enviarFormulario()" />
       </template>
     </Dialog>
@@ -759,6 +751,15 @@ export default {
     },
   },
   computed: {
+    labelNumeroComprobante() {
+      const tipo = this.tipoComprobanteOptions.find(
+        item => item.value === this.tipo_comprobante
+      );
+
+      return tipo && tipo.value !== '0'
+        ? `N° ${tipo.label}`
+        : 'N° Comprobante';
+    },
     /*fechaPorDefecto() {
       const today = new Date();
       const year = today.getFullYear();
@@ -805,7 +806,7 @@ export default {
       window.addEventListener("keydown", this.handleKeyPress);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
-      swal("Error", "Error al cargar datos iniciales", "error");
+      this.toastError("Error al cargar datos iniciales");
     } finally {
       setTimeout(() => {
         this.isLoading = false; // Desactivar loading
@@ -816,6 +817,30 @@ export default {
     window.removeEventListener("keydown", this.handleKeyPress);
   },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     async abrirModal(modelo, accion, data = []) {
       if (modelo === 'articulo' && (accion === 'actualizar' || accion === 'registrar')) {
         if (!this.validarPermisoVendedor()) return;
@@ -1123,17 +1148,12 @@ export default {
         }
 
         await this.listarIngreso(1, "", "num_comprobante");
-
-        swal({
-          type: "success",
-          title: "Éxito",
-          text: "Compra actualizada correctamente"
-        });
+        this.toastSuccess("Compra actualizada correctamente");
         this.isEditing = false; // ⚡ Modo edición
         this.$emit("cerrar");
 
       } catch (error) {
-        swal("Error", "No se pudo actualizar la compra", "error");
+        this.toastError("Error al actualizar la compra");
       } finally {
         this.isLoading = false;
       }
@@ -1490,6 +1510,33 @@ export default {
     },
 
     validarYAvanzar() {
+      // Validar almacén en cualquier paso
+      if (
+        !this.AlmacenSeleccionado ||
+        this.AlmacenSeleccionado === 0 ||
+        this.AlmacenSeleccionado === "0"
+      ) {
+        this.toastWarning("Debe seleccionar un almacén antes de continuar");
+        return;
+      }
+
+      if (
+        !this.num_comprobante ||
+        this.num_comprobante === "" ||
+        this.num_comprobante === null
+      ) {
+        const tipo = this.tipoComprobanteOptions.find(
+          item => item.value === this.tipo_comprobante
+        );
+
+        const nombreTipo = tipo && tipo.value !== "0"
+          ? tipo.label
+          : "comprobante";
+
+        this.toastWarning(`Debe ingresar un número de ${nombreTipo}`);
+        return;
+      }
+
       const errores = [];
       if (this.step === 1) {
         if (this.tipo_comprobante === "0")
@@ -1503,7 +1550,7 @@ export default {
       }
       if (errores.length > 0) {
         const mensaje = errores.join("\n");
-        swal("Campos incompletos", mensaje, "warning");
+        this.toastWarning(mensaje);
       } else {
         this.nextStep();
       }
@@ -1523,11 +1570,7 @@ export default {
 
     async buscarArticulo() {
       if (!this.AlmacenSeleccionado || this.AlmacenSeleccionado === 0) {
-        Swal.fire({
-          icon: "warning",
-          title: "Almacén no seleccionado",
-          text: "Debe seleccionar un almacén antes de buscar productos.",
-        });
+        this.toastWarning("Debe seleccionar un almacén antes de buscar productos");
         return;
       }
       try {
@@ -1547,7 +1590,7 @@ export default {
             let respuesta = response.data;
             me.arrayArticuloSeleccionado = respuesta.articulos.data[0];
           } catch (error) {
-            swal("Error", "No se pudo buscar el artículo", "error");
+            me.toastError("No se pudo buscar el artículo");
           } finally {
             setTimeout(() => {
               this.isLoading = false; // Desactivar loading
@@ -1643,7 +1686,7 @@ export default {
         }
       } catch (error) {
         console.error("Error al editar precio:", error);
-        swal("Error", "No se pudo actualizar el precio", "error");
+        this.toastError("No se pudo actualizar el precio");
       } finally {
         setTimeout(() => {
           this.isLoading = false; // Desactivar loading
@@ -1740,17 +1783,11 @@ export default {
         }
 
         await this.listarIngreso(1, "", "num_comprobante");
-
-        swal({
-          type: "success",
-          title: "Éxito",
-          text: "Compra registrada correctamente"
-        });
-
+        this.toastSuccess("Compra registrada correctamente");
         this.$emit("cerrar");
 
       } catch (error) {
-        swal("Error", "No se pudo registrar la compra", "error");
+        this.toastError("Error al registrar la compra");
       } finally {
         this.isLoading = false;
       }
@@ -1792,18 +1829,10 @@ export default {
         me.AlmacenSeleccionado == 0
       ) {
       } else if (me.fechavencimiento == null) {
-        swal({
-          type: "error",
-          title: "Error...",
-          text: "No se ingresó fecha de vencimiento!",
-        });
+        me.toastWarning("Debe ingresar una fecha de vencimiento");
       } else {
         if (me.encuentra(me.arrayArticuloSeleccionado.id)) {
-          swal({
-            type: "error",
-            title: "Error...",
-            text: "Este Artículo ya se encuentra agregado!",
-          });
+          me.toastWarning("Este Artículo ya se encuentra agregado!");
         } else {
           if (me.tipoUnidadSeleccionada == "Paquetes") {
             me.arrayDetalle.push({
@@ -1833,11 +1862,7 @@ export default {
               cantidad: me.cantidad,
             });
           }
-          swal({
-            type: "success",
-            title: "Éxito!",
-            text: "Artículo agregado correctamente!",
-          });
+          me.toastSuccess("Artículo agregado correctamente");
           me.arrayArticuloSeleccionadoLocal = {};
           me.codigo = "";
           me.idarticulo = 0;
@@ -1853,11 +1878,7 @@ export default {
       let me = this;
       // Evitar duplicados
       if (me.encuentra(producto.id)) {
-        swal({
-          type: "error",
-          title: "Error...",
-          text: "Este Artículo ya se encuentra agregado!",
-        });
+        me.toastWarning("Este Artículo ya se encuentra agregado!");
         return;
       }
       me.arrayDetalle.push({
@@ -1874,8 +1895,7 @@ export default {
 
         es_paquete: false,
       });
-      console.log('arrayDetalle:', me.arrayDetalle);
-      console.log('producto:', producto);
+      me.toastSuccess("Producto agregado correctamente");
     },
 
     async obtenerComprobantes() {
@@ -3109,6 +3129,422 @@ registrarArticulo(data) {
 </script>
 
 <style scoped>
+.required-field {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.required-icon {
+  color: #e74c3c;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-right: 0.2rem;
+}
+
+/* Estilos para campos opcionales */
+.optional-field {
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  gap: 0.4rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.optional-icon {
+  color: #17a2b8;
+  font-size: 0.7rem;
+}
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+.cantidad-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-cantidad {
+  flex: 1;
+  min-width: 0;
+}
+
+.input-cantidad>>>.p-inputtext {
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.toggle-descuento-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.2em 0.7em;
+  font-weight: bold;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-descuento-btn:hover {
+  background: #125ea7;
+}
+
+.descuento-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.input-descuento {
+  flex: 1;
+  min-width: 0;
+}
+
+.toggle-descuento-btn {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* Input normal */
+.p-inputgroup>.p-inputtext,
+.p-inputgroup>.p-input-icon-left>.p-inputtext {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* Botón */
+.p-inputgroup>.p-button {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Label obligatorio */
+.label-input {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* 🔹 Addon al mismo tamaño del input */
+.addon-precio {
+  font-size: 0.8rem;
+  /* igual al input */
+  padding: 6px 8px;
+  /* igual al input */
+  border-radius: 0 6px 6px 0;
+  /* borde derecho redondeado */
+  height: 100%;
+  /* igualar altura */
+  display: flex;
+  align-items: center;
+  /* centrar verticalmente */
+  box-sizing: border-box;
+}
+
+.textarea-full {
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  box-sizing: border-box;
+}
+
+/* Estilo base del Textarea de PrimeVue */
+.textarea-full>>>.p-inputtextarea {
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+  border: 1px solid #ccc !important;
+  border-radius: 6px !important;
+  min-height: 42px;
+  /* misma altura mínima que Inputs */
+  transition: border 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  resize: vertical;
+  /* permite redimensionar verticalmente */
+}
+
+/* 🔹 Focus igual que los otros campos */
+.textarea-full>>>.p-inputtextarea:focus {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+  outline: none !important;
+}
+
+/* 🔹 Hover opcional (igual que dropdown/inputtext) */
+.textarea-full>>>.p-inputtextarea:hover {
+  border-color: #a8a8a8;
+}
+
+/* Contenedor del AutoComplete */
+.autocomplete-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input interno */
+.autocomplete-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Botón del dropdown (flecha) */
+.autocomplete-full>>>.p-autocomplete-dropdown {
+  width: 2rem !important;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Contenedor general del input + botón */
+.autocomplete-full>>>.p-autocomplete {
+  width: 100% !important;
+  border: 1px solid #ccc !important;
+  border-radius: 6px;
+  transition: border 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+/* Focus del input */
+.autocomplete-full>>>.p-inputtext:focus,
+.autocomplete-full>>>.p-autocomplete.p-focus {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* Panel de sugerencias */
+.autocomplete-full>>>.p-autocomplete-panel {
+  font-size: 0.8rem !important;
+}
+
+/* Sugerencia individual */
+.autocomplete-full>>>.p-autocomplete-items .p-autocomplete-item {
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+  min-height: auto !important;
+  cursor: pointer;
+}
+
+/* Estilosde Inputs text, number, dropdown y calendario*/
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+}
+
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+.input-number-full {
+  width: 100%;
+}
+
+.input-number-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+/* Estilo de tabla con scroll horizontal y Responsive*/
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+/* DataTable Responsive */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.section-title {
+  font-weight: bold;
+  font-size: 1.15rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.5rem;
+}
+
+.input-card-param {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1.5rem 1.2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.input-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1.2rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.label-strong {
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 0.4rem;
+}
+
+.addon-precio {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.precio-box {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.precio-box label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
 .step-content {
   margin-top: 0.2rem;
   padding-top: 0;
@@ -3199,6 +3635,18 @@ registrarArticulo(data) {
   justify-content: center;
   align-items: center;
   z-index: 9999;
+}
+
+.p-dialog-mask {
+  z-index: 9990 !important;
+}
+
+.p-dialog {
+  z-index: 9990 !important;
+}
+
+.swal-zindex {
+  z-index: 9995 !important;
 }
 
 .loading-container {
@@ -3386,6 +3834,22 @@ registrarArticulo(data) {
 }
 
 @media (max-width: 600px) {
+  .almacen-busqueda-flex {
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    gap: 0.5rem !important;
+  }
+
+  .buscador-container {
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
   .almacen-select-container {
     min-width: 0 !important;
     max-width: 100% !important;
@@ -3408,6 +3872,10 @@ registrarArticulo(data) {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
+  }
+
+  .almacen-busqueda-flex>div:last-child {
+    margin-left: 0 !important;
   }
 }
 
@@ -3681,6 +4149,45 @@ registrarArticulo(data) {
 </style>
 
 <style scoped>
+.inputnumber-compact,
+.inputnumber-compact>>>input,
+.inputnumber-compact :deep(input) {
+  width: 60px !important;
+  min-width: 40px !important;
+  max-width: 80px !important;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+  text-align: right;
+}
+</style>
+
+<style>
+.inputnumber-compact,
+.inputnumber-compact .p-inputnumber-input {
+  width: 100px !important;
+  min-width: 40px !important;
+  max-width: 100px !important;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+  text-align: left;
+}
+</style>
+
+
+<style scoped>
+.stock-actual-cell {
+  background: #4f5a65;
+  color: #fff;
+  padding: 0.25em 0.7em;
+  border-radius: 6px;
+  font-weight: bold;
+  display: inline-block;
+  min-width: 50px;
+  text-align: center;
+}
+</style>
+
+<style scoped>
 .reset-buscar-btn {
   margin-left: 0.5rem;
   background: #f5f5f5;
@@ -3705,869 +4212,6 @@ registrarArticulo(data) {
 }
 </style>
 
-<style scoped>
-.tag-extra {
-  display: inline-block;
-  background: #e0f2ff;
-  color: #0369a1;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-/* Estilo uniforme para Dropdown (igual que InputText) */
-.dropdown-full {
-  width: 100% !important;
-  font-size: 0.8rem;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
-
-/* Input dentro del dropdown */
-.dropdown-full>>>.p-dropdown-label {
-  padding: 6px 8px !important;
-  font-size: 0.8rem;
-}
-
-/* Flecha del dropdown */
-.dropdown-full>>>.p-dropdown-trigger {
-  width: 2rem !important;
-}
-
-/* Borde al focus */
-.dropdown-full>>>.p-dropdown {
-  border: 1px solid #ccc;
-  transition: border 0.2s;
-}
-
-.dropdown-full>>>.p-dropdown.p-focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
-}
-
-/* 🔹 Opciones del panel (lista desplegable) */
-.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
-  font-size: 0.8rem !important;
-  padding: 6px 10px !important;
-  min-height: auto !important;
-  /* evita que queden muy grandes */
-}
-
-/* 🔹 Input principal (Buscar Producto) */
-.input-full {
-  width: 100%;
-  font-size: 0.8rem;
-  padding: 6px 8px;
-  border-radius: 6px 0 0 6px;
-  box-sizing: border-box;
-}
-
-/* Ajuste para InputText de PrimeVue */
-.input-full>>>.p-inputtext {
-  width: 100% !important;
-  font-size: 0.8rem;
-  padding: 6px 8px;
-  border-radius: 6px 0 0 6px;
-}
-
-/* 🔹 Estilo especial para InputNumber */
-.input-number-full {
-  width: 100%;
-}
-
-.input-number-full>>>.p-inputtext {
-  width: 100% !important;
-  font-size: 0.8rem;
-  padding: 6px 8px;
-  box-sizing: border-box;
-}
-
-.input-date-full {
-  width: 100%;
-  padding: 6px 8px;
-  font-size: 0.85rem;
-  border-radius: 6px;
-  border: 1px solid #ced4da;
-  box-sizing: border-box;
-}
-
-.input-date-full:focus {
-  border-color: #6c9ffe;
-  outline: none;
-}
-
-/* 🔹 Addon al mismo tamaño del input */
-.addon-precio {
-  font-size: 0.8rem;
-  /* igual al input */
-  padding: 6px 8px;
-  /* igual al input */
-  border-radius: 0 6px 6px 0;
-  /* borde derecho redondeado */
-  height: 100%;
-  /* igualar altura */
-  display: flex;
-  align-items: center;
-  /* centrar verticalmente */
-  box-sizing: border-box;
-}
-
-/* Asegurar que el contenedor no se rompa */
-.p-inputgroup-addon {
-  min-width: 40px;
-  /* opcional, para que no se comprima demasiado */
-}
-
-.p-inputgroup-addon {
-  padding: 0 !important;
-  /* eliminamos padding por defecto */
-}
-
-.addon-precio {
-  padding: 3px 12px !important;
-  /* igual al input interno */
-  height: 33px;
-  /* si tu input termina midiendo 38px (común en PrimeVue) */
-}
-
-.tabla-pro {
-  width: 100%;
-  white-space: nowrap;
-  overflow-x: auto;
-}
-
-.tabla-pro .p-datatable-wrapper {
-  overflow-x: auto;
-}
-
-.tabla-pro th,
-.tabla-pro td {
-  text-align: center;
-  vertical-align: middle;
-  font-size: 0.85rem;
-  padding: 0.5rem;
-}
-
-.tabla-pro img {
-  border-radius: 4px;
-  object-fit: contain;
-}
-
-.required-field {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 4px;
-}
-
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
-}
-
-/* Estilos para campos opcionales */
-.optional-field {
-  display: flex;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-  gap: 0.4rem;
-  font-weight: 500;
-  color: #6c757d;
-}
-
-.optional-icon {
-  color: #17a2b8;
-  font-size: 0.7rem;
-}
-
-/* Arreglar icono de lupa - Centrado perfecto */
-.search-bar .p-input-icon-left {
-  position: relative;
-  width: 100%;
-}
-
-.search-bar .p-input-icon-left i {
-  position: absolute;
-  left: 0.75rem;
-  top: 0;
-  bottom: 0;
-  margin: auto 0;
-  height: 1rem;
-  z-index: 2;
-  color: #6c757d;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  line-height: 1;
-}
-
-.search-bar .p-input-icon-left .p-inputtext {
-  padding-left: 2.5rem !important;
-  width: 100%;
-}
-
->>>.p-datatable.p-datatable-gridlines .p-datatable-tbody>tr>td {
-  text-align: center;
-}
-
-.bold-input {
-  font-weight: bold;
-}
-
-/*Panel*/
-.ingreso-panel {
-  margin-bottom: 1rem;
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.panel-icon {
-  color: #000000;
-  font-size: 1.2rem;
-}
-
-.panel-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-/* Panel Content Spacing */
->>>.p-panel .p-panel-content {
-  padding: 1rem;
-}
-
->>>.p-panel .p-panel-header {
-  padding: 0.75rem 1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
-}
-
->>>.p-panel .p-panel-header .p-panel-title {
-  font-weight: 600;
-}
-
-/* Responsive Dialog Styles */
-.responsive-dialog>>>.p-dialog {
-  margin: 0.75rem;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.responsive-dialog>>>.p-dialog-content {
-  overflow-x: auto;
-  padding: 0.5rem;
-}
-
-.responsive-dialog>>>.p-dialog-header {
-  padding: 0.5rem 0.9rem;
-  font-size: 1.1rem;
-}
-
-.responsive-dialog>>>.p-dialog-footer {
-  padding: 0.75rem 1.5rem;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Toolbar Responsive - Mantener en una línea */
-.toolbar-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  gap: 0.75rem;
-  flex-wrap: nowrap;
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.search-bar {
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  margin-right: 1rem;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
->>>.p-dropdown .p-dropdown-trigger {
-  width: 2rem;
-}
-
-.switch-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-}
-
-.custom-precios {
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-}
-
-/* Estilos para el código de barras */
-.barcode-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  overflow-x: auto;
-}
-
-/* En desktop, mantener el código de barras a la derecha */
-@media (min-width: 769px) {
-  .barcode-container {
-    justify-content: flex-start;
-    width: 250px;
-  }
-}
-
-/* En móvil, centrar el código de barras */
-@media (max-width: 768px) {
-  .barcode-container {
-    justify-content: center;
-    margin: 1rem auto;
-    width: 100%;
-  }
-}
-
-/* DataTable Responsive */
->>>.p-datatable {
-  font-size: 0.75rem;
-}
-
->>>.p-datatable .p-datatable-tbody>tr>td {
-  padding: 0.4rem;
-  word-break: break-word;
-  text-align: left;
-}
-
->>>.p-datatable .p-datatable-thead>tr>th {
-  padding: 0.35rem 0.4rem;
-  font-size: 0.75rem;
-}
-
-/* Tablet Styles */
-@media (max-width: 1024px) {
-  .responsive-dialog>>>.p-dialog {
-    margin: 0.5rem;
-    max-height: 90vh;
-  }
-
-  >>>.p-datatable {
-    font-size: 0.85rem;
-  }
-}
-
-/* Mobile Styles */
-@media (max-width: 768px) {
-  .toolbar .p-button .p-button-label {
-    display: none;
-  }
-
-  .responsive-dialog>>>.p-dialog {
-    margin: 0.25rem;
-    max-height: 90vh;
-  }
-
-  .responsive-dialog>>>.p-dialog-content {
-    padding: 0.75rem;
-  }
-
-  .responsive-dialog>>>.p-dialog-header {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-  }
-
-  .responsive-dialog>>>.p-dialog-footer {
-    padding: 0.5rem 1rem;
-    justify-content: flex-end;
-  }
-
-  .toolbar-container {
-    gap: 0.5rem;
-  }
-
-  >>>.p-datatable {
-    font-size: 0.8rem;
-  }
-
-  >>>.p-datatable .p-datatable-tbody>tr>td {
-    padding: 0.4rem 0.3rem;
-  }
-
-  >>>.p-datatable .p-datatable-thead>tr>th {
-    padding: 0.5rem 0.3rem;
-    font-size: 0.75rem;
-  }
-
-  /* Ajustar botones en móviles */
-  >>>.p-button-sm {
-    font-size: 0.75rem !important;
-    padding: 0.375rem 0.5rem !important;
-    min-width: auto !important;
-  }
-
-  /* Ajustar botón "Nuevo" para que coincida con otros botones */
-  .toolbar>>>.p-button-sm {
-    font-size: 0.75rem !important;
-    padding: 0.375rem 0.5rem !important;
-  }
-
-  /* Reducir altura del input buscador */
-  .search-bar .p-inputtext-sm {
-    padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
-    font-size: 0.85rem !important;
-  }
-}
-
-/* Extra Small Mobile */
-@media (max-width: 480px) {
-  .toolbar .p-button .p-button-label {
-    display: none;
-  }
-
-  .responsive-dialog>>>.p-dialog {
-    margin: 0.1rem;
-    max-height: 90vh;
-  }
-
-  .responsive-dialog>>>.p-dialog-content {
-    padding: 0.5rem;
-  }
-
-  .responsive-dialog>>>.p-dialog-header {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.95rem;
-  }
-
-  /* Footer mantiene botones alineados a la derecha, no ocupan todo el ancho */
-  .responsive-dialog>>>.p-dialog-footer {
-    padding: 0.5rem 0.75rem;
-    justify-content: flex-end;
-  }
-
-  .responsive-dialog>>>.p-dialog-footer .p-button {
-    width: auto;
-    margin-bottom: 0.25rem;
-  }
-
-  /* Toolbar mantiene elementos en una línea */
-  .toolbar-container {
-    gap: 0.4rem;
-    flex-wrap: nowrap;
-  }
-
-  .toolbar {
-    flex-shrink: 0;
-    min-width: auto;
-  }
-
-  .search-bar {
-    flex: 1;
-    min-width: 0;
-  }
-
-  /* Ajustar botones para que coincidan */
-  .toolbar>>>.p-button-sm {
-    font-size: 0.75rem !important;
-    padding: 0.375rem 0.5rem !important;
-  }
-
-  /* Reducir más la altura del input buscador en móviles pequeños */
-  .search-bar .p-inputtext-sm {
-    padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
-    font-size: 0.8rem !important;
-  }
-
-  >>>.p-datatable {
-    font-size: 0.75rem;
-  }
-
-  >>>.p-datatable .p-datatable-tbody>tr>td {
-    padding: 0.3rem 0.2rem;
-  }
-
-  >>>.p-datatable .p-datatable-thead>tr>th {
-    padding: 0.4rem 0.2rem;
-    font-size: 0.7rem;
-  }
-}
-
-/* Paginator Responsive */
-@media (max-width: 768px) {
-  >>>.p-paginator {
-    flex-wrap: wrap !important;
-    justify-content: center;
-    font-size: 0.85rem;
-    padding: 0.5rem;
-  }
-
-  >>>.p-paginator .p-paginator-page,
-  >>>.p-paginator .p-paginator-next,
-  >>>.p-paginator .p-paginator-prev,
-  >>>.p-paginator .p-paginator-first,
-  >>>.p-paginator .p-paginator-last {
-    min-width: 32px !important;
-    height: 32px !important;
-    font-size: 0.85rem !important;
-    padding: 0 6px !important;
-    margin: 2px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  >>>.p-paginator {
-    font-size: 0.8rem;
-    padding: 0.4rem;
-  }
-
-  >>>.p-paginator .p-paginator-page,
-  >>>.p-paginator .p-paginator-next,
-  >>>.p-paginator .p-paginator-prev,
-  >>>.p-paginator .p-paginator-first,
-  >>>.p-paginator .p-paginator-last {
-    min-width: 28px !important;
-    height: 28px !important;
-    font-size: 0.8rem !important;
-    padding: 0 4px !important;
-    margin: 1px !important;
-  }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
-}
-
-@media (max-width: 768px) {
-  >>>.p-datatable .p-button {
-    margin-right: 0.15rem;
-    margin-bottom: 0.15rem;
-  }
-}
-
-/* Estilos del loader */
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(5px);
-  padding: 30px;
-  border-radius: 15px;
-}
-
-.spinner {
-  width: 80px;
-  height: 80px;
-  border: 4px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  border-top: 4px solid rgba(255, 255, 255, 0.9);
-  animation: spin 1s linear infinite;
-}
-
-.loading-text {
-  margin-top: 20px;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 3px;
-  font-size: 14px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.p-dialog-mask {
-  z-index: 9990 !important;
-}
-
-.p-dialog {
-  z-index: 9990 !important;
-}
-
-.swal-zindex {
-  z-index: 9995 !important;
-}
-</style>
-
-<style>
-.swal2-confirm-articulonew {
-  background-color: #22c55e !important;
-  border-color: #22c55e !important;
-  color: #fff !important;
-}
-
-.swal2-cancel-articulonew {
-  background-color: #ef4444 !important;
-  border-color: #ef4444 !important;
-  color: #fff !important;
-}
-
-.detalle-value {
-  color: #1e293b;
-  font-weight: 500;
-  word-break: break-word;
-}
-
-.detalle-dialog .p-dialog {
-  width: 450px !important;
-  max-width: 450px;
-  height: 580px !important;
-  max-height: 580px;
-  border-radius: 10px;
-}
-
-.detalle-dialog .p-dialog-content {
-  height: calc(100% - 60px);
-  overflow-y: auto;
-}
-
-.detalle-articulo-dialog {
-  height: 100%;
-  overflow: hidden;
-}
-
-.detalle-articulo-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 10px 20px;
-}
-
-.detalle-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 5px;
-  margin-bottom: 10px;
-}
-
-.icon-header {
-  font-size: 1.3rem;
-  color: #007ad9;
-}
-
-.detalle-titulo {
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-
-.detalle-body {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.detalle-row {
-  margin: 10px 0;
-}
-
-/* --- STOCK MÍNIMO --- */
-.detalle-stock {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detalle-label {
-  font-weight: bold;
-  color: #555;
-}
-
-.footer-center {
-  display: flex;
-  justify-content: center;
-  padding-top: 10px;
-}
-
-.p-error-precio {
-  color: #ddc239;
-  /* rojo elegante */
-  display: block;
-  margin-top: 4px;
-  font-size: 0.85rem;
-}
-
-.modern-date {
-  border: 1px solid #0d6efd;
-  border-radius: 0.6rem;
-  padding: 8px 12px;
-  font-size: 0.95rem;
-  color: #212529;
-  background-color: #f8faff;
-  transition: all 0.25s ease;
-  box-shadow: 0 1px 3px rgba(13, 110, 253, 0.15);
-}
-
-/* Efecto al enfocar */
-.modern-date:focus {
-  border-color: #0b5ed7;
-  outline: none;
-  box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
-  background-color: #fff;
-}
-
-/* 🔹 Ícono del calendario (Chrome, Edge, Safari) */
-.modern-date::-webkit-calendar-picker-indicator {
-  color: #0d6efd;
-  background: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%230d6efd' viewBox='0 0 24 24'%3E%3Cpath d='M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v11zM7 11h5v5H7v-5z'/%3E%3C/svg%3E") no-repeat center;
-  background-size: 1rem;
-  opacity: 0.7;
-  cursor: pointer;
-  transition: 0.3s ease;
-}
-
-.modern-date::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-/* 🔹 Borde rojo si hay error (por ejemplo, con clase .is-invalid) */
-.modern-date.is-invalid {
-  border-color: #dc3545 !important;
-  box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.25);
-}
-
-.text-danger-fecha {
-  color: #dc3545;
-  font-weight: 500;
-}
-
-.modern-date {
-  border-radius: 8px !important;
-  border: 1px solid #d1d5db !important;
-  transition: 0.2s;
-}
-
-.modern-date:focus {
-  border-color: #0d6efd !important;
-  box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
-}
-
-.detalle-label {
-  font-weight: 600;
-  color: #555;
-  margin-right: 6px;
-}
-
-.detalle-value {
-  color: #222;
-}
-
-.badge-stock {
-  background: #e0f3ff;
-  color: #0d6efd;
-  font-weight: 600;
-  border-radius: 50px;
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  display: inline-block;
-}
-
-.badge-medida {
-  background: #f8f4c3;
-  color: #fdb10d;
-  font-weight: 600;
-  border-radius: 50px;
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  display: inline-block;
-}
-
-.badge-uxc {
-  background: #ffe0fa;
-  color: #fd0df1;
-  font-weight: 600;
-  border-radius: 50px;
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  display: inline-block;
-}
-
-.alert-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  border-radius: 8px;
-  border: 1px solid #ffeeba;
-}
-
-.codigo-descuento {
-  background-color: #53d070 !important;
-  color: #fff !important;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-weight: 600;
-  display: inline-block;
-  /* evita deformaciones */
-  white-space: nowrap;
-  /* impide que el texto salte de línea */
-  text-overflow: ellipsis;
-  /* corta con "..." si es muy largo */
-  overflow: hidden;
-  /* oculta el exceso de texto */
-  max-width: 110px;
-  /* ajusta el ancho visible */
-  text-align: center;
-  /* centra el contenido */
-  vertical-align: middle;
-}
-
-.codigo-descuento:hover {
-  background-color: #40b75e !important;
-}
-
-.codigo-descuento[title] {
-  cursor: pointer;
-}
-</style>
-
-
 <style>
 .custom-swal-confirm {
   background-color: #28a745 !important;
@@ -4586,10 +4230,5 @@ registrarArticulo(data) {
 
 .swal2-popup .swal2-styled:focus {
   box-shadow: 0 0 0 2px #28a74555 !important;
-}
-
-.input-error {
-  border: 2px solid #dc3545 !important;
-  background: #ffe6e6 !important;
 }
 </style>
