@@ -7,6 +7,9 @@
       </div>
     </div>
 
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
+
     <Panel v-if="listado != 0" :toggleable="false" class="ingreso-panel">
       <template #header>
         <div class="panel-header">
@@ -17,46 +20,42 @@
 
       <div v-if="listado == 1">
         <div class="toolbar-container" style="margin-top: 0; padding-top: 0;">
+
           <div class="search-bar">
-            <div class="p-inputgroup">
-              <span class="p-inputgroup-addon">
-                <i class="pi pi-search"></i>
-              </span>
+            <span class="p-input-icon-left">
+              <i class="pi pi-search" />
               <InputText v-model="buscar" @keyup="listarIngreso(1, buscar)" placeholder="Buscar en todos los campos..."
-                class="p-inputtext-sm" />
-              <Button icon="pi pi-refresh" class="p-button-help p-button-sm" @click="resetBuscar"
-                v-tooltip="'Limpiar búsqueda'" />
-            </div>
+                class="p-inputtext-sm input-full" />
+            </span>
           </div>
+
           <div class="toolbar">
+            <Button icon="pi pi-refresh" class="p-button-help p-button-sm btn-sm-input" @click="resetBuscar"
+              :title="'Limpiar búsqueda'" />
             <Button @click="mostrarDetalle()" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
-              class="p-button-primary p-button-sm" />
+              class="p-button-primary p-button-sm btn-sm-input" :title="'Nuevo Registro'" />
           </div>
         </div>
 
         <DataTable :value="arrayIngreso" :paginator="false" responsiveLayout="scroll"
-          class="p-datatable-gridlines p-datatable-sm">
-          <Column header="Acciones" :style="{ width: '150px' }">
+          class="p-datatable-gridlines p-datatable-sm tabla-pro">
+          <Column header="Acciones">
             <template #body="slotProps">
-              <div class="flex gap-1">
-                <Button @click="verIngreso(slotProps.data.id)" icon="pi pi-eye" severity="success" size="small"
-                  v-tooltip="'Ver'" class="p-button-sm p-button-success p-mr-1 btn-mini" v-tooltip.top="'Ver'"/>
-                <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini" v-tooltip="'Editar compra'"
-                  @click="editarIngreso(slotProps.data.id)" v-tooltip.top="'Editar'"/>
-                <Button 
-                  @click="imprimirIngreso(slotProps.data)" 
-                  icon="pi pi-print" 
-                  severity="warning" 
-                  size="small"
-                  v-tooltip="'Imprimir PDF'" 
-                  class="p-button-sm p-button-primary p-mr-1 btn-mini" 
-                  v-tooltip.top="'Imprimir'"
-                  :disabled="isLoading" 
-                />
-                <Button v-if="slotProps.data.estado == '1'" @click="desactivarIngreso(slotProps.data.id)"
-                  icon="pi pi-trash" severity="danger" size="small" v-tooltip="'Eliminar'"
-                  class="p-button-sm p-button-danger p-mr-1 btn-mini" v-tooltip.top="'Desactivar'"/>
-              </div>
+
+              <Button @click="verIngreso(slotProps.data.id)" icon="pi pi-eye" severity="success" size="small"
+                :title="'Ver Detalle'" class="p-button-sm p-button-success btn-mini" v-tooltip.top="'Ver'" />
+
+              <Button @click="imprimirIngreso(slotProps.data)" icon="pi pi-print" severity="warning" size="small"
+                :title="'Imprimir PDF'" class="p-button-sm p-button-primary btn-mini" :disabled="isLoading" />
+
+              <template v-if="puedeModificarIngreso(slotProps.data)">
+                <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini"
+                  @click="editarIngreso(slotProps.data.id)" />
+
+                <Button @click="anularCompra(slotProps.data.id)" icon="pi pi-trash"
+                  class="p-button-sm p-button-danger btn-mini" />
+              </template>
+
             </template>
           </Column>
           <Column field="usuario" header="Usuario" class="hidden md:table-cell" />
@@ -77,7 +76,7 @@
               <span :class="{
                 'estado-registrada': slotProps.data.estado == 1,
                 'estado-anulada': slotProps.data.estado == 0
-              }" class="estado-badge">
+              }" class="estado-badge tag-mini">
                 {{ slotProps.data.estado == 1 ? 'Registrada' : 'Anulada' }}
               </span>
             </template>
@@ -110,11 +109,10 @@
         <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm">
           <Column header="Cant.">
             <template #body="slotProps">
-              <span 
-                class="tipo-compra-badge"
-                :class="slotProps.data.tipo_compra === 'Unidad' ? 'tipo-unidad' : 'tipo-caja'"
-              >
-                {{ slotProps.data.cantidad }} {{ slotProps.data.tipo_compra === 'Unidad' ? (slotProps.data.cantidad > 1 ? 'Unidades' : 'Unidad') : (slotProps.data.cantidad > 1 ? 'Cajas' : 'Caja') }}
+              <span class="tipo-compra-badge"
+                :class="slotProps.data.tipo_compra === 'Unidad' ? 'tipo-unidad' : 'tipo-caja'">
+                {{ slotProps.data.cantidad }} {{ slotProps.data.tipo_compra === 'Unidad' ? (slotProps.data.cantidad > 1
+                  ? 'Unidades' : 'Unidad') : (slotProps.data.cantidad > 1 ? 'Cajas' : 'Caja') }}
               </span>
             </template>
           </Column>
@@ -166,21 +164,15 @@
     <Dialog v-model:visible="showModalArticulos" modal :style="{ width: '80vw' }"
       header="Seleccione los artículos que desee">
       <modalagregarproductos @cerrar="cerrarModal" @agregarArticulo="agregarArticuloSeleccionado"
-        :idproveedor="idproveedor" :monedaPrincipal="monedaCompra"/>
+        :idproveedor="idproveedor" :monedaPrincipal="monedaCompra" />
     </Dialog>
 
-   <div v-if="listado == 0">
-  <registrarcompra
-    @cerrar="ocultarDetalle"
-    @listarArticuloProveedor="listarArticuloProveedor"
-    @abrirModalArticulos="abrirModal"
-    @listarIngreso="listarIngresosTabla"
-    :arrayArticuloSeleccionado="arrayArticuloSeleccionado"
-    :monedaCompra="monedaCompra"
-    :editarIngresoData="ingresoSeleccionado"
-    :monedaPrincipal="monedaPrincipal"
-  />
-</div>
+    <div v-if="listado == 0">
+      <registrarcompra @cerrar="ocultarDetalle" @listarArticuloProveedor="listarArticuloProveedor"
+        @abrirModalArticulos="abrirModal" @listarIngreso="listarIngresosTabla"
+        :arrayArticuloSeleccionado="arrayArticuloSeleccionado" :monedaCompra="monedaCompra"
+        :editarIngresoData="ingresoSeleccionado" :monedaPrincipal="monedaPrincipal" />
+    </div>
   </div>
 </template>
 
@@ -197,6 +189,8 @@ import Dropdown from "primevue/dropdown";
 import Paginator from "primevue/paginator";
 import ProgressSpinner from "primevue/progressspinner";
 import axios from "axios";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
 
 export default {
   components: {
@@ -210,7 +204,9 @@ export default {
     Paginator,
     ProgressSpinner,
     Panel,
-  },directives: {
+    ToastService,
+    Toast,
+  }, directives: {
     'tooltip': Tooltip
   },
   data() {
@@ -305,6 +301,25 @@ export default {
     },
   },
   methods: {
+    puedeModificarIngreso(ingreso) {
+      return ingreso.estado === 1;
+    },
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
     async editarIngreso(id) {
       try {
         const resp = await axios.get(`/ingreso/obtener/${id}`);
@@ -323,37 +338,41 @@ export default {
       }
     },
 
-async imprimirIngreso(ingreso) {
-  this.isLoading = true;
-  try {
-    const response = await axios.get(`/ingreso/imprimir/${ingreso.id}`, {
-      responseType: 'blob',
-      timeout: 600000 
-    });
+    async imprimirIngreso(ingreso) {
+      this.isLoading = true;
+      try {
+        const response = await axios.get(`/ingreso/imprimir/${ingreso.id}`, {
+          responseType: 'blob',
+          timeout: 600000
+        });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
 
-    const fecha = new Date(ingreso.fecha_hora);
-    const year = fecha.getFullYear();
-    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-    const day = String(fecha.getDate()).padStart(2, '0');
-    const fechaFormateada = `${year}${month}${day}`;
-    const filename = `NotaCompra_${ingreso.num_comprobante}_${fechaFormateada}.pdf`;
+        const fecha = new Date(ingreso.fecha_hora);
+        const year = fecha.getFullYear();
+        const month = String(fecha.getMonth() + 1).padStart(2, '0');
+        const day = String(fecha.getDate()).padStart(2, '0');
+        const fechaFormateada = `${year}${month}${day}`;
+        const filename = `NotaCompra_${ingreso.num_comprobante}_${fechaFormateada}.pdf`;
 
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error al imprimir:', error);
-    swal("Error", "No se pudo generar el documento", "error");
-  } finally {
-    this.isLoading = false;
-  }
-},
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+
+        // Mensaje de éxito
+        this.toastSuccess("Documento generado correctamente");
+
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error al imprimir:', error);
+        this.toastError("No se pudo generar el documento");
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
@@ -361,40 +380,13 @@ async imprimirIngreso(ingreso) {
     resetBuscar() {
       this.buscar = "";
       this.listarIngreso(1, this.buscar);
+      this.toastSuccess("Búsqueda limpiada");
     },
     onPageChange(event) {
       const page = Math.floor(event.first / event.rows) + 1;
       this.cambiarPagina(page, this.buscar);
     },
-    async imprimirDocumento(id) {
-      try {
-        this.isLoading = true;
 
-        const result = await swal({
-          title: "Selecciona el tipo de documento",
-          text: "¿Qué tipo de documento deseas generar?",
-          type: "question",
-          showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
-          confirmButtonText: "Nota de Ingreso",
-          cancelButtonText: "Boleta",
-          reverseButtons: true,
-        });
-        if (result.value) {
-          window.open("/ingreso/generar-nota-ingreso/" + id, "_blank");
-        } else {
-          window.open("/ingreso/generar-pdf-boleta/" + id, "_blank");
-        }
-      } catch (error) {
-        console.error(error);
-        swal("Error", "Error al generar el documento", "error");
-      } finally {
-        setTimeout(() => {
-          this.isLoading = false;
-        }, 500);
-      }
-    },
     datosConfiguracion() {
       let me = this;
       var url = "/configuracion";
@@ -461,28 +453,7 @@ async imprimirIngreso(ingreso) {
         this.pagination = response.data.pagination;
       } catch (error) { }
     },
-    async buscarArticulo() {
-      try {
-        this.isLoading = true;
-        let me = this;
-        const url = "/articulo/buscarArticulo?filtro=" + me.codigo;
-        const response = await axios.get(url);
-        const respuesta = response.data;
-        me.arrayArticulo = respuesta.articulos;
-        if (me.arrayArticulo.length > 0) {
-          me.arrayArticuloSeleccionado = me.arrayArticulo[0];
-        } else {
-          me.articulo = "No existe este articulo";
-          me.idarticulo = 0;
-        }
-      } catch (error) {
-        swal("Error", "Error al buscar el artículo", "error");
-      } finally {
-        setTimeout(() => {
-          this.isLoading = false;
-        }, 500);
-      }
-    },
+
     cambiarPagina(page, buscar) {
       let me = this;
       me.pagination.current_page = page;
@@ -551,49 +522,7 @@ async imprimirIngreso(ingreso) {
           console.error(error);
         });
     },
-    async registrarIngreso() {
-      if (this.validarIngreso()) {
-        return;
-      }
-      try {
-        this.isLoading = true;
-        let me = this;
-        for (let i = 0; i < me.arrayDetalle.length; i++) { }
-        const response = await axios.post("/ingreso/registrar", {
-          idproveedor: this.idproveedor,
-          tipo_comprobante: this.tipo_comprobante,
-          serie_comprobante: this.serie_comprobante,
-          num_comprobante: this.num_comprobante,
-          impuesto: this.impuesto,
-          total: this.total,
-          data: this.arrayDetalle,
-        });
-        if (response.data.id > 0) {
-          await this.guardarInventarios();
-          me.listado = 1;
-          await me.listarIngreso(1, "");
-          me.idproveedor = 0;
-          me.tipo_comprobante = "BOLETA";
-          me.serie_comprobante = "";
-          me.num_comprobante = "";
-          me.impuesto = 0.18;
-          me.total = 0.0;
-          me.idarticulo = 0;
-          me.articulo = "";
-          me.cantidad = 1;
-          me.precio = 0;
-          me.arrayDetalle = [];
-          swal("Éxito", "Ingreso registrado correctamente", "success");
-        } else {
-          swal("Aviso", response.data.caja_validado, "warning");
-        }
-      } catch (error) {
-        console.error(error);
-        swal("Error", "No se pudo registrar el ingreso", "error");
-      } finally {
-        this.isLoading = false;
-      }
-    },
+
     validarIngreso() {
       this.errorIngreso = 0;
       this.errorMostrarMsjIngreso = [];
@@ -610,7 +539,7 @@ async imprimirIngreso(ingreso) {
       let me = this;
       me.selectAlmacen();
       me.listado = 0;
-        me.ingresoSeleccionado = null; // ⚡ Prop nula, el hijo sabe que es nuevo
+      me.ingresoSeleccionado = null; // ⚡ Prop nula, el hijo sabe que es nuevo
       me.idproveedor = 0;
       me.tipo_comprobante = "BOLETA";
       me.serie_comprobante = "";
@@ -667,10 +596,10 @@ async imprimirIngreso(ingreso) {
     listarArticuloProveedor(dato) {
       this.idproveedor = dato.idproveedor;
     },
-    async desactivarIngreso(id) {
+    async anularCompra(id) {
       try {
         const result = await swal({
-          title: "Esta seguro de desactivar este ingreso?",
+          title: "Esta seguro de desactivar esta compra?",
           type: "warning",
           showCancelButton: true,
           confirmButtonColor: "#3085d6",
@@ -686,11 +615,11 @@ async imprimirIngreso(ingreso) {
           this.isLoading = true;
           await axios.put("/ingreso/desactivar", { id: id });
           await this.listarIngreso(1, "");
-          swal("Anulado!", "El ingreso ha sido anulado con éxito.", "success");
+          this.toastSuccess("La compra ha sido anulada con éxito.");
         }
       } catch (error) {
         console.error(error);
-        swal("Error", "No se pudo anular el ingreso", "error");
+        this.toastError("No se pudo anular la compra");
       } finally {
         this.isLoading = false;
       }
@@ -719,6 +648,291 @@ async imprimirIngreso(ingreso) {
 </script>
 
 <style scoped>
+/* Estilo de tabla con scroll horizontal */
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  /* evita salto de columnas */
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+/* DataTable Responsive */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
+.textarea-full {
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  box-sizing: border-box;
+}
+
+/* Estilo base del Textarea de PrimeVue */
+.textarea-full>>>.p-inputtextarea {
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+  border: 1px solid #ccc !important;
+  border-radius: 6px !important;
+  min-height: 42px;
+  /* misma altura mínima que Inputs */
+  transition: border 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  resize: vertical;
+  /* permite redimensionar verticalmente */
+}
+
+/* 🔹 Focus igual que los otros campos */
+.textarea-full>>>.p-inputtextarea:focus {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+  outline: none !important;
+}
+
+/* 🔹 Hover opcional (igual que dropdown/inputtext) */
+.textarea-full>>>.p-inputtextarea:hover {
+  border-color: #a8a8a8;
+}
+
+/* Contenedor del AutoComplete */
+.autocomplete-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input interno */
+.autocomplete-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Botón del dropdown (flecha) */
+.autocomplete-full>>>.p-autocomplete-dropdown {
+  width: 2rem !important;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Contenedor general del input + botón */
+.autocomplete-full>>>.p-autocomplete {
+  width: 100% !important;
+  border: 1px solid #ccc !important;
+  border-radius: 6px;
+  transition: border 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+/* Focus del input */
+.autocomplete-full>>>.p-inputtext:focus,
+.autocomplete-full>>>.p-autocomplete.p-focus {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* Panel de sugerencias */
+.autocomplete-full>>>.p-autocomplete-panel {
+  font-size: 0.8rem !important;
+}
+
+/* Sugerencia individual */
+.autocomplete-full>>>.p-autocomplete-items .p-autocomplete-item {
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+  min-height: auto !important;
+  cursor: pointer;
+}
+
+/* Estilo uniforme para Dropdown (igual que InputText) */
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input dentro del dropdown */
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+/* Flecha del dropdown */
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+/* Borde al focus */
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* 🔹 Opciones del panel (lista desplegable) */
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
+}
+
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Estilo especial para InputNumber */
+.input-number-full {
+  width: 100%;
+}
+
+.input-number-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+/* Arreglar icono de lupa - Centrado perfecto */
+.search-bar .p-input-icon-left {
+  position: relative;
+  width: 100%;
+}
+
+.search-bar .p-input-icon-left i {
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+  height: 1rem;
+  z-index: 2;
+  color: #6c757d;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.search-bar .p-input-icon-left .p-inputtext {
+  padding-left: 2.5rem !important;
+  width: 100%;
+}
+
 .estado-badge {
   padding: 0.15rem 0.6rem;
   border-radius: 6px;
@@ -747,29 +961,6 @@ async imprimirIngreso(ingreso) {
   justify-content: flex-start;
   min-width: 0;
   margin-right: 1rem;
-}
-
-.search-bar .p-inputgroup {
-  width: 100%;
-}
-
-.search-bar .p-inputgroup-addon {
-  background: #f8fafc;
-  border-color: #d1d5db;
-  color: #6b7280;
-}
-
-.search-bar .p-inputtext {
-  border-left: none;
-}
-
-.search-bar .p-inputtext:focus {
-  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.5);
-  border-color: #3b82f6;
-}
-
-.search-bar .p-inputgroup-addon+.p-inputtext:focus {
-  border-left-color: #3b82f6;
 }
 
 .input-container {
@@ -1004,22 +1195,6 @@ async imprimirIngreso(ingreso) {
 
 .status-badge.inactive {
   background-color: red;
-}
-
-/* DataTable Responsive */
->>>.p-datatable {
-  font-size: 0.9rem;
-}
-
->>>.p-datatable .p-datatable-tbody>tr>td {
-  padding: 0.5rem;
-  word-break: break-word;
-  text-align: left;
-}
-
->>>.p-datatable .p-datatable-thead>tr>th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
 }
 
 .p-dialog-mask {
