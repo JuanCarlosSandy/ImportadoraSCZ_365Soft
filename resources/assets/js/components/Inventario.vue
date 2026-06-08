@@ -418,21 +418,42 @@ export default {
     },
 
     async getDatosAlmacen() {
-      let me = this;
-      try {
-        if (me.AlmacenSeleccionado === "") {
-          return;
-        }
+  let me = this;
 
-        me.almacenSeleccionado = me.AlmacenSeleccionado;
-        me.idalmacen = Number(me.AlmacenSeleccionado);
+  try {
+    if (!me.AlmacenSeleccionado) {
+      return;
+    }
 
-        await me.listarInventario(1, me.buscar, "");
-      } catch (error) {
-        console.error("Error al obtener datos del almacén:", error);
-        Swal.fire("Error", "No se pudieron cargar los datos del almacén", "error");
-      }
-    },
+    me.isLoading = true;
+
+    me.almacenSeleccionado = me.AlmacenSeleccionado;
+    me.idalmacen = Number(me.AlmacenSeleccionado);
+
+    await me.listarInventario(1, me.buscar, "");
+
+    // Obtener nombre del almacén
+    const almacen = me.arrayAlmacenes.find(
+      a => a.id == me.AlmacenSeleccionado
+    );
+
+    const nombreAlmacen = almacen
+      ? almacen.nombre_almacen
+      : "seleccionado";
+
+    me.toastSuccess(`Inventario actualizado: ${nombreAlmacen}`);
+
+  } catch (error) {
+    console.error("Error al obtener datos del almacén:", error);
+    Swal.fire(
+      "Error",
+      "No se pudieron cargar los datos del almacén",
+      "error"
+    );
+  } finally {
+    me.isLoading = false;
+  }
+},
     async cambiarTipo() {
       try {
         this.isLoading = true; // Activar loading
