@@ -88,7 +88,7 @@
           template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink" class="mt-3" />
       </div>
 
-      <div v-else-if="listado == 2">
+      <div v-else-if="listado == 2" class="detalle-overlay">
         <div class="comprobante-info-card">
           <div class="comprobante-header">
             <i class="pi pi-file-text comprobante-icon"></i>
@@ -96,20 +96,33 @@
           </div>
           <div class="comprobante-fields">
             <div class="field-group">
-              <label class="field-label">Tipo de Comprobante</label>
-              <InputText :value="tipo_comprobante" readonly class="readonly-input" />
+              <label class="optional-field">
+                <i class="pi pi-list optional-icon"></i>
+                Nombre del Usuario
+              </label>
+              <InputText :value="usuario" readonly class="readonly-input input-full" />
             </div>
             <div class="field-group">
-              <label class="field-label">Número de Comprobante</label>
-              <InputText :value="num_comprobante" readonly class="readonly-input" />
+              <label class="optional-field">
+                <i class="pi pi-list optional-icon"></i>
+                Tipo de Comprobante
+              </label>
+              <InputText :value="tipo_comprobante" readonly class="readonly-input input-full" />
+            </div>
+            <div class="field-group">
+              <label class="optional-field">
+                <i class="pi pi-list optional-icon"></i>
+                Número de Comprobante
+              </label>
+              <InputText :value="num_comprobante" readonly class="readonly-input input-full" />
             </div>
           </div>
         </div>
 
-        <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm">
+        <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro">
           <Column header="Cant.">
             <template #body="slotProps">
-              <span class="tipo-compra-badge"
+              <span class="tipo-compra-badge tag-mini"
                 :class="slotProps.data.tipo_compra === 'Unidad' ? 'tipo-unidad' : 'tipo-caja'">
                 {{ slotProps.data.cantidad }} {{ slotProps.data.tipo_compra === 'Unidad' ? (slotProps.data.cantidad > 1
                   ? 'Unidades' : 'Unidad') : (slotProps.data.cantidad > 1 ? 'Cajas' : 'Caja') }}
@@ -156,7 +169,7 @@
 
         <div class="p-text-right">
           <Button @click="ocultarDetalle()" label="Cerrar" icon="pi pi-times" severity="danger"
-            class="p-button-sm p-button-danger p-mr-1" />
+            class="p-button-sm p-button-danger btn-sm" />
         </div>
       </div>
     </Panel>
@@ -228,6 +241,7 @@ export default {
       idproveedor: 0,
       proveedor: "",
       nombre: "",
+      usuario: "",
       tipo_comprobante: "BOLETA",
       serie_comprobante: "",
       num_comprobante: "",
@@ -566,6 +580,7 @@ export default {
         const arrayIngresoT = response.data.ingreso;
         this.proveedor = arrayIngresoT[0]["nombre"];
         this.tipo_comprobante = arrayIngresoT[0]["tipo_comprobante"];
+        this.usuario = arrayIngresoT[0]["usuario"];
         this.serie_comprobante = arrayIngresoT[0]["serie_comprobante"];
         this.num_comprobante = arrayIngresoT[0]["num_comprobante"];
         this.impuesto = arrayIngresoT[0]["impuesto"];
@@ -648,6 +663,11 @@ export default {
 </script>
 
 <style scoped>
+/* Estilos para detalles fuera del TabView */
+.detalle-overlay {
+  animation: fadeIn 0.3s ease-in;
+  padding: 1rem;
+}
 /* Estilo de tabla con scroll horizontal */
 .tabla-pro {
   width: 100%;
