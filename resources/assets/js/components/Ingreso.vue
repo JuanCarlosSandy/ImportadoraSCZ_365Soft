@@ -11,6 +11,7 @@
       appendTo="body" :baseZIndex="99999"></Toast>
 
     <Panel v-if="listado != 0" :toggleable="false" class="ingreso-panel">
+
       <template #header>
         <div class="panel-header">
           <i class="pi pi-shopping-cart panel-icon"></i>
@@ -19,6 +20,12 @@
       </template>
 
       <div v-if="listado == 1">
+        <div class="info-tip">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            Filtre por usuario, almacén, tipo de comprobante, número de comprobante o fecha.
+          </span>
+        </div>
         <div class="toolbar-container" style="margin-top: 0; padding-top: 0;">
 
           <div class="search-bar">
@@ -30,10 +37,10 @@
           </div>
 
           <div class="toolbar">
-            <Button icon="pi pi-refresh" class="p-button-help p-button-sm btn-sm-input" @click="resetBuscar"
+            <Button icon="pi pi-refresh" class="btn-edit p-button-sm btn-sm-input" @click="resetBuscar"
               :title="'Limpiar búsqueda'" />
             <Button @click="mostrarDetalle()" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
-              class="p-button-primary p-button-sm btn-sm-input" :title="'Nuevo Registro'" />
+              class="p-button-secondary p-button-sm btn-sm-input" :title="'Nuevo Registro'" />
           </div>
         </div>
 
@@ -43,17 +50,17 @@
             <template #body="slotProps">
 
               <Button @click="verIngreso(slotProps.data.id)" icon="pi pi-eye" severity="success" size="small"
-                :title="'Ver Detalle'" class="p-button-sm p-button-success btn-mini" v-tooltip.top="'Ver'" />
+                :title="'Ver Detalle'" class="p-button-sm p-button-success btn-mini" />
 
               <Button @click="imprimirIngreso(slotProps.data)" icon="pi pi-print" severity="warning" size="small"
                 :title="'Imprimir PDF'" class="p-button-sm p-button-primary btn-mini" :disabled="isLoading" />
 
               <template v-if="puedeModificarIngreso(slotProps.data)">
-                <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini"
-                  @click="editarIngreso(slotProps.data.id)" />
+                <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+                  @click="editarIngreso(slotProps.data.id)" :title="'Editar Compra'" />
 
                 <Button @click="anularCompra(slotProps.data.id)" icon="pi pi-trash"
-                  class="p-button-sm p-button-danger btn-mini" />
+                  class="p-button-sm p-button-danger btn-mini" :title="'Anular Compra'" />
               </template>
 
             </template>
@@ -671,6 +678,24 @@ export default {
 </script>
 
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 /* Estilos para detalles fuera del TabView */
 .detalle-overlay {
   animation: fadeIn 0.3s ease-in;

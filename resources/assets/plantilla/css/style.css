@@ -12792,14 +12792,6 @@ hr.transparent {
   left: 0;
   width: 100%; /* ocupa todo el ancho */
   z-index: 1100;
-  /*background: linear-gradient(
-    90deg,
-    #000000 0%,
-    #616366 25%,
-    #8F9095 50%,
-    #DD662B 75%,
-    #FFFFFF 100%
-  );*/
   background: linear-gradient(
   90deg,
   #e35417 0%,
@@ -12961,4 +12953,21 @@ body.p-overflow-hidden {
   border-color: #1976d2;
   box-shadow: 0 0 4px rgba(25, 118, 210, 0.4);
   outline: none;
+}
+
+.btn-edit {
+  background: #e35417 !important;
+  border: 1px solid #e35417 !important;
+  color: #fff !important;
+}
+
+.btn-edit:hover {
+  background: #c9440d !important;
+  border-color: #c9440d !important;
+}
+
+.btn-edit:focus,
+.btn-edit.p-focus {
+  box-shadow: 0 0 0 0.15rem rgba(227, 84, 23, 0.25) !important;
+  border-color: #e35417 !important;
 }
