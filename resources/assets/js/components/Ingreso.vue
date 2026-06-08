@@ -50,17 +50,17 @@
             <template #body="slotProps">
 
               <Button @click="verIngreso(slotProps.data.id)" icon="pi pi-eye" severity="success" size="small"
-                :title="'Ver Detalle'" class="p-button-sm p-button-success btn-mini" />
+                :title="'Ver Detalle'" class="p-button-success btn-mini" />
 
               <Button @click="imprimirIngreso(slotProps.data)" icon="pi pi-print" severity="warning" size="small"
-                :title="'Imprimir PDF'" class="p-button-sm p-button-primary btn-mini" :disabled="isLoading" />
+                :title="'Imprimir PDF'" class="p-button-primary btn-mini" :disabled="isLoading" />
 
               <template v-if="puedeModificarIngreso(slotProps.data)">
                 <Button icon="pi pi-pencil" class="btn-edit btn-mini"
                   @click="editarIngreso(slotProps.data.id)" :title="'Editar Compra'" />
 
                 <Button @click="anularCompra(slotProps.data.id)" icon="pi pi-trash"
-                  class="p-button-sm p-button-danger btn-mini" :title="'Anular Compra'" />
+                  class="p-button-danger btn-mini" :title="'Anular Compra'" />
               </template>
 
             </template>

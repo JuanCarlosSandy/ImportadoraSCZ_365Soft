@@ -15,36 +15,39 @@
             <i class="pi pi-bars"></i>
             <h4 class="panel-title">INVENTARIO</h4>
           </div>
-          <div class="panel-actions">
-            <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" @click="abrirModalImportar()"
-              class="p-button-success p-button-sm" />
-            <Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-download" @click="exportarInventario"
-              class="p-button-info p-button-sm" style="margin-left: 0.5rem;" />
-          </div>
         </div>
       </template>
 
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre por almacén para poder ver los datos.
+        </span>
+      </div>
+
       <div class="filters-container">
         <div class="filter-row">
+
+          <!-- Almacén -->
           <div class="filter-group-almacen">
             <label class="filter-label">ALMACÉN DE TRABAJO</label>
             <Dropdown v-model="AlmacenSeleccionado" :options="arrayAlmacenes" optionLabel="nombre_almacen"
-              optionValue="id" placeholder="Seleccione un almacén" @change="getDatosAlmacen" class="p-dropdown-sm" />
+              optionValue="id" placeholder="Seleccione un almacén" @change="getDatosAlmacen" class="dropdown-full" />
           </div>
 
-          <div class="filter-group-modo">
-            <!--<label class="filter-label">MODO VISTA</label>
-            <div class="radio-group">
-              <div class="p-field-radiobutton">
-                <RadioButton id="porItem" v-model="tipoSeleccionado" value="item" @change="cambiarTipo" />
-                <label for="porItem">Por Item</label>
-              </div>
-              <div class="p-field-radiobutton">
-                <RadioButton id="porLote" v-model="tipoSeleccionado" value="lote" @change="cambiarTipo" />
-                <label for="porLote">Por Lote</label>
-              </div>
-            </div>-->
+          <!-- Acciones -->
+          <div class="filter-group-actions">
+            <label class="filter-label">ACCIONES</label>
+
+            <div class="panel-actions">
+              <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" @click="abrirModalImportar()"
+                class="p-button-success p-button-sm btn-sm-input" />
+
+              <Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-download" @click="exportarInventario"
+                class="p-button-info p-button-sm btn-sm-input" />
+            </div>
           </div>
+
         </div>
       </div>
 
@@ -52,18 +55,18 @@
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText v-model="buscar" placeholder="Texto a buscar" class="p-inputtext-sm" @keyup="buscarInventario" />
+            <InputText v-model="buscar" placeholder="Texto a buscar" class="input-full" @keyup="buscarInventario" />
           </span>
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Reset' : ''" icon="pi pi-refresh" @click="resetBusqueda"
-            class="p-button-help p-button-sm" />
+            class="p-button-help p-button-sm btn-sm-input" />
         </div>
       </div>
       <!-- DataTable para vista por Item -->
-      <DataTable v-if="tipoSeleccionado == 'item'" :value="arrayInventario" class="p-datatable-sm p-datatable-gridlines"
-        responsiveLayout="scroll">
-                <Column field="codigo" header="Codigo"></Column>
+      <DataTable v-if="tipoSeleccionado == 'item'" :value="arrayInventario"
+        class="p-datatable-sm p-datatable-gridlines tabla-pro" responsiveLayout="scroll">
+        <Column field="codigo" header="Codigo"></Column>
         <Column field="nombre_producto" header="Producto"></Column>
         <Column field="nombre_categoria" header="Categoria"></Column>
         <Column field="nombre_proveedor" header="Proveedor"></Column>
@@ -72,7 +75,7 @@
           <template #body="slotProps">
             <span v-if="slotProps.data.saldo_stock_total == 0"
               style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
-              <i class="pi pi-exclamation-triangle" style="margin-right: 6px; font-size: 1.1em;"></i>
+              <i class="pi pi-exclamation-triangle tag-mini" style="margin-right: 6px; font-size: 1.1em;"></i>
               Sin Stock
             </span>
             <span v-else>
@@ -80,24 +83,6 @@
             </span>
           </template>
         </Column>
-        
-        <!--<Column field="stock_formateado" header="STOCK CAJAS">
-          <template #body="slotProps">
-
-            <span v-if="slotProps.data.cajas == 0 && slotProps.data.unidades == 0"
-              style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
-              <i class="pi pi-exclamation-triangle" style="margin-right: 6px; font-size: 1.1em;"></i>
-              Sin Stock
-            </span>
-
-            <span v-else>
-              {{ slotProps.data.stock_formateado }}
-            </span>
-
-          </template>
-        </Column>-->
-
-        
       </DataTable>
 
       <!-- DataTable para vista por Lote -->
@@ -309,16 +294,16 @@ export default {
       });
       const modo = this.tipoSeleccionado;
       const idAlmacen = this.AlmacenSeleccionado;
-      
+
       // Obtener nombre del almacén seleccionado
       const almacenSeleccionado = this.arrayAlmacenes.find(a => a.id === idAlmacen);
       const nombreAlmacen = almacenSeleccionado ? almacenSeleccionado.nombre_almacen : 'Desconocido';
-      
+
       // Generar nombre del archivo con la misma lógica del backend
       const fecha = new Date();
       const fechaFormato = `${String(fecha.getDate()).padStart(2, '0')}_${String(fecha.getMonth() + 1).padStart(2, '0')}_${fecha.getFullYear()}`;
       const nombreArchivoLimpio = nombreAlmacen.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
-      
+
       if (result.isConfirmed) {
         // Exportar a Excel
         const url = `/inventario/exportar-excel?modo=${modo}&idAlmacen=${idAlmacen}&buscar=${this.buscar}`;
@@ -481,6 +466,142 @@ export default {
 };
 </script>
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Estilo de tabla con scroll horizontal */
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  /* evita salto de columnas */
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+/* DataTable Responsive */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* Estilo uniforme para Dropdown (igual que InputText) */
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input dentro del dropdown */
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+/* Flecha del dropdown */
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+/* Borde al focus */
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* 🔹 Opciones del panel (lista desplegable) */
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
+}
+
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 .swal2-confirm-excel {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
@@ -576,33 +697,36 @@ export default {
 
 .filter-row {
   display: flex;
-  gap: 2rem;
+  flex-wrap: nowrap; /* nunca bajar a otra línea */
+  justify-content: space-between;
   align-items: flex-end;
+  gap: 1rem;
 }
 
 .filter-group-almacen {
-  flex: 2;
-  min-width: 200px;
+  flex: 1;
+  min-width: 0;
 }
 
-.filter-group-modo {
-  flex: 1;
-  min-width: 150px;
+.filter-group-actions {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .filter-label {
   display: block;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #495057;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.filter-group-almacen .filter-label,
-.filter-group-modo .filter-label {
   margin-bottom: 0.4rem;
+  color: #6b7280;
+  text-transform: uppercase;
 }
 
 .radio-group {
@@ -648,22 +772,6 @@ export default {
   justify-content: flex-start;
   min-width: 0;
   margin-right: 1rem;
-}
-
-/* DataTable Responsive */
->>>.p-datatable {
-  font-size: 0.9rem;
-}
-
->>>.p-datatable .p-datatable-tbody>tr>td {
-  padding: 0.5rem;
-  word-break: break-word;
-  text-align: left;
-}
-
->>>.p-datatable .p-datatable-thead>tr>th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
 }
 
 /* Tablet Styles */
@@ -790,14 +898,25 @@ export default {
   }
 
   .filter-row {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: stretch;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5rem;
   }
 
   .filter-group-almacen {
-    flex: none;
-    min-width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .filter-group-actions {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 0.25rem;
   }
 
   .filter-group-modo {
