@@ -340,6 +340,7 @@ export default {
     resetBusqueda() {
       this.buscar = ""; // Limpiar input
       this.listarInventario(1, "", ""); // Llamar con valores vacíos
+      this.toastSuccess("Búsqueda reiniciada, mostrando todos los registros."); // Feedback al usuario
     },
     onPageChange(event) {
       const page = Math.floor(event.first / event.rows) + 1;
