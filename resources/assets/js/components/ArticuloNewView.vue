@@ -15,28 +15,34 @@
           <h4 class="panel-title">PRODUCTOS</h4>
         </div>
       </template>
+      <div class="info-tip">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            Filtre por código o nombre, y también por el número de DIM
+          </span>
+        </div>
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText v-model="buscar" placeholder="Buscar artículo" class="p-inputtext-sm" @keyup="buscarArticulo" />
+            <InputText v-model="buscar" placeholder="Buscar artículo" class="p-inputtext-sm input-full" @keyup="buscarArticulo" />
           </span>
 
           <!-- 🔥 NUEVO BUSCADOR -->
-          <span style="margin-left: 10px; width: 280px; display: inline-block;">
+          <span style="margin-left: 10px; width: 100%;; display: inline-block;">
             <Dropdown v-model="comprobanteSeleccionado" :options="listaComprobantes" optionLabel="num_comprobante"
-              optionValue="num_comprobante" placeholder="Seleccione N° de DIM" class="p-inputtext-sm"
+              optionValue="num_comprobante" placeholder="Seleccione N° de DIM" class="dropdown-full"
               style="width: 100%;" @change="buscarPorComprobante" filter showClear />
           </span>
         </div>
         <div class="toolbar">
-          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm"
+          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
             @click="abrirModal('articulo', 'registrar')" />
-          <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm"
+          <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" class="p-button-success p-button-sm btn-sm-input"
             @click="descargarReporteExcel()" :disabled="isLoading" />
-          <Button :label="mostrarLabel ? 'PDF' : ''" icon="pi pi-file-pdf" class="p-button-danger p-button-sm"
+          <Button :label="mostrarLabel ? 'PDF' : ''" icon="pi pi-file-pdf" class="p-button-danger p-button-sm btn-sm-input"
             @click="descargarReportePDF()" :disabled="isLoading" />
-          <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm"
+          <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm btn-sm-input"
             @click="validarPermisoImportar()" />
         </div>
       </div>
@@ -2361,6 +2367,24 @@ registrarArticulo(data) {
 </script>
 
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 /* 🔹 Botones pequeños */
 .btn-sm {
   font-size: 0.8rem;
@@ -2722,6 +2746,38 @@ registrarArticulo(data) {
   justify-content: flex-end;
   gap: 10px;
   flex-shrink: 0;
+}
+
+/* 📱 Vista móvil */
+@media (max-width: 768px) {
+  .toolbar-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .search-bar .p-input-icon-left,
+  .dropdown-container {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .toolbar .p-button {
+    flex: 1;
+    min-width: 120px;
+  }
 }
 
 .search-bar {
