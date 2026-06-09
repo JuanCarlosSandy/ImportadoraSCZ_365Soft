@@ -376,8 +376,14 @@
           @click="enviarFormulario()" />
       </template>
     </Dialog>
-    <Dialog :visible.sync="dialogDetallesVisible" :modal="true" header="Detalles del Producto" :closable="false"
+    <Dialog :visible.sync="dialogDetallesVisible" :modal="true" :closable="false"
       @hide="cerrarDialogDetalles" :containerStyle="dialogContainerStyleDestalle" class="responsive-dialog">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-box header-icon"></i>
+          <span class="header-title">Detalles del Producto</span>
+        </div>
+      </template>
       <div v-if="articuloSeleccionado" class="detalle-articulo-dialog">
         <div class="detalle-articulo-card">
           <div class="detalle-header">
@@ -3168,6 +3174,7 @@ registrarArticulo(data) {
   color: #1e293b;
   font-weight: 500;
   word-break: break-word;
+  font-size: 0.7rem;
 }
 
 .detalle-dialog .p-dialog {
@@ -3205,13 +3212,13 @@ registrarArticulo(data) {
 }
 
 .icon-header {
-  font-size: 1.3rem;
+  font-size: 0.8rem;
   color: #007ad9;
 }
 
 .detalle-titulo {
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
 }
 
 .detalle-body {
@@ -3234,6 +3241,8 @@ registrarArticulo(data) {
 .detalle-label {
   font-weight: bold;
   color: #555;
+  font-size: 0.8rem;
+  margin-right: 6px;
 }
 
 .footer-center {
@@ -3306,23 +3315,13 @@ registrarArticulo(data) {
   box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
 }
 
-.detalle-label {
-  font-weight: 600;
-  color: #555;
-  margin-right: 6px;
-}
-
-.detalle-value {
-  color: #222;
-}
-
 .badge-stock {
   background: #e0f3ff;
   color: #0d6efd;
   font-weight: 600;
   border-radius: 50px;
   padding: 4px 10px;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   display: inline-block;
 }
 
@@ -3332,7 +3331,7 @@ registrarArticulo(data) {
   font-weight: 600;
   border-radius: 50px;
   padding: 4px 10px;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   display: inline-block;
 }
 
@@ -3342,7 +3341,7 @@ registrarArticulo(data) {
   font-weight: 600;
   border-radius: 50px;
   padding: 4px 10px;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   display: inline-block;
 }
 
