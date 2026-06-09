@@ -818,6 +818,30 @@ export default {
     },
   },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     async obtenerComprobantes() {
       try {
         const response = await axios.get('/ingresos/comprobantes-dim');
@@ -827,11 +851,24 @@ export default {
       }
     },
     async buscarPorComprobante() {
-      this.isLoading = true;
+      try {
+        this.isLoading = true;
 
-      await this.listarArticulo(1, this.buscar, 'comprobante');
+        await this.listarArticulo(1, this.buscar, "comprobante");
 
-      this.isLoading = false;
+        if (this.comprobanteSeleccionado) {
+          this.toastSuccess(
+            `Viendo productos del DIM N° ${this.comprobanteSeleccionado}`
+          );
+        } else {
+          this.toastWarning("Mostrando todos los productos");
+        }
+      } catch (error) {
+        this.toastError("Ocurrió un error al filtrar los productos");
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+      }
     },
     validarPermisoVendedor() {
       if (this.idrol === 2) {
@@ -1612,7 +1649,7 @@ export default {
       const precioP = parseFloat(precio_costo_unid) + parseFloat(margenG);
       return precioP.toFixed(2);
     },
-    listarArticulo(page, buscar, criterio) {
+    async listarArticulo(page, buscar, criterio) {
       let me = this;
 
       var url =
