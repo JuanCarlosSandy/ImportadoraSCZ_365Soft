@@ -1,5 +1,11 @@
 <template>
   <main class="main">
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">LOADING...</div>
+      </div>
+    </div>
     <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
       appendTo="body" :baseZIndex="99999"></Toast>
     <Dialog
@@ -11,26 +17,32 @@
       :closeOnEscape="false"
       class="responsive-dialog"
     >
-      <div class="toolbar-container">
-        <div class="toolbar">
-          <Button
-            label="Nuevo"
-            icon="pi pi-plus"
-            class="p-button-secondary p-button-sm btn-sm"
-            @click="abrirModal('categoria', 'registrar')"
-          />
+    <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-box header-icon"></i>
+          <span class="header-title"> Categorias</span>
         </div>
+      </template>
+      <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
             <InputText
               type="text"
               placeholder="Texto a buscar"
-              class="p-inputtext-sm"
+              class="p-inputtext-sm input-full"
               v-model="buscar"
               @keyup="buscarLinea"
             />
           </span>
+        </div>
+        <div class="toolbar">
+          <Button
+            label="Nuevo"
+            icon="pi pi-plus"
+            class="p-button-secondary p-button-sm btn-sm-input"
+            @click="abrirModal('categoria', 'registrar')"
+          />
         </div>
       </div>
       <DataTable
@@ -49,7 +61,7 @@
             />
             <Button
               icon="pi pi-pencil"
-              class="p-button-warning btn-mini"
+              class="btn-edit btn-mini"
               @click="abrirModal('categoria', 'actualizar', slotProps.data)"
             />
           </template>
@@ -69,19 +81,23 @@
     <Dialog 
       :visible.sync="modal" 
       modal 
-      :header="tituloModal" 
       @hide="cerrarModal"  
       :containerStyle="formDialogContainerStyle" 
       :closable="false" 
       :closeOnEscape="false"
       class="responsive-dialog form-dialog"
     >
+    <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-box header-icon"></i>
+          <span class="header-title">{{ tituloModal }}</span>
+        </div>
+      </template>
       <div class="p-fluid p-formgrid p-grid form-compact">
         <div class="p-field p-col-12">
-          <label for="nombre" class="required-field">
-            <span class="required-icon">*</span>
-            Nombre de Categoría
-          </label>
+          <label for="nombre" class="label-input">
+              <span class="text-required">*</span> Nombre del Categoría
+            </label>
           <InputText 
             id="nombre"
             class="input-full" 
@@ -90,6 +106,7 @@
             autofocus 
             :class="{'input-error': nombreError}" 
             @input="validarNombreEnTiempoReal" 
+            :autocomplete="'off'"
           />
           <small class="p-error error-message" v-if="nombreError">
             <strong>{{ nombreError }}</strong>
@@ -97,15 +114,15 @@
         </div>
         
         <div class="p-field p-col-12">
-           <label for="documentType" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Descripcion
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Descripcion <span class="optional-tag">Opcional</span>
             </label>
           <InputText 
             id="descripcion" 
             class="input-full"
             v-model="descripcion" 
+            :autocomplete="'off'"
           />
         </div>
       </div>
@@ -167,6 +184,7 @@ export default {
   },
   data() {
     return {
+      isLoading: false,
       modal1: this.visible,
       modal: false,
       buscar: '',
@@ -207,6 +225,22 @@ export default {
     }
   },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
     closeDialog() {
       this.$emit('close');
     },
@@ -229,6 +263,7 @@ export default {
         this.lineaSeleccionado = data;
         this.$emit('linea-seleccionado', this.lineaSeleccionado);
         this.closeDialog();
+        this.toastSuccess("Linea seleccionada: " + data.nombre);
       }
     },
     validarNombreEnTiempoReal() {
@@ -247,7 +282,6 @@ export default {
     },
     registrarCategoria() {
       if (this.validarCategoria()) {
-        // Si hay errores de validación, mostrar toast
         this.$toast.add({
           severity: "error",
           summary: "Validación",
@@ -258,11 +292,13 @@ export default {
       }
 
       let me = this;
+      me.isLoading = true;
+
       axios.post('/categoria/registrar', {
         nombre: this.nombre,
         descripcion: this.descripcion,
         codigoProductoSin: this.codigoProductoSin,
-        'tipo_categoria': "M"
+        tipo_categoria: "M"
       })
       .then(function (response) {
         me.$toast.add({
@@ -282,9 +318,14 @@ export default {
           detail: "No se pudo registrar la categoría",
           life: 3000,
         });
+
         console.log(error);
+      })
+      .finally(function () {
+        me.isLoading = false;
       });
     },
+
     actualizarCategoria() {
       if (this.validarCategoria()) {
         this.$toast.add({
@@ -297,6 +338,8 @@ export default {
       }
 
       let me = this;
+      me.isLoading = true;
+
       axios.put('/categoria/actualizar', {
         nombre: this.nombre,
         descripcion: this.descripcion,
@@ -304,7 +347,6 @@ export default {
         id: this.categoria_id
       })
       .then(function (response) {
-
         me.$toast.add({
           severity: "success",
           summary: "Categoría actualizada",
@@ -322,7 +364,11 @@ export default {
           detail: "No se pudo actualizar la categoría",
           life: 3000,
         });
+
         console.log(error);
+      })
+      .finally(function () {
+        me.isLoading = false;
       });
     },
 
@@ -404,6 +450,123 @@ export default {
 </script>
 
 <style scoped>
+/* Estilos del loader */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 30px;
+  border-radius: 15px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
 /* Estilo de tabla con scroll horizontal */
 .tabla-pro {
   width: 100%;
@@ -528,20 +691,13 @@ export default {
   margin-bottom: 0.5rem;
 }
 
-/* Estilos para campos obligatorios */
-.required-field {
+/* 🔹 Label obligatorio */
+.label-input {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
   color: #374151;
   margin-bottom: 4px;
-}
-
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
 }
 
 /* Estilos para campos opcionales */
