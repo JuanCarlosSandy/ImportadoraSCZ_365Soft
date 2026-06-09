@@ -90,8 +90,14 @@
         :first="(pagination.current_page - 1) * pagination.per_page" @page="onPageChange" />
     </Panel>
     <!-- MODAL REGISTRAR PRODUCTO -->
-    <Dialog :visible.sync="dialogVisible" :modal="true" header="Datos del Producto" :closable="false"
+    <Dialog :visible.sync="dialogVisible" :modal="true" :closable="false"
       :closeOnEscape="true" @hide="closeDialog" :containerStyle="dialogContainerStyle" class="responsive-dialog">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-book header-icon"></i>
+          <span class="header-title">Datos del Producto</span>
+        </div>
+      </template>
       <form>
         <TabView v-model:activeIndex="activeTab">
           <!-- 🟢 TAB 1: DATOS DEL producto -->
@@ -357,10 +363,10 @@
         </TabView>
       </form>
       <template #footer>
-        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal" />
-        <Button v-if="tipoAccion == 1" class="p-button-success p-button-sm" label="Guardar" icon="pi pi-check"
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="cerrarModal" />
+        <Button v-if="tipoAccion == 1" class="p-button-success p-button-sm btn-sm" label="Guardar" icon="pi pi-check"
           @click="enviarFormulario()" />
-        <Button v-if="tipoAccion == 2" class="p-button-warning p-button-sm" label="Actualizar" icon="pi pi-check"
+        <Button v-if="tipoAccion == 2" class="p-button-warning p-button-sm btn-sm" label="Actualizar" icon="pi pi-check"
           @click="enviarFormulario()" />
       </template>
     </Dialog>
@@ -2355,6 +2361,31 @@ registrarArticulo(data) {
 </script>
 
 <style scoped>
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
 /* 🔹 Estilo más pequeño para todos los Toasts */
 .p-toast {
   width: 300px !important;
