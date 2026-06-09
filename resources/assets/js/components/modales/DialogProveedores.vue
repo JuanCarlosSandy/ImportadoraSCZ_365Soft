@@ -1,9 +1,14 @@
 <template>
   <main class="main">
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">LOADING...</div>
+      </div>
+    </div>
     <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
       appendTo="body" :baseZIndex="99999"></Toast>
     <Dialog
-      header="Proveedores"
       :visible.sync="modal1"
       :modal="true"
       :containerStyle="dialogContainerStyle"
@@ -11,15 +16,13 @@
       :closeOnEscape="false"
       class="responsive-dialog"
     >
-      <div class="toolbar-container">
-        <div class="toolbar">
-          <Button
-            label="Nuevo"
-            icon="pi pi-plus"
-            @click="abrirModal('persona', 'registrar')"
-            class="p-button-secondary p-button-sm btn-sm"
-          />
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-user header-icon"></i>
+          <span class="header-title"> Proveedores</span>
         </div>
+      </template>
+      <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
@@ -27,10 +30,18 @@
               type="text"
               placeholder="Texto a buscar"
               v-model="buscar"
-              class="p-inputtext-sm"
+              class="p-inputtext-sm input-full"
               @keyup="buscarProveedor"
             />
           </span>
+        </div>
+        <div class="toolbar">
+          <Button
+            label="Nuevo"
+            icon="pi pi-plus"
+            @click="abrirModal('persona', 'registrar')"
+            class="p-button-secondary p-button-sm btn-sm-input"
+          />
         </div>
       </div>
       <DataTable
@@ -44,12 +55,12 @@
           <template #body="slotProps">
             <Button
               icon="pi pi-check"
-              class="p-button-success custom-icon-size btn-mini"
+              class="p-button-success btn-mini"
               @click="seleccionarProveedor(slotProps.data)"
             />
             <Button
               icon="pi pi-pencil"
-              class="p-button-warning btn-mini"
+              class="btn-edit btn-mini"
               @click="abrirModal('persona', 'actualizar', slotProps.data)"
             />
           </template>
@@ -66,7 +77,6 @@
       </template>
     </Dialog>
     <Dialog
-      :header="tituloModal"
       :visible.sync="modal"
       :modal="true"
       :closable="false"
@@ -74,12 +84,17 @@
       :closeOnEscape="false"
       class="responsive-dialog form-dialog"
     >
+    <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-user header-icon"></i>
+          <span class="header-title">{{ tituloModal }}</span>
+        </div>
+      </template>
       <form @submit.prevent="enviarFormulario">
         <div class="p-fluid p-formgrid p-grid form-compact">
           <div class="p-field p-col-12 p-md-6">
-            <label for="name" class="required-field">
-              <span class="required-icon">*</span>
-              Nombre del proveedor
+            <label for="phone" class="label-input">
+              <span class="text-required">*</span> Nombre del proveedor
             </label>
             <InputText
               id="name"
@@ -88,15 +103,16 @@
               @input="validarCampo('nombre')"
               :class="{ 'input-error': errores.nombre }"
               required
+              :autocomplete="'off'"
             />
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="documentType" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Tipo de documento
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Tipo de Documento <span class="optional-tag">Opcional</span>
             </label>
+
             <Dropdown
               id="documentType"
               class="dropdown-full"
@@ -108,22 +124,22 @@
           </div>
           
           <div class="p-field p-col-12 p-md-6">
-            <label for="documentNumber" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Nro de documento
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Nro de documento <span class="optional-tag">Opcional</span>
             </label>
+
             <InputText
               id="documentNumber"
               v-model="datosFormulario.num_documento"
               class="input-full"
+              :autocomplete="'off'"
             />
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="phone" class="required-field">
-              <span class="required-icon">*</span>
-              Teléfono
+            <label for="phone" class="label-input">
+              <span class="text-required">*</span> Teléfono
             </label>
             
             <InputText
@@ -134,38 +150,7 @@
               @input="validarCampo('telefono')"
               :class="{ 'input-error': errores.telefono }"
               required
-            />
-          </div>
-          
-          <div class="p-field p-col-12 p-md-6">
-            <label for="contact" class="required-field">
-              <span class="required-icon">*</span>
-              Contacto
-            </label>
-            <InputText
-              id="contact"
-              class="input-full"
-              v-model="datosFormulario.contacto"
-              @input="validarCampo('contacto')"
-              :class="{ 'input-error': errores.contacto }"
-              required
-            />
-          </div>
-          
-          <div class="p-field p-col-12 p-md-6">
-            <label for="contactPhone" class="required-field">
-              <span class="required-icon">*</span>
-              Teléfono de contacto
-            </label>
-            
-            <InputText
-              id="contactPhone"
-              class="input-full"
-              type="number"
-              v-model="datosFormulario.telefono_contacto"
-              @input="validarCampo('telefono_contacto')"
-              :class="{ 'input-error': errores.telefono_contacto }"
-              required
+              :autocomplete="'off'"
             />
           </div>
         </div>
@@ -229,6 +214,7 @@ export default {
   },
   data() {
     return {
+      isLoading: false,
       datosFormulario: {
         nombre: "",
         tipo_documento: "",
@@ -282,21 +268,21 @@ export default {
     }
   },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     toastError(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-          mensaje +
-          `<br>
-    </div>`,
-        {
-          type: "error",
-          position: "bottom-right",
-          duration: 4000,
-        }
-      );
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
     },
     closeDialog() {
       this.$emit("close");
@@ -308,6 +294,7 @@ export default {
       this.proveedorSeleccionado = data;
       this.$emit("proveedor-seleccionado", this.proveedorSeleccionado);
       this.$emit("close");
+      this.toastSuccess("Proveedor seleccionado: " + data.nombre);
     },
     async validarCampo(campo) {
       try {
@@ -338,18 +325,6 @@ export default {
       // VALIDACIÓN DE TELÉFONO
       if (!this.datosFormulario.telefono || this.datosFormulario.telefono.trim() === "") {
         this.errores.telefono = "El teléfono no puede estar vacío.";
-        hasError = true;
-      }
-
-      // VALIDACIÓN DE CONTACTO
-      if (!this.datosFormulario.contacto || this.datosFormulario.contacto.trim() === "") {
-        this.errores.contacto = "El nombre del contacto no puede estar vacío.";
-        hasError = true;
-      }
-
-      // VALIDACIÓN DE TELÉFONO DE CONTACTO
-      if (!this.datosFormulario.telefono_contacto || this.datosFormulario.telefono_contacto.trim() === "") {
-        this.errores.telefono_contacto = "El teléfono de contacto no puede estar vacío.";
         hasError = true;
       }
 
@@ -388,6 +363,9 @@ export default {
     },
     registrarPersona(data) {
       let me = this;
+
+      me.isLoading = true;
+
       axios
         .post("/proveedor/registrar", data)
         .then(function(response) {
@@ -414,10 +392,16 @@ export default {
           });
 
           console.log(error);
+        })
+        .finally(function() {
+          me.isLoading = false;
         });
     },
+
     actualizarPersona(data) {
       let me = this;
+
+      me.isLoading = true;
 
       axios
         .put("/proveedor/actualizar", data)
@@ -445,6 +429,9 @@ export default {
           });
 
           console.log(error);
+        })
+        .finally(function() {
+          me.isLoading = false;
         });
     },
     abrirModal(modelo, accion, data = []) {
@@ -499,6 +486,124 @@ export default {
 </script>
 
 <style scoped>
+/* Estilos del loader */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 30px;
+  border-radius: 15px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 /* Estilo de tabla con scroll horizontal */
 .tabla-pro {
   width: 100%;
@@ -584,8 +689,6 @@ export default {
   padding: 6px 8px;
   box-sizing: border-box;
 }
-
-
 
 /* Arreglar icono de lupa - Centrado perfecto */
 .search-bar .p-input-icon-left {
@@ -680,20 +783,13 @@ export default {
   margin-bottom: 0.5rem;
 }
 
-/* Estilos para campos obligatorios */
-.required-field {
+/* 🔹 Label obligatorio */
+.label-input {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
   color: #374151;
   margin-bottom: 4px;
-}
-
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
 }
 
 /* Estilos para campos opcionales */
