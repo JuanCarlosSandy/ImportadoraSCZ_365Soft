@@ -1,196 +1,120 @@
 <template>
   <main class="main">
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">LOADING...</div>
+      </div>
+    </div>
     <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
       appendTo="body" :baseZIndex="99999"></Toast>
-    <Dialog
-      header="Almacenes"
-      :visible.sync="modal1"
-      :modal="true"
-      :containerStyle="dialogContainerStyle"
-      :closable="false"
-      :closeOnEscape="false"
-      class="responsive-dialog"
-    >
-      <div class="toolbar-container">
-        <div class="toolbar">
-          <Button
-            label="Nuevo"
-            icon="pi pi-plus"
-            @click="abrirModal('almacenes', 'registrar')"
-            class="p-button-secondary p-button-sm btn-sm"
-          />
+    <Dialog header="Almacenes" :visible.sync="modal1" :modal="true" :containerStyle="dialogContainerStyle"
+      :closable="false" :closeOnEscape="false" class="responsive-dialog">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-building header-icon"></i>
+          <span class="header-title"> Almacenes</span>
         </div>
+      </template>
+      <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText
-              type="text"
-              v-model="buscar"
-              placeholder="Texto a buscar"
-              class="p-inputtext-sm"
-              @keyup="buscarAlmacenes"
-            />
+            <InputText type="text" v-model="buscar" placeholder="Texto a buscar" class="p-inputtext-sm input-full"
+              @keyup="buscarAlmacenes" />
           </span>
         </div>
+        <div class="toolbar">
+          <Button label="Nuevo" icon="pi pi-plus" @click="abrirModal('almacenes', 'registrar')"
+            class="p-button-secondary p-button-sm btn-sm-input" />
+        </div>
       </div>
-      <DataTable
-        class="p-datatable-sm p-datatable-gridlines tabla-pro"
-        :value="arrayAlmacen"
-        :paginator="true"
-        responsiveLayout="scroll"
-        :rows="7"
-      >
+      <DataTable class="p-datatable-sm p-datatable-gridlines tabla-pro" :value="arrayAlmacen" :paginator="true"
+        responsiveLayout="scroll" :rows="7">
         <Column field="opciones" header="Opciones">
           <template #body="slotProps">
-            <Button
-              icon="pi pi-check"
-              class="p-button-success custom-icon-size btn-mini"
-              @click="seleccionarAlmacen(slotProps.data)"
-            />
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-warning btn-mini"
-              @click="abrirModal('almacenes', 'actualizar', slotProps.data)"
-            />
+            <Button icon="pi pi-check" class="p-button-success custom-icon-size btn-mini"
+              @click="seleccionarAlmacen(slotProps.data)" />
+            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+              @click="abrirModal('almacenes', 'actualizar', slotProps.data)" />
           </template>
         </Column>
         <Column field="nombre_almacen" header="Nombre Almacen" />
       </DataTable>
       <template #footer>
-        <Button
-          label="Cerrar"
-          icon="pi pi-times"
-          class="p-button-danger p-button-sm btn-sm"
-          @click="closeDialog"
-        />
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="closeDialog" />
       </template>
     </Dialog>
 
-    <Dialog
-      :header="tituloModal"
-      :visible.sync="modal"
-      :modal="true"
-      :closable="false"
-      :containerStyle="formDialogContainerStyle"
-      :closeOnEscape="false"
-      class="responsive-dialog form-dialog"
-    >
+    <Dialog :visible.sync="modal" :modal="true" :closable="false" :containerStyle="formDialogContainerStyle"
+      :closeOnEscape="false" class="responsive-dialog form-dialog">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-building header-icon"></i>
+          <span class="header-title">{{ tituloModal }}</span>
+        </div>
+      </template>
       <form @submit.prevent="enviarFormulario">
         <div class="p-fluid p-formgrid p-grid form-compact">
           <div class="p-field p-col-12">
-            <label for="nombreAlmacen" class="required-field">
-              <span class="required-icon">*</span>
-              Nombre del almacén
+            <label for="nombreAlmacen" class="label-input">
+              <span class="text-required">*</span> Nombre del almacén
             </label>
-            <InputText
-              id="nombreAlmacen"
-              class="input-full" 
-              placeholder="Ej. Almacén Principal"
-              v-model="datosFormulario.nombre_almacen"
-              :class="{ 'input-error': errores.nombre_almacen }"
-              @input="validarCampo('nombre_almacen')"
-              required
-            />
+            <InputText id="nombreAlmacen" class="input-full" placeholder="Ej. Almacén Principal"
+              v-model="datosFormulario.nombre_almacen" :class="{ 'input-error': errores.nombre_almacen }"
+              @input="validarCampo('nombre_almacen')" required />
           </div>
           <div class="p-field p-col-12 p-md-6">
-            <label for="sucursal" class="required-field">
-              <span class="required-icon">*</span>
-              Sucursal
+            <label for="sucursal" class="label-input">
+              <span class="text-required">*</span> Sucursal
             </label>
-            <AutoComplete
-              class="p-inputtext-sm autocomplete-full"
-              v-model="sucursalSeleccionado"
-              :suggestions="arraySucursal"
-              @complete="selectSucursal($event)"
-              @item-select="getDatosSucursales"
-              field="nombre"
-              forceSelection
-              :class="{ 'input-error': errores.sucursal }"
-              placeholder="Buscar Sucursales..."
-              required
-            />
+            <AutoComplete class="p-inputtext-sm autocomplete-full" v-model="sucursalSeleccionado"
+              :suggestions="arraySucursal" @complete="selectSucursal($event)" @item-select="getDatosSucursales"
+              field="nombre" forceSelection :class="{ 'input-error': errores.sucursal }"
+              placeholder="Buscar Sucursales..." required />
           </div>
           <div class="p-field p-col-12 p-md-6">
-            <label for="ubicacion" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Ubicación
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Ubicación <span class="optional-tag">Opcional</span>
             </label>
-            <InputText
-              id="ubicacion"
-              class="input-full" 
-              placeholder="Ej. Calle 123, Ciudad"
-              v-model="datosFormulario.ubicacion"
-            />
+            <InputText id="ubicacion" class="input-full" placeholder="Ej. Calle 123, Ciudad"
+              v-model="datosFormulario.ubicacion" />
           </div>
           <div class="p-field p-col-12 p-md-6">
-            <label for="encargados" class="required-field">
-              <span class="required-icon">*</span>
-              Encargados
+            <label for="encargados" class="label-input">
+              <span class="text-required">*</span> Encargados
             </label>
-            <AutoComplete
-              v-model="usuariosSeleccionados"
-              class="autocomplete-full"
-              :suggestions="arrayUsuario"
-              @complete="selectUsuario($event)"
-              @item-select="actualizarEncargados"
-              field="nombre"
-              :class="{ 'input-error': errores.encargado }"
-              placeholder="Buscar Usuarios..."
-              required
-            />
+            <AutoComplete v-model="usuariosSeleccionados" class="autocomplete-full" :suggestions="arrayUsuario"
+              @complete="selectUsuario($event)" @item-select="actualizarEncargados" field="nombre"
+              :class="{ 'input-error': errores.encargado }" placeholder="Buscar Usuarios..." required />
           </div>
           <div class="p-field p-col-12 p-md-6">
-            <label for="telefono" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Teléfono de Contacto
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Teléfono de Contacto <span class="optional-tag">Opcional</span>
             </label>
-            <InputText
-              id="telefono"
-              class="input-full" 
-              placeholder="Ej. 123456789"
-              v-model="datosFormulario.telefono"
-            />
+            <InputText id="telefono" class="input-full" placeholder="Ej. 123456789"
+              v-model="datosFormulario.telefono" />
           </div>
-          
+
           <div class="p-field p-col-12">
-            <label for="observaciones" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Observaciones
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+            <label class="optional-field">
+              <i class="pi pi-list optional-icon"></i>
+              Observaciones <span class="optional-tag">Opcional</span>
             </label>
-            <Textarea
-              id="observaciones"
-              class="textarea-full"
-              placeholder="Ej. Horario de funcionamiento, Capacidad de almacenamiento, etc."
-              rows="2"
-              v-model="datosFormulario.observaciones"
-            />
+            <Textarea id="observaciones" class="textarea-full"
+              placeholder="Ej. Horario de funcionamiento, Capacidad de almacenamiento, etc." rows="2"
+              v-model="datosFormulario.observaciones" />
           </div>
         </div>
       </form>
       <template #footer>
-        <Button
-          label="Cerrar"
-          icon="pi pi-times"
-          class="p-button-sm p-button-danger btn-sm"
-          @click="cerrarModal"
-        />
-        <Button
-          v-if="tipoAccion == 1"
-          label="Guardar"
-          icon="pi pi-check"
-          class="p-button-sm p-button-success btn-sm"
-          @click="enviarFormulario()"
-        />
-        <Button
-          v-if="tipoAccion == 2"
-          label="Actualizar"
-          icon="pi pi-check"
-          class="p-button-sm p-button-warning btn-sm"
-          @click="enviarFormulario()"
-        />
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-sm p-button-danger btn-sm" @click="cerrarModal" />
+        <Button v-if="tipoAccion == 1" label="Guardar" icon="pi pi-check" class="p-button-sm p-button-success btn-sm"
+          @click="enviarFormulario()" />
+        <Button v-if="tipoAccion == 2" label="Actualizar" icon="pi pi-check" class="p-button-sm p-button-warning btn-sm"
+          @click="enviarFormulario()" />
       </template>
     </Dialog>
   </main>
@@ -235,6 +159,7 @@ export default {
   },
   data() {
     return {
+      isLoading: false,
       datosFormulario: {
         nombre_almacen: "",
         ubicacion: "",
@@ -282,6 +207,22 @@ export default {
     }
   },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
     closeDialog() {
       this.$emit("close");
     },
@@ -295,12 +236,12 @@ export default {
         var url = "/sucursal/selectedSucursal/filter?filtro=";
         axios
           .get(url)
-          .then(function(response) {
+          .then(function (response) {
             var respuesta = response.data;
             me.arraySucursal = respuesta.sucursales;
             me.loading = false;
           })
-          .catch(function(error) {
+          .catch(function (error) {
             console.log(error);
             me.loading = false;
           });
@@ -311,12 +252,12 @@ export default {
           "/sucursal/selectedSucursal/filter?filtro=" + me.sucursalSeleccionado;
         axios
           .get(url)
-          .then(function(response) {
+          .then(function (response) {
             var respuesta = response.data;
             me.arraySucursal = respuesta.sucursales;
             me.loading = false;
           })
-          .catch(function(error) {
+          .catch(function (error) {
             console.log(error);
             me.loading = false;
           });
@@ -369,12 +310,12 @@ export default {
         var url = "/user/selectUser/filter?idrol=3";
         axios
           .get(url)
-          .then(function(response) {
+          .then(function (response) {
             var respuesta = response.data;
             me.arrayUsuario = respuesta.usuarios;
             me.loading = false;
           })
-          .catch(function(error) {
+          .catch(function (error) {
             console.log(error);
             me.loading = false;
           });
@@ -387,12 +328,12 @@ export default {
           "&idrol=3";
         axios
           .get(url)
-          .then(function(response) {
+          .then(function (response) {
             var respuesta = response.data;
             me.arrayUsuario = respuesta.usuarios;
             me.loading = false;
           })
-          .catch(function(error) {
+          .catch(function (error) {
             console.log(error);
             me.loading = false;
           });
@@ -402,6 +343,7 @@ export default {
       this.almacenSeleccionado = data;
       this.$emit("almacen-seleccionado", this.almacenSeleccionado);
       this.$emit("close");
+      this.toastSuccess("Almacén seleccionado: " + data.nombre_almacen);
     },
     async validarCampo(campo) {
       try {
@@ -454,22 +396,25 @@ export default {
         criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           let respuesta = response.data;
           me.arrayAlmacen = respuesta.almacenes;
           me.pagination = respuesta.pagination;
           console.log("Array de almacenes:", me.arrayAlmacen); // Verifica los datos en arrayAlmacen
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
 
     registrarAlmacen(data) {
       let me = this;
+
+      me.isLoading = true;
+
       axios
         .post("/almacen/registrar", data)
-        .then(function(response) {
+        .then(function (response) {
 
           // 🔵 ÉXITO
           me.$toast.add({
@@ -483,10 +428,10 @@ export default {
           me.listarAlmacenes(1, "", "nombre_almacen");
 
           // limpiar selects / arrays si aplica
-          me.usuariosSeleccionados = null; 
+          me.usuariosSeleccionados = null;
           me.arrayUsuario = [];
         })
-        .catch(function(error) {
+        .catch(function (error) {
 
           // 🔴 ERROR
           me.$toast.add({
@@ -497,13 +442,20 @@ export default {
           });
 
           console.log(error);
+        })
+        .finally(function () {
+          me.isLoading = false;
         });
     },
+
     actualizarAlmacen(data) {
       let me = this;
+
+      me.isLoading = true;
+
       axios
         .put("/almacen/editar", data)
-        .then(function(response) {
+        .then(function (response) {
 
           // 🔵 ÉXITO
           me.$toast.add({
@@ -516,7 +468,7 @@ export default {
           me.cerrarModal();
           me.listarAlmacenes(1, "", "nombre_almacen");
         })
-        .catch(function(error) {
+        .catch(function (error) {
 
           // 🔴 ERROR
           me.$toast.add({
@@ -527,6 +479,9 @@ export default {
           });
 
           console.log(error);
+        })
+        .finally(function () {
+          me.isLoading = false;
         });
     },
 
@@ -596,141 +551,265 @@ export default {
 </script>
 
 <style scoped>
+/* Estilos del loader */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 30px;
+  border-radius: 15px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 .textarea-full {
-    width: 100% !important;
-    font-size: 0.8rem !important;
-    box-sizing: border-box;
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  box-sizing: border-box;
 }
 
 /* Estilo base del Textarea de PrimeVue */
 .textarea-full>>>.p-inputtextarea {
-    width: 100% !important;
-    font-size: 0.8rem !important;
-    padding: 6px 8px !important;
-    border: 1px solid #ccc !important;
-    border-radius: 6px !important;
-    min-height: 42px;                   /* misma altura mínima que Inputs */
-    transition: border 0.2s, box-shadow 0.2s;
-    box-sizing: border-box;
-    resize: vertical;                   /* permite redimensionar verticalmente */
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+  border: 1px solid #ccc !important;
+  border-radius: 6px !important;
+  min-height: 42px;
+  /* misma altura mínima que Inputs */
+  transition: border 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  resize: vertical;
+  /* permite redimensionar verticalmente */
 }
 
 /* 🔹 Focus igual que los otros campos */
 .textarea-full>>>.p-inputtextarea:focus {
-    border-color: #0ea5e9 !important;
-    box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
-    outline: none !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+  outline: none !important;
 }
 
 /* 🔹 Hover opcional (igual que dropdown/inputtext) */
 .textarea-full>>>.p-inputtextarea:hover {
-    border-color: #a8a8a8;
+  border-color: #a8a8a8;
 }
+
 /* Contenedor del AutoComplete */
 .autocomplete-full {
-    width: 100% !important;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    box-sizing: border-box;
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
 /* Input interno */
 .autocomplete-full>>>.p-inputtext {
-    width: 100% !important;
-    font-size: 0.8rem !important;
-    padding: 6px 8px !important;
-    border-radius: 6px;
-    box-sizing: border-box;
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  padding: 6px 8px !important;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
 /* Botón del dropdown (flecha) */
 .autocomplete-full>>>.p-autocomplete-dropdown {
-    width: 2rem !important;
-    border-radius: 0 6px 6px 0;
+  width: 2rem !important;
+  border-radius: 0 6px 6px 0;
 }
 
 /* Contenedor general del input + botón */
 .autocomplete-full>>>.p-autocomplete {
-    width: 100% !important;
-    border: 1px solid #ccc !important;
-    border-radius: 6px;
-    transition: border 0.2s;
-    display: flex;
-    align-items: center;
+  width: 100% !important;
+  border: 1px solid #ccc !important;
+  border-radius: 6px;
+  transition: border 0.2s;
+  display: flex;
+  align-items: center;
 }
 
 /* Focus del input */
 .autocomplete-full>>>.p-inputtext:focus,
 .autocomplete-full>>>.p-autocomplete.p-focus {
-    border-color: #0ea5e9 !important;
-    box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
 }
 
 /* Panel de sugerencias */
 .autocomplete-full>>>.p-autocomplete-panel {
-    font-size: 0.8rem !important;
+  font-size: 0.8rem !important;
 }
 
 /* Sugerencia individual */
 .autocomplete-full>>>.p-autocomplete-items .p-autocomplete-item {
-    padding: 6px 10px !important;
-    font-size: 0.8rem !important;
-    min-height: auto !important;
-    cursor: pointer;
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+  min-height: auto !important;
+  cursor: pointer;
 }
+
 /* Estilo uniforme para Dropdown (igual que InputText) */
 .dropdown-full {
-    width: 100% !important;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    box-sizing: border-box;
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
 /* Input dentro del dropdown */
 .dropdown-full>>>.p-dropdown-label {
-    padding: 6px 8px !important;
-    font-size: 0.8rem;
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
 }
 
 /* Flecha del dropdown */
 .dropdown-full>>>.p-dropdown-trigger {
-    width: 2rem !important;
+  width: 2rem !important;
 }
 
 /* Borde al focus */
 .dropdown-full>>>.p-dropdown {
-    border: 1px solid #ccc;
-    transition: border 0.2s;
+  border: 1px solid #ccc;
+  transition: border 0.2s;
 }
 
 .dropdown-full>>>.p-dropdown.p-focus {
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
 }
 
 /* 🔹 Opciones del panel (lista desplegable) */
 .dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
-    font-size: 0.8rem !important;
-    padding: 6px 10px !important;
-    min-height: auto !important;
-    /* evita que queden muy grandes */
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
 }
 
 /* 🔹 Input principal (Buscar Producto) */
 .input-full {
-    width: 100%;
-    font-size: 0.8rem;
-    padding: 6px 8px;
-    border-radius: 6px 0 0 6px;
-    box-sizing: border-box;
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
 }
 
 /* Ajuste para InputText de PrimeVue */
 .input-full>>>.p-inputtext {
-    width: 100% !important;
-    font-size: 0.8rem;
-    padding: 6px 8px;
-    border-radius: 6px 0 0 6px;
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
 }
 
 /* 🔹 Estilo especial para InputNumber */
@@ -764,6 +843,7 @@ export default {
   font-size: 0.85rem;
   padding: 0.5rem;
 }
+
 /* Arreglar icono de lupa - Centrado perfecto */
 .search-bar .p-input-icon-left {
   position: relative;
@@ -795,23 +875,23 @@ export default {
 }
 
 /* Responsive Dialog Styles */
-.responsive-dialog >>> .p-dialog {
+.responsive-dialog>>>.p-dialog {
   margin: 0.75rem;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   overflow-x: auto;
   padding: 1rem;
 }
 
-.responsive-dialog >>> .p-dialog-header {
+.responsive-dialog>>>.p-dialog-header {
   padding: 1rem 1.5rem;
   font-size: 1.1rem;
 }
 
-.responsive-dialog >>> .p-dialog-footer {
+.responsive-dialog>>>.p-dialog-footer {
   padding: 0.75rem 1.5rem;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -849,28 +929,21 @@ export default {
 }
 
 /* Formulario compacto - Reducir espacios entre campos */
-.form-compact >>> .p-field {
+.form-compact>>>.p-field {
   margin-bottom: 0.5rem !important;
 }
 
->>> .p-fluid .p-field {
+>>>.p-fluid .p-field {
   margin-bottom: 0.5rem;
 }
 
-/* Estilos para campos obligatorios */
-.required-field {
+/* 🔹 Label obligatorio */
+.label-input {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
   color: #374151;
   margin-bottom: 4px;
-}
-
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
 }
 
 /* Estilos para campos opcionales */
@@ -892,41 +965,41 @@ export default {
 
 /* DataTable Responsive */
 >>>.p-datatable {
-    font-size: 0.75rem;
+  font-size: 0.75rem;
 }
 
 >>>.p-datatable .p-datatable-tbody>tr>td {
-    padding: 0.4rem;
-    word-break: break-word;
-    text-align: left;
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
 }
 
 >>>.p-datatable .p-datatable-thead>tr>th {
-    padding: 0.35rem 0.4rem;
-    font-size: 0.75rem;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
 }
 
 /* Form Grid Responsive */
->>> .p-formgrid.p-grid {
+>>>.p-formgrid.p-grid {
   margin: 0;
 }
 
->>> .p-formgrid .p-field {
+>>>.p-formgrid .p-field {
   padding: 0.5rem;
 }
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.5rem;
     max-height: 95vh;
   }
-  
-  >>> .p-datatable {
+
+  >>>.p-datatable {
     font-size: 0.85rem;
   }
-  
-  >>> .p-formgrid .p-field.p-col-12.p-md-6 {
+
+  >>>.p-formgrid .p-field.p-col-12.p-md-6 {
     width: 100% !important;
     flex: 0 0 100% !important;
   }
@@ -934,78 +1007,81 @@ export default {
 
 /* Mobile Styles */
 @media (max-width: 768px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.25rem;
     max-height: 98vh;
   }
-  
-  .responsive-dialog >>> .p-dialog-content {
+
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.75rem;
   }
-  
-  .responsive-dialog >>> .p-dialog-header {
+
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.75rem 1rem;
     font-size: 1rem;
   }
-  
-  .responsive-dialog >>> .p-dialog-footer {
+
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.5rem 1rem;
     justify-content: flex-end;
   }
-  
+
   .toolbar-container {
     gap: 0.5rem;
   }
-  
-  >>> .p-datatable {
+
+  >>>.p-datatable {
     font-size: 0.8rem;
   }
-  
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.4rem 0.3rem;
   }
-  
-  >>> .p-datatable .p-datatable-thead > tr > th {
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.5rem 0.3rem;
     font-size: 0.75rem;
   }
-  
-  >>> .p-formgrid .p-field {
+
+  >>>.p-formgrid .p-field {
     padding: 0.25rem;
     margin-bottom: 0.4rem !important;
   }
-  
-  >>> .p-formgrid .p-field label {
+
+  >>>.p-formgrid .p-field label {
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
   }
-  
+
   /* Ajustar iconos en móviles */
   .required-icon {
     font-size: 0.8rem;
   }
-  
+
   .optional-icon {
     font-size: 0.6rem;
   }
-  
-  >>> .p-inputtext, >>> .p-dropdown, >>> .p-inputnumber-input, >>> .p-autocomplete-input {
+
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input,
+  >>>.p-autocomplete-input {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
-  
-  >>> .p-button-sm {
+
+  >>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
     min-width: auto !important;
   }
-  
+
   /* Ajustar botón "Nuevo" para que coincida con botón "Cerrar" */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
-  
+
   /* Reducir altura del input buscador */
   .search-bar .p-inputtext-sm {
     padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
@@ -1015,96 +1091,99 @@ export default {
 
 /* Extra Small Mobile */
 @media (max-width: 480px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.1rem;
     max-height: 99vh;
   }
-  
-  .responsive-dialog >>> .p-dialog-content {
+
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.5rem;
   }
-  
-  .responsive-dialog >>> .p-dialog-header {
+
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.5rem 0.75rem;
     font-size: 0.95rem;
   }
-  
+
   /* Footer mantiene botones alineados a la derecha, no ocupan todo el ancho */
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.5rem 0.75rem;
     justify-content: flex-end;
   }
-  
-  .responsive-dialog >>> .p-dialog-footer .p-button {
+
+  .responsive-dialog>>>.p-dialog-footer .p-button {
     width: auto;
     margin-bottom: 0.25rem;
   }
-  
+
   /* Toolbar mantiene elementos en una línea */
   .toolbar-container {
     gap: 0.4rem;
     flex-wrap: nowrap;
   }
-  
+
   .toolbar {
     flex-shrink: 0;
     min-width: auto;
   }
-  
+
   .search-bar {
     flex: 1;
     min-width: 0;
   }
-  
+
   /* Ajustar botón "Nuevo" para que coincida con botón "Cerrar" */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
-  
+
   /* Reducir más la altura del input buscador en móviles pequeños */
   .search-bar .p-inputtext-sm {
     padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
     font-size: 0.8rem !important;
   }
-  
-  >>> .p-datatable {
+
+  >>>.p-datatable {
     font-size: 0.75rem;
   }
-  
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.3rem 0.2rem;
   }
-  
-  >>> .p-datatable .p-datatable-thead > tr > th {
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
   }
-  
-  >>> .p-formgrid .p-field {
+
+  >>>.p-formgrid .p-field {
     padding: 0.2rem;
     margin-bottom: 0.3rem !important;
   }
-  
-  >>> .p-formgrid .p-field label {
+
+  >>>.p-formgrid .p-field label {
     font-size: 0.85rem;
   }
-  
+
   /* Iconos más pequeños en móviles extra pequeños */
   .required-icon {
     font-size: 0.7rem;
   }
-  
+
   .optional-icon {
     font-size: 0.55rem;
   }
-  
-  >>> .p-inputtext, >>> .p-dropdown, >>> .p-inputnumber-input, >>> .p-autocomplete-input {
+
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input,
+  >>>.p-autocomplete-input {
     font-size: 0.85rem;
     padding: 0.4rem;
   }
-  
-  >>> .p-tag {
+
+  >>>.p-tag {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
@@ -1112,18 +1191,18 @@ export default {
 
 /* Paginator Responsive */
 @media (max-width: 768px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     flex-wrap: wrap !important;
     justify-content: center;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
-  
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 32px !important;
     height: 32px !important;
     font-size: 0.85rem !important;
@@ -1133,16 +1212,16 @@ export default {
 }
 
 @media (max-width: 480px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
-  
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 28px !important;
     height: 28px !important;
     font-size: 0.8rem !important;
@@ -1152,24 +1231,24 @@ export default {
 }
 
 /* Action Buttons in DataTable */
->>> .p-datatable .p-button {
+>>>.p-datatable .p-button {
   margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
-  >>> .p-datatable .p-button {
+  >>>.p-datatable .p-button {
     margin-right: 0.15rem;
     margin-bottom: 0.15rem;
   }
 }
 
 /* Error Messages Responsive */
->>> .p-error {
+>>>.p-error {
   font-size: 0.8rem;
 }
 
 @media (max-width: 480px) {
-  >>> .p-error {
+  >>>.p-error {
     font-size: 0.75rem;
   }
 }
@@ -1180,9 +1259,11 @@ export default {
 .p-dialog-mask {
   z-index: 9990 !important;
 }
+
 .p-dialog {
   z-index: 9990 !important;
 }
+
 .swal-zindex {
   z-index: 99999 !important;
 }
