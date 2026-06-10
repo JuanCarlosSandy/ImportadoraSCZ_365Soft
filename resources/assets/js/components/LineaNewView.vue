@@ -15,6 +15,12 @@
           <h4 class="panel-title">CATEGORIAS</h4>
         </div>
       </template>
+      <div class="info-tip">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            Filtre el nombre de las categorías, edite y registre nuevas categorías.
+          </span>
+        </div>
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
@@ -595,6 +601,24 @@ export default {
 </script>
 
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 .dato-no-registrado {
   color: #b38a00; /* amarillo oscuro */
   font-weight: 600;
