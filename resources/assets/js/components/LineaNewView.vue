@@ -16,11 +16,11 @@
         </div>
       </template>
       <div class="info-tip">
-          <i class="pi pi-info-circle"></i>
-          <span>
-            Filtre el nombre de las categorías, edite y registre nuevas categorías.
-          </span>
-        </div>
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre el nombre de las categorías, edite y registre nuevas categorías.
+        </span>
+      </div>
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
@@ -30,6 +30,8 @@
           </span>
         </div>
         <div class="toolbar">
+          <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
+            class="btn-edit p-button-sm btn-sm-input" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('categoria', 'registrar')"
             class="p-button-secondary p-button-sm btn-sm-input" />
           <!--<Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download" @click="cargarExcel"
@@ -42,7 +44,7 @@
           <template #body="slotProps">
             <div class="d-flex align-items-center gap-1">
               <Button icon="pi pi-pencil" class="p-button-sm p-button-warning btn-mini"
-                @click="abrirModal('categoria', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
+                @click="abrirModal('categoria', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
             </div>
           </template>
         </Column>
@@ -132,7 +134,7 @@ export default {
     InputNumber,
     ToastService,
     Toast
-  },directives: {
+  }, directives: {
     'tooltip': Tooltip
   },
   data() {
@@ -180,6 +182,24 @@ export default {
     },
   },
   methods: {
+    async limpiarBusqueda() {
+      try {
+        this.buscar = ""; // Limpiar input
+
+        this.isLoading = true;
+
+        await this.listarCategoria(1, "", "");
+        this.toastSuccess("Búsqueda limpiada. Mostrando todos los registros.");
+
+        setTimeout(() => {
+          this.isLoading = false;
+        }, 500);
+
+      } catch (error) {
+        console.error("Error al limpiar búsqueda:", error);
+        this.isLoading = false;
+      }
+    },
     toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
@@ -318,7 +338,7 @@ export default {
           nombre: this.nombre,
           descripcion: this.descripcion,
           codigoProductoSin: this.codigoProductoSin,
-                          tipo_categoria: "M"
+          tipo_categoria: "M"
         });
 
         me.cerrarModal();
@@ -626,6 +646,7 @@ export default {
   font-size: 0.65rem;
   margin-right: 4px;
 }
+
 .info-tip {
   display: flex;
   align-items: center;
@@ -644,8 +665,10 @@ export default {
   font-size: 14px;
   flex-shrink: 0;
 }
+
 .dato-no-registrado {
-  color: #b38a00; /* amarillo oscuro */
+  color: #b38a00;
+  /* amarillo oscuro */
   font-weight: 600;
   display: flex;
   align-items: center;
