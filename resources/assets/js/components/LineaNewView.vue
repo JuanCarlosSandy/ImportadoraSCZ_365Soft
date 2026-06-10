@@ -25,13 +25,13 @@
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText type="text" placeholder="Texto a buscar" v-model="buscar" class="p-inputtext-sm"
+            <InputText type="text" placeholder="Texto a buscar" v-model="buscar" class="p-inputtext-sm input-full"
               @keyup="buscarlinea" />
           </span>
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('categoria', 'registrar')"
-            class="p-button-secondary p-button-sm" />
+            class="p-button-secondary p-button-sm btn-sm-input" />
           <!--<Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download" @click="cargarExcel"
             class="p-button-success p-button-sm" />-->
         </div>
@@ -601,6 +601,31 @@ export default {
 </script>
 
 <style scoped>
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
 .info-tip {
   display: flex;
   align-items: center;
