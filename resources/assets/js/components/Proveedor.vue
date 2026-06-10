@@ -121,43 +121,46 @@
       <form @submit.prevent="enviarFormulario">
         <div class="p-fluid p-formgrid p-grid">
           <div class="p-field p-col-12 p-md-6">
-            <label for="nombre" class="required-field">
-              Nombre del Proveedor
-              <span class="required-icon">*</span>
+            <label for="nombre" class="label-input">
+              <span class="text-required">*</span>
+              Nombre de Proveedor
             </label>
             <InputText id="nombre" v-model="datosFormulario.nombre" :class="{ 'p-invalid': errores.nombre }"
-              @input="validarCampo('nombre')" />
+              @input="validarCampo('nombre')" class="input-full" autocomplete="off"/>
             <small class="p-error" v-if="errores.nombre">{{
               errores.nombre
             }}</small>
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="tipo_documento">
+            <label for="descripcion" class="optional-field">
+              <i class="pi pi-info-circle optional-icon"></i>
               Tipo de documento
-              <span class="p-tag p-tag-secondary">Opcional</span>
+              <span class="optional-tag">Opcional</span>
             </label>
             <Dropdown id="tipo_documento" v-model="datosFormulario.tipo_documento" :options="tiposDocumentos"
               optionLabel="etiqueta" optionValue="valor" placeholder="Selecciona un tipo de documento"
-              :class="{ 'p-invalid': errores.tipo_documento }" @change="validarCampo('tipo_documento')" />
+              :class="{ 'p-invalid': errores.tipo_documento }" @change="validarCampo('tipo_documento')" class="dropdown-full"/>
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="num_documento">
+            <label for="num_documento" class="optional-field">
+              <i class="pi pi-info-circle optional-icon"></i>
               Nro de documento
-              <span class="p-tag p-tag-secondary">Opcional</span>
+              <span class="optional-tag">Opcional</span>
             </label>
             <InputText id="num_documento" v-model="datosFormulario.num_documento"
-              :class="{ 'p-invalid': errores.num_documento }" @input="validarCampo('num_documento')" />
+              :class="{ 'p-invalid': errores.num_documento }" @input="validarCampo('num_documento')" class="input-full" autocomplete="off"/>
           </div>
 
           <div class="p-field p-col-12 p-md-6">
-            <label for="telefono">
+            <label for="telefono" class="optional-field">
+              <i class="pi pi-info-circle optional-icon"></i>
               Teléfono
-              <span class="p-tag p-tag-secondary">Opcional</span>
+              <span class="optional-tag">Opcional</span>
             </label>
             <InputNumber id="telefono" v-model="datosFormulario.telefono" :useGrouping="false"
-              :class="{ 'p-invalid': errores.telefono }" @input="validarCampo('telefono')" />
+              :class="{ 'p-invalid': errores.telefono }" @input="validarCampo('telefono')" class="input-number-full" autocomplete="off"/>
           </div>
 
           <!-- CAMPOS AGREGADOS: Contacto y Teléfono de Contacto 
@@ -378,7 +381,7 @@ export default {
         await this.listarProveedor(page, buscar, criterio);
       } catch (error) {
         console.error("Error al cambiar página:", error);
-        swal("Error", "No se pudo cambiar de página", "error");
+        this.toastError("No se pudo cambiar de página");
       } finally {
         setTimeout(() => {
           this.isLoading = false;
@@ -402,14 +405,9 @@ export default {
     },
     async enviarFormulario() {
       if (!this.datosFormulario.nombre) {
-        swal({
-          title: "¡Campo obligatorio!",
-          text: "El Nombre del Proveedor es obligatorio.",
-          icon: "warning",
-        });
+        this.toastWarning("El Nombre del Proveedor es obligatorio.");
         return;
       }
-
       await esquemaProveedor
         .validate(this.datosFormulario, { abortEarly: false })
         .then(() => {
@@ -460,7 +458,7 @@ export default {
         me.pagination = respuesta.pagination;
       } catch (error) {
         console.error("Error al listar proveedores:", error);
-        swal("Error", "No se pudieron cargar los proveedores", "error");
+        this.toastError("No se pudieron cargar los proveedores");
       } finally {
         setTimeout(() => {
           this.isLoading = false;
@@ -488,10 +486,10 @@ export default {
         await axios.post("/proveedor/registrar", data);
         this.cerrarModal();
         await this.listarProveedor(this.pagination.current_page, this.buscar, this.criterio);
-        swal("Éxito", "Proveedor registrado correctamente", "success");
+        this.toastSuccess("Proveedor registrado correctamente");
       } catch (error) {
         console.error("Error al registrar:", error);
-        swal("Error", "No se pudo registrar el proveedor", "error");
+        this.toastError("No se pudo registrar el proveedor");
       } finally {
         this.isLoading = false;
       }
@@ -502,10 +500,10 @@ export default {
         await axios.put("/proveedor/actualizar", data);
         this.cerrarModal();
         await this.listarProveedor(this.pagination.current_page, this.buscar, this.criterio);
-        swal("Éxito", "Proveedor actualizado correctamente", "success");
+        this.toastSuccess("Proveedor actualizado correctamente");
       } catch (error) {
         console.error("Error al actualizar:", error);
-        swal("Error", "No se pudo actualizar el proveedor", "error");
+        this.toastError("No se pudo actualizar el proveedor");
       } finally {
         this.isLoading = false;
       }
@@ -605,7 +603,7 @@ export default {
       await this.listarProveedor(1, this.buscar, this.criterio);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
-      swal("Error", "Error al cargar los datos iniciales", "error");
+      this.toastError("Error al cargar los datos iniciales");
     } finally {
       setTimeout(() => {
         this.isLoading = false;
@@ -616,6 +614,44 @@ export default {
 </script>
 
 <style scoped>
+/* Estilo uniforme para Dropdown (igual que InputText) */
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input dentro del dropdown */
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+/* Flecha del dropdown */
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+/* Borde al focus */
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* 🔹 Opciones del panel (lista desplegable) */
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
+}
+
 .dato-no-registrado {
   color: #b38a00;
   /* amarillo oscuro */
@@ -661,6 +697,18 @@ export default {
   font-size: 0.8rem;
   padding: 6px 8px;
   border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Estilo especial para InputNumber */
+.input-number-full {
+  width: 100%;
+}
+
+.input-number-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
 }
 
 /* 🔹 Botones pequeños */
@@ -852,25 +900,28 @@ export default {
   padding: 0.75rem 1rem !important;
 }
 
-/* Estilos para campos obligatorios */
-.required-field {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+/* 🔹 Label obligatorio */
+.label-input {
+  display: block;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #374151;
+  margin-bottom: 4px;
 }
 
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
+.text-required {
+  color: #dc2626;
+  /* rojo */
+  font-weight: 700;
 }
 
 /* Estilos para campos opcionales */
 .optional-field {
   display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+
   align-items: center;
   gap: 0.4rem;
   font-weight: 500;
@@ -879,7 +930,7 @@ export default {
 
 .optional-icon {
   color: #17a2b8;
-  font-size: 0.8rem;
+  font-size: 0.5rem;
 }
 
 .activo {
