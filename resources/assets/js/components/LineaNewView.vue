@@ -31,9 +31,9 @@
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" />
+            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('categoria', 'registrar')"
-            class="p-button-secondary p-button-sm btn-sm-input" />
+            class="p-button-secondary p-button-sm btn-sm-input" :title="'Registrar nueva categoría'" />
           <!--<Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download" @click="cargarExcel"
             class="p-button-success p-button-sm" />-->
         </div>
@@ -43,8 +43,8 @@
         <Column header="Opciones">
           <template #body="slotProps">
             <div class="d-flex align-items-center gap-1">
-              <Button icon="pi pi-pencil" class="p-button-sm p-button-warning btn-mini"
-                @click="abrirModal('categoria', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
+              <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+                @click="abrirModal('categoria', 'actualizar', slotProps.data)" :title="'Editar categoría'" />
             </div>
           </template>
         </Column>
@@ -61,16 +61,17 @@
           </template>
         </Column>
       </DataTable>
-      <Dialog :visible.sync="modal" modal :header="tituloModal" :closable="true" @hide="cerrarModal"
+
+      <Dialog :visible.sync="modal" modal :closable="false" @hide="cerrarModal"
         :containerStyle="dialogContainerStyle" class="responsive-dialog">
-        <template #footer>
-          <Button label="Cancelar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm"
-            @click="cerrarModal()" />
-          <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm btn-sm"
-            @click="registrarCategoria()" />
-          <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check"
-            class="p-button-warning p-button-sm btn-sm" @click="actualizarCategoria()" />
+
+        <template #header>
+          <div class="dialog-header">
+            <i class="pi pi-book header-icon"></i>
+            <span class="header-title">{{ tituloModal }}</span>
+          </div>
         </template>
+
         <div class="p-fluid form-compact">
           <div class="p-field input-container">
             <label for="nombre" class="required-field">
@@ -90,6 +91,15 @@
             <InputText id="descripcion" v-model="descripcion" class="input-full" />
           </div>
         </div>
+
+        <template #footer>
+          <Button label="Cancelar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm"
+            @click="cerrarModal()" />
+          <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm btn-sm"
+            @click="registrarCategoria()" />
+          <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check"
+            class="p-button-warning p-button-sm btn-sm" @click="actualizarCategoria()" />
+        </template>
       </Dialog>
 
       <Dialog :visible.sync="importar" modal :header="'Importar Industrias'" :closable="true">
