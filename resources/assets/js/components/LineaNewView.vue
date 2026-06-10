@@ -39,7 +39,7 @@
         </div>
       </div>
       <DataTable :value="arrayCategoria" class="p-datatable-sm p-datatable-gridlines tabla-pro"
-        responsiveLayout="scroll" :paginator="true" :rows="10">
+        responsiveLayout="scroll" :paginator="true" :rows="13">
         <Column header="Opciones">
           <template #body="slotProps">
             <div class="d-flex align-items-center gap-1">
