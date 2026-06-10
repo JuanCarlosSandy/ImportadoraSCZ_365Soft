@@ -30,6 +30,8 @@
           </span>
         </div>
         <div class="toolbar">
+          <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
+            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
             class="p-button-secondary p-button-sm btn-sm-input" />
           <!--<Button
@@ -294,6 +296,24 @@ export default {
     },
   },
   methods: {
+    async limpiarBusqueda() {
+      try {
+        this.buscar = ""; // Limpiar input
+
+        this.isLoading = true;
+
+        await this.listarProveedor(1, this.buscar, this.criterio);
+        this.toastSuccess("Búsqueda limpiada. Mostrando todos los registros.");
+
+        setTimeout(() => {
+          this.isLoading = false;
+        }, 500);
+
+      } catch (error) {
+        console.error("Error al limpiar búsqueda:", error);
+        this.isLoading = false;
+      }
+    },
     toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
