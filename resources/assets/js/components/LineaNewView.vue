@@ -74,21 +74,21 @@
 
         <div class="p-fluid form-compact">
           <div class="p-field input-container">
-            <label for="nombre" class="required-field">
-              <span class="required-icon">*</span>
+            <label for="nombre" class="label-input">
+              <span class="text-required">*</span>
               Nombre de Categoría
             </label>
             <InputText id="nombre" v-model="nombre" required autofocus :class="{ 'input-error': nombreError }"
-              @input="validarNombreEnTiempoReal" class="input-full" />
+              @input="validarNombreEnTiempoReal" class="input-full" autocomplete="off" />
             <small class="p-error error-message" v-if="nombreError"><strong>{{ nombreError }}</strong></small>
           </div>
           <div class="p-field input-container">
             <label for="descripcion" class="optional-field">
               <i class="pi pi-info-circle optional-icon"></i>
               Descripción
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+              <span class="optional-tag">Opcional</span>
             </label>
-            <InputText id="descripcion" v-model="descripcion" class="input-full" />
+            <InputText id="descripcion" v-model="descripcion" class="input-full" autocomplete="off"/>
           </div>
         </div>
 
@@ -863,8 +863,8 @@ export default {
   /* Reducido padding vertical */
 }
 
-/* Estilos para campos obligatorios */
-.required-field {
+/* 🔹 Label obligatorio */
+.label-input {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
@@ -872,11 +872,10 @@ export default {
   margin-bottom: 4px;
 }
 
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
+.text-required {
+  color: #dc2626;
+  /* rojo */
+  font-weight: 700;
 }
 
 /* Estilos para campos opcionales */
@@ -885,6 +884,7 @@ export default {
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 4px;
+
   align-items: center;
   gap: 0.4rem;
   font-weight: 500;
