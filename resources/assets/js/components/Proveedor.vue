@@ -109,10 +109,14 @@
       </DataTable>
     </Panel>
 
-    <Dialog :visible.sync="modal" :containerStyle="{ width: '800px' }" :modal="true" :closable="true">
+    <Dialog :visible.sync="modal" :containerStyle="{ width: '800px' }" :modal="true" :closable="false">
+
       <template #header>
-        <h3>{{ tituloModal }}</h3>
-      </template>
+          <div class="dialog-header">
+            <i class="pi pi-book header-icon"></i>
+            <span class="header-title">{{ tituloModal }}</span>
+          </div>
+        </template>
 
       <form @submit.prevent="enviarFormulario">
         <div class="p-fluid p-formgrid p-grid">
@@ -187,10 +191,10 @@
 
       <template #footer>
         <div class="d-flex gap-2 justify-content-end modal-footer-buttons">
-          <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal" />
-          <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm"
+          <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="cerrarModal" />
+          <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm btn-sm"
             @click="enviarFormulario" />
-          <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check" class="p-button-warning p-button-sm"
+          <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check" class="p-button-warning p-button-sm btn-sm"
             @click="enviarFormulario" />
         </div>
       </template>
