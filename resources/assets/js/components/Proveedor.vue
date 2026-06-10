@@ -33,7 +33,7 @@
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
             class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
-            class="p-button-secondary p-button-sm btn-sm-input" />
+            class="p-button-secondary p-button-sm btn-sm-input" :title="'Registrar nuevo proveedor'" />
           <!--<Button
             :label="mostrarLabel ? 'Importar' : ''"
             icon="pi pi-upload"
@@ -44,31 +44,39 @@
       </div>
 
       <DataTable :value="arrayPersona" :paginator="true" :rows="25" :totalRecords="pagination.total" :lazy="true"
-        @page="onPageChange" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm">
+        @page="onPageChange" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro">
         <Column header="Acciones">
           <template #body="slotProps">
-            <Button icon="pi pi-pencil" class="p-button-warning p-button-sm"
-              style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
-              @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
-            <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
-              style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset; margin-left: 5px;"
-              @click="desactivarProveedor(slotProps.data)" v-tooltip.top="'Eliminar'" />
+            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+              @click="abrirModal('persona', 'actualizar', slotProps.data)" :title="'Editar proveedor'" />
+            <Button icon="pi pi-trash" class="p-button-danger btn-mini"
+              @click="desactivarProveedor(slotProps.data)" :title="'Eliminar proveedor'" />
           </template>
         </Column>
         <Column field="nombre" header="Nombre Proveedor"></Column>
         <Column field="documento" header="Documento">
           <template #body="slotProps">
-            {{ getDocumento(slotProps.data) }}
+            <div
+              v-if="!slotProps.data.tipo_documento || !slotProps.data.num_documento"
+              class="dato-no-registrado"
+            >
+              <i class="pi pi-exclamation-triangle"></i>
+              <span style="margin-left: 4px;">No registrado</span>
+            </div>
+
+            <span v-else>
+              {{ getDocumento(slotProps.data) }}
+            </span>
           </template>
         </Column>
         <Column field="telefono" header="Teléfono">
           <template #body="slotProps">
-            <span v-if="slotProps.data.telefono" class="text-success">
-              {{ slotProps.data.telefono }}
-            </span>
-            <span v-else class="datos-no-registrados">
+            <div v-if="!slotProps.data.telefono" class="dato-no-registrado">
               <i class="pi pi-exclamation-triangle"></i>
-              Datos no registrados
+              <span style="margin-left: 4px;">No registrado</span>
+            </div>
+            <span v-else>
+              {{ slotProps.data.telefono }}
             </span>
           </template>
         </Column>
@@ -353,10 +361,6 @@ export default {
       const tipo = this.tiposDocumento[data.tipo_documento];
       const numero = data.num_documento;
 
-      if (!tipo || !numero) {
-        return "Documento no Registrado";
-      }
-
       return `${tipo} ${numero}`;
     },
     onPageChange(event) {
@@ -608,6 +612,36 @@ export default {
 </script>
 
 <style scoped>
+.dato-no-registrado {
+  color: #b38a00;
+  /* amarillo oscuro */
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.dato-no-registrado i {
+  font-size: 1rem;
+}
+/* Estilo de tabla con scroll horizontal */
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  /* evita salto de columnas */
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
 /* 🔹 Input principal (Buscar Producto) */
 .input-full {
   width: 100%;
@@ -865,18 +899,18 @@ export default {
 
 /* DataTable Responsive */
 >>>.p-datatable {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
 }
 
 >>>.p-datatable .p-datatable-tbody>tr>td {
-  padding: 0.5rem;
+  padding: 0.4rem;
   word-break: break-word;
   text-align: left;
 }
 
 >>>.p-datatable .p-datatable-thead>tr>th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
 }
 
 .p-dialog-mask {
