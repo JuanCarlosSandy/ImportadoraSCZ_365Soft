@@ -15,25 +15,23 @@
           <h4 class="panel-title">PROVEEDORES</h4>
         </div>
       </template>
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre el nombre, documento o teléfono del proveedor, edite y registre nuevos proveedores.
+        </span>
+      </div>
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText
-              class="p-inputtext-sm"
-              v-model="buscar"
-              placeholder="Texto a buscar"
-              @input="buscarProveedores"
-            />
+            <InputText class="p-inputtext-sm" v-model="buscar" placeholder="Texto a buscar"
+              @input="buscarProveedores" />
           </span>
         </div>
         <div class="toolbar">
-          <Button
-            :label="mostrarLabel ? 'Nuevo' : ''"
-            icon="pi pi-plus"
-            @click="abrirModal('persona', 'registrar')"
-            class="p-button-secondary p-button-sm"
-          />
+          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
+            class="p-button-secondary p-button-sm" />
           <!--<Button
             :label="mostrarLabel ? 'Importar' : ''"
             icon="pi pi-upload"
@@ -43,30 +41,16 @@
         </div>
       </div>
 
-      <DataTable
-        :value="arrayPersona"
-        :paginator="true"
-        :rows="25"
-        :totalRecords="pagination.total"
-        :lazy="true"
-        @page="onPageChange"
-        responsiveLayout="scroll"
-        class="p-datatable-gridlines p-datatable-sm"
-      >
+      <DataTable :value="arrayPersona" :paginator="true" :rows="25" :totalRecords="pagination.total" :lazy="true"
+        @page="onPageChange" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm">
         <Column header="Acciones">
           <template #body="slotProps">
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-warning p-button-sm"
+            <Button icon="pi pi-pencil" class="p-button-warning p-button-sm"
               style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset;"
-              @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-danger p-button-sm"
+              @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
+            <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
               style="padding: 0.3rem 0.4rem; font-size: 0.75rem; width: auto; min-width: unset; margin-left: 5px;"
-              @click="desactivarProveedor(slotProps.data)" v-tooltip.top="'Eliminar'"
-            />
+              @click="desactivarProveedor(slotProps.data)" v-tooltip.top="'Eliminar'" />
           </template>
         </Column>
         <Column field="nombre" header="Nombre Proveedor"></Column>
@@ -86,7 +70,7 @@
             </span>
           </template>
         </Column>
-        
+
         <!-- Columnas de Contacto - Ocultas para rol Vendedor
         <Column v-if="!esVendedor" field="contacto" header="Contacto">
           <template #body="slotProps">
@@ -115,12 +99,7 @@
       </DataTable>
     </Panel>
 
-    <Dialog
-      :visible.sync="modal"
-      :containerStyle="{ width: '800px' }"
-      :modal="true"
-      :closable="true"
-    >
+    <Dialog :visible.sync="modal" :containerStyle="{ width: '800px' }" :modal="true" :closable="true">
       <template #header>
         <h3>{{ tituloModal }}</h3>
       </template>
@@ -129,15 +108,11 @@
         <div class="p-fluid p-formgrid p-grid">
           <div class="p-field p-col-12 p-md-6">
             <label for="nombre" class="required-field">
-              Nombre del Proveedor 
+              Nombre del Proveedor
               <span class="required-icon">*</span>
             </label>
-            <InputText
-              id="nombre"
-              v-model="datosFormulario.nombre"
-              :class="{ 'p-invalid': errores.nombre }"
-              @input="validarCampo('nombre')"
-            />
+            <InputText id="nombre" v-model="datosFormulario.nombre" :class="{ 'p-invalid': errores.nombre }"
+              @input="validarCampo('nombre')" />
             <small class="p-error" v-if="errores.nombre">{{
               errores.nombre
             }}</small>
@@ -148,16 +123,9 @@
               Tipo de documento
               <span class="p-tag p-tag-secondary">Opcional</span>
             </label>
-            <Dropdown
-              id="tipo_documento"
-              v-model="datosFormulario.tipo_documento"
-              :options="tiposDocumentos"
-              optionLabel="etiqueta"
-              optionValue="valor"
-              placeholder="Selecciona un tipo de documento"
-              :class="{ 'p-invalid': errores.tipo_documento }"
-              @change="validarCampo('tipo_documento')"
-            />
+            <Dropdown id="tipo_documento" v-model="datosFormulario.tipo_documento" :options="tiposDocumentos"
+              optionLabel="etiqueta" optionValue="valor" placeholder="Selecciona un tipo de documento"
+              :class="{ 'p-invalid': errores.tipo_documento }" @change="validarCampo('tipo_documento')" />
           </div>
 
           <div class="p-field p-col-12 p-md-6">
@@ -165,12 +133,8 @@
               Nro de documento
               <span class="p-tag p-tag-secondary">Opcional</span>
             </label>
-            <InputText
-              id="num_documento"
-              v-model="datosFormulario.num_documento"
-              :class="{ 'p-invalid': errores.num_documento }"
-              @input="validarCampo('num_documento')"
-            />
+            <InputText id="num_documento" v-model="datosFormulario.num_documento"
+              :class="{ 'p-invalid': errores.num_documento }" @input="validarCampo('num_documento')" />
           </div>
 
           <div class="p-field p-col-12 p-md-6">
@@ -178,13 +142,8 @@
               Teléfono
               <span class="p-tag p-tag-secondary">Opcional</span>
             </label>
-            <InputNumber
-              id="telefono"
-              v-model="datosFormulario.telefono"
-              :useGrouping="false"
-              :class="{ 'p-invalid': errores.telefono }"
-              @input="validarCampo('telefono')"
-            />
+            <InputNumber id="telefono" v-model="datosFormulario.telefono" :useGrouping="false"
+              :class="{ 'p-invalid': errores.telefono }" @input="validarCampo('telefono')" />
           </div>
 
           <!-- CAMPOS AGREGADOS: Contacto y Teléfono de Contacto 
@@ -218,26 +177,11 @@
 
       <template #footer>
         <div class="d-flex gap-2 justify-content-end modal-footer-buttons">
-          <Button
-            label="Cerrar"
-            icon="pi pi-times"
-            class="p-button-danger p-button-sm"
-            @click="cerrarModal"
-          />
-          <Button
-            v-if="tipoAccion === 1"
-            label="Guardar"
-            icon="pi pi-check"
-            class="p-button-success p-button-sm"
-            @click="enviarFormulario"
-          />
-          <Button
-            v-if="tipoAccion === 2"
-            label="Actualizar"
-            icon="pi pi-check"
-            class="p-button-warning p-button-sm"
-            @click="enviarFormulario"
-          />
+          <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal" />
+          <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-success p-button-sm"
+            @click="enviarFormulario" />
+          <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check" class="p-button-warning p-button-sm"
+            @click="enviarFormulario" />
         </div>
       </template>
     </Dialog>
@@ -351,37 +295,37 @@ export default {
   },
   methods: {
     toastSuccess(mensaje) {
-  this.$toast.add({
-    severity: "success",
-    summary: "Éxito",
-    detail: mensaje,
-    life: 2000,
-  });
-},
-toastError(mensaje) {
-  this.$toast.add({
-    severity: "error",
-    summary: "Error",
-    detail: mensaje,
-    life: 2000,
-  });
-},
-toastWarning(mensaje) {
-  this.$toast.add({
-    severity: "warn",
-    summary: "Advertencia",
-    detail: mensaje,
-    life: 2000,
-  });
-},
-toastInfo(mensaje) {
-  this.$toast.add({
-    severity: "info",
-    summary: "Información",
-    detail: mensaje,
-    life: 2000,
-  });
-},
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastInfo(mensaje) {
+      this.$toast.add({
+        severity: "info",
+        summary: "Información",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768;
     },
@@ -479,12 +423,12 @@ toastInfo(mensaje) {
         me.arrayPersona = respuesta.personas.data.map((persona) => {
           persona.documento = persona.tipo_documento
             ? `${me.getTipoDocumentoText(
-                persona.tipo_documento
-              )} ${persona.num_documento || ""}`
+              persona.tipo_documento
+            )} ${persona.num_documento || ""}`
             : "Documento no Registrado";
           return persona;
         });
-        
+
         me.pagination = respuesta.pagination;
       } catch (error) {
         console.error("Error al listar proveedores:", error);
@@ -627,7 +571,7 @@ toastInfo(mensaje) {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
     this.verificarRolUsuario(); // Verificar rol al montar
-    
+
     try {
       this.isLoading = true;
       await this.listarProveedor(1, this.buscar, this.criterio);
@@ -644,6 +588,25 @@ toastInfo(mensaje) {
 </script>
 
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 /* Estilo para "Datos no registrados" */
 .datos-no-registrados {
   color: #dc3545;
@@ -709,36 +672,38 @@ toastInfo(mensaje) {
 }
 
 /* Panel Content Spacing */
->>> .p-panel .p-panel-content {
+>>>.p-panel .p-panel-content {
   padding: 1rem;
 }
->>> .p-panel .p-panel-header {
+
+>>>.p-panel .p-panel-header {
   padding: 0.75rem 1rem;
   background: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
 }
->>> .p-panel .p-panel-header .p-panel-title {
+
+>>>.p-panel .p-panel-header .p-panel-title {
   font-weight: 600;
 }
 
 /* Responsive Dialog Styles */
-.responsive-dialog >>> .p-dialog {
+.responsive-dialog>>>.p-dialog {
   margin: 0.75rem;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   overflow-x: auto;
   padding: 0.75rem 1rem;
 }
 
-.responsive-dialog >>> .p-dialog-header {
+.responsive-dialog>>>.p-dialog-header {
   padding: 0.75rem 1.5rem;
   font-size: 1.1rem;
 }
 
-.responsive-dialog >>> .p-dialog-footer {
+.responsive-dialog>>>.p-dialog-footer {
   padding: 0.5rem 1.5rem;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -773,16 +738,16 @@ toastInfo(mensaje) {
 }
 
 /* Formulario compacto - Reducir espacios entre campos */
-.form-compact >>> .p-field {
+.form-compact>>>.p-field {
   margin-bottom: 0.25rem !important;
 }
 
->>> .p-fluid .p-field {
+>>>.p-fluid .p-field {
   margin-bottom: 0.25rem;
 }
 
 /* Reducir padding del contenedor del diálogo */
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   padding: 0.75rem 1rem !important;
 }
 
@@ -820,30 +785,33 @@ toastInfo(mensaje) {
   color: green;
   font-weight: bold;
 }
+
 .status-badge {
   padding: 0.25em 0.5em;
   border-radius: 4px;
   color: white;
 }
+
 .status-badge.active {
   background-color: rgb(0, 225, 0);
 }
+
 .status-badge.inactive {
   background-color: red;
 }
 
 /* DataTable Responsive */
->>> .p-datatable {
+>>>.p-datatable {
   font-size: 0.9rem;
 }
 
->>> .p-datatable .p-datatable-tbody > tr > td {
+>>>.p-datatable .p-datatable-tbody>tr>td {
   padding: 0.5rem;
   word-break: break-word;
   text-align: left;
 }
 
->>> .p-datatable .p-datatable-thead > tr > th {
+>>>.p-datatable .p-datatable-thead>tr>th {
   padding: 0.75rem 0.5rem;
   font-size: 0.85rem;
 }
@@ -851,27 +819,28 @@ toastInfo(mensaje) {
 .p-dialog-mask {
   z-index: 9990 !important;
 }
+
 .p-dialog {
   z-index: 9990 !important;
 }
 
 /* SweetAlert z-index para que aparezca por encima de los diálogos */
->>> .swal2-container {
+>>>.swal2-container {
   z-index: 99999 !important;
 }
 
->>> .swal2-popup {
+>>>.swal2-popup {
   z-index: 99999 !important;
 }
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.5rem;
     max-height: 95vh;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.85rem;
   }
 }
@@ -882,21 +851,21 @@ toastInfo(mensaje) {
     display: none;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.25rem;
     max-height: 98vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.5rem 0.75rem;
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.5rem 1rem;
     font-size: 1rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.4rem 1rem;
     justify-content: flex-end;
   }
@@ -905,28 +874,28 @@ toastInfo(mensaje) {
     gap: 0.5rem;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.8rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.4rem 0.3rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.5rem 0.3rem;
     font-size: 0.75rem;
   }
 
   /* Ajustar botones en móviles */
-  >>> .p-button-sm {
+  >>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
     min-width: auto !important;
   }
 
   /* Ajustar botón "Nuevo" para que coincida con otros botones */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -946,9 +915,9 @@ toastInfo(mensaje) {
     font-size: 0.6rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
@@ -966,26 +935,26 @@ toastInfo(mensaje) {
     display: none;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.1rem;
     max-height: 99vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.4rem 0.5rem;
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.4rem 0.75rem;
     font-size: 0.95rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.3rem 0.75rem;
     justify-content: flex-end;
   }
 
-  .responsive-dialog >>> .p-dialog-footer .p-button {
+  .responsive-dialog>>>.p-dialog-footer .p-button {
     width: auto;
     margin-bottom: 0.25rem;
   }
@@ -1007,7 +976,7 @@ toastInfo(mensaje) {
   }
 
   /* Ajustar botones para que coincidan */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -1018,15 +987,15 @@ toastInfo(mensaje) {
     font-size: 0.8rem !important;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.75rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.3rem 0.2rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
   }
@@ -1040,14 +1009,14 @@ toastInfo(mensaje) {
     font-size: 0.55rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.85rem;
     padding: 0.4rem;
   }
 
-  >>> .p-tag {
+  >>>.p-tag {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
@@ -1061,18 +1030,18 @@ toastInfo(mensaje) {
 
 /* Paginator Responsive */
 @media (max-width: 768px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     flex-wrap: wrap !important;
     justify-content: center;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 32px !important;
     height: 32px !important;
     font-size: 0.85rem !important;
@@ -1082,16 +1051,16 @@ toastInfo(mensaje) {
 }
 
 @media (max-width: 480px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 28px !important;
     height: 28px !important;
     font-size: 0.8rem !important;
@@ -1101,17 +1070,18 @@ toastInfo(mensaje) {
 }
 
 /* Action Buttons in DataTable */
->>> .p-datatable .p-button {
+>>>.p-datatable .p-button {
   margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
-  >>> .p-datatable .p-button {
+  >>>.p-datatable .p-button {
     margin-right: 0.15rem;
     margin-bottom: 0.15rem;
   }
 }
->>> .p-fileupload .p-button.p-fileupload-choose {
+
+>>>.p-fileupload .p-button.p-fileupload-choose {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
   color: #ffffff !important;
@@ -1119,31 +1089,30 @@ toastInfo(mensaje) {
 }
 
 /* Efecto hover */
->>> .p-fileupload .p-button.p-fileupload-choose:enabled:hover {
+>>>.p-fileupload .p-button.p-fileupload-choose:enabled:hover {
   background-color: #16a34a !important;
   border-color: #16a34a !important;
 }
 
 /* Efecto focus */
->>> .p-fileupload .p-button.p-fileupload-choose:focus {
+>>>.p-fileupload .p-button.p-fileupload-choose:focus {
   box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.5) !important;
 }
 
 /* Efecto active (cuando se hace clic) */
->>> .p-fileupload .p-button.p-fileupload-choose:enabled:active {
+>>>.p-fileupload .p-button.p-fileupload-choose:enabled:active {
   background-color: #15803d !important;
   border-color: #15803d !important;
 }
 
 /* Estilo cuando está deshabilitado */
->>> .p-fileupload .p-button.p-fileupload-choose:disabled {
+>>>.p-fileupload .p-button.p-fileupload-choose:disabled {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
   opacity: 0.6;
 }
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose) {
+
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose) {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
@@ -1151,37 +1120,30 @@ toastInfo(mensaje) {
 }
 
 /* Efecto hover */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
 }
 
 /* Efecto focus */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):focus {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):focus {
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
 }
 
 /* Efecto active (cuando se hace clic) */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):enabled:active {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):enabled:active {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
 }
 
 /* Estilo cuando está deshabilitado */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):disabled {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):disabled {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   opacity: 0.6;
 }
->>> .p-fileupload .p-fileupload-files .p-button {
+
+>>>.p-fileupload .p-fileupload-files .p-button {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
@@ -1189,39 +1151,42 @@ toastInfo(mensaje) {
 }
 
 /* Efecto hover */
->>> .p-fileupload .p-fileupload-files .p-button:enabled:hover {
+>>>.p-fileupload .p-fileupload-files .p-button:enabled:hover {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
 }
 
 /* Efecto focus */
->>> .p-fileupload .p-fileupload-files .p-button:focus {
+>>>.p-fileupload .p-fileupload-files .p-button:focus {
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
 }
 
 /* Efecto active (cuando se hace clic) */
->>> .p-fileupload .p-fileupload-files .p-button:enabled:active {
+>>>.p-fileupload .p-fileupload-files .p-button:enabled:active {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
 }
 
 /* Estilo cuando está deshabilitado */
->>> .p-fileupload .p-fileupload-files .p-button:disabled {
+>>>.p-fileupload .p-fileupload-files .p-button:disabled {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   opacity: 0.6;
 }
 
 /* Asegurar que el icono dentro del botón también sea blanco */
->>> .p-fileupload .p-fileupload-files .p-button .p-button-icon {
+>>>.p-fileupload .p-fileupload-files .p-button .p-button-icon {
   color: #ffffff !important;
 }
->>> .p-fileupload-row > div:first-child {
+
+>>>.p-fileupload-row>div:first-child {
   display: none !important;
 }
->>> .p-dialog .p-dialog-content {
+
+>>>.p-dialog .p-dialog-content {
   padding: 0 1.5rem 1.5rem 1.5rem;
 }
+
 /* Estilos del loader */
 .loading-overlay {
   position: fixed;
@@ -1266,10 +1231,12 @@ toastInfo(mensaje) {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
 }
+
 .modal-footer-buttons {
   padding-top: 1rem;
 }
