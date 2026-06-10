@@ -25,13 +25,13 @@
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText class="p-inputtext-sm" v-model="buscar" placeholder="Texto a buscar"
+            <InputText class="p-inputtext-sm input-full" v-model="buscar" placeholder="Texto a buscar"
               @input="buscarProveedores" />
           </span>
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
-            class="p-button-secondary p-button-sm" />
+            class="p-button-secondary p-button-sm btn-sm-input" />
           <!--<Button
             :label="mostrarLabel ? 'Importar' : ''"
             icon="pi pi-upload"
@@ -588,6 +588,49 @@ export default {
 </script>
 
 <style scoped>
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 .info-tip {
   display: flex;
   align-items: center;
