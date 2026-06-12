@@ -268,26 +268,70 @@
         </div>
       </template>
 </Dialog>
+<Dialog
+  :visible.sync="mostrarDetallePrecioSugeridoVenta"
+  :modal="true"
+  :closable="false"
+  :closeOnEscape="false"
+  :containerStyle="{ width: '500px' }"
+>
+  <template #header>
+    <div class="dialog-header">
+      <i class="pi pi-shopping-cart header-icon"></i>
+      <span class="header-title">Detalle de Precio Sugerido de Venta</span>
+    </div>
+  </template>
 
-<Dialog :visible.sync="mostrarDetallePrecioSugeridoVenta" :modal="true" header="Detalle de Precio Sugerido (Venta)"
-  :closable="false" :closeOnEscape="false" :containerStyle="{ width: '400px' }">
-  <!-- Contenido del dialog -->
-  <div v-if="productosSeleccionados.length">
-    <ul>
-      <li v-for="item in productosSeleccionados" :key="item.id" class="mb-2">
-        <span class="font-weight-bold">{{ item.nombre }}</span>
-        <span class="ml-2">- {{ parseFloat(item.precio_uno || 0).toFixed(2) }}
-          {{ monedaPrincipal[1] }}</span>
-      </li>
-    </ul>
-  </div>
-  <div v-else>No hay productos seleccionados.</div>
+  <div class="detalle-precios-container">
+    <div class="detalle-info">
+      <i class="pi pi-info-circle"></i>
+      <span>
+        Los siguientes productos fueron seleccionados para la actualización de precios.
+      </span>
+    </div>
 
-  <!-- Botón para cerrar -->
-  <div>
-    <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm"
-      @click="mostrarDetallePrecioSugeridoVenta = false" />
+    <div v-if="productosSeleccionados.length">
+      <div
+        v-for="item in productosSeleccionados"
+        :key="item.id"
+        class="producto-card"
+      >
+        <div class="producto-info">
+          <div class="producto-nombre">
+            {{ item.nombre }}
+          </div>
+
+          <div class="producto-label">
+            Precio sugerido
+          </div>
+        </div>
+
+        <div class="producto-precio">
+          {{ parseFloat(item.precio_uno || 0).toFixed(2) }}
+          {{ monedaPrincipal[1] }}
+        </div>
+      </div>
+
+      <div class="resumen-footer">
+        <span>Total de productos</span>
+        <span>{{ productosSeleccionados.length }}</span>
+      </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <p>No hay productos seleccionados.</p>
+    </div>
   </div>
+
+  <template #footer>
+    <Button
+      label="Cerrar"
+      icon="pi pi-times"
+      class="p-button-danger btn-sm"
+      @click="mostrarDetallePrecioSugeridoVenta = false"
+    />
+  </template>
 </Dialog>
 
 <Dialog :visible.sync="dialogVerCombo" :modal="true" :closable="false" :containerStyle="{ width: '800px' }"
@@ -1615,6 +1659,77 @@ export default {
 </script>
 
 <style scoped>
+.detalle-precios-container {
+  padding: 5px;
+}
+
+.detalle-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border-left: 4px solid #3b82f6;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 13px;
+  color: #495057;
+}
+
+.producto-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.producto-card:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+}
+
+.producto-nombre {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.producto-label {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 3px;
+}
+
+.producto-precio {
+  font-size: 16px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.resumen-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px 10px;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 40px;
+  margin-bottom: 10px;
+  display: block;
+}
 /* 🔹 Estilo más pequeño para todos los Toasts */
 .p-toast {
   width: 300px !important;
