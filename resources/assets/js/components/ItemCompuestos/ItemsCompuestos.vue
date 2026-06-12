@@ -46,14 +46,14 @@
           <template #body="slotProps">
             <span v-if="column.type === 'button'">
               <div class="botones-opciones">
-                <Button icon="pi pi-pencil" class="btn-icon p-button-warning btn-mini"
-                  @click="abrirModal('articulo', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
-                <Button v-if="slotProps.data.condicion" icon="pi pi-ban" class="btn-icon p-button-danger btn-mini"
-                  @click="desactivarArticulo(slotProps.data.id)" v-tooltip.top="'Desactivar'" />
-                <Button v-else icon="pi pi-check-circle" class="btn-icon p-button-success btn-mini"
-                  @click="activarArticulo(slotProps.data.id)" v-tooltip.top="'Activar'" />
                 <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
-                  @click="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />
+                  @click="verCombosOfertas(slotProps.data.id)" :title="'Ver Combo'" />
+                <Button icon="pi pi-pencil" class="btn-icon btn-edit btn-mini"
+                  @click="abrirModal('articulo', 'actualizar', slotProps.data)" :title="'Editar'" />
+                <Button v-if="slotProps.data.condicion" icon="pi pi-ban" class="btn-icon p-button-danger btn-mini"
+                  @click="desactivarArticulo(slotProps.data.id)" :title="'Desactivar'" />
+                <Button v-else icon="pi pi-check-circle" class="btn-icon p-button-success btn-mini"
+                  @click="activarArticulo(slotProps.data.id)" :title="'Activar'" />
 
               </div>
             </span>
@@ -1963,7 +1963,7 @@ export default {
 }
 
 >>>.p-datatable.p-datatable-gridlines .p-datatable-tbody>tr>td {
-  text-align: center;
+  text-align: left;
 }
 
 .bold-input {
@@ -2310,10 +2310,6 @@ export default {
   }
 }
 
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
-}
 
 @media (max-width: 768px) {
   >>>.p-datatable .p-button {
