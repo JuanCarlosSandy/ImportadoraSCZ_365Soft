@@ -268,13 +268,8 @@
         </div>
       </template>
 </Dialog>
-<Dialog
-  :visible.sync="mostrarDetallePrecioSugeridoVenta"
-  :modal="true"
-  :closable="false"
-  :closeOnEscape="false"
-  :containerStyle="{ width: '500px' }"
->
+<Dialog :visible.sync="mostrarDetallePrecioSugeridoVenta" :modal="true" :closable="false" :closeOnEscape="false"
+  :containerStyle="{ width: '500px' }">
   <template #header>
     <div class="dialog-header">
       <i class="pi pi-shopping-cart header-icon"></i>
@@ -291,11 +286,7 @@
     </div>
 
     <div v-if="productosSeleccionados.length">
-      <div
-        v-for="item in productosSeleccionados"
-        :key="item.id"
-        class="producto-card"
-      >
+      <div v-for="item in productosSeleccionados" :key="item.id" class="producto-card">
         <div class="producto-info">
           <div class="producto-nombre">
             {{ item.nombre }}
@@ -334,45 +325,80 @@
   </template>
 </Dialog>
 
-<Dialog :visible.sync="dialogVerCombo" :modal="true" :closable="false" :containerStyle="{ width: '800px' }"
-  class="dialog-combo">
-  <!-- HEADER PERSONALIZADO -->
+<Dialog :visible.sync="dialogVerCombo" :modal="true" :closable="false" :containerStyle="{ width: '650px' }">
   <template #header>
-        <div class="dialog-header">
-          <i class="pi pi-box icon-header"></i>
-          <div>
-            <h3 class="title">{{ nombreComboActual }}</h3>
-            <span class="subtitle">Detalle de productos incluidos</span>
-          </div>
-        </div>
-      </template>
+    <div class="dialog-header">
+      <i class="pi pi-box icon-header"></i>
+      <div>
+        <h3 class="title">{{ nombreComboActual }}</h3>
+        <span class="subtitle">
+          Productos incluidos en el combo
+        </span>
+      </div>
+    </div>
+  </template>
 
-  <!-- CONTENIDO -->
-  <div class="dialog-content">
-    <DataTable :value="productosSeleccionados" responsiveLayout="scroll" class="p-datatable-sm p-datatable-striped">
-      <Column field="nombre" header="Producto"></Column>
-      <Column field="nombre_categoria" header="Categoría"></Column>
-      <Column field="cantidad" header="Cantidad">
-        <template #body="slotProps">
-              <span class="cantidad-badge">
-                {{ slotProps.data.cantidad }}
-              </span>
-            </template>
-      </Column>
-    </DataTable>
+  <div class="combo-container">
+
+    <div class="combo-info">
+      <i class="pi pi-info-circle"></i>
+      <span>
+        Este combo contiene los siguientes productos asociados.
+      </span>
+    </div>
+
+    <div class="combo-resumen">
+      <span>Total de productos</span>
+      <strong>{{ productosSeleccionados.length }}</strong>
+    </div>
+
+    <div v-if="productosSeleccionados.length" class="productos-lista">
+      <div v-for="item in productosSeleccionados" :key="item.id" class="producto-card">
+        <div class="producto-detalle">
+
+          <div class="producto-icono">
+            <i class="pi pi-shopping-bag"></i>
+          </div>
+
+          <div class="producto-info">
+            <div class="producto-nombre">
+              {{ item.nombre }}
+            </div>
+
+            <div class="producto-categoria">
+              {{ item.nombre_categoria }}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="cantidad-container">
+          <span class="cantidad-label">
+            Cantidad
+          </span>
+
+          <span class="cantidad-badge">
+            {{ item.cantidad }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <p>No existen productos asociados.</p>
+    </div>
+
   </div>
 
-  <!-- FOOTER -->
   <template #footer>
-        <div class="dialog-footer">
-          <Button
-            label="Cerrar"
-            icon="pi pi-times"
-            class="p-button-danger p-button-sm"
-            @click="dialogVerCombo = false"
-          />
-        </div>
-      </template>
+    <Button
+      label="Cerrar"
+      icon="pi pi-times"
+      class="p-button-danger btn-sm"
+      @click="dialogVerCombo = false"
+    />
+  </template>
 </Dialog>
 
 <!-- MODALES DINÁMICOS -->
@@ -605,7 +631,7 @@ export default {
     };
   },
   computed: {
-        dialogContainerStyle() {
+    dialogContainerStyle() {
       if (window.innerWidth <= 480) {
         return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
       } else if (window.innerWidth <= 768) {
@@ -1118,12 +1144,15 @@ export default {
       }
       if (camposFaltantes.length > 0) {
         Swal.fire({
-          title: "¡Campos obligatorios!",
-          html: `Debe completar los siguientes campos:<br><ul style="text-align:left;">${camposFaltantes
-            .map((c) => `<li>${c}</li>`)
-            .join("")}</ul>`,
-          icon: "warning",
-        });
+  title: "¡Campos obligatorios!",
+  html: `Debe completar los siguientes campos:<br><ul style="text-align:left;">${camposFaltantes
+    .map(c => `<li>${c}</li>`)
+    .join("")}</ul>`,
+  icon: "warning",
+  customClass: {
+    popup: "swal-top-zindex"
+  }
+});
         return;
       }
 
@@ -1404,11 +1433,7 @@ export default {
             })
             .then(function (response) {
               me.listarComboOferta(1, "", "nombre");
-              Swal.fire(
-                "Desactivado!",
-                "El registro ha sido desactivado con éxito.",
-                "success",
-              );
+              me.toastSuccess("Artículo desactivado correctamente");
             })
             .catch(function (error) {
               console.log(error);
@@ -1435,11 +1460,7 @@ export default {
             })
             .then(function (response) {
               me.listarComboOferta(1, "", "nombre");
-              Swal.fire(
-                "Activado!",
-                "El registro ha sido activado con éxito.",
-                "success",
-              );
+              me.toastSuccess("Artículo activado correctamente");
             })
             .catch(function (error) {
               console.log(error);
@@ -1660,6 +1681,117 @@ export default {
 </script>
 
 <style scoped>
+.combo-container {
+  padding: 5px;
+}
+
+.combo-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border-left: 4px solid #3b82f6;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.combo-resumen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.productos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.producto-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  padding: 15px;
+  transition: all .2s ease;
+}
+
+.producto-card:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+}
+
+.producto-detalle {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.producto-icono {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #eef2ff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.producto-icono i {
+  color: #4338ca;
+  font-size: 1.1rem;
+}
+
+.producto-nombre {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.producto-categoria {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 3px;
+}
+
+.cantidad-container {
+  text-align: center;
+}
+
+.cantidad-label {
+  display: block;
+  font-size: 11px;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.cantidad-badge {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 45px;
+  margin-bottom: 10px;
+  display: block;
+}
+
 .detalle-precios-container {
   padding: 5px;
 }
@@ -1731,6 +1863,7 @@ export default {
   margin-bottom: 10px;
   display: block;
 }
+
 /* 🔹 Estilo más pequeño para todos los Toasts */
 .p-toast {
   width: 300px !important;
@@ -2781,5 +2914,13 @@ export default {
 
 .codigo-descuento[title] {
   cursor: pointer;
+}
+</style>
+<style>
+.swal2-container {
+  z-index: 999999 !important;
+}
+.swal-top-zindex {
+  z-index: 999999 !important;
 }
 </style>
