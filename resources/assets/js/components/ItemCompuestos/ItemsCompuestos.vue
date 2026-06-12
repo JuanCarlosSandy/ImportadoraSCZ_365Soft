@@ -19,7 +19,8 @@
       <div class="info-tip">
         <i class="pi pi-info-circle"></i>
         <span>
-          Filtre el código o el nombre de la oferta/combo, edite y registre nuevas ofertas/combos.
+          Filtre el código o el nombre de la oferta/combo, edite y registre
+          nuevas ofertas/combos.
         </span>
       </div>
 
@@ -27,14 +28,15 @@
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText v-model="buscar" placeholder="Texto a buscar" class="p-inputtext-sm input-full" @keyup="buscarArticulo" />
+            <InputText v-model="buscar" placeholder="Texto a buscar" class="p-inputtext-sm input-full"
+              @keyup="buscarArticulo" />
           </span>
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
             class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
-          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
-            @click="abrirModal('articulo', 'registrar')" />
+          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
+            class="p-button-secondary p-button-sm btn-sm-input" @click="abrirModal('articulo', 'registrar')" />
           <!--<Button :label="mostrarLabel ? 'Reporte' : ''" icon="pi pi-file" class="p-button-success p-button-sm"
             @click="cargarReporte" />-->
         </div>
@@ -54,7 +56,6 @@
                   @click="desactivarArticulo(slotProps.data.id)" :title="'Desactivar'" />
                 <Button v-else icon="pi pi-check-circle" class="btn-icon p-button-success btn-mini"
                   @click="activarArticulo(slotProps.data.id)" :title="'Activar'" />
-
               </div>
             </span>
             <span v-else-if="column.type === 'dynamicPrice'">
@@ -86,17 +87,26 @@
       <Paginator :rows="rowsPerPage" :totalRecords="arrayArticulo.length" :first="first" @page="onPageChange" />
     </Panel>
     <!-- MODAL REGISTRAR PRODUCTO -->
-    <Dialog :visible.sync="dialogVisible" :modal="true" header="FORMULARIO COMBO/OFERTA" :closable="false"
-      :closeOnEscape="true" @hide="closeDialog" :containerStyle="{ width: '800px' }">
+    <Dialog :visible.sync="dialogVisible" :modal="true" :closable="false" :closeOnEscape="true" @hide="closeDialog"
+      :containerStyle="dialogContainerStyle">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-book header-icon"></i>
+          <span class="header-title">FORMULARIO COMBO/OFERTA</span>
+        </div>
+      </template>
+
       <TabView>
         <TabPanel header="Datos">
           <div class="form-group row">
             <div class="col-md-6">
               <div>
-                <label for="nombre" class="required-field">
-                  <span class="required-icon">*</span>
+
+                <label for="nombre" class="label-input">
+                  <span class="text-required">*</span>
                   Concepto del Oferta/Combo
                 </label>
+
                 <InputText id="nombreProducto" v-model="datosFormulario.nombre" placeholder="Ej. Inyeccion antibiotica"
                   class="form-control p-inputtext-sm input-full" :class="{ 'input-error': errores.nombre }"
                   @input="validarCampo('nombre')" autocomplete="off" />
@@ -104,8 +114,8 @@
             </div>
 
             <div class="col-md-6">
-              <label for="nombre" class="required-field">
-                <span class="required-icon">*</span>
+              <label for="nombre" class="label-input">
+                <span class="text-required">*</span>
                 Categoria
               </label>
               <div class="p-inputgroup">
@@ -123,8 +133,9 @@
                 <label for="descripcion" class="optional-field">
                   <i class="pi pi-info-circle optional-icon"></i>
                   Descripción
-                  <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
+                  <span class="optional-tag">Opcional</span>
                 </label>
+
                 <Textarea id="descripcion" v-model="datosFormulario.descripcion"
                   placeholder="Ej. Inyeccion antibiotica para infecciones severas" rows="3"
                   class="form-control p-inputtext-sm"" />
@@ -137,7 +148,7 @@
               <div class="form-group row">
                 <div class="col-md-12">
                   <InputText v-model="busquedaProducto" placeholder="Buscar producto..."
-                    class="form-control p-inputtext-sm" @input="filtrarProductos" />
+                    class="form-control p-inputtext-sm input-full" @input="filtrarProductos" />
                 </div>
               </div>
               <DataTable :value="arrayProductos" class="p-datatable-gridlines p-datatable-sm tabla-pro"
@@ -146,8 +157,11 @@
                 <Column field="nombre" header="Nombre" />
                 <Column header="Seleccionar">
                   <template #body="slotProps">
-                <Button icon="pi pi-plus" class="p-button-success p-button-sm btn-mini"
-                  @click="seleccionarProducto(slotProps.data)" />
+                <Button
+                  icon="pi pi-plus"
+                  class="p-button-success btn-mini"
+                  @click="seleccionarProducto(slotProps.data)"
+                />
               </template>
                 </Column>
               </DataTable>
@@ -158,21 +172,28 @@
                 :rows="10" paginator responsiveLayout="scroll">
                 <Column header="Quitar">
                   <template #body="slotProps">
-                <Button icon="pi pi-times" class="p-button-danger p-button-sm btn-mini"
-                  @click="quitarProducto(slotProps.data)" />
+                <Button
+                  icon="pi pi-times"
+                  class="p-button-danger btn-mini"
+                  @click="quitarProducto(slotProps.data)"
+                />
               </template>
                 </Column>
                 <Column field="codigo" header="Código" />
                 <Column field="nombre" header="Nombre" />
                 <Column header="Categoria">
                   <template #body="{ data }">
-                {{ data.nombre_categoria || data.nombre_categoria || '—' }}
+                {{ data.nombre_categoria || data.nombre_categoria || "—" }}
               </template>
                 </Column>
                 <Column field="cantidad" header="Cantidad">
                   <template #body="slotProps">
-                <InputNumber v-model="slotProps.data.cantidad" :min="1" :step="1"
-                  class="cantidad-input input-number-full" />
+                <InputNumber
+                  v-model="slotProps.data.cantidad"
+                  :min="1"
+                  :step="1"
+                  class="cantidad-input input-number-full"
+                />
               </template>
                 </Column>
               </DataTable>
@@ -190,9 +211,9 @@
                 {{ monedaPrincipal[1] }}</span>
             </div>
             <div class="precio-sugerido-buttons">
-              <Button icon="pi pi-exclamation-circle" class="p-button-info p-button-sm"
+              <Button icon="pi pi-exclamation-circle" class="p-button-info btn-mini"
                 @click="mostrarDetallePrecioSugeridoVenta = true" />
-              <Button icon="pi pi-arrow-down" class="p-button-success p-button-sm"
+              <Button icon="pi pi-arrow-down" class="p-button-success btn-mini"
                 @click="rellenarPrecioUnoConSugeridoVenta" title="Usar precio sugerido" />
             </div>
           </div>
@@ -209,26 +230,41 @@
 
             <div class="p-inputgroup">
               <InputNumber placeholder="Precio" v-model="precio_uno" mode="decimal" locale="es-ES" :min="0"
-                :minFractionDigits="2" :maxFractionDigits="2" class="p-inputtext-sm"
-                style="font-size: 1.2em; font-weight: bold; width: 120px;" @keydown.native="convertirPuntoComa"
-                @input="evitarReformateo($event, val => precio_uno = val)" />
+                :minFractionDigits="2" :maxFractionDigits="2" class="p-inputtext-sm input-number-full"
+                @keydown.native="convertirPuntoComa" @input="
+                  evitarReformateo($event, (val) => (precio_uno = val))
+                  " />
               <span class="p-inputgroup-addon addon-precio">
                 {{ monedaPrincipal[1] }}
               </span>
             </div>
           </div>
-
         </div>
       </div>
     </TabPanel>
   </TabView>
   <template #footer>
         <div class="d-flex gap-2 justify-content-end modal-footer-buttons">
-          <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal" />
-          <Button v-if="tipoAccion == 1" class="p-button-success p-button-sm" label="Guardar" icon="pi pi-check"
-            @click="enviarFormulario()" />
-          <Button v-if="tipoAccion == 2" class="p-button-warning p-button-sm" label="Actualizar" icon="pi pi-check"
-            @click="enviarFormulario()" />
+          <Button
+            label="Cerrar"
+            icon="pi pi-times"
+            class="p-button-danger p-button-sm btn-sm"
+            @click="cerrarModal"
+          />
+          <Button
+            v-if="tipoAccion == 1"
+            class="p-button-success p-button-sm btn-sm"
+            label="Guardar"
+            icon="pi pi-check"
+            @click="enviarFormulario()"
+          />
+          <Button
+            v-if="tipoAccion == 2"
+            class="p-button-warning p-button-sm btn-sm"
+            label="Actualizar"
+            icon="pi pi-check"
+            @click="enviarFormulario()"
+          />
         </div>
       </template>
 </Dialog>
@@ -237,7 +273,7 @@
   :closable="false" :closeOnEscape="false" :containerStyle="{ width: '400px' }">
   <!-- Contenido del dialog -->
   <div v-if="productosSeleccionados.length">
-    <ul style="list-style: none; padding: 0;">
+    <ul>
       <li v-for="item in productosSeleccionados" :key="item.id" class="mb-2">
         <span class="font-weight-bold">{{ item.nombre }}</span>
         <span class="ml-2">- {{ parseFloat(item.precio_uno || 0).toFixed(2) }}
@@ -248,7 +284,7 @@
   <div v-else>No hay productos seleccionados.</div>
 
   <!-- Botón para cerrar -->
-  <div style="text-align: right; margin-top: 1rem;">
+  <div>
     <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm"
       @click="mostrarDetallePrecioSugeridoVenta = false" />
   </div>
@@ -258,41 +294,41 @@
   class="dialog-combo">
   <!-- HEADER PERSONALIZADO -->
   <template #header>
-    <div class="dialog-header">
-      <i class="pi pi-box icon-header"></i>
-      <div>
-        <h3 class="title">{{ nombreComboActual }}</h3>
-        <span class="subtitle">Detalle de productos incluidos</span>
-      </div>
-    </div>
-  </template>
+        <div class="dialog-header">
+          <i class="pi pi-box icon-header"></i>
+          <div>
+            <h3 class="title">{{ nombreComboActual }}</h3>
+            <span class="subtitle">Detalle de productos incluidos</span>
+          </div>
+        </div>
+      </template>
 
   <!-- CONTENIDO -->
   <div class="dialog-content">
     <DataTable :value="productosSeleccionados" responsiveLayout="scroll" class="p-datatable-sm p-datatable-striped">
       <Column field="nombre" header="Producto"></Column>
       <Column field="nombre_categoria" header="Categoría"></Column>
-      <Column field="cantidad" header="Cantidad" style="width: 120px; text-align:center">
+      <Column field="cantidad" header="Cantidad">
         <template #body="slotProps">
-          <span class="cantidad-badge">
-            {{ slotProps.data.cantidad }}
-          </span>
-        </template>
+              <span class="cantidad-badge">
+                {{ slotProps.data.cantidad }}
+              </span>
+            </template>
       </Column>
     </DataTable>
   </div>
 
   <!-- FOOTER -->
   <template #footer>
-    <div class="dialog-footer">
-      <Button
-        label="Cerrar"
-        icon="pi pi-times"
-        class="p-button-danger p-button-sm"
-        @click="dialogVerCombo = false"
-      />
-    </div>
-  </template>
+        <div class="dialog-footer">
+          <Button
+            label="Cerrar"
+            icon="pi pi-times"
+            class="p-button-danger p-button-sm"
+            @click="dialogVerCombo = false"
+          />
+        </div>
+      </template>
 </Dialog>
 
 <!-- MODALES DINÁMICOS -->
@@ -339,8 +375,8 @@ import Dropdown from "primevue/dropdown";
 import InputSwitch from "primevue/inputswitch";
 import Calendar from "primevue/calendar";
 import VueBarcode from "vue-barcode";
-import ToastService from 'primevue/toastservice';
-import Toast from 'primevue/toast';
+import ToastService from "primevue/toastservice";
+import Toast from "primevue/toast";
 
 import {
   esquemaArticulos,
@@ -348,7 +384,7 @@ import {
 } from "../../constants/validations";
 import ImportarExcelNewView from "../../components/Servicios/ImportarExcelServicio.vue";
 import Swal from "sweetalert2";
-import Tooltip from 'primevue/tooltip';
+import Tooltip from "primevue/tooltip";
 export default {
   components: {
     TabView,
@@ -379,7 +415,7 @@ export default {
     ImportarExcelNewView,
   },
   directives: {
-    'tooltip': Tooltip
+    tooltip: Tooltip,
   },
   onPageChangeProductos(event) {
     this.firstProductos = event.first;
@@ -390,7 +426,7 @@ export default {
   data() {
     return {
       dialogVerCombo: false,
-      nombreComboActual: '',
+      nombreComboActual: "",
 
       mostrarLabel: true,
       arrayProductos: [],
@@ -525,6 +561,17 @@ export default {
     };
   },
   computed: {
+        dialogContainerStyle() {
+      if (window.innerWidth <= 480) {
+        return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 768) {
+        return { width: "90vw", maxWidth: "90vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 1024) {
+        return { width: "85vw", maxWidth: "900px", margin: "0 auto" };
+      } else {
+        return { width: "800px", maxWidth: "90vw", margin: "0 auto" };
+      }
+    },
     imagen() {
       return this.fotoMuestra;
     },
@@ -532,7 +579,7 @@ export default {
       // Obtener elementos a mostrar en la página actual (frontend pagination)
       return this.arrayArticulo.slice(
         this.first,
-        this.first + this.rowsPerPage
+        this.first + this.rowsPerPage,
       );
     },
     precioSugerido() {
@@ -542,7 +589,7 @@ export default {
           acc +
           (parseFloat(item.precio_costo_unid) || 0) *
           (parseInt(item.cantidad) || 1),
-        0
+        0,
       );
     },
     precioSugeridoVenta() {
@@ -551,11 +598,10 @@ export default {
         (acc, item) =>
           acc +
           (parseFloat(item.precio_uno) || 0) * (parseInt(item.cantidad) || 1),
-        0
+        0,
       );
     },
     computedColumns() {
-
       const dynamicColumns = this.precios.slice(0, 1).map((precio, index) => ({
         field: "precio_uno",
         header: "Precio del Combo",
@@ -563,7 +609,9 @@ export default {
       }));
 
       const index =
-        this.headers.findIndex((header) => header.field === "nombre_categoria") + 1;
+        this.headers.findIndex(
+          (header) => header.field === "nombre_categoria",
+        ) + 1;
 
       const result = [
         ...this.headers.slice(0, index),
@@ -573,11 +621,10 @@ export default {
 
       console.log("RESULTS COMPUTED ", index);
       return result;
-    }
-
+    },
   },
   methods: {
-   async limpiarBusqueda() {
+    async limpiarBusqueda() {
       try {
         this.buscar = ""; // Limpiar input
 
@@ -589,7 +636,6 @@ export default {
         setTimeout(() => {
           this.isLoading = false;
         }, 500);
-
       } catch (error) {
         console.error("Error al limpiar búsqueda:", error);
         this.isLoading = false;
@@ -597,12 +643,13 @@ export default {
     },
     verCombosOfertas(id) {
       axios.get(`/itemcompuesto/${id}`).then((res) => {
-        this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
+        this.nombreComboActual =
+          res.data.nombre_compuesto || "Detalle del Combo";
 
-        this.productosSeleccionados = (res.data.items || []).map(item => ({
+        this.productosSeleccionados = (res.data.items || []).map((item) => ({
           nombre: item.nombre,
-          nombre_categoria: item.nombre_categoria || 'SIN CATEGORIA',
-          cantidad: parseInt(item.cantidad || 1)
+          nombre_categoria: item.nombre_categoria || "SIN CATEGORIA",
+          cantidad: parseInt(item.cantidad || 1),
         }));
 
         this.dialogVerCombo = true;
@@ -612,26 +659,26 @@ export default {
     getNumero(valor) {
       if (!valor) return 0;
       // La coma (,) la reemplazamos por punto (.) para que parseFloat lo reconozca
-      let str = String(valor).replace(',', '.');
+      let str = String(valor).replace(",", ".");
       let num = parseFloat(str);
       return isNaN(num) ? 0 : num;
     },
     convertirPuntoComa(event) {
-      if (event.key !== '.') return;
+      if (event.key !== ".") return;
 
       event.preventDefault();
 
       // 🔥 SI ES INPUTNUMBER → obtener input interno
       let input = event.target;
-      if (input.tagName !== 'INPUT') {
-        input = input.querySelector('input');
+      if (input.tagName !== "INPUT") {
+        input = input.querySelector("input");
       }
 
       if (!input) return;
 
       // Si ya tiene coma, solo mover cursor
-      if (input.value.includes(',')) {
-        const pos = input.value.indexOf(',') + 1;
+      if (input.value.includes(",")) {
+        const pos = input.value.indexOf(",") + 1;
         input.setSelectionRange(pos, pos);
         return;
       }
@@ -641,7 +688,7 @@ export default {
 
       // Insertar coma
       const nuevoValor =
-        input.value.substring(0, start) + ',' + input.value.substring(end);
+        input.value.substring(0, start) + "," + input.value.substring(end);
 
       input.value = nuevoValor;
 
@@ -652,17 +699,16 @@ export default {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     },
     evitarReformateo(event, callback) {
-
       // 🔥 SI ES INPUTNUMBER → usar input interno
       let input = event.target;
-      if (input && input.tagName !== 'INPUT') {
-        input = input.querySelector('input');
+      if (input && input.tagName !== "INPUT") {
+        input = input.querySelector("input");
       }
 
-      const valor = input ? input.value : String(event.value || '');
+      const valor = input ? input.value : String(event.value || "");
 
       // Si está en estado intermedio "10," o "10,."
-      if (valor.endsWith(',') || valor.endsWith(',.')) {
+      if (valor.endsWith(",") || valor.endsWith(",.")) {
         return;
       }
 
@@ -710,7 +756,7 @@ export default {
       this.obtenerProductos(
         1,
         this.busquedaProducto,
-        this.rowsPerPageProductos
+        this.rowsPerPageProductos,
       );
     },
     seleccionarProducto(producto) {
@@ -719,12 +765,14 @@ export default {
         this.productosSeleccionados.push({ ...producto, cantidad: 1 });
       }
       console.log("items: ", this.productosSeleccionados);
+      this.toastSuccess("Producto agregado al combo/oferta.");
       //this.rellenarPrecioUnoConSugeridoVenta();
     },
     quitarProducto(producto) {
       this.productosSeleccionados = this.productosSeleccionados.filter(
-        (p) => p.id !== producto.id
+        (p) => p.id !== producto.id,
       );
+      this.toastInfo("Producto removido del combo/oferta.");
       //this.rellenarPrecioUnoConSugeridoVenta();
     },
     handleResize() {
@@ -940,14 +988,14 @@ export default {
     },
     asignarCamposPrecios() {
       this.datosFormulario.precio_venta = this.convertDolar(
-        this.datosFormulario.precio_venta
+        this.datosFormulario.precio_venta,
       );
 
       this.datosFormulario.precio_uno = this.convertDolar(this.precio_uno);
       this.datosFormulario.precio_dos = this.convertDolar(this.precio_dos);
       this.datosFormulario.precio_tres = this.convertDolar(this.precio_tres);
       this.datosFormulario.precio_cuatro = this.convertDolar(
-        this.precio_cuatro
+        this.precio_cuatro,
       );
     },
 
@@ -967,7 +1015,7 @@ export default {
       try {
         await esquemaInventario.validateAt(
           campo,
-          this.datosFormularioInventario
+          this.datosFormularioInventario,
         );
         this.erroresinventario[campo] = null;
       } catch (error) {
@@ -993,7 +1041,7 @@ export default {
       console.log("DATOS FORMULARIO ANTES DE VALIDAR: ", this.datosFormulario);
       console.log(
         "DATOS FORMULARIO ANTES DE VALIDAR: ",
-        this.datosFormularioInventario
+        this.datosFormularioInventario,
       );
 
       console.log("Formulario>: ", this.datosFormulario);
@@ -1314,7 +1362,7 @@ export default {
               Swal.fire(
                 "Desactivado!",
                 "El registro ha sido desactivado con éxito.",
-                "success"
+                "success",
               );
             })
             .catch(function (error) {
@@ -1345,7 +1393,7 @@ export default {
               Swal.fire(
                 "Activado!",
                 "El registro ha sido activado con éxito.",
-                "success"
+                "success",
               );
             })
             .catch(function (error) {
@@ -1428,7 +1476,7 @@ export default {
                 nombre: data["nombre"],
                 descripcion: data["descripcion"],
                 precio_venta: this.calcularPrecioValorMoneda(
-                  data["precio_venta"]
+                  data["precio_venta"],
                 ),
                 precio_variable: data["precio_variable"] == 1,
                 precio_uno: 0,
@@ -1454,16 +1502,16 @@ export default {
               };
 
               this.precio_uno = this.calcularPrecioValorMoneda(
-                data["precio_uno"]
+                data["precio_uno"],
               );
               this.precio_dos = this.calcularPrecioValorMoneda(
-                data["precio_dos"]
+                data["precio_dos"],
               );
               this.precio_tres = this.calcularPrecioValorMoneda(
-                data["precio_tres"]
+                data["precio_tres"],
               );
               this.precio_cuatro = this.calcularPrecioValorMoneda(
-                data["precio_cuatro"]
+                data["precio_cuatro"],
               );
 
               // Obtener productos compuestos asociados
@@ -1473,26 +1521,30 @@ export default {
                 axios
                   .get(`/itemcompuesto/${data["id"]}`)
                   .then((res) => {
-
                     // Guardar nombre del combo (si lo necesitas aquí)
-                    this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
+                    this.nombreComboActual =
+                      res.data.nombre_compuesto || "Detalle del Combo";
 
                     // Mapear SOLO los items
-                    this.productosSeleccionados = (res.data.items || []).map((item) => ({
-                      ...item,
-                      precio_costo_unid: parseFloat(item.precio_costo_unid || 0),
-                      precio_uno: parseFloat(item.precio_uno || 0),
-                      cantidad: parseInt(item.cantidad || 1),
-                    }));
+                    this.productosSeleccionados = (res.data.items || []).map(
+                      (item) => ({
+                        ...item,
+                        precio_costo_unid: parseFloat(
+                          item.precio_costo_unid || 0,
+                        ),
+                        precio_uno: parseFloat(item.precio_uno || 0),
+                        cantidad: parseInt(item.cantidad || 1),
+                      }),
+                    );
 
                     console.log(
                       "productos seleccionados",
-                      this.productosSeleccionados
+                      this.productosSeleccionados,
                     );
                   })
                   .catch(() => {
                     this.productosSeleccionados = [];
-                    this.nombreComboActual = 'Detalle del Combo';
+                    this.nombreComboActual = "Detalle del Combo";
                   });
               }
               break;
@@ -1606,6 +1658,7 @@ export default {
   top: 1rem !important;
   right: 1rem !important;
 }
+
 /* 🔹 Botones pequeños */
 .btn-sm {
   font-size: 0.8rem;
@@ -1695,6 +1748,7 @@ export default {
   border-radius: 12px;
   font-weight: 600;
 }
+
 .tabla-pro {
   width: 100%;
   white-space: nowrap;
@@ -1905,7 +1959,8 @@ export default {
   object-fit: contain;
 }
 
-.required-field {
+/* 🔹 Label obligatorio */
+.label-input {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
@@ -1913,11 +1968,10 @@ export default {
   margin-bottom: 4px;
 }
 
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
+.text-required {
+  color: #dc2626;
+  /* rojo */
+  font-weight: 700;
 }
 
 /* Estilos para campos opcionales */
@@ -1926,6 +1980,8 @@ export default {
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 4px;
+
+  align-items: center;
   gap: 0.4rem;
   font-weight: 500;
   color: #6c757d;
@@ -1933,7 +1989,7 @@ export default {
 
 .optional-icon {
   color: #17a2b8;
-  font-size: 0.7rem;
+  font-size: 0.5rem;
 }
 
 /* Arreglar icono de lupa - Centrado perfecto */
@@ -2309,7 +2365,6 @@ export default {
     margin: 1px !important;
   }
 }
-
 
 @media (max-width: 768px) {
   >>>.p-datatable .p-button {
