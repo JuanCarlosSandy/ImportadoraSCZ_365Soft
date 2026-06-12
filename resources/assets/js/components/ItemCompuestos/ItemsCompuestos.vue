@@ -1,5 +1,7 @@
 <template>
   <main class="main">
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
     <div class="loading-overlay" v-if="isLoading">
       <div class="loading-container">
         <div class="spinner"></div>
@@ -337,6 +339,9 @@ import Dropdown from "primevue/dropdown";
 import InputSwitch from "primevue/inputswitch";
 import Calendar from "primevue/calendar";
 import VueBarcode from "vue-barcode";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
+
 import {
   esquemaArticulos,
   esquemaInventario,
@@ -361,6 +366,8 @@ export default {
     InputSwitch,
     Calendar,
     Paginator,
+    ToastService,
+    Toast,
     barcode: VueBarcode,
     DialogProveedores,
     DialogCategoria,
@@ -1556,6 +1563,49 @@ export default {
 </script>
 
 <style scoped>
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
 /* 🔹 Botones pequeños */
 .btn-sm {
   font-size: 0.8rem;
