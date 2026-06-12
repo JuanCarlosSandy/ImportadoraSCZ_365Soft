@@ -29,6 +29,8 @@
           </span>
         </div>
         <div class="toolbar">
+          <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
+            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
             @click="abrirModal('articulo', 'registrar')" />
           <!--<Button :label="mostrarLabel ? 'Reporte' : ''" icon="pi pi-file" class="p-button-success p-button-sm"
@@ -568,6 +570,24 @@ export default {
 
   },
   methods: {
+   async limpiarBusqueda() {
+      try {
+        this.buscar = ""; // Limpiar input
+
+        this.isLoading = true;
+
+        await this.listarComboOferta(1, "", "");
+        this.toastSuccess("Búsqueda limpiada. Mostrando todos los registros.");
+
+        setTimeout(() => {
+          this.isLoading = false;
+        }, 500);
+
+      } catch (error) {
+        console.error("Error al limpiar búsqueda:", error);
+        this.isLoading = false;
+      }
+    },
     verCombosOfertas(id) {
       axios.get(`/itemcompuesto/${id}`).then((res) => {
         this.nombreComboActual = res.data.nombre_compuesto || 'Detalle del Combo';
@@ -727,36 +747,36 @@ export default {
       });
     },
     toastSuccess(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `.<br>
-    </div>`,
-        {
-          type: "success",
-          position: "bottom-right",
-          duration: 4000,
-        }
-      );
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     toastError(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `<br>
-    </div>`,
-        {
-          type: "error",
-          position: "bottom-right",
-          duration: 4000,
-        }
-      );
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastInfo(mensaje) {
+      this.$toast.add({
+        severity: "info",
+        summary: "Información",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     handleDateChange(date) {
       // Verifica si date es un objeto Date válido
@@ -881,7 +901,7 @@ export default {
           break;
         case "Importar":
           this.mostrarDialogoImportar = false;
-          this.listarItemCompuesto(1, "", "nombre");
+          this.listarComboOferta(1, "", "nombre");
           break;
       }
       this.dialogVisible = true;
@@ -905,7 +925,7 @@ export default {
         });
     },
     buscarArticulo() {
-      this.listarItemCompuesto(1, this.buscar);
+      this.listarComboOferta(1, this.buscar);
     },
     asignarCampos() {
       this.datosFormulario.idcategoria = this.lineaSeleccionado.id;
@@ -1149,7 +1169,7 @@ export default {
       const precioP = parseFloat(precio_costo_unid) + parseFloat(margenG);
       return precioP.toFixed(2);
     },
-    listarItemCompuesto(page, buscar, criterio) {
+    listarComboOferta(page, buscar, criterio) {
       let me = this;
       me.isLoading = true; // Activar loader
 
@@ -1199,7 +1219,7 @@ export default {
           me.idarticulo = respuesta.idArticulo;
           console.log("respuesta = ", me.idarticulo);
           me.cerrarModal();
-          me.listarItemCompuesto(1, "", "nombre");
+          me.listarComboOferta(1, "", "nombre");
           me.toastSuccess("Articulo registrado correctamente");
           console.log("stock ???", me.agregarStock);
           if (me.agregarStock == true) {
@@ -1253,7 +1273,7 @@ export default {
           console.log("respuesta = ", respuesta);
           console.log("foto ", data);
           me.cerrarModal();
-          me.listarItemCompuesto(1, "", "nombre");
+          me.listarComboOferta(1, "", "nombre");
           me.toastSuccess("Articulo actualizado correctamente");
         })
         .catch(function (error) {
@@ -1283,7 +1303,7 @@ export default {
               id: id,
             })
             .then(function (response) {
-              me.listarItemCompuesto(1, "", "nombre");
+              me.listarComboOferta(1, "", "nombre");
               Swal.fire(
                 "Desactivado!",
                 "El registro ha sido desactivado con éxito.",
@@ -1314,7 +1334,7 @@ export default {
               id: id,
             })
             .then(function (response) {
-              me.listarItemCompuesto(1, "", "nombre");
+              me.listarComboOferta(1, "", "nombre");
               Swal.fire(
                 "Activado!",
                 "El registro ha sido activado con éxito.",
@@ -1517,7 +1537,7 @@ export default {
       this.recuperarIdRol(),
       this.datosConfiguracion(),
       this.obtenerConfiguracionTrabajo(),
-      this.listarItemCompuesto(1, this.buscar, this.criterio),
+      this.listarComboOferta(1, this.buscar, this.criterio),
       this.listarPrecio(),
       this.obtenerProductos(1, "", 5),
     ])
