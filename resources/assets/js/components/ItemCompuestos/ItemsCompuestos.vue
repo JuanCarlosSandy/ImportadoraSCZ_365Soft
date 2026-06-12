@@ -14,6 +14,13 @@
         </div>
       </template>
 
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre el código o el nombre de la oferta/combo, edite y registre nuevas ofertas/combos.
+        </span>
+      </div>
+
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
@@ -1529,7 +1536,26 @@ export default {
 </script>
 
 <style scoped>
-  .dialog-combo .p-dialog-header {
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dialog-combo .p-dialog-header {
   padding: 0;
 }
 
