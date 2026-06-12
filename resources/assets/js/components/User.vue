@@ -15,6 +15,12 @@
           <h4 class="panel-title">USUARIOS</h4>
         </div>
       </template>
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre el nombre, rol, usuario, documento de identidad, telefono o sucursal, edite y registre nuevos usuarios.
+        </span>
+      </div>
       <div class="toolbar-container">
         <div class="search-bar">
           <div class="p-inputgroup">
@@ -22,19 +28,18 @@
             <span class="p-input-icon-left">
               <i class="pi pi-search"></i>
               <InputText v-model="buscar" @input="onBuscarInput" placeholder="Buscar en todos los campos..."
-                class="p-inputtext-sm" />
+                class="p-inputtext-sm input-full" />
             </span>
-
-            <Button icon="pi pi-refresh" class="p-button-help p-button-sm" @click="resetBusqueda"
-              v-tooltip="'Limpiar búsqueda'" />
           </div>
         </div>
 
         <div class="toolbar">
-          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
-            class="p-button-secondary p-button-sm" v-tooltip="'Nuevo usuario'" />
+          <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetBusqueda"
+            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" @click="cargarReporteUsuariosExcel()"
-            class="p-button-success p-button-sm" v-tooltip="'Exportar a Excel'" />
+            class="p-button-success p-button-sm  btn-sm-input" :title="'Exportar a Excel'" />
+          <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
+            class="p-button-secondary p-button-sm  btn-sm-input" :title="'Nuevo usuario'" />
         </div>
       </div>
 
@@ -922,6 +927,24 @@ export default {
 </script>
 
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 /* Quitar redondeo derecho del input cuando está en inputgroup */
 .p-inputgroup>.p-input-icon-left>.p-inputtext {
   border-top-right-radius: 0;
@@ -1080,6 +1103,18 @@ export default {
 
 .btn-sm .pi {
   font-size: 0.75rem;
+  margin-right: 4px;
+}
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
   margin-right: 4px;
 }
 
