@@ -96,7 +96,7 @@
       <div class="p-fluid p-formgrid p-grid form-compact">
         <div class="p-field p-col-12">
           <label for="nombre" class="label-input">
-              <span class="text-required">*</span> Nombre del Categoría
+              <span class="text-required">*</span> Nombre de la Categoría
             </label>
           <InputText 
             id="nombre"

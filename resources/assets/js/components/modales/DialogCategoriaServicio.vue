@@ -1,131 +1,85 @@
 <template>
   <main class="main">
-    <Dialog
-      header="CATEGORÍA DEL COMBO/OFERTA"
-      :visible.sync="modal1"
-      :modal="true"
-      :containerStyle="{ width: '700px' }"
-      :closable="false"
-      :closeOnEscape="false"
-    >
-      <div class="toolbar-container">
-        <div class="toolbar">
-          <Button
-            label="Nuevo"
-            icon="pi pi-plus"
-            class="p-button-secondary p-button-sm btn-sm"
-            @click="abrirModal('categoria', 'registrar')"
-          />
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <div class="loading-text">LOADING...</div>
+      </div>
+    </div>
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
+
+    <Dialog :visible.sync="modal1" :modal="true" :containerStyle="dialogContainerStyle" :closable="false"
+      :closeOnEscape="false">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-box header-icon"></i>
+          <span class="header-title"> Categorias Combos/Ofertas</span>
         </div>
+      </template>
+      <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText
-              type="text"
-              placeholder="Texto a buscar"
-              class="p-inputtext-sm"
-              v-model="buscar"
-              @keyup="buscarLinea"
-            />
+            <InputText type="text" placeholder="Texto a buscar" class="p-inputtext-sm input-full" v-model="buscar"
+              @keyup="buscarLinea" />
           </span>
         </div>
+        <div class="toolbar">
+          <Button label="Nuevo" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm"
+            @click="abrirModal('categoria', 'registrar')" />
+        </div>
       </div>
-      <DataTable
-        class="p-datatable-sm p-datatable-gridlines tabla-pro"
-        :value="arrayCategoria"
-        :paginator="true"
-        responsiveLayout="scroll"
-        :rows="6"
-      >
+      <DataTable class="p-datatable-sm p-datatable-gridlines tabla-pro" :value="arrayCategoria" :paginator="true"
+        responsiveLayout="scroll" :rows="6">
         <Column field="opciones" header="Opciones">
           <template #body="slotProps">
-            <Button
-              icon="pi pi-check"
-              class="p-button-success custom-icon-size btn-mini"
-              @click="seleccionarLinea(slotProps.data)"
-            />
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-warning btn-mini"
-              @click="abrirModal('categoria', 'actualizar', slotProps.data)"
-            />
+            <Button icon="pi pi-check" class="p-button-success custom-icon-size btn-mini"
+              @click="seleccionarLinea(slotProps.data)" />
+            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+              @click="abrirModal('categoria', 'actualizar', slotProps.data)" />
           </template>
         </Column>
         <Column field="nombre" header="Nombre" />
       </DataTable>
       <template #footer>
-        <Button
-          label="Cerrar"
-          icon="pi pi-times"
-          class="p-button-danger p-button-sm btn-sm"
-          @click="closeDialog"
-        />
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="closeDialog" />
       </template>
     </Dialog>
-    <Dialog
-      :visible.sync="modal"
-      modal
-      :header="tituloModal"
-      @hide="cerrarModal"
-      :containerStyle="{ width: '700px' }"
-      :closable="false"
-      :closeOnEscape="false"
-            class="responsive-dialog form-dialog"
-    >
-      <template #footer>
-        <Button
-          label="Cancelar"
-          icon="pi pi-times"
-          class="p-button-sm p-button-danger btn-sm"
-          @click="cerrarModal()"
-        />
-        <Button
-          v-if="tipoAccion === 1"
-          label="Guardar"
-          icon="pi pi-check"
-          class="p-button-sm p-button-success btn-sm"
-          @click="registrarCategoria()"
-        />
-        <Button
-          v-if="tipoAccion === 2"
-          label="Actualizar"
-          icon="pi pi-check"
-          class="p-button-sm p-button-warning btn-sm"
-          @click="actualizarCategoria()"
-        />
+    <Dialog :visible.sync="modal" modal @hide="cerrarModal" :containerStyle="formDialogContainerStyle" :closable="false"
+      :closeOnEscape="false" class="responsive-dialog form-dialog">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-box header-icon"></i>
+          <span class="header-title">{{ tituloModal }}</span>
+        </div>
       </template>
+
       <div class="p-fluid ">
         <div class="p-field input-container">
-          <label for="nombre" class="required-field">
-            <span class="required-icon">*</span>
-            Nombre de Categoría
+          <label for="nombre" class="label-input">
+            <span class="text-required">*</span> Nombre de la Categoría
           </label>
-          <InputText
-            id="nombre"
-                        class="input-full" 
-            v-model="nombre"
-            required
-            autofocus
-            :class="{ 'input-error': nombreError }"
-            @input="validarNombreEnTiempoReal"
-          />
-          <small class="p-error error-message" v-if="nombreError"
-            ><strong>{{ nombreError }}</strong></small
-          >
+          <InputText id="nombre" class="input-full" v-model="nombre" required autofocus
+            :class="{ 'input-error': nombreError }" @input="validarNombreEnTiempoReal" :autocomplete="'off'" />
+          <small class="p-error error-message" v-if="nombreError"><strong>{{ nombreError }}</strong></small>
         </div>
         <div class="p-field input-container">
-           <label for="documentType" class="optional-field">
-              <i class="pi pi-info-circle optional-icon"></i>
-              Descripcion
-              <span class="p-tag p-tag-secondary tag-opcional">Opcional</span>
-            </label>
-          <InputText
-            id="descripcion"
-                        class="input-full"
-            v-model="descripcion"
-          />
+          <label class="optional-field">
+            <i class="pi pi-list optional-icon"></i>
+            Descripcion <span class="optional-tag">Opcional</span>
+          </label>
+          <InputText id="descripcion" class="input-full" v-model="descripcion" :autocomplete="'off'" />
         </div>
       </div>
+
+      <template #footer>
+        <Button label="Cancelar" icon="pi pi-times" class="p-button-sm p-button-danger btn-sm" @click="cerrarModal()" />
+        <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" class="p-button-sm p-button-success btn-sm"
+          @click="registrarCategoria()" />
+        <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check"
+          class="p-button-sm p-button-warning btn-sm" @click="actualizarCategoria()" />
+      </template>
     </Dialog>
   </main>
 </template>
@@ -138,6 +92,8 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Swal from "sweetalert2";
+import ToastService from "primevue/toastservice";
+import Toast from "primevue/toast";
 import "sweetalert2/dist/sweetalert2.min.css";
 export default {
   props: {
@@ -153,6 +109,8 @@ export default {
     Dialog,
     InputText,
     InputNumber,
+    ToastService,
+    Toast,
   },
   data() {
     return {
@@ -171,7 +129,47 @@ export default {
       lineaSeleccionado: null,
     };
   },
+  computed: {
+    dialogContainerStyle() {
+      if (window.innerWidth <= 480) {
+        return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 768) {
+        return { width: "90vw", maxWidth: "90vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 1024) {
+        return { width: "80vw", maxWidth: "800px", margin: "0 auto" };
+      } else {
+        return { width: "700px", maxWidth: "90vw", margin: "0 auto" };
+      }
+    },
+    formDialogContainerStyle() {
+      if (window.innerWidth <= 480) {
+        return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 768) {
+        return { width: "90vw", maxWidth: "90vw", margin: "0 auto" };
+      } else if (window.innerWidth <= 1024) {
+        return { width: "85vw", maxWidth: "900px", margin: "0 auto" };
+      } else {
+        return { width: "600px", maxWidth: "90vw", margin: "0 auto" };
+      }
+    },
+  },
   methods: {
+    toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
+    },
+    toastError(mensaje) {
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
     closeDialog() {
       this.$emit("close");
     },
@@ -218,56 +216,95 @@ export default {
       if (this.validarCategoria()) {
         return;
       }
+
       let me = this;
+      me.isLoading = true;
+
       axios
         .post("/categoria/servicio/registrar", {
-          nombre: this.nombre,
-          descripcion: this.descripcion,
-          codigoProductoSin: this.codigoProductoSin,
+          nombre: me.nombre,
+          descripcion: me.descripcion,
+          codigoProductoSin: me.codigoProductoSin,
         })
-        .then(function(response) {
+        .then(function (response) {
+          me.toastSuccess(
+            response.data.message || "Categoría registrada correctamente.",
+          );
+
           me.cerrarModal();
           me.listarCategoria(1, "", "nombre");
         })
-        .catch(function(error) {
-          console.log(error);
+        .catch(function (error) {
+          let mensaje = "Ocurrió un error al registrar la categoría.";
+
+          if (
+            error.response &&
+            error.response.data &&
+            error.response.data.message
+          ) {
+            mensaje = error.response.data.message;
+          }
+
+          me.toastError(mensaje);
+          console.error(error);
+        })
+        .finally(function () {
+          me.isLoading = false;
         });
     },
     actualizarCategoria() {
       if (this.validarCategoria()) {
         return;
       }
+
       let me = this;
+      me.isLoading = true;
+
       axios
         .put("/categoria/actualizar", {
-          nombre: this.nombre,
-          descripcion: this.descripcion,
-          codigoProductoSin: this.codigoProductoSin,
-          id: this.categoria_id,
+          nombre: me.nombre,
+          descripcion: me.descripcion,
+          codigoProductoSin: me.codigoProductoSin,
+          id: me.categoria_id,
         })
-        .then(function(response) {
+        .then(function (response) {
+          me.toastSuccess(
+            response.data.message || "Categoría actualizada correctamente.",
+          );
+
           me.cerrarModal();
           me.listarCategoria(1, "", "nombre");
         })
-        .catch(function(error) {
-          console.log(error);
+        .catch(function (error) {
+          let mensaje = "Ocurrió un error al actualizar la categoría.";
+
+          if (
+            error.response &&
+            error.response.data &&
+            error.response.data.message
+          ) {
+            mensaje = error.response.data.message;
+          }
+
+          me.toastError(mensaje);
+          console.error(error);
+        })
+        .finally(function () {
+          me.isLoading = false;
         });
     },
     validarCategoria() {
-      let hasError = false;
-      this.codigoProductoSinError = "";
-      this.descripcionError = "";
       this.nombreError = "";
-      if (
-        this.codigoProductoSin === null ||
-        this.codigoProductoSin === undefined ||
-        String(this.codigoProductoSin).trim() === ""
-      ) {
-        this.codigoProductoSinError = "El código no puede estar vacío.";
+
+      if (!this.nombre || !this.nombre.trim()) {
+        this.nombreError = "El nombre de la categoría no puede estar vacío.";
+
+        this.toastError(this.nombreError);
+
+        return true; // Hay error
       }
-      if (!this.nombre.trim()) {
-        this.nombreError = "El nombre de la linea no puede estar vacío.";
-      }
+
+      return false; // No hay error
     },
     listarCategoria(page, buscar, criterio) {
       let me = this;
@@ -280,13 +317,13 @@ export default {
         criterio;
       axios
         .get(url)
-        .then(function(response) {
+        .then(function (response) {
           var respuesta = response.data;
           //consol.log('Linea',respuesta);
           me.arrayCategoria = respuesta.categorias;
           me.pagination = respuesta.pagination;
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
     },
@@ -337,6 +374,126 @@ export default {
 };
 </script>
 <style scoped>
+/* Estilos del loader */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  padding: 30px;
+  border-radius: 15px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 3px;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 /* Estilo de tabla con scroll horizontal */
 .tabla-pro {
   width: 100%;
@@ -356,22 +513,24 @@ export default {
   font-size: 0.85rem;
   padding: 0.5rem;
 }
+
 /* 🔹 Input principal (Buscar Producto) */
 .input-full {
-    width: 100%;
-    font-size: 0.8rem;
-    padding: 6px 8px;
-    border-radius: 6px 0 0 6px;
-    box-sizing: border-box;
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
 }
 
 /* Ajuste para InputText de PrimeVue */
 .input-full>>>.p-inputtext {
-    width: 100% !important;
-    font-size: 0.8rem;
-    padding: 6px 8px;
-    border-radius: 6px 0 0 6px;
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
 }
+
 /* Arreglar icono de lupa - Centrado perfecto */
 .search-bar .p-input-icon-left {
   position: relative;
@@ -399,23 +558,23 @@ export default {
 }
 
 /* Responsive Dialog Styles */
-.responsive-dialog >>> .p-dialog {
+.responsive-dialog>>>.p-dialog {
   margin: 0.75rem;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   overflow-x: auto;
   padding: 1rem;
 }
 
-.responsive-dialog >>> .p-dialog-header {
+.responsive-dialog>>>.p-dialog-header {
   padding: 1rem 1.5rem;
   font-size: 1.1rem;
 }
 
-.responsive-dialog >>> .p-dialog-footer {
+.responsive-dialog>>>.p-dialog-footer {
   padding: 0.75rem 1.5rem;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -453,28 +612,21 @@ export default {
 }
 
 /* Formulario compacto - Reducir espacios entre campos */
-.form-compact >>> .p-field {
+.form-compact>>>.p-field {
   margin-bottom: 0.5rem !important;
 }
 
->>> .p-fluid .p-field {
+>>>.p-fluid .p-field {
   margin-bottom: 0.5rem;
 }
 
-/* Estilos para campos obligatorios */
-.required-field {
+/* 🔹 Label obligatorio */
+.label-input {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
   color: #374151;
   margin-bottom: 4px;
-}
-
-.required-icon {
-  color: #e74c3c;
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 0.2rem;
 }
 
 /* Estilos para campos opcionales */
@@ -513,41 +665,41 @@ export default {
 
 /* DataTable Responsive */
 >>>.p-datatable {
-    font-size: 0.75rem;
+  font-size: 0.75rem;
 }
 
 >>>.p-datatable .p-datatable-tbody>tr>td {
-    padding: 0.4rem;
-    word-break: break-word;
-    text-align: left;
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
 }
 
 >>>.p-datatable .p-datatable-thead>tr>th {
-    padding: 0.35rem 0.4rem;
-    font-size: 0.75rem;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
 }
 
 /* Form Grid Responsive */
->>> .p-formgrid.p-grid {
+>>>.p-formgrid.p-grid {
   margin: 0;
 }
 
->>> .p-formgrid .p-field {
+>>>.p-formgrid .p-field {
   padding: 0.2rem;
 }
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.5rem;
     max-height: 95vh;
   }
-  
-  >>> .p-datatable {
+
+  >>>.p-datatable {
     font-size: 0.85rem;
   }
-  
-  >>> .p-formgrid .p-field.p-col-12 {
+
+  >>>.p-formgrid .p-field.p-col-12 {
     width: 100% !important;
     flex: 0 0 100% !important;
   }
@@ -555,74 +707,76 @@ export default {
 
 /* Mobile Styles */
 @media (max-width: 768px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.25rem;
     max-height: 98vh;
   }
-  
-  .responsive-dialog >>> .p-dialog-content {
+
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.75rem;
   }
-  
-  .responsive-dialog >>> .p-dialog-header {
+
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.75rem 1rem;
     font-size: 1rem;
   }
-  
-  .responsive-dialog >>> .p-dialog-footer {
+
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.5rem 1rem;
     justify-content: flex-end;
   }
-  
+
   .toolbar-container {
     gap: 0.5rem;
   }
-  
-  >>> .p-datatable {
+
+  >>>.p-datatable {
     font-size: 0.8rem;
   }
-  
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.4rem 0.3rem;
   }
-  
-  >>> .p-datatable .p-datatable-thead > tr > th {
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.5rem 0.3rem;
     font-size: 0.75rem;
   }
-  
-  >>> .p-formgrid .p-field {
+
+  >>>.p-formgrid .p-field {
     padding: 0.25rem;
     margin-bottom: 0.4rem !important;
   }
-  
-  >>> .p-formgrid .p-field label {
+
+  >>>.p-formgrid .p-field label {
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
   }
-  
+
   /* Ajustar iconos en móviles */
   .required-icon {
     font-size: 0.8rem;
   }
-  
-  >>> .p-inputtext, >>> .p-dropdown, >>> .p-inputnumber-input {
+
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
-  
-  >>> .p-button-sm {
+
+  >>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
     min-width: auto !important;
   }
-  
+
   /* Ajustar botón "Nuevo" para que coincida con botón "Cerrar" */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
-  
+
   /* Reducir altura del input buscador */
   .search-bar .p-inputtext-sm {
     padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
@@ -632,87 +786,89 @@ export default {
 
 /* Extra Small Mobile */
 @media (max-width: 480px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.1rem;
     max-height: 99vh;
   }
-  
-  .responsive-dialog >>> .p-dialog-content {
+
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.5rem;
   }
-  
-  .responsive-dialog >>> .p-dialog-header {
+
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.5rem 0.75rem;
     font-size: 0.95rem;
   }
-  
+
   /* Footer mantiene botones alineados a la derecha, no ocupan todo el ancho */
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.5rem 0.75rem;
     justify-content: flex-end;
   }
-  
-  .responsive-dialog >>> .p-dialog-footer .p-button {
+
+  .responsive-dialog>>>.p-dialog-footer .p-button {
     width: auto;
     margin-bottom: 0.25rem;
   }
-  
+
   /* Toolbar mantiene elementos en una línea */
   .toolbar-container {
     gap: 0.4rem;
     flex-wrap: nowrap;
   }
-  
+
   .toolbar {
     flex-shrink: 0;
     min-width: auto;
   }
-  
+
   .search-bar {
     flex: 1;
     min-width: 0;
   }
-  
+
   /* Ajustar botón "Nuevo" para que coincida con botón "Cerrar" */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
-  
+
   /* Reducir más la altura del input buscador en móviles pequeños */
   .search-bar .p-inputtext-sm {
     padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
     font-size: 0.8rem !important;
   }
-  
-  >>> .p-datatable {
+
+  >>>.p-datatable {
     font-size: 0.75rem;
   }
-  
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.3rem 0.2rem;
   }
-  
-  >>> .p-datatable .p-datatable-thead > tr > th {
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
   }
-  
-  >>> .p-formgrid .p-field {
+
+  >>>.p-formgrid .p-field {
     padding: 0.2rem;
     margin-bottom: 0.3rem !important;
   }
-  
-  >>> .p-formgrid .p-field label {
+
+  >>>.p-formgrid .p-field label {
     font-size: 0.85rem;
   }
-  
+
   /* Iconos más pequeños en móviles extra pequeños */
   .required-icon {
     font-size: 0.7rem;
   }
-  
-  >>> .p-inputtext, >>> .p-dropdown, >>> .p-inputnumber-input {
+
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.85rem;
     padding: 0.4rem;
   }
@@ -720,18 +876,18 @@ export default {
 
 /* Paginator Responsive */
 @media (max-width: 768px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     flex-wrap: wrap !important;
     justify-content: center;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
-  
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 32px !important;
     height: 32px !important;
     font-size: 0.85rem !important;
@@ -741,16 +897,16 @@ export default {
 }
 
 @media (max-width: 480px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
-  
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 28px !important;
     height: 28px !important;
     font-size: 0.8rem !important;
@@ -760,24 +916,24 @@ export default {
 }
 
 /* Action Buttons in DataTable */
->>> .p-datatable .p-button {
+>>>.p-datatable .p-button {
   margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
-  >>> .p-datatable .p-button {
+  >>>.p-datatable .p-button {
     margin-right: 0.15rem;
     margin-bottom: 0.15rem;
   }
 }
 
 /* Error Messages Responsive */
->>> .p-error {
+>>>.p-error {
   font-size: 0.8rem;
 }
 
 @media (max-width: 480px) {
-  >>> .p-error {
+  >>>.p-error {
     font-size: 0.75rem;
   }
 }
@@ -788,9 +944,11 @@ export default {
 .p-dialog-mask {
   z-index: 9990 !important;
 }
+
 .p-dialog {
   z-index: 9990 !important;
 }
+
 .swal-zindex {
   z-index: 99999 !important;
 }

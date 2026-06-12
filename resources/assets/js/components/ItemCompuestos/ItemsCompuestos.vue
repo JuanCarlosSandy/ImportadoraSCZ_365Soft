@@ -760,6 +760,7 @@ export default {
     },
     rellenarPrecioUnoConSugeridoVenta() {
       this.precio_uno = this.precioSugeridoVenta;
+      this.toastSuccess("Precio del combo actualizado con el precio sugerido de venta.")
     },
     async obtenerProductos(page = 1, search = "", rows = null) {
       this.productosLoading = true;
