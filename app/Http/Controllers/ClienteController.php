@@ -283,6 +283,18 @@ class ClienteController extends Controller
         if (!$request->ajax())
             return redirect('/');
 
+        // 🔹 Validar que CI (1) y NIT (5) no tengan letras
+        if (
+            in_array($request->tipo_documento, ['1', '5']) &&
+            $request->num_documento &&
+            preg_match('/[a-zA-Z]/', $request->num_documento)
+        ) {
+            return response()->json([
+                'error' => true,
+                'message' => 'El número de documento no puede contener letras para CI o NIT'
+            ], 422);
+        }
+
         // 🔍 Buscar por tipo + número de documento
         $clienteExistente = Persona::where('tipo_documento', $request->tipo_documento)
             ->where('num_documento', $request->num_documento)
@@ -334,6 +346,17 @@ class ClienteController extends Controller
     {
         if (!$request->ajax())
             return redirect('/');
+
+        // 🔹 Validar que CI (1) y NIT (5) solo tengan números
+        if (
+            in_array($request->tipo_documento, ['1', '5']) &&
+            !preg_match('/^[0-9]+$/', $request->num_documento)
+        ) {
+            return response()->json([
+                'error' => true,
+                'message' => 'El número de documento solo debe contener números para CI o NIT'
+            ], 422);
+        }
 
         // 🔴 1. Validar duplicado de documento (más importante)
         $docDuplicado = Persona::where('tipo_documento', $request->tipo_documento)

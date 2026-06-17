@@ -616,6 +616,7 @@ export default {
       }
     },
     abrirModal(modelo, accion, data = []) {
+      
       // ✅ Validar restricción por rol (Vendedor ID 2)
       if (accion === "registrar" || accion === "actualizar") {
         if (this.idrol == 2) {
@@ -623,6 +624,9 @@ export default {
           return;
         }
       }
+
+      this.consultaProductosServicios();
+      this.consultaActividadEconomica();
 
       switch (modelo) {
         case "categoria": {
@@ -675,8 +679,6 @@ export default {
       this.isLoading = true; // Activar loading
       await Promise.all([
         this.listarCategoria(1, this.buscar, this.criterio),
-        this.consultaProductosServicios(),
-        this.consultaActividadEconomica()
       ]);
     } catch (error) {
       console.error("Error en la carga inicial:", error);

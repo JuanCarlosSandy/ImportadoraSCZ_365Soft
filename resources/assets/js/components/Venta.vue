@@ -17,66 +17,52 @@
       </template>
 
       <template v-if="listado == 1">
-        <div class="d-flex align-items-center mb-2 justify-content-between">
-          <div class="d-flex align-items-center">
-            <!--<span :class="['badge',
-            estadoFactVisual === 'online' ? 'bg-success' : 'bg-secondary',
-            'd-flex', 'align-items-center']"
-            style="font-size: 0.85rem; padding: 0.3em 0.7em; min-width: 120px; justify-content: center; gap: 0.4em;">
-            <i v-if="cargandoFactVisual" class="pi pi-spin pi-spinner" style="font-size: 1em;"></i>
-            <i v-else-if="estadoFactVisual === 'online'" class="pi pi-check" style="font-size: 1em;"></i>
-            <i v-else class="pi pi-times" style="font-size: 1em;"></i>
-            {{
-              cargandoFactVisual ? 'FACTURACION ONLINE' :
-                (estadoFactVisual === 'online' ? 'FACTURACION ONLINE' : 'FACTURACION OFFLINE')
-            }}
-          </span>
-          <button @click="ejecutarSecuencial" class="btn btn-light btn-sm ms-2"
-            style="margin-left: 8px; padding: 2px 7px; font-size: 0.9em; border-radius: 4px; border: 1px solid #ccc;">
-            <i class="pi pi-refresh"></i>
-          </button>-->
-          </div>
-          <div class="d-flex align-items-center gap-1">
-            <!-- 
-            <button :class="['btn', 'btn-sm', filtroVentasActivo === 'contado' ? 'btn-primary' : 'btn-outline-primary']"
-              @click="filtroVentasActivo = 'contado'; listarVenta(1, buscar, criterio, 1)">
-              CONTADO
-            </button>
-            
-            <button :class="['btn', 'btn-sm', filtroVentasActivo === 'credito' ? 'btn-primary' : 'btn-outline-primary']"
-              @click="filtroVentasActivo = 'credito'; listarVenta(1, buscar, criterio, 2)">
-              CRÉDITO
-            </button> -->
-
-
-            <!--<button :class="['btn', 'btn-sm', filtroVentasActivo === 'factura' ? 'btn-primary' : 'btn-outline-primary']"
-            style="margin-left: 8px; min-width: 70px; font-size: 0.85em; padding: 2px 10px;"
-            @click="filtroVentasActivo = 'factura'; listarVentaF(1, buscar, criterio);">FACTURA</button>
-            <button :class="['btn', 'btn-sm', filtroVentasActivo === 'recibo' ? 'btn-primary' : 'btn-outline-primary']"
-              style="margin-left: 4px; min-width: 70px; font-size: 0.85em; padding: 2px 10px;"
-              @click="filtroVentasActivo = 'recibo'; listarVentaR(1, buscar, criterio);">RECIBO</button>-->
-            <button :class="['btn', 'btn-sm', filtroVentasActivo === 'todos' ? 'btn-primary' : 'btn-outline-primary']"
-              style="margin-left: 4px; min-width: 70px; font-size: 0.85em; padding: 2px 10px;"
-              @click="filtroVentasActivo = 'todos'; listarVenta(1, buscar, criterio);">TODOS</button>
-
-          </div>
+        <div class="info-tip">
+          <i class="pi pi-info-circle"></i>
+          <span>{{ mensajeFacturacion }}</span>
         </div>
 
-        <!--<span class="badge bg-secondary" id="comunicacionSiat" style="color: white; display:none;"
-        v-show="mostrarElementos">Desconectado</span>
-      <span class="badge bg-secondary" id="cuis" style="display:none;" v-show="mostrarElementos">CUIS:
-        Inexistente</span>
-      <span class="badge bg-secondary" id="cufd" style="display:none;" v-show="mostrarElementos">No existe cufd
-        vigente</span>
-      <span class="badge bg-secondary" id="direccion" style="display:none;" v-show="mostrarDireccion">No hay dirección
-        registrada</span>
-      <span class="badge bg-primary" id="cufdValor" style="display:none;" v-show="mostrarCUFD">No hay CUFD</span>-->
-        <div class="filtros-superadmin p-mb-3" v-if="idrol == 4"
+        <span class="badge bg-secondary" id="comunicacionSiat" style="color: white; display:none;"
+          v-show="mostrarElementos">Desconectado</span>
+        <span class="badge bg-secondary" id="cuis" style="display:none;" v-show="mostrarElementos">CUIS:
+          Inexistente</span>
+        <span class="badge bg-secondary" id="cufd" style="display:none;" v-show="mostrarElementos">No existe cufd
+          vigente</span>
+        <span class="badge bg-secondary" id="direccion" style="display:none;" v-show="mostrarDireccion">No hay dirección
+          registrada</span>
+        <span class="badge bg-primary" id="cufdValor" style="display:none;" v-show="mostrarCUFD">No hay CUFD</span>
+        <div class="filtros-superadmin p-mb-3"
           style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
 
           <div class="field">
+            <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Facturación</label>
+
+            <span :class="['badge',
+              estadoFactVisual === 'online' ? 'bg-success' : 'bg-secondary',
+              'd-flex', 'align-items-center']"
+              style="font-size: 0.85rem; padding: 0.7em 0.7em; min-width: 120px; justify-content: center; gap: 0.4em;">
+              <i v-if="cargandoFactVisual" class="pi pi-spin pi-spinner" style="font-size: 1em;"></i>
+              <i v-else-if="estadoFactVisual === 'online'" class="pi pi-check" style="font-size: 1em;"></i>
+              <i v-else class="pi pi-times" style="font-size: 1em;"></i>
+              {{
+                cargandoFactVisual ? 'FACTURACION ONLINE' :
+                  (estadoFactVisual === 'online' ? 'FACTURACION ONLINE' : 'FACTURACION OFFLINE')
+              }}
+            </span>
+
+          </div>
+
+          <div class="field">
+            <Button icon="pi pi-refresh" @click="ejecutarSecuencial"
+              class="p-button-secondary p-button-sm btn-sm-input" :title="'Verificar Facturación'" />
+          </div>
+
+
+<template v-if="idrol == 4">
+          <div class="field">
             <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Sucursal</label>
-            <select v-model="filtroSucursal" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm">
+            <select v-model="filtroSucursal" @change="buscarVenta"
+              class="p-inputtext p-component p-inputtext-sm input-full">
               <option value="">Todas las sucursales</option>
               <option v-for="suc in arraySucursales" :key="suc.id" :value="suc.id">
                 {{ suc.nombre }}
@@ -87,18 +73,34 @@
           <div class="field">
             <label for="fechaInicio" style="display:block; font-size: 12px; font-weight: bold;">Fecha Inicio</label>
             <input type="date" v-model="fechaInicio" @change="buscarVenta"
-              class="p-inputtext p-component p-inputtext-sm" style="height: 35px;" />
+              class="p-inputtext p-component p-inputtext-sm input-date-full" style="height: 35px;" />
           </div>
 
           <div class="field">
             <label for="fechaFin" style="display:block; font-size: 12px; font-weight: bold;">Fecha Fin</label>
-            <input type="date" v-model="fechaFin" @change="buscarVenta" class="p-inputtext p-component p-inputtext-sm"
-              style="height: 35px;" />
+            <input type="date" v-model="fechaFin" @change="buscarVenta"
+              class="p-inputtext p-component p-inputtext-sm input-date-full" style="height: 35px;" />
           </div>
 
           <div class="field">
-            <Button @click="limpiarFiltros" label="Todos / Limpiar" icon="pi pi-filter-slash"
-              class="p-button-secondary p-button-sm" style="height: 35px;" />
+            <Button @click="limpiarFiltros" label="Limpiar" icon="pi pi-filter-slash"
+              class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar Filtros'" />
+          </div>
+          </template>
+          <div class="field">
+            <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Vista</label>
+
+            <div class="d-flex align-items-center gap-1">
+              <button
+                :class="['btn', 'btn-sm-input', filtroVentasActivo === 'factura' ? 'btn-primary' : 'btn-outline-primary']"
+                @click="filtroVentasActivo = 'factura'; listarVentaF(1, buscar, criterio);">FACTURA</button>
+              <button
+                :class="['btn', 'btn-sm-input', filtroVentasActivo === 'recibo' ? 'btn-primary' : 'btn-outline-primary']"
+                @click="filtroVentasActivo = 'recibo'; listarVentaR(1, buscar, criterio);">RECIBO</button>
+              <button
+                :class="['btn', 'btn-sm-input', filtroVentasActivo === 'todos' ? 'btn-primary' : 'btn-outline-primary']"
+                @click="filtroVentasActivo = 'todos'; listarVenta(1, buscar, criterio);">TODOS</button>
+            </div>
           </div>
         </div>
 
@@ -106,12 +108,13 @@
           <div class="search-bar">
             <span class="p-input-icon-left">
               <i class="pi pi-search" />
-              <InputText v-model="buscar" @input="buscarVenta" placeholder="Texto a buscar" class="p-inputtext-sm" />
+              <InputText v-model="buscar" @input="buscarVenta" placeholder="Texto a buscar"
+                class="p-inputtext-sm input-full" />
             </span>
           </div>
           <div class="toolbar">
             <Button @click="abrirTipoVenta" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
-              class="p-button-primary p-button-sm" />
+              class="p-button-secondary p-button-sm btn-sm-input" />
           </div>
         </div>
         <div>
@@ -120,12 +123,11 @@
             <Column header="Opciones">
               <template #body="slotProps">
                 <!-- Botón para ver venta -->
-                <Button icon="pi pi-eye" @click="verVenta(slotProps.data.id)" class="p-button-sm p-mr-1 btn-mini"
-                  :style="{
-                    backgroundColor: slotProps.data.descuento_total > 0 ? 'yellow' : 'green',
-                    borderColor: slotProps.data.descuento_total > 0 ? 'yellow' : 'green',
-                    color: slotProps.data.descuento_total > 0 ? 'black' : 'white',
-                  }" v-tooltip.top="'Ver'" />
+                <Button icon="pi pi-eye" @click="verVenta(slotProps.data.id)" class="btn-mini" :style="{
+                  backgroundColor: slotProps.data.descuento_total > 0 ? 'yellow' : 'green',
+                  borderColor: slotProps.data.descuento_total > 0 ? 'yellow' : 'green',
+                  color: slotProps.data.descuento_total > 0 ? 'black' : 'white',
+                }" :title="'Ver'" />
 
                 <!--<Button v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'" icon="pi pi-pencil"
                   class="p-button-sm p-mr-1 btn-mini btn-negro" title="Editar" @click="editarVenta(slotProps.data)"
@@ -134,17 +136,17 @@
                 <!-- Botón eliminar si estado = 1 -->
                 <template v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'">
                   <Button icon="pi pi-trash" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
-                    @click="desactivarVenta(slotProps.data.id)" class="p-button-sm p-button-danger p-mr-1 btn-mini"
-                    v-tooltip.top="'Desactivar'" />
+                    @click="desactivarVenta(slotProps.data.id)" class="p-button-danger btn-mini"
+                    :title="'Desactivar'" />
                 </template>
 
                 <!-- Botones para RESIVO -->
                 <Button icon="pi pi-print" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
-                  @click="imprimirResivo(slotProps.data.id, slotProps.data.correo)"
-                  class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Recibo'" />
-                <Button icon="pi pi-print" @click="imprimirRemision(slotProps.data.id, slotProps.data.correo)"
-                  class="p-button-sm p-button-help p-mr-1 btn-mini" v-tooltip.top="'Remisión'" />
-                <!--
+                  @click="imprimirResivo(slotProps.data.id, slotProps.data.correo)" class="p-button-primary  btn-mini"
+                  :title="'Recibo'" />
+                <!--<Button icon="pi pi-print" @click="imprimirRemision(slotProps.data.id, slotProps.data.correo)"
+                  class="p-button-help btn-mini" v-tooltip.top="'Remisión'" />
+                
                 <template v-if="slotProps.data.idtipo_venta == 2 && slotProps.data.estado === '2'">
                   <Button label="Cobrar" icon="pi pi-wallet" class="p-button-sm p-button-warning p-mr-1 btn-mini"
                     @click="abrirModalCobro(slotProps.data)" />
@@ -154,16 +156,16 @@
                 <!-- Botones para FACTURA -->
                 <template v-if="slotProps.data.tipo_comprobante === 'FACTURA'">
                   <Button icon="pi pi-check" @click="verificarFactura(slotProps.data.cuf, slotProps.data.numeroFactura)"
-                    class="p-button-sm p-mr-1 btn-mini" v-tooltip.top="'Verificar'" />
+                    class="p-button-help btn-mini" :title="'Verificar'" />
                   <Button icon="pi pi-print" @click="imprimirFactura(slotProps.data.idFactura, slotProps.data.correo)"
-                    class="p-button-sm p-button-primary p-mr-1 btn-mini" v-tooltip.top="'Imprimir'" />
+                    class="p-button-primary btn-mini" :title="'Imprimir'" />
                   <Button v-if="slotProps.data.estado === '1'" icon="pi pi-trash"
-                    @click="abrirDialogAnularFactura(slotProps.data)"
-                    class="p-button-sm p-button-danger p-mr-1 btn-mini" v-tooltip.top="'Anular Factura'" />
+                    @click="abrirDialogAnularFactura(slotProps.data)" class="p-button-danger btn-mini"
+                    :title="'Anular Factura'" />
                   <!-- 🔸 BOTÓN PAGAR -->
                   <template v-if="slotProps.data.estado == '4' || slotProps.data.facturaValidada == 0"> <Button
-                      label="Facturar" icon="pi pi-wallet" class="p-button-warning p-button-sm p-mr-1 btn-mini"
-                      @click="abrirModalPago(slotProps.data.id)" />
+                      label="Facturar" icon="pi pi-wallet" class="p-button-warning btn-mini"
+                      @click="abrirModalPago(slotProps.data.id)" :title="'Facturar nuevamente'" />
                   </template>
                 </template>
 
@@ -177,11 +179,8 @@
             <Column field="documentoid" header="Documento" class="d-none d-md-table-cell"></Column>
             <Column header="Tipo Pago">
               <template #body="slotProps">
-                <Tag 
-                  class="tag-mini"
-                  :value="slotProps.data.tipo_pago_texto"
-                  :severity="getTipoPagoSeverity(slotProps.data.tipo_pago_texto)"
-                />
+                <Tag class="tag-mini" :value="slotProps.data.tipo_pago_texto"
+                  :severity="getTipoPagoSeverity(slotProps.data.tipo_pago_texto)" />
               </template>
             </Column>
             <Column header="Total">
@@ -532,16 +531,25 @@
                 </h5>
 
                 <div style="width: 100%; padding-top: 0.5rem;">
+                  <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
+                  <label class="label-input">
+                      Tipo de Documento <span class="text-required">*</span>
+                    </label>
+                    <Dropdown
+                      v-model="tipo_documento"
+                      :options="tiposDocumento"
+                      optionLabel="nombre"
+                      optionValue="valor"
+                      placeholder="Seleccione"
+                      class="dropdown-full"
+                    />
+                  </div>
 
                   <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                       <label class="label-input">
                         Documento del Cliente <span class="text-required">*</span>
                       </label>
-                      <button type="button" class="btn btn-sm btn-outline-primary" @click="alternarTipoDocumento"
-                        style="font-size: 0.8rem; padding: 2px 8px; border-radius: 6px;">
-                        {{ tipoDocumentoTexto }}
-                      </button>
                     </div>
                     <div class="input-con-desplegable">
                       <div class="p-inputgroup">
@@ -712,16 +720,17 @@
 
                           <div class="d-flex flex-column flex-md-column mt-2 mt-md-0 text-center">
                             <div class="d-flex flex-row justify-content-center mb-1">
-                              <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
-                                <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
-                              </button>-->
-                              <button type="button" @click="aplicarDescuentoRecibo(1, 1)" class="btn btn-success">
-                                <i class="fa fa-check mr-2"></i> Registrar Pago
+                              <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
+                                <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid"
+                                  style="height: 24px;" />
+                              </button>
+                              <button type="button" @click="aplicarDescuento(1, 1)" class="btn btn-success">
+                                <i class="fa fa-book mr-2"></i> Facturar
                               </button>
                             </div>
-                            <!--<small style="color: #777; font-size: 0.75rem;">
+                            <small style="color: #777; font-size: 0.75rem;">
                               Click en el botón verde para Factura o en la imagen para Recibos
-                            </small>-->
+                            </small>
                           </div>
                         </div>
                       </div>
@@ -750,17 +759,17 @@
                         </div>
 
                         <div class="d-flex flex-row flex-md-row mt-2 mt-md-0 justify-content-center">
-                          <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
+                          <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
                             <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
-                          </button>-->
-                          <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-success">
-                            <i class="fa fa-check mr-2"></i> Registrar Pago
+                          </button>
+                          <button type="button" @click="aplicarDescuento(1, 7)" class="btn btn-success">
+                            <i class="fa fa-book mr-2"></i> Facturar
                           </button>
                         </div>
                         <div class="text-center mt-1">
-                          <!--<small style="color: #777; font-size: 0.75rem;">
+                          <small style="color: #777; font-size: 0.75rem;">
                             Click en el botón verde para Factura o en la imagen para Recibos
-                          </small>-->
+                          </small>
                         </div>
                       </div>
                     </div>
@@ -836,14 +845,14 @@
                               {{ monedaVenta[1] }}</span>
                           </div>
                           <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
-                            <!--
+
                             <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 13)">
                               <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
                                 style="height: 24px;" />
                             </button>
-                            -->
-                            <button type="button" @click="aplicarDescuentoRecibo(1, 13)" class="btn btn-success">
-                              <i class="fa fa-check mr-2"></i> Registrar Pago
+
+                            <button type="button" @click="aplicarDescuento(1, 13)" class="btn btn-success">
+                              <i class="fa fa-book mr-2"></i> Facturar
                             </button>
                           </div>
                         </div>
@@ -1063,7 +1072,7 @@
               </label>
               <Dropdown v-model="selectedAlmacen" :options="arrayAlmacenes" optionLabel="nombre_almacen"
                 optionValue="id" placeholder="Seleccione" :disabled="arrayDetalle.length > 0"
-                @change="getAlmacenProductos" class="dropdown-full input-height-fix" />
+                @change="getAlmacenProductos" class="dropdown-full" />
             </div>
 
             <div class="p-col-12 p-md-8 mb-0 pb-0">
@@ -1075,12 +1084,12 @@
                 </span>
               </label>
               <div class="input-con-desplegable">
-                <div class="p-inputgroup input-height-fix">
+                <div class="p-inputgroup">
                   <InputText ref="inputCodigo" v-model="codigo" placeholder="Buscar por nombre, código o alfanumérico"
                     class="input-full" :disabled="!idAlmacen" @input="buscarArticulo"
                     @keydown.down="moverSeleccion('abajo')" @keydown.up="moverSeleccion('arriba')"
                     @keydown.enter="seleccionarConEnter" />
-                  <Button icon="pi pi-search" class="btn-search-fix" @click="abrirModal" />
+                  <Button icon="pi pi-search" class="btn-sm-input" @click="abrirModal" />
                 </div>
 
                 <ul v-if="mostrarDesplegable" class="desplegable-simple" style="max-height: 300px; overflow-y: auto;">
@@ -1356,8 +1365,12 @@
       <Dialog :visible="modal" :containerStyle="dialogContainerStyle" style="padding-top: 5px;" :modal="true"
         :closable="false" class="responsive-dialog">
         <template #header>
-          <h4>{{ tituloModal }}</h4>
+          <div class="dialog-header">
+            <i class="pi pi-book header-icon"></i>
+            <span class="header-title">{{ tituloModal }}</span>
+          </div>
         </template>
+
         <TabView>
           <TabPanel header="Combos/Ofertas">
             <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
@@ -1446,7 +1459,7 @@
 
         </TabView>
         <template #footer>
-          <Button label="Cerrar" icon="pi pi-times" @click="cerrarModal" class="p-button-secondary" />
+          <Button label="Cerrar" icon="pi pi-times" @click="cerrarModal" class="p-button-danger btn-sm" />
           <Button v-if="tipoAccion === 1" label="Guardar" icon="pi pi-check" @click="registrarPersona" />
           <Button v-if="tipoAccion === 2" label="Actualizar" icon="pi pi-check" @click="actualizarPersona" />
         </template>
@@ -1457,9 +1470,13 @@
       <!-- DIALOG PARA PAGOS -->
       <Dialog :visible="modalPago" :containerStyle="dialogContainerStyle" style="padding-top: 35px;" :modal="true"
         :closable="false" class="responsive-dialog" @hide="cerrarModalPago">
+
         <template #header>
-          <h3>Emisión / Pago - Venta #{{ idventaa }}</h3>
-        </template>
+        <div class="dialog-header">
+          <i class="pi pi-book header-icon"></i>
+          <span class="header-title">Emisión / Pago - Venta #{{ idventaa }}</span>
+        </div>
+      </template>
 
         <TabView>
           <TabPanel header="Factura">
@@ -1480,10 +1497,6 @@
                       </div>
                     </div>
                   </div>
-
-                  <button type="button" @click="aplicarDescuento2" class="btn btn-success btn-block mt-3">
-                    <i class="fa fa-paper-plane mr-2"></i> Enviar al SIAT / Pagar
-                  </button>
                 </div>
               </div>
             </div>
@@ -1491,8 +1504,8 @@
         </TabView>
 
         <template #footer>
-          <Button label="Cerrar" icon="pi pi-times" @click="cerrarModalPago" class="p-button-secondary" />
-          <Button label="Procesar Pago" icon="pi pi-check" @click="aplicarDescuento2" />
+          <Button label="Cerrar" icon="pi pi-times" @click="cerrarModalPago" class="p-button-danger btn-sm" />
+          <Button label="Enviar al SIAT / Pagar" icon="pi pi-check" class="p-button-success btn-sm" @click="aplicarDescuento2" />
         </template>
       </Dialog>
 
@@ -1826,7 +1839,17 @@ export default {
   },
   data() {
     return {
-     montoQRCompuesto: 0,
+      tiposDocumento: [
+      {
+        nombre: "CI",
+        valor: 1
+      },
+      {
+        nombre: "NIT",
+        valor: 5
+      }
+    ],
+      montoQRCompuesto: 0,
       recibidoCompuesto: 0,
       autoVerificarQR: false,
       autoVerificarQRInterval: null,
@@ -1898,8 +1921,6 @@ export default {
       stockPorSucursal: [],
       articuloSeleccionado: null,
       desdeModal: false, // 🔹 Nuevo flag
-
-      tipoDocumentoTexto: "CI",
 
       mensajeRazonSocial: false, // 🔹 Nueva variable
       resultadosClientes: [],
@@ -2204,6 +2225,17 @@ export default {
     },
   },
   computed: {
+    mensajeFacturacion() {
+      if (this.idrol == 4) {
+        return 'Verifique la Facturación. Filtre por sucursal, rango de fechas, número de comprobante, vendedor, cliente y documento del cliente. Ver por factura, recibo o todos. Registre nuevas ventas.';
+      }
+
+      if (this.idrol == 2) {
+        return 'Verifique la Facturación. Solo puede ver las ventas del día. Filtre por número de comprobante, fecha, cliente y documento del cliente. Ver por factura, recibo o todos. Registre nuevas ventas.';
+      }
+
+      return '';
+    },
     dialogContainerStyleQR() {
       if (window.innerWidth <= 480) {
         return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
@@ -2295,19 +2327,19 @@ export default {
   },
 
   methods: {
-  getTipoPagoSeverity(tipo) {
-    switch (tipo) {
-      case 'EFECTIVO':
-        return 'success'; // verde
-      case 'QR':
-        return 'info'; // azul
-      case 'COMPUESTO':
-        return 'warning'; // amarillo
-      default:
-        return 'secondary'; // gris
-    }
-  },
-  generarQrCompuesto() {
+    getTipoPagoSeverity(tipo) {
+      switch (tipo) {
+        case 'EFECTIVO':
+          return 'success'; // verde
+        case 'QR':
+          return 'info'; // azul
+        case 'COMPUESTO':
+          return 'warning'; // amarillo
+        default:
+          return 'secondary'; // gris
+      }
+    },
+    generarQrCompuesto() {
       this.isLoading = true;
       this.actualizarFechaHora();
       this.aliasverificacion = this.alias;
@@ -3320,15 +3352,13 @@ export default {
               tipo_reposicion: tipoReposicion // aquí envías la opción seleccionada
             })
             .then(function (response) {
-              if (me.filtroVentasActivo === 'recibo') {
-                me.listarVentaR(1, me.buscar, me.criterio);
-              } else if (me.filtroVentasActivo === 'factura') {
-                me.listarVentaF(1, me.buscar, me.criterio);
-              } else {
-                me.listarVenta(1, me.buscar, me.criterio);
-              } swal(
-                "Anulado!",
-                "La venta ha sido anulado con éxito.",
+              me.filtroVentasActivo = 'todos';
+
+              me.listarVenta(1, me.buscar, me.criterio);
+
+              swal(
+                "¡Anulado!",
+                "La venta ha sido anulada con éxito.",
                 "success"
               );
             })
@@ -3547,24 +3577,25 @@ export default {
       const det = this.arrayDetalle[index];
       if (!det) return;
 
-      // Buscar el producto según idarticulo (seguro y estable)
-      const prod = this.arrayProductos.find(p => p && p.idarticulo === det.idarticulo);
+      const prod = this.arrayProductos.find(
+        p => p.codigoProducto === det.codigo_producto
+      );
+
       if (!prod) {
-        console.warn("Producto no encontrado para idarticulo:", det.idarticulo);
+        console.warn("Producto no encontrado:", det.idarticulo);
         return;
       }
 
-      // Actualizar cantidad y precio
-      prod.cantidad = det.cantidad;
-      prod.precioUnitario = det.precioseleccionado;
+      prod.cantidad = Number(det.cantidad);
+      prod.precioUnitario = Number(det.precioseleccionado);
 
-      const subtotal = det.cantidad * (det.precioseleccionado - det.descuento); // Descuento por unidad
-      const total = subtotal > 0 ? subtotal : 0; // Evitar negativo
+      const subtotal =
+        Number(det.cantidad) *
+        (Number(det.precioseleccionado) - Number(det.descuento || 0));
 
-      prod.subTotal = total;
-      det.total = total;
+      prod.subTotal = Math.max(0, subtotal);
+      det.total = prod.subTotal;
 
-      // Recalcular totales de toda la venta
       this.calcularTotal();
     },
     async verificarComunicacion() {
@@ -3949,7 +3980,7 @@ export default {
 
     verificarFactura(cuf, numeroFactura) {
       var url =
-        "https://siat.impuestos.gob.bo/consulta/QR?nit=8033811015&cuf=" +
+        "https://pilotosiat.impuestos.gob.bo/consulta/QR?nit=8678007010&cuf=" +
         cuf +
         "&numero=" +
         numeroFactura +
@@ -4027,13 +4058,8 @@ export default {
         if (data.success && data.mensaje === "ANULACION CONFIRMADA") {
           await swal("FACTURA ANULADA", data.mensaje, "success");
 
-          if (me.filtroVentasActivo === "recibo") {
-            me.listarVentaR(1, me.buscar, me.criterio);
-          } else if (me.filtroVentasActivo === "factura") {
-            me.listarVentaF(1, me.buscar, me.criterio);
-          } else {
-            me.listarVenta(1, me.buscar, me.criterio);
-          }
+          me.filtroVentasActivo = "todos";
+          me.listarVenta(1, me.buscar, me.criterio);
 
           me.dialogAnularVentaVisible = false;
         } else {
@@ -4119,7 +4145,7 @@ export default {
           cantidad: cantidad,
           unidadMedida: this.arraySeleccionado.codigoClasificador,
           precioUnitario: precioUnitario.toFixed(2),
-          descuento: this.arraySeleccionado.descuento,
+          /*descuento: this.arraySeleccionado.descuento,*/
           montoDescuento: descuento,
           subTotal: total,
           numeroSerie: null,
@@ -4376,40 +4402,29 @@ export default {
             this.arrayDetalle.push(nuevoDetalle);
           }
 
-          // 🔹 ACTUALIZAR COMPONENTES EN arrayProductos
-          componentes.forEach((componente) => {
+          const productoExistente = this.arrayProductos.find(
+  p => p.codigoProducto === data.codigo
+);
 
-            const qty = Number(componente.cantidad_necesaria || 1);
-
-            const prodExist = this.arrayProductos.find(
-              (p) =>
-                (p.codigoProducto &&
-                  componente.codigo &&
-                  p.codigoProducto === componente.codigo) ||
-                p.descripcion === componente.nombre
-            );
-
-            if (prodExist) {
-              prodExist.cantidad = (prodExist.cantidad || 0) + qty;
-              prodExist.subTotal =
-                (prodExist.cantidad || 0) * prodExist.precioUnitario;
-            } else {
-              this.arrayProductos.push({
-                actividadEconomica: componente.actividadEconomica || "",
-                codigoProductoSin: componente.codigoProductoSin || "",
-                codigoProducto: componente.codigo || "",
-                descripcion: componente.nombre,
-                cantidad: qty,
-                unidadMedida: componente.codigoClasificador || "",
-                precioUnitario: componente.precio_uno,
-                montoDescuento: 0,
-                subTotal: componente.precio_uno * qty,
-                numeroSerie: null,
-                numeroImei: null,
-              });
-            }
-
-          });
+if (productoExistente) {
+  productoExistente.cantidad += 1;
+  productoExistente.subTotal =
+    productoExistente.cantidad * productoExistente.precioUnitario;
+} else {
+  this.arrayProductos.push({
+    actividadEconomica: data.actividadEconomica || "",
+    codigoProductoSin: data.codigoProductoSin || "",
+    codigoProducto: data.codigo || "",
+    descripcion: data.nombre,
+    cantidad: 1,
+    unidadMedida: data.codigoClasificador || "",
+    precioUnitario: precioCompuesto,
+    montoDescuento: 0,
+    subTotal: precioCompuesto,
+    numeroSerie: null,
+    numeroImei: null,
+  });
+}
 
           this.$toast.add({
             severity: "success",
@@ -4763,6 +4778,7 @@ export default {
           if (tipoComprobante === 'FACTURA') {
             me.mostrarDesplegable = false;
             me.modal2 = false;
+            await me.ejecutarSecuencial();
             await me.emitirFactura2(ventaId);
             if (idtipo_venta === 2) {
               //await me.resetearTipoPago(ventaId);
@@ -5043,15 +5059,6 @@ export default {
         });
       this.opcionPago = "efectivo";
     },
-    alternarTipoDocumento() {
-      if (this.tipo_documento === 1) {
-        this.tipo_documento = 5;
-        this.tipoDocumentoTexto = "NIT";
-      } else {
-        this.tipo_documento = 1;
-        this.tipoDocumentoTexto = "CI";
-      }
-    },
 
     async buscarOCrearCliente() {
       try {
@@ -5125,16 +5132,7 @@ export default {
 
       } catch (error) {
         console.error("Error al buscar o crear cliente:", error);
-
-        // 🔥 Cortar flujo de venta
-        this.$toast.add({
-          severity: "error",
-          summary: "Cliente",
-          detail: error.message || "Error al registrar cliente",
-          life: 3000
-        });
-
-        throw error; // ⛔ IMPORTANTE
+        throw error;
       }
     },
 
@@ -5154,7 +5152,7 @@ export default {
           } else if (this.tipo_comprobante === "RESIVO") {
             await this.obtenerDatosSesionYComprobante();
           }
-          
+
           const ventaData = this.prepararDatosVenta(idtipo_pago, idtipo_venta);
           console.log("📤 VentaData enviado:", ventaData);
           const response = await axios.post("/venta/registrar", ventaData);
@@ -5165,18 +5163,25 @@ export default {
           }
         } catch (error) {
           console.error("Error al registrar venta:", error);
-          const mensaje =
+
+          let mensaje = "Ocurrió un error al registrar la venta.";
+
+          if (
             error &&
-              error.response &&
-              error.response.data &&
-              error.response.data.error
-              ? error.response.data.error
-              : "Ocurrió un error al registrar la venta.";
+            error.response &&
+            error.response.data &&
+            error.response.data.message
+          ) {
+            mensaje = error.response.data.message;
+          } else if (error && error.message) {
+            mensaje = error.message;
+          }
+
           this.$toast.add({
             severity: "error",
             summary: "Error",
             detail: mensaje,
-            life: 3000
+            life: 4000
           });
         } finally {
           this.isLoading = false; // Desactivar loading
@@ -5289,16 +5294,12 @@ export default {
         this.isLoading = true;
         this.modal2 = false;
         this.mostrarDesplegable = false;
+        await this.ejecutarSecuencial();
         await this.emitirFactura(idVenta);
       }
 
-      if (this.filtroVentasActivo === 'recibo') {
-        this.listarVentaR(1, this.buscar, this.criterio);
-      } else if (this.filtroVentasActivo === 'factura') {
-        this.listarVentaF(1, this.buscar, this.criterio);
-      } else {
-        this.listarVenta(1, this.buscar, this.criterio);
-      }
+      this.filtroVentasActivo = "todos";
+      this.listarVenta(1, this.buscar, this.criterio);
     },
 
     async emitirFactura(idVentaRecienRegistrada) {
@@ -5307,6 +5308,12 @@ export default {
 
         const response2 = await axios.get(`/api/ventas/${idVentaRecienRegistrada}`);
         const codigoSucursal = response2.data.codigoSucursal;
+
+        const nitEmpresa = response2.data.nit;
+
+        const telefonoEmpresa = response2.data.telefono;
+        const municipioEmpresa = response2.data.municipio;
+
         console.log('Datos de la venta:', codigoSucursal);
 
         let me = this;
@@ -5331,7 +5338,7 @@ export default {
         console.log("EL DOCUMENTO ES: ", this.documento);
         let numeroDocumento = this.documento;
         let complemento = null;
-        let tipoDocumentoIdentidad = 5;
+        let tipoDocumentoIdentidad = this.tipo_documento;
         let montoTotal = this.calcularTotal.toFixed(2);
         let porcentajeDescuento = Number(this.descuentoAdicional || 0);
         let subtotal = this.calcularSubtotal(); // solo suma de ítems
@@ -5381,10 +5388,10 @@ export default {
         var factura = [];
         factura.push({
           cabecera: {
-            nitEmisor: "8033811015",
-            razonSocialEmisor: "MARIBEL QUISPE CHOQUE",
-            municipio: "Cochabamba",
-            telefono: "72784124",
+            nitEmisor: nitEmpresa,
+            razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
+            municipio: municipioEmpresa,
+            telefono: telefonoEmpresa,
             numeroFactura: numeroFactura,
             cuf: cuf,
             cufd: cufd,
@@ -5444,7 +5451,7 @@ export default {
               }).then(() => {
                 // 🔹 Cuando el usuario da clic en OK del swal
                 me.reiniciarFormulario();
-                me.listarVentaF(1, "", "num_comprobante");
+                me.listarVenta(1, "", "num_comprobante");
                 me.arrayProductos = [];
                 me.codigoExcepcion = 0;
                 me.idtipo_pago = "";
@@ -5463,7 +5470,7 @@ export default {
               });
             } else {
               me.reiniciarFormulario();
-              me.listarVentaF(1, "", "num_comprobante");
+              me.listarVenta(1, "", "num_comprobante");
               me.visibleDialog = false;
               me.cambiar_pagina = 0;
               me.arrayProductos = [];
@@ -5478,7 +5485,7 @@ export default {
               me.mostrarSpinner = false;
               me.opcionPago = "efectivo";
 
-              swal("FACTURA RECHAZADA - INTENTE DE NUEVO", data, "warning");
+              swal("FACTURA RECHAZADA - INTENTE DE NUEVO", data.mensaje, "warning");
               axios.post('/venta/actualizarEstado', {
                 idventa: idventa,
                 nuevoEstado: 4
@@ -5537,6 +5544,11 @@ export default {
         const response2 = await axios.get(`/api/ventas/${idVentaRecienRegistrada}`);
         const venta = response2.data.venta;
         const codigoSucursal = response2.data.codigoSucursal;
+
+        const nitEmpresa = response2.data.nit;
+
+        const telefonoEmpresa = response2.data.telefono;
+        const municipioEmpresa = response2.data.municipio;
         console.log('Datos de la venta:', codigoSucursal);
 
         let me = this;
@@ -5560,7 +5572,7 @@ export default {
         let nombreRazonSocial = this.cliente;
         let numeroDocumento = this.documento;
         let complemento = null;
-        let tipoDocumentoIdentidad = 5;
+        let tipoDocumentoIdentidad = this.tipo_documento;
         //let montoTotal = this.calcularTotal.toFixed(2);
         let montoTotal = Number(this.totalReservaSeleccionada).toFixed(2);
         let descuentoAdicional = Number(this.totaldescuentoseleccionada).toFixed(2);
@@ -5607,10 +5619,10 @@ export default {
         var factura = [];
         factura.push({
           cabecera: {
-            nitEmisor: "8033811015",
-            razonSocialEmisor: "MARIBEL QUISPE CHOQUE",
-            municipio: "Cochabamba",
-            telefono: "72784124",
+            nitEmisor: nitEmpresa,
+            razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
+            municipio: municipioEmpresa,
+            telefono: telefonoEmpresa,
             numeroFactura: numeroFactura,
             cuf: cuf,
             cufd: cufd,
@@ -5671,7 +5683,7 @@ export default {
               }).then(() => {
                 // 🔹 Cuando el usuario da clic en OK del swal
                 me.reiniciarFormulario();
-                me.listarVentaF(1, "", "num_comprobante");
+                me.listarVenta(1, "", "num_comprobante");
                 me.filtroVentasActivo = 'factura';
                 me.arrayProductos = [];
                 me.codigoExcepcion = 0;
@@ -5685,9 +5697,6 @@ export default {
                 me.mostrarSpinner = false;
                 me.menu = 49;
                 me.opcionPago = "efectivo";
-
-                // 🔹 Reabrir modal2 automáticamente
-                //me.modal2 = true;
               });
             } else {
               me.filtroVentasActivo = 'todos';
@@ -5707,8 +5716,7 @@ export default {
               me.mostrarSpinner = false;
               me.opcionPago = "efectivo";
 
-              swal("FACTURA RECHAZADA - INTENTE DE NUEVO", data, "warning");
-              //me.eliminarVenta(idVentaRecienRegistrada);
+              swal("FACTURA RECHAZADA - INTENTE DE NUEVO", data.mensaje, "warning");
               // Actualizar el estado de la venta a 2
               axios.post('/venta/actualizarEstado', {
                 idventa: idventa,
@@ -5728,7 +5736,13 @@ export default {
             console.error("Este es el error: " + error);
             me.arrayProductos = [];
             me.codigoExcepcion = 0;
-            swal("INTENTE DE NUEVO - INTENTE DE NUEVO", "Comunicacion con SIAT fallida", "error");
+
+            swal(
+              "INTENTE DE NUEVO - INTENTE DE NUEVO",
+              "Comunicacion con SIAT fallida",
+              "error"
+            );
+            
             me.reiniciarFormulario();
             me.mostrarSpinner = false;
             me.idtipo_pago = "";
@@ -5738,9 +5752,6 @@ export default {
             me.idcliente = 0;
             me.metodoPago = "";
             me.opcionPago = "efectivo";
-            //me.eliminarVentaFalloSiat(idVentaRecienRegistrada);
-            //me.ejecutarFlujoCompleto();
-            //me.listarVenta(1, "", "num_comprobante");
 
             // Actualizar el estado de la venta a 2
             axios.post('/venta/actualizarEstado', {
@@ -5845,7 +5856,7 @@ export default {
         idproveedor: 0,
         nombreCliente: "",
         telefonoCliente: "",
-        tipo_documento: 0,
+        tipo_documento: 1,
         complemento_id: "",
         documento: "",
         imagen: "",
@@ -6176,6 +6187,7 @@ export default {
       this.documento = cliente.num_documento;
       this.nombreCliente = cliente.nombre;
       this.telefonoCliente = cliente.telefono;
+      this.tipo_documento = Number(cliente.tipo_documento);
       this.nombreClienteEditable = false;
       this.telefonoClienteEditable = false;
       this.mostrarDesplegableCliente = false;
@@ -6284,7 +6296,7 @@ export default {
     try {
       this.isLoading = true; // Activar loading al iniciar
       await Promise.all([
-        //this.ejecutarSecuencial(),
+        this.ejecutarSecuencial(),
         this.datosConfiguracion(),
         this.selectAlmacen(),
         this.selectSucursal(),
@@ -6312,6 +6324,50 @@ export default {
 </script>
 
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
 .dialog-combo .p-dialog-header {
   padding: 0;
 }
@@ -7103,11 +7159,6 @@ export default {
   }
 }
 
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
-}
-
 @media (max-width: 768px) {
   >>>.p-datatable .p-button {
     margin-right: 0.15rem;
@@ -7375,49 +7426,140 @@ export default {
 </style>
 
 <style scoped>
-/* ==========================================================================
-   ESTANDARIZACIÓN DE ALMACÉN Y BUSCADOR (FIX DE ALINEACIÓN)
-   ========================================================================== */
-
-/* 1. Forzar altura idéntica para Dropdown, InputText y Botón de búsqueda */
-.dropdown-full,
-.input-full,
-.p-inputgroup .p-button {
-  height: 38px !important;
-  /* Altura estándar desktop */
-  min-height: 38px !important;
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
 }
 
-/* 2. Ajuste interno del Dropdown de PrimeVue para centrar texto verticalmente */
-.dropdown-full>>>.p-dropdown-label {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  line-height: 1 !important;
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
 }
 
-/* 3. Ajuste interno del InputText para alineación */
-.input-full {
-  display: flex;
-  align-items: center;
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
 }
 
-/* 4. Labels estandarizados */
-.label-input {
-  display: block;
-  font-size: 0.85rem;
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
   font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  /* Margen inferior uniforme */
-  white-space: nowrap;
+  font-size: 0.85rem !important;
 }
 
-/* 5. Icono de la lupa centrado */
-.p-inputgroup .p-button .p-button-icon {
-  font-size: 1rem;
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+
+.tag-extra {
+  display: inline-block;
+  background: #e0f2ff;
+  color: #0369a1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Estilo uniforme para Dropdown (igual que InputText) */
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input dentro del dropdown */
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+/* Flecha del dropdown */
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+/* Borde al focus */
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* 🔹 Opciones del panel (lista desplegable) */
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
+}
+
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Estilo especial para InputNumber */
+.input-number-full {
+  width: 100%;
+}
+
+.input-number-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.input-date-full {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  box-sizing: border-box;
+}
+
+.input-date-full:focus {
+  border-color: #6c9ffe;
+  outline: none;
 }
 
 /* ==========================================================================
@@ -7600,22 +7742,6 @@ export default {
   width: 100%;
 }
 
-/* Ajustes de width para inputs y dropdowns */
-.input-full {
-  width: 100%;
-  font-size: 0.8rem;
-  padding: 6px 8px;
-  border-radius: 6px 0 0 6px;
-  box-sizing: border-box;
-}
-
-.input-full>>>.p-inputtext {
-  width: 100% !important;
-  font-size: 0.8rem;
-  padding: 6px 8px;
-  border-radius: 6px 0 0 6px;
-}
-
 .p-inputgroup .p-button {
   border-radius: 0 6px 6px 0;
   font-size: 0.8rem;
@@ -7625,33 +7751,6 @@ export default {
 .text-required {
   color: #dc2626;
   font-weight: 700;
-}
-
-.dropdown-full {
-  width: 100% !important;
-  font-size: 0.8rem;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
-
-.dropdown-full>>>.p-dropdown-trigger {
-  width: 2rem !important;
-}
-
-.dropdown-full>>>.p-dropdown {
-  border: 1px solid #ccc;
-  transition: border 0.2s;
-}
-
-.dropdown-full>>>.p-dropdown.p-focus {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
-}
-
-.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
-  font-size: 0.8rem !important;
-  padding: 6px 10px !important;
-  min-height: auto !important;
 }
 
 .form-section {
@@ -8169,9 +8268,6 @@ export default {
   }
 }
 
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
-}
 
 @media (max-width: 768px) {
   >>>.p-datatable .p-button {
@@ -8654,5 +8750,10 @@ export default {
   background-color: #f1f5f9 !important;
   cursor: pointer !important;
   transition: background-color 0.2s ease;
+}
+</style>
+<style>
+.swal2-container {
+  z-index: 999999 !important;
 }
 </style>

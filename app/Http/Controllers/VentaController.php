@@ -312,6 +312,14 @@ class VentaController extends Controller
                 'facturas.correo',
                 'facturas.fechaEmision',
                 'sucursales.nombre as nombre_sucursal',
+                DB::raw("
+                    CASE 
+                        WHEN ventas.idtipo_pago = 1 THEN 'EFECTIVO'
+                        WHEN ventas.idtipo_pago = 7 THEN 'QR'
+                        WHEN ventas.idtipo_pago = 13 THEN 'COMPUESTO'
+                        ELSE 'OTRO'
+                    END as tipo_pago_texto
+                "),
                 // 👇 Campo adicional: facturaValidada
                 \DB::raw("
                 CASE 
@@ -323,14 +331,37 @@ class VentaController extends Controller
             ->where('ventas.tipo_comprobante', '=', 'FACTURA')
             ->orderBy('ventas.fecha_hora', 'desc');
 
-        // 🔹 FILTROS POR ROL
+        // 🔹 FILTROS ESTRICTOS POR ROL Y FECHA
+        $hoy = \Carbon\Carbon::today();
+
         if ($idrol == 4) {
-            // Rol 4: muestra TODO (sin filtro)
+            // Filtro por Sucursal
+            if ($request->filled('sucursal_id')) {
+                $query->where('users.idsucursal', $request->sucursal_id);
+            }
+            // Filtro por Fechas
+            if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+                $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio)
+                      ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+            } elseif ($request->filled('fecha_inicio')) {
+                $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio);
+            } elseif ($request->filled('fecha_fin')) {
+                $query->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+            }
+
         } elseif ($idrol == 1) {
-            // Rol 1: muestra ventas de su sucursal
-            $query->where('users.idsucursal', $idsucursal);
+            // Ventas de su sucursal y SOLO del día actual.
+            $query->where('users.idsucursal', $idsucursal)
+                  ->whereDate('ventas.fecha_hora', $hoy);
+        } elseif ($idrol == 2) {
+            // Solo su sucursal y SOLO del día actual.
+            $query->where('users.idsucursal', $idsucursal)
+                  ->whereDate('ventas.fecha_hora', $hoy)
+                  ->where(function ($q) use ($usuario) {
+                      $q->where('ventas.idusuario', $usuario->id)
+                        ->orWhere('users.idrol', 1);
+                  });
         } else {
-            // Otros roles (por ejemplo vendedor): muestra solo sus ventas
             $query->where('ventas.idusuario', $usuario->id);
         }
 
@@ -410,19 +441,50 @@ class VentaController extends Controller
                 'users.usuario',
                 'personas.nombre as razonSocial',
                 'personas.num_documento as documentoid',
-                'sucursales.nombre as nombre_sucursal'
+                'sucursales.nombre as nombre_sucursal',
+                DB::raw("
+                    CASE 
+                        WHEN ventas.idtipo_pago = 1 THEN 'EFECTIVO'
+                        WHEN ventas.idtipo_pago = 7 THEN 'QR'
+                        WHEN ventas.idtipo_pago = 13 THEN 'COMPUESTO'
+                        ELSE 'OTRO'
+                    END as tipo_pago_texto
+                "),
             )
             ->where('ventas.tipo_comprobante', '=', 'RESIVO')
             ->orderBy('ventas.fecha_hora', 'desc');
 
-        // 🔹 FILTROS POR ROL
+        // 🔹 FILTROS ESTRICTOS POR ROL Y FECHA
+        $hoy = \Carbon\Carbon::today();
+
         if ($idrol == 4) {
-            // Rol 4: puede ver TODO (sin filtro adicional)
+            // Filtro por Sucursal
+            if ($request->filled('sucursal_id')) {
+                $query->where('users.idsucursal', $request->sucursal_id);
+            }
+            // Filtro por Fechas
+            if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+                $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio)
+                      ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+            } elseif ($request->filled('fecha_inicio')) {
+                $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio);
+            } elseif ($request->filled('fecha_fin')) {
+                $query->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+            }
+
         } elseif ($idrol == 1) {
-            // Rol 1: ve solo ventas de su sucursal
-            $query->where('users.idsucursal', $idsucursal);
+            // Ventas de su sucursal y SOLO del día actual.
+            $query->where('users.idsucursal', $idsucursal)
+                  ->whereDate('ventas.fecha_hora', $hoy);
+        } elseif ($idrol == 2) {
+            // Solo su sucursal y SOLO del día actual.
+            $query->where('users.idsucursal', $idsucursal)
+                  ->whereDate('ventas.fecha_hora', $hoy)
+                  ->where(function ($q) use ($usuario) {
+                      $q->where('ventas.idusuario', $usuario->id)
+                        ->orWhere('users.idrol', 1);
+                  });
         } else {
-            // Otros roles (vendedor, etc): solo sus ventas
             $query->where('ventas.idusuario', $usuario->id);
         }
 
@@ -2867,7 +2929,9 @@ class VentaController extends Controller
                 'facturas.*',
                 'personas.nombre as razonSocial',
                 'personas.num_documento as documentoid',
-                'sucursales.nombre as nombreSucursal'
+                'sucursales.nombre as nombreSucursal',
+                'sucursales.codigoSucursal as codigoSucursal'
+
             )
             ->where('facturas.id', '=', $id)
             ->orderBy('facturas.id', 'desc')->paginate(3);
@@ -2918,26 +2982,26 @@ class VentaController extends Controller
         //$pdf = new FPDF('P', 'mm', array(80, 0));
         $pdf = new FPDF('P', 'mm', array(80, 250));
         //$pdf = new FPDF();
-        $nombreSucursal = $facturas[0]->nombreSucursal ?? 'Casa Matriz';
+        $nombreSucursal = $facturas[0]->codigoSucursal ?? 'Casa Matriz';
 
         $pdf->SetAutoPageBreak(true, 10);
-        $pdf->SetMargins(10, 10);
+        $pdf->SetMargins(4, 4);
         $pdf->AddPage();
-        $pdf->SetFont('Arial', 'B', 6);
-        $pdf->Cell(0, 3, 'FACTURA', 0, 1, 'C');
-        $pdf->SetFont('Arial', 'B', 6);
-        $pdf->Cell(0, 3, utf8_decode('CON DERECHO A CRÉDITO FISCAL'), 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 6);
-        $pdf->Cell(0, 3, utf8_decode('MARIBEL QUISPE CHOQUE'), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode($nombreSucursal), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode('No. Punto de Venta ' . $puntoVenta), 0, 1, 'C');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, 'FACTURA', 0, 1, 'C');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, utf8_decode('CON DERECHO A CRÉDITO FISCAL'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, utf8_decode('CRISTIAN ALFREDO PURI RAMOS'), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('Sucursal No. '. $nombreSucursal), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('No. Punto de Venta ' . $puntoVenta), 0, 1, 'C');
 
         $pdf->SetFont('Arial', '', 7);
-        $pdf->MultiCell(0, 4, utf8_decode($direccion), 0, 'C');
+        $pdf->MultiCell(0, 3.5, utf8_decode($direccion), 0, 'C');
 
-        $pdf->SetFont('Arial', '', 8);
+        $pdf->SetFont('Arial', '', 7);
         //$pdf->Cell(0, 4, utf8_decode('Tel. ' . $telefono), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode($municipio), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode($municipio), 0, 1, 'C');
 
         $y = $pdf->GetY();
         $pdf->SetY($y + 2);
@@ -2945,19 +3009,19 @@ class VentaController extends Controller
         $pdf->SetDrawColor(0, 0, 0);
         $pdf->Cell(0, 4, '', 'T', 1, 'C');
 
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 4, 'NIT', 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 8);
-        //$pdf->Cell(0, 3, utf8_decode($documentoid."-".$complementoid), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode($nitEmisor), 0, 1, 'C');
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 4, utf8_decode('FACTURA N°'), 0, 1, 'C');
-        $pdf->SetFont('Arial', '', 8);
-        $pdf->Cell(0, 4, utf8_decode($numeroFactura), 0, 1, 'C');
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 4, utf8_decode('CÓD. AUTORIZACIÓN'), 0, 1, 'C');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, 'NIT', 0, 1, 'C');
         $pdf->SetFont('Arial', '', 7);
-        $pdf->MultiCell(0, 4, utf8_decode($cuf), 0, 'C');
+        //$pdf->Cell(0, 3, utf8_decode($documentoid."-".$complementoid), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode($nitEmisor), 0, 1, 'C');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, utf8_decode('FACTURA N°'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, utf8_decode($numeroFactura), 0, 1, 'C');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, utf8_decode('CÓD. AUTORIZACIÓN'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->MultiCell(0, 3.5, utf8_decode($cuf), 0, 'C');
 
         $y = $pdf->GetY();
         $pdf->SetY($y + 2);
@@ -2968,42 +3032,42 @@ class VentaController extends Controller
         $spacing = 8;
 
         // Definir margen izquierdo
-        $marginLeft = 10;
+        $marginLeft = 4;
         $spacing = 33; // Espaciado entre el título y el dato
 
         // NOMBRE/RAZON SOCIAL
         $pdf->SetX($marginLeft);
         $pdf->SetFont('Arial', 'B', 7);
-        $pdf->Cell($spacing, 4, utf8_decode('NOMBRE/RAZON SOCIAL:'), 0, 0, 'L'); // Título
-        $pdf->SetFont('Arial', '', 8);
-        $pdf->MultiCell(0, 4, utf8_decode($razonSocial), 0, 'L'); // Dato (permite saltos si es largo)
+        $pdf->Cell($spacing, 3.5, utf8_decode('NOMBRE/RAZON SOCIAL:'), 0, 0, 'L'); // Título
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->MultiCell(0, 3.5, utf8_decode($razonSocial), 0, 'L'); // Dato (permite saltos si es largo)
 
         $spacing = 17; // Espaciado entre el título y el dato
 
         // NIT/CI/CEX
         $pdf->SetX($marginLeft);
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell($spacing, 4, utf8_decode('NIT/CI/CEX:'), 0, 0, 'L'); // Título
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(0, 4, utf8_decode($documentoid), 0, 1, 'L'); // Dato en la misma línea
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell($spacing, 3.5, utf8_decode('NIT/CI/CEX:'), 0, 0, 'L'); // Título
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, utf8_decode($documentoid), 0, 1, 'L'); // Dato en la misma línea
 
         $spacing = 22; // Espaciado entre el título y el dato
 
         // COD. CLIENTE
         $pdf->SetX($marginLeft);
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell($spacing, 4, utf8_decode('COD. CLIENTE:'), 0, 0, 'L'); // Título
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(0, 4, utf8_decode($codigoCliente), 0, 1, 'L'); // Dato en la misma línea
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell($spacing, 3.5, utf8_decode('COD. CLIENTE:'), 0, 0, 'L'); // Título
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, utf8_decode($codigoCliente), 0, 1, 'L'); // Dato en la misma línea
 
         $spacing = 29; // Espaciado entre el título y el dato
 
         // FECHA DE EMISIÓN
         $pdf->SetX($marginLeft);
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell($spacing, 4, utf8_decode('FECHA DE EMISIÓN:'), 0, 0, 'L'); // Título
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(0, 4, utf8_decode($fechaFormateada), 0, 1, 'L'); // Dato en la misma línea
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell($spacing, 3.5, utf8_decode('FECHA DE EMISIÓN:'), 0, 0, 'L'); // Título
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, utf8_decode($fechaFormateada), 0, 1, 'L'); // Dato en la misma línea
 
         $y = $pdf->GetY();
         $pdf->SetY($y + 2);
@@ -3011,7 +3075,7 @@ class VentaController extends Controller
         $pdf->SetDrawColor(0, 0, 0);
         $pdf->Cell(0, 4, '', 'T', 1, 'C');
 
-        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFont('Arial', 'B', 7);
         $pdf->Cell(0, 5, 'DETALLE', 0, 1, 'C');
 
         $detalle = $archivoXML->detalle;
@@ -3019,16 +3083,16 @@ class VentaController extends Controller
         foreach ($detalle as $p) {
             $producto = utf8_decode($p->codigoProducto . " - " . $p->descripcion);
 
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->MultiCell(0, 4, $producto, 0, 'L');
+            $pdf->SetFont('Arial', 'B', 7   );
+            $pdf->MultiCell(0, 3.5, $producto, 0, 'L');
 
             $medida = $p->unidadMedida;
             $nombreMedida = Medida::where('codigoClasificador', $medida)->value('descripcion_medida');
 
-            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetFont('Arial', '', 7);
             //$pdf->Cell(0, 4, "Unidad de Medida: " . $nombreMedida, 0, 1, 'L');
-            $pdf->Cell(0, 4, number_format(floatval($p->cantidad), 2) . " X " . number_format(floatval($p->precioUnitario), 2) . " - " . number_format(floatval($p->montoDescuento), 2), 0, 0, 'L');
-            $pdf->Cell(0, 4, number_format(floatval($p->subTotal), 2), 0, 1, 'R');
+            $pdf->Cell(0, 3.5, number_format(floatval($p->cantidad), 2) . " X " . number_format(floatval($p->precioUnitario), 2) . " - " . number_format(floatval($p->montoDescuento), 2), 0, 0, 'L');
+            $pdf->Cell(0, 3.5, number_format(floatval($p->subTotal), 2), 0, 1, 'R');
 
             $sumaSubTotales += floatval($p->subTotal);
         }
@@ -3039,25 +3103,25 @@ class VentaController extends Controller
         $pdf->SetDrawColor(0, 0, 0);
         $pdf->Cell(0, 4, '', 'T', 1, 'C');
 
-        $pdf->SetFont('Arial', '', 8);
-        $pdf->Cell(0, 4, 'SUBTOTAL Bs', 0, 0, 'C');
-        $pdf->Cell(0, 4, number_format(floatval($sumaSubTotales), 2), 0, 1, 'R');
-        $pdf->Cell(0, 4, 'DESCUENTO Bs', 0, 0, 'C');
-        $pdf->Cell(0, 4, number_format(floatval($descuentoAdicional), 2), 0, 1, 'R');
-        $pdf->Cell(0, 4, 'TOTAL Bs', 0, 0, 'C');
-        $pdf->Cell(0, 4, number_format(floatval($montoTotal), 2), 0, 1, 'R');
-        $pdf->Cell(0, 4, 'MONTO GIFT CARD Bs', 0, 0, 'C');
-        $pdf->Cell(0, 4, number_format(floatval($montoGiftCard), 2), 0, 1, 'R');
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell(0, 4, 'MONTO A PAGAR Bs', 0, 0, 'C');
-        $pdf->Cell(0, 4, number_format(floatval($montoTotal), 2), 0, 1, 'R');
-        $pdf->SetFont('Arial', 'B', 6);
-        $pdf->Cell(0, 4, utf8_decode('IMPORTE BASE CRÉDITO FISCAL Bs'), 0, 0, 'C');
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell(0, 4, number_format(floatval($montoTotal), 2), 0, 1, 'R');
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, 'SUBTOTAL Bs', 0, 0, 'C');
+        $pdf->Cell(0, 3.5, number_format(floatval($sumaSubTotales), 2), 0, 1, 'R');
+        $pdf->Cell(0, 3.5, 'DESCUENTO Bs', 0, 0, 'C');
+        $pdf->Cell(0, 3.5, number_format(floatval($descuentoAdicional), 2), 0, 1, 'R');
+        $pdf->Cell(0, 3.5, 'TOTAL Bs', 0, 0, 'C');
+        $pdf->Cell(0, 3.5, number_format(floatval($montoTotal), 2), 0, 1, 'R');
+        $pdf->Cell(0, 3.5, 'MONTO GIFT CARD Bs', 0, 0, 'C');
+        $pdf->Cell(0, 3.5, number_format(floatval($montoGiftCard), 2), 0, 1, 'R');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, 'MONTO A PAGAR Bs', 0, 0, 'C');
+        $pdf->Cell(0, 3.5, number_format(floatval($montoTotal), 2), 0, 1, 'R');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, utf8_decode('IMPORTE BASE CRÉDITO FISCAL Bs'), 0, 0, 'C');
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->Cell(0, 3.5, number_format(floatval($montoTotal), 2), 0, 1, 'R');
         $pdf->Ln(6);
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->MultiCell(0, 4, 'Son: ' . $letra, 0, 'L');
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->MultiCell(0, 3.5, 'Son: ' . $letra, 0, 'L');
 
         $y = $pdf->GetY();
         $pdf->SetY($y + 2);
@@ -3065,17 +3129,17 @@ class VentaController extends Controller
         $pdf->SetDrawColor(0, 0, 0);
         $pdf->Cell(0, 4, '', 'T', 1, 'C');
 
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->Cell(0, 3.5, utf8_decode('ESTA FACTURA CONTRIBUYE AL DESARROLLO DEL PAÍS,'), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('EL USO ILÍCITO SERÁ SANCIONADO PENALMENTE DE'), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('ACUERDO A LA LEY'), 0, 1, 'C');
+        $pdf->Ln(3);
         $pdf->SetFont('Arial', '', 7.5);
-        $pdf->Cell(0, 4, utf8_decode('ESTA FACTURA CONTRIBUYE AL DESARROLLO DEL PAÍS,'), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode('EL USO ILÍCITO SERÁ SANCIONADO PENALMENTE DE'), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode('ACUERDO A LA LEY'), 0, 1, 'C');
+        $pdf->MultiCell(0, 3.5, utf8_decode($leyenda), 0, 'C');
         $pdf->Ln(3);
-        $pdf->SetFont('Arial', '', 8.5);
-        $pdf->MultiCell(0, 4, utf8_decode($leyenda), 0, 'C');
-        $pdf->Ln(3);
-        $pdf->Cell(0, 4, utf8_decode('Este documento es la Representación Gráfica de un'), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode('Documento Fiscal Digital emitido en una modalidad de'), 0, 1, 'C');
-        $pdf->Cell(0, 4, utf8_decode('facturación en línea'), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('Este documento es la Representación Gráfica de un'), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('Documento Fiscal Digital emitido en una modalidad de'), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('facturación en línea'), 0, 1, 'C');
         $pdf->Ln(3);
         $textY = $pdf->GetY(); // Posición actual después del contenido previo
 
@@ -4470,7 +4534,7 @@ class VentaController extends Controller
         $sucursal = $user->sucursal;
         $codSucursal = $sucursal->codigoSucursal;
         $nombreSucursal = $sucursal->nombre;
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         require "SiatController.php";
         $siat = new SiatController();
@@ -4526,27 +4590,47 @@ class VentaController extends Controller
             }
         }
 
-        // Obtener código de sucursal
-        $codigoSucursal = '';
-        $sucursal = Sucursales::find($idsucursal);
-        if ($sucursal) {
-            $codigoSucursal = $sucursal->codigoSucursal;
-        }
-
         try {
             $idventa = (int) $idventa;
+
             $venta = Venta::findOrFail($idventa);
 
-            // Devolver la respuesta JSON con los datos de la venta y el código de sucursal
+            // 🔹 Obtener sucursal de la venta
+            $sucursal = Sucursales::find($venta->idsucursal);
+
+            // 🔹 Obtener empresa de la sucursal
+            $empresa = Empresa::find($sucursal->idempresa);
+
+            // 🔹 Código sucursal SIAT
+            $codigoSucursal = $sucursal ? $sucursal->codigoSucursal : 0;
+
             return response()->json([
                 'venta' => $venta,
-                'codigoSucursal' => $codigoSucursal  // Incluir el código de sucursal
+
+                // Datos SIAT
+                'codigoSucursal' => $codigoSucursal,
+                'codigoPuntoVenta' => $codigoPuntoVenta,
+
+                // Datos empresa
+                'nit' => $empresa ? $empresa->nit : '',
+
+                // Datos sucursal
+                'telefono' => $empresa ? $empresa->telefono : '',
+                'municipio' => $sucursal ? $sucursal->departamento : '',
+                'direccion' => $sucursal ? $sucursal->direccion : '',
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Venta no encontrada'], 404);
+
+            return response()->json([
+                'error' => 'Venta no encontrada'
+            ], 404);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al obtener los datos'], 500);
+
+            return response()->json([
+                'error' => 'Error al obtener los datos'
+            ], 500);
         }
     }
     public function generarReporteCreditoPDF($clienteId)

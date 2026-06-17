@@ -47,7 +47,7 @@ class AlmacenController extends Controller
         }
 
         $almacenes = $query->select('id', 'nombre_almacen')
-            ->orderBy('nombre_almacen', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
 
         return ['almacenes' => $almacenes];

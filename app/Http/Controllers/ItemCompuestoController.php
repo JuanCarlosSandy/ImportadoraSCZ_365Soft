@@ -54,7 +54,7 @@ class ItemCompuestoController extends Controller
                 ->where('articulos.condicion', 1)
                 ->where('articulos.tipo_producto', 'C')
                 ->distinct()
-                ->orderBy('articulos.id', 'asc')
+                ->orderBy('articulos.id', 'desc')
                 ->get();
         } else {
             $articulos = Articulo::join('categorias', 'articulos.idcategoria', '=', 'categorias.id')

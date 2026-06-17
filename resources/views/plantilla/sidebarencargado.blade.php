@@ -161,7 +161,22 @@
                         <a class="nav-link" href="#"><i class="icon-list"></i> Productos Vendidos</a>
                     </li>
                 </ul>
-            </li>            
+            </li>    
+            
+            <li class="nav-item nav-dropdown">
+                    <a class="nav-link nav-dropdown-toggle" href="#"><i class="icon-info"></i>SIAT</a>
+                    <ul class="nav-dropdown-items">
+                        <li @click="menu=31" class="nav-item">
+                            <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i>Sinc. Actividades</a>
+                        </li>
+                        <li @click="menu=34" class="nav-item">
+                            <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i>Sinc. Servicios</a>
+                        </li>
+                        <li @click="menu=37" class="nav-item">
+                            <a class="nav-link" href="#"><i class="icon-list" style="font-size: 11px;"></i>Sinc. Unidad Medida</a>
+                        </li>
+                    </ul>
+            </li>
     </nav>
    
 </div>

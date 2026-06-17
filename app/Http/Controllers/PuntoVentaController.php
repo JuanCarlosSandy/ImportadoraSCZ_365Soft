@@ -101,7 +101,7 @@ class PuntoVentaController extends Controller
         $sucursal = $user->sucursal;
         $codSucursal = $sucursal->codigoSucursal;
         $nombreSucursal = $sucursal->nombre;
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         require "SiatController.php";
         $siat = new SiatController();
