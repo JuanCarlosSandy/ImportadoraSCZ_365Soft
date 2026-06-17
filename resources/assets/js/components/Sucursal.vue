@@ -56,15 +56,15 @@
           <Column header="Acciones">
             <template #body="slotProps">
               <!-- Botones comunes (aparecen siempre) -->
-              <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini"
+              <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
                 @click="abrirModal('sucursal', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
-              <Button v-if="slotProps.data.condicion" icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini"
+              <Button v-if="slotProps.data.condicion" icon="pi pi-trash" class="p-button-danger btn-mini"
                 @click="desactivarSucursal(slotProps.data.id)" v-tooltip.top="'Desactivar'" />
-              <Button v-else icon="pi pi-check" class="p-button-info p-button-sm btn-mini"
+              <Button v-else icon="pi pi-check" class="p-button-info btn-mini"
                 @click="activarSucursal(slotProps.data.id)" v-tooltip.top="'Activar'" />
 
               <!-- Botón adicional SOLO visible en móvil -->
-              <Button v-if="!mostrarLabel" icon="pi pi-info-circle" class="p-button-help p-button-sm btn-mini"
+              <Button v-if="!mostrarLabel" icon="pi pi-info-circle" class="p-button-help btn-mini"
                 @click="mostrarDetalleSucursal(slotProps.data)" />
             </template>
           </Column>

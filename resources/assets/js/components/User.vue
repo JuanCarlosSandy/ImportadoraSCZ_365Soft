@@ -35,7 +35,7 @@
 
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetBusqueda"
-            class="btn-edit btn-sm-input" :title="'Limpiar búsqueda'" />
+            class="p-button-warning btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" @click="cargarReporteUsuariosExcel()"
             class="p-button-success btn-sm-input" :title="'Exportar a Excel'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
@@ -48,7 +48,7 @@
           class="p-datatable-gridlines p-datatable-sm tabla-pro" responsiveLayout="scroll">
           <Column header="Acciones">
             <template #body="slotProps">
-                <Button icon="pi pi-pencil" class="p-button btn-edit btn-mini"
+                <Button icon="pi pi-pencil" class="p-button p-button-warning btn-mini"
                   @click="abrirModal('persona', 'actualizar', slotProps.data)" :title="'Editar'" />
                 <Button v-if="slotProps.data.condicion" icon="pi pi-trash" class="p-button p-button-danger btn-mini"
                   @click="desactivarUsuario(slotProps.data.id)" :title="'Desactivar'" />

@@ -30,7 +30,7 @@
             Desde
           </label>
 
-          <input type="date" v-model="fechaInicio" class="form-control input-date-full" @change="listarTraspasos" />
+          <input type="date" v-model="fechaInicio" class="input-date-full" @change="listarTraspasos" />
         </div>
 
         <div style="flex: 1 1 140px;">
@@ -38,7 +38,7 @@
             Hasta
           </label>
 
-          <input type="date" v-model="fechaFin" class="form-control input-date-full" @change="listarTraspasos" />
+          <input type="date" v-model="fechaFin" class="input-date-full" @change="listarTraspasos" />
         </div>
 
         <div style="flex: 2 1 300px;">
@@ -59,7 +59,7 @@
 
           <div style="display: flex; gap: 10px;">
             <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-filter-slash"
-              class="btn-edit p-button-sm btn-input-sm" :title="'Limpiar filtros'" @click="limpiarFiltros" />
+              class="p-button-warning p-button-sm btn-input-sm" :title="'Limpiar filtros'" @click="limpiarFiltros" />
 
             <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
               @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm btn-input-sm"
@@ -78,7 +78,7 @@
               <Button icon="pi pi-eye" class="p-button-success btn-mini" @click="verTraspaso(slotProps.data.id)"
                 title="Ver Detalle" />
 
-              <Button icon="pi pi-file-pdf" class="btn-edit btn-mini"
+              <Button icon="pi pi-file-pdf" class="p-button-warning btn-mini"
                 @click="exportarPdfTraspaso(slotProps.data.id)" title="Descargar PDF" :disabled="isLoading" />
 
               <Button v-if="slotProps.data.estado == 1" icon="pi pi-trash" class="p-button-danger btn-mini"

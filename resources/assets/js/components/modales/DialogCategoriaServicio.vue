@@ -42,7 +42,7 @@
           <template #body="slotProps">
             <Button icon="pi pi-check" class="p-button-success custom-icon-size btn-mini"
               @click="seleccionarLinea(slotProps.data)" />
-            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+            <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
               @click="abrirModal('categoria', 'actualizar', slotProps.data)" />
           </template>
         </Column>

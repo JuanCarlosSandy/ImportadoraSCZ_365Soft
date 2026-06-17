@@ -51,32 +51,32 @@
             <div v-if="slotProps.data.estado">
                           <Button 
                 icon="pi pi-file-pdf" 
-                class="p-button-danger p-button-sm btn-mini"
+                class="p-button-danger btn-mini"
                 @click="generarReporte(slotProps.data.id)" 
                 v-tooltip.top="'Reporte'"
                 :disabled="isLoading"  
               />
               <template v-if="slotProps.data.id !== idCajaBotonesSecundarios">
-                <Button icon="pi pi-plus" class="p-button-primary p-button-sm btn-mini"
+                <Button icon="pi pi-plus" class="p-button-primary btn-mini"
                   @click="abrirModal2('cajaDepositar', 'depositar', slotProps.data)" v-tooltip.top="'Depositar'" />
-                <Button icon="pi pi-minus" class="p-button-danger p-button-sm btn-mini"
+                <Button icon="pi pi-minus" class="p-button-danger btn-mini"
                   @click="abrirModal3('cajaRetirar', 'retirar', slotProps.data)" v-tooltip.top="'Retirar'" />
-                <Button icon="pi pi-eye" class="p-button-warning p-button-sm btn-mini"
+                <Button icon="pi pi-eye" class="p-button-warning btn-mini"
                   @click="abrirModal4('cajaVer', 'ver', slotProps.data.id)" />
-                <Button icon="pi pi-calculator" class="p-button-success p-button-sm btn-mini"
+                <Button icon="pi pi-calculator" class="p-button-success btn-mini"
                   @click="abrirModal5('arqueoCaja', 'contar', slotProps.data.id)" v-tooltip.top="'Arqueo'" />
               </template>
               <template v-else>
-                <Button icon="pi pi-eye" class="p-button-warning p-button-sm btn-mini"
+                <Button icon="pi pi-eye" class="p-button-warning btn-mini"
                   @click="abrirModal4('cajaVer', 'ver', slotProps.data.id)" v-tooltip.top="'Ver'" />
-                <Button icon="pi pi-lock" class="p-button-danger p-button-sm btn-mini"
+                <Button icon="pi pi-lock" class="p-button-danger btn-mini"
                   @click="cerrarCaja(slotProps.data.id)" v-tooltip.top="'Cerrar'" />
               </template>
             </div>
             <div v-else>
-              <Button icon="pi pi-file-pdf" class="p-button-danger p-button-sm btn-mini"
+              <Button icon="pi pi-file-pdf" class="p-button-danger btn-mini"
                   @click="generarReporte(slotProps.data.id)" v-tooltip.top="'Reporte'" />
-              <Button icon="pi pi-eye" class="p-button-warning p-button-sm btn-mini"
+              <Button icon="pi pi-eye" class="p-button-warning btn-mini"
                 @click="abrirModal4('cajaVer', 'ver', slotProps.data.id)" v-tooltip.top="'Ver'" />
             </div>
           </template>

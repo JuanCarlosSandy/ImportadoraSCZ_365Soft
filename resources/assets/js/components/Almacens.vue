@@ -32,7 +32,7 @@
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" />
+            class="p-button-warning p-button-sm btn-sm-input" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('almacenes', 'registrar')"
             class="p-button-secondary p-button-sm btn-sm-input" />
         </div>
@@ -42,9 +42,9 @@
         :paginator="true" :rows="7">
         <Column header="Acciones">
           <template #body="slotProps">
-            <Button icon="pi pi-eye" class="p-button-info p-button-sm btn-mini"
+            <Button icon="pi pi-eye" class="p-button-info btn-mini"
               @click="verObservaciones(slotProps.data)" :title="'Ver observaciones'" />
-            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+            <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
               @click="abrirModal('almacenes', 'actualizar', slotProps.data)" :title="'Editar almacén'"/>
           </template>
         </Column>

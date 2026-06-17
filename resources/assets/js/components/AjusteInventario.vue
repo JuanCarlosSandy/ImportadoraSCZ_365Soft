@@ -38,7 +38,7 @@
               </label>
               <div class="p-inputgroup">
                 <InputText placeholder="Seleccione un Motivo" v-model="motivoseleccionado.nombre" :disabled="true"
-                  class="form-control input-full" />
+                  class="input-full" />
 
                 <Button icon="pi pi-ellipsis-h" class="p-button-primary btn-sm-input" @click="abrirModal2('Motivo')" />
               </div>
@@ -73,7 +73,7 @@
                     @keydown.enter="seleccionarProveedorConEnter" placeholder="Buscar proveedor..."
                     class="p-inputtext p-component input-full" />
 
-                  <Button v-if="proveedorSeleccionado.nombre" icon="pi pi-times" class="p-button-danger p-button-sm"
+                  <Button v-if="proveedorSeleccionado.nombre" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm-input"
                     @click="limpiarProveedorSeleccionado" style="margin-left: 5px;" />
                 </div>
 
@@ -129,7 +129,7 @@
             </Column>
             <Column header="Stock Real">
               <template #body="slotProps">
-                <InputText type="number" v-model="slotProps.data.stock_real" class="form-control input-full"
+                <InputText type="number" v-model="slotProps.data.stock_real" class="input-full"
                   placeholder="0" :min="0" @input="calcularDiferencia(slotProps.data)"
                   @keydown.tab.prevent="moverFoco(slotProps.index, $event, 'stock_real')"
                   :ref="'stock_real-' + slotProps.index" />
@@ -263,7 +263,7 @@
           </div>
 
           <div class="toolbar" style="padding-bottom: 2px;">
-            <Button label="Limpiar" icon="pi pi-refresh" @click="resetFiltros" class="btn-edit p-button-sm btn-sm-input"
+            <Button label="Limpiar" icon="pi pi-refresh" @click="resetFiltros" class="p-button-warning p-button-sm btn-sm-input"
               title="Restablecer filtros" />
             <Button label="Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm btn-sm-input"
               @click="exportarReporteExcel()" title="Descargar Reporte Excel" />
@@ -315,12 +315,12 @@
         <div class="search-bar p-flex-grow-1">
           <span class="p-input-icon-left p-w-full">
             <i class="pi pi-search" />
-            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control input-full"
+            <InputText ref="inputBusqueda" v-model="buscarA" class="input-full"
               placeholder="Texto a buscar" @keyup="filtrarProductos" />
           </span>
         </div>
         <div class="p-d-flex p-gap-2">
-          <Button label="Limpiar" icon="pi pi-refresh" @click="resetBusquedaProductos" class="btn-edit btn-sm-input"
+          <Button label="Limpiar" icon="pi pi-refresh" @click="resetBusquedaProductos" class="p-button-warning btn-sm-input"
             title="Limpiar" :disabled="!buscarA" />
           <!--<Button label="Agregar Todos" icon="pi pi-plus" class="p-button-success btn-sm-input"
             @click="agregarTodosProductos" :disabled="!proveedorSeleccionado.id || arrayBuscador.length === 0" />-->
@@ -421,7 +421,7 @@
         </div>
         <div class="toolbar">
           <Button label="Limpiar" icon="pi pi-refresh" @click="resetBusquedaMotivos"
-            class="btn-edit p-button-sm btn-sm-input" title="Limpiar" />
+            class="p-button-warning p-button-sm btn-sm-input" title="Limpiar" />
           <!-- Botón para añadir nuevo motivo -->
           <Button label="Nuevo Motivo" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
             @click="abrirModalNuevoMotivo" />
@@ -482,7 +482,7 @@
           type="button" />
         <Button v-if="tipoAccion2 == 5" class="p-button-success p-button-sm btn-sm" label="Guardar" icon="pi pi-check"
           @click="registrarMarca" type="button" />
-        <Button v-if="tipoAccion2 == 6" class="btn-edit p-button-sm btn-sm" label="Actualizar" icon="pi pi-check"
+        <Button v-if="tipoAccion2 == 6" class="p-button-warning p-button-sm btn-sm" label="Actualizar" icon="pi pi-check"
           @click="actualizarMarca" type="button" />
       </template>
     </Dialog>

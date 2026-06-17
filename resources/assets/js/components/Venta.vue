@@ -84,7 +84,7 @@
 
           <div class="field">
             <Button @click="limpiarFiltros" label="Limpiar" icon="pi pi-filter-slash"
-              class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar Filtros'" />
+              class="p-button-warning p-button-sm btn-sm-input" :title="'Limpiar Filtros'" />
           </div>
           </template>
           <div class="field">
@@ -1397,7 +1397,7 @@
               responsiveLayout="scroll" @row-click="seleccionarItem($event.data, 'itemcompuesto')">
               <Column header="Opciones" style="width: 80px">
                 <template #body="slotProps">
-                  <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                  <Button icon="pi pi-check" class="p-button-success btn-mini"
                     @click.stop="agregarDetalleModal(slotProps.data, 'itemcompuesto')" />
                   <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
                     @click.stop="verCombosOfertas(slotProps.data.id)" v-tooltip.top="'Ver Combo'" />

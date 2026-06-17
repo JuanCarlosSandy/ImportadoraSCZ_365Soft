@@ -34,7 +34,7 @@
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
+            class="p-button-warning p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
             class="p-button-secondary p-button-sm btn-sm-input" @click="abrirModal('articulo', 'registrar')" />
           <!--<Button :label="mostrarLabel ? 'Reporte' : ''" icon="pi pi-file" class="p-button-success p-button-sm"
@@ -50,7 +50,7 @@
               <div class="botones-opciones">
                 <Button icon="pi pi-eye" class="btn-icon p-button-primary btn-mini"
                   @click="verCombosOfertas(slotProps.data.id)" :title="'Ver Combo'" />
-                <Button icon="pi pi-pencil" class="btn-icon btn-edit btn-mini"
+                <Button icon="pi pi-pencil" class="btn-icon p-button-warning btn-mini"
                   @click="abrirModal('articulo', 'actualizar', slotProps.data)" :title="'Editar'" />
                 <Button v-if="slotProps.data.condicion" icon="pi pi-ban" class="btn-icon p-button-danger btn-mini"
                   @click="desactivarArticulo(slotProps.data.id)" :title="'Desactivar'" />

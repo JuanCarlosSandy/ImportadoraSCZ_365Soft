@@ -31,7 +31,7 @@
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
+            class="p-button-warning p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('categoria', 'registrar')"
             class="p-button-secondary p-button-sm btn-sm-input" :title="'Registrar nueva categoría'" />
           <!--<Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-cloud-download" @click="cargarExcel"
@@ -43,7 +43,7 @@
         <Column header="Opciones">
           <template #body="slotProps">
             <div class="d-flex align-items-center gap-1">
-              <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+              <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
                 @click="abrirModal('categoria', 'actualizar', slotProps.data)" :title="'Editar categoría'" />
             </div>
           </template>

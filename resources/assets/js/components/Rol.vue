@@ -33,7 +33,7 @@
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" />
+            class="p-button-warning p-button-sm btn-sm-input" />
         </div>
       </div>
 

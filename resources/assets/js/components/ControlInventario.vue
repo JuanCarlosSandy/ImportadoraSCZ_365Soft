@@ -185,7 +185,7 @@
 
           <div class="toolbar" style="padding-bottom: 2px;">
             <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetFiltros"
-              class="btn-edit p-button-sm btn-sm-input" title="Restablecer filtros" />
+              class="p-button-warning p-button-sm btn-sm-input" title="Restablecer filtros" />
             <Button v-if="rolUsuario == 4" label="Llaves de Acceso" icon="pi pi-key"
               class="p-button-primary p-button-sm btn-sm-input" @click="abrirDialogLlaves" />
             <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
@@ -199,11 +199,11 @@
           <!-- 🔘 ACCIONES -->
           <Column header="ACCIONES" style="width: 120px; text-align: center;">
             <template #body="slotProps">
-              <Button icon="pi pi-eye" class="p-button-info p-button-sm btn-mini"
+              <Button icon="pi pi-eye" class="p-button-info btn-mini"
                 @click="verDetalleControl(slotProps.data.id)" v-tooltip.top="'Ver detalle'" />
-              <Button icon="pi pi-file-pdf" class="p-button-danger p-button-sm btn-mini"
+              <Button icon="pi pi-file-pdf" class="p-button-danger btn-mini"
                 @click="descargarPdf(slotProps.data.id)" v-tooltip.top="'Descargar PDF'" />
-              <Button icon="pi pi-file-excel" class="p-button-success p-button-sm btn-mini"
+              <Button icon="pi pi-file-excel" class="p-button-success btn-mini"
                 @click="descargarExcel(slotProps.data.id)" v-tooltip.top="'Descargar Excel'" />
             </template>
           </Column>
@@ -548,10 +548,10 @@
                   <!-- ✏️ SI ESTÁ EDITANDO -->
                   <template v-if="filaEditando === slotProps.data.id">
 
-                    <Button icon="pi pi-check" class="p-button-success p-button-sm btn-mini"
+                    <Button icon="pi pi-check" class="p-button-success btn-mini"
                       @click="guardarEdicion(slotProps.data)" v-tooltip.top="'Guardar'" />
 
-                    <Button icon="pi pi-times" class="p-button-secondary p-button-sm btn-mini" style="margin-left: 5px;"
+                    <Button icon="pi pi-times" class="p-button-secondary btn-mini" style="margin-left: 5px;"
                       @click="cancelarEdicion()" v-tooltip.top="'Cancelar'" />
 
                   </template>
@@ -560,13 +560,13 @@
                   <template v-else>
 
                     <!-- ✏️ EDITAR -->
-                    <Button icon="pi pi-pencil" class="p-button-primary p-button-sm btn-mini"
+                    <Button icon="pi pi-pencil" class="p-button-primary btn-mini"
                       @click="editarStockFisico(slotProps.data)" v-tooltip.top="'Editar stock físico'" />
 
                     <!-- 🔵 SIN DIFERENCIA -->
                     <template v-if="sinDiferencia(slotProps.data)">
 
-                      <Button icon="pi pi-arrow-right" class="p-button-help p-button-sm btn-mini"
+                      <Button icon="pi pi-arrow-right" class="p-button-help btn-mini"
                         style="margin-left: 5px;" @click="confirmarPasarEstado(slotProps.data)"
                         v-tooltip.top="'Pasar estado'" />
 
@@ -575,11 +575,11 @@
                     <!-- 🟡 CON DIFERENCIA -->
                     <template v-else>
 
-                      <Button icon="pi pi-refresh" class="p-button-warning p-button-sm btn-mini"
+                      <Button icon="pi pi-refresh" class="p-button-warning btn-mini"
                         style="margin-left: 5px;" @click="ajustarProducto(slotProps.data)"
                         v-tooltip.top="'Ajustar stock'" />
 
-                      <Button icon="pi pi-times" class="p-button-danger p-button-sm btn-mini" style="margin-left: 5px;"
+                      <Button icon="pi pi-times" class="p-button-danger btn-mini" style="margin-left: 5px;"
                         @click="confirmarCancelacion(slotProps.data)" v-tooltip.top="'Cancelar ajuste'" />
 
                     </template>
@@ -727,9 +727,9 @@
               <template slot="body" slot-scope="slotProps">
                 <!-- 👁 VER / OCULTAR -->
                 <Button :icon="llavesVisibles.includes(slotProps.data.id) ? 'pi pi-eye-slash' : 'pi pi-eye'"
-                  class="p-button-secondary p-button-sm btn-mini" @click="toggleVerLlave(slotProps.data.id)"
+                  class="p-button-secondary btn-mini" @click="toggleVerLlave(slotProps.data.id)"
                   v-tooltip.top="llavesVisibles.includes(slotProps.data.id) ? 'Ocultar' : 'Ver llave'" />
-                <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini"
+                <Button icon="pi pi-trash" class="p-button-danger btn-mini"
                   @click="confirmarEliminarLlave(slotProps.data)" v-tooltip.top="'Eliminar llave'" />
 
               </template>

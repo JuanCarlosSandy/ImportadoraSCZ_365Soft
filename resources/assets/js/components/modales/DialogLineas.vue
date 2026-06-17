@@ -67,7 +67,7 @@
             />
             <Button
               icon="pi pi-pencil"
-              class="btn-edit btn-mini"
+              class="p-button-warning btn-mini"
               @click="abrirModal('categoria', 'actualizar', slotProps.data)"
             />
           </template>

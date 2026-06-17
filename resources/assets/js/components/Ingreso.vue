@@ -37,7 +37,7 @@
           </div>
 
           <div class="toolbar">
-            <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="btn-edit p-button-sm btn-sm-input" @click="resetBuscar"
+            <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="p-button-warning p-button-sm btn-sm-input" @click="resetBuscar"
               :title="'Limpiar búsqueda'" />
             <Button @click="mostrarDetalle()" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
               class="p-button-secondary p-button-sm btn-sm-input" :title="'Nuevo Registro'" />
@@ -56,7 +56,7 @@
                 :title="'Imprimir PDF'" class="p-button-primary btn-mini" :disabled="isLoading" />
 
               <template v-if="puedeModificarIngreso(slotProps.data)">
-                <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+                <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
                   @click="editarIngreso(slotProps.data.id)" :title="'Editar Compra'" />
 
                 <Button @click="anularCompra(slotProps.data.id)" icon="pi pi-trash"

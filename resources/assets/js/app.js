@@ -329,6 +329,16 @@ const app = new Vue({
   data: {
     menu: 0,
     notifications: [],
+    openMenu: null,
+  },
+    methods: {
+    toggleMenu(menuName) {
+      if (this.openMenu === menuName) {
+        this.openMenu = null;
+      } else {
+        this.openMenu = menuName;
+      }
+    }
   },
   mounted() {
     console.log("Vue app mounted");

@@ -33,7 +33,7 @@
 
 
         <div class="toolbar">
-           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="btn-edit p-button-sm btn-sm-input" @click="resetBuscar"
+           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="p-button-warning p-button-sm btn-sm-input" @click="resetBuscar"
               :title="'Limpiar búsqueda'" />
 
           <Button icon="pi pi-plus" :label="mostrarLabel ? 'Nuevo' : ''" class="p-button-secondary p-button-sm btn-sm-input"
@@ -51,7 +51,7 @@
         responsiveLayout="scroll">
          <Column header="Acciones">
           <template #body="slotProps">
-            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+            <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
               @click="abrirModal('persona', 'actualizar', slotProps.data)" :title="'Editar'"/>
             <Button icon="pi pi-trash" class="p-button-danger btn-mini"
               @click="confirmarEliminacion(slotProps.data)" :title="'Eliminar'" />

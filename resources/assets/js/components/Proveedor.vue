@@ -31,7 +31,7 @@
         </div>
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="limpiarBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
+            class="p-button-warning p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
             class="p-button-secondary p-button-sm btn-sm-input" :title="'Registrar nuevo proveedor'" />
           <!--<Button
@@ -47,7 +47,7 @@
         @page="onPageChange" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro">
         <Column header="Acciones">
           <template #body="slotProps">
-            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+            <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
               @click="abrirModal('persona', 'actualizar', slotProps.data)" :title="'Editar proveedor'" />
             <Button icon="pi pi-trash" class="p-button-danger btn-mini"
               @click="desactivarProveedor(slotProps.data)" :title="'Eliminar proveedor'" />
