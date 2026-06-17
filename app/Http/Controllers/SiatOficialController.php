@@ -62,7 +62,7 @@ class SiatController extends Controller
         $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -88,7 +88,7 @@ class SiatController extends Controller
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudCuis' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -100,7 +100,7 @@ class SiatController extends Controller
         ));
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -126,7 +126,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudCufd' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -140,7 +140,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -166,7 +166,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -179,7 +179,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -205,7 +205,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -218,7 +218,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -243,7 +243,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -256,7 +256,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -282,7 +282,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -295,7 +295,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -321,7 +321,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -334,7 +334,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -360,7 +360,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -373,7 +373,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -399,7 +399,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudSincronizacion' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -412,7 +412,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -438,7 +438,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
         $nitParaVerificacion = $numeroDocumento;
 
         $params = array('SolicitudVerificarNit' => array(
@@ -453,7 +453,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -483,7 +483,7 @@ class SiatController extends Controller
         $codigoSucursal = $codSucursal;
         $cufd = $_SESSION['scufd'];
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
         $tipoFacturaDocumento = 1;
         $cuf = $cuf;
 
@@ -504,7 +504,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -536,7 +536,7 @@ class SiatController extends Controller
         $codigoSucursal = $codSucursal;
         $cufd = $_SESSION['scufd'];
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
         $tipoFacturaDocumento = 1;
         $archivo = $archivo;
         $fechaEnvio = $fechaEnvio;
@@ -561,7 +561,7 @@ class SiatController extends Controller
         
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -590,7 +590,7 @@ class SiatController extends Controller
         $codigoSucursal = $codSucursal;
         $cufd = $_SESSION['scufd'];
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
         $tipoFacturaDocumento = 1;
         $codigoMotivo = $motivoSeleccionado;
         $cuf = $cuf;
@@ -613,7 +613,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -645,7 +645,7 @@ class SiatController extends Controller
         $codigoSucursal = $codSucursal;
         $cufd = $_SESSION['scufd'];
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
         $tipoFacturaDocumento = 1;
         $archivo = $archivo;
         $fechaEnvio = $fechaEnvio;
@@ -680,7 +680,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -714,7 +714,7 @@ class SiatController extends Controller
         $descripcion = $descripcion;
         $fechaHoraFinEvento = $finEvento;
         $fechaHoraInicioEvento = $inicioEvento;
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudEventoSignificativo' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -733,7 +733,7 @@ class SiatController extends Controller
         //dd($params);
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -763,7 +763,7 @@ class SiatController extends Controller
         $codigoSucursal = $codSucursal;
         $cufd = $_SESSION['scufd'];
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
         $tipoFacturaDocumento = 1;
         $codigoRecepcion = $_SESSION['scodigorecepcion'];
         
@@ -785,7 +785,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -833,7 +833,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -875,7 +875,7 @@ class SiatController extends Controller
         //dd($params);
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -902,7 +902,7 @@ class SiatController extends Controller
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = 0;
         $cuis = $_SESSION['scuis'];
-        $nit = "8033811015";
+        $nit = "8678007010";
 
         $params = array('SolicitudConsultaPuntoVenta' => array(
             'codigoAmbiente' => $codigoAmbiente,
@@ -913,7 +913,7 @@ class SiatController extends Controller
         ));
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpcTA3QGdtYWlsLmNvbSIsImNvZGlnb1Npc3RlbWEiOiI3NzUzNTU0NkI3MTJERDQwOUQ3QTM4NyIsIm5pdCI6Ikg0c0lBQUFBQUFBQUFMTXdNRGEyTURRME1EUUZBQW9zTEt3S0FBQUEiLCJpZCI6NTM3Mzg2NCwiZXhwIjoxNzkyNjAwMDExLCJpYXQiOjE3NjEwNzgzODEsIm5pdERlbGVnYWRvIjo1MTUzNjEwMDEyLCJzdWJzaXN0ZW1hIjoiU0ZFIn0.W8hL9z0lW9bQpzNwCuhtFjskdWhwaNeLng78nTRAPRUNqWnFUP0_2GXsOVjBPyiPRTvXUP9xY4aNf96TpT-1iA",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );

@@ -59,10 +59,10 @@ class SiatController extends Controller
 
     public function verificarComunicacion()
     {
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -82,8 +82,8 @@ class SiatController extends Controller
     }
 
     public function cuis($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
+        $codigoAmbiente = 1;
         $codigoModalidad = 2;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
@@ -100,7 +100,7 @@ class SiatController extends Controller
         ));
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -119,8 +119,8 @@ class SiatController extends Controller
     }
 
     public function cufd($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
+        $codigoAmbiente = 1;
         $codigoModalidad = 2;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
@@ -140,7 +140,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -160,8 +160,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarActividades($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -179,7 +179,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -199,8 +199,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarParametricaTiposFactura($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -218,7 +218,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -237,8 +237,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarListaProductosServicios($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -256,7 +256,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -276,8 +276,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarListaLeyendasFactura($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -295,7 +295,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -315,8 +315,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarParametricaMotivoAnulacion($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -334,7 +334,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -354,8 +354,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarParametricaEventosSignificativos($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -373,7 +373,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -393,8 +393,8 @@ class SiatController extends Controller
     }
 
     public function sincronizarParametricaUnidadMedida($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionSincronizacion?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -412,7 +412,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -432,8 +432,8 @@ class SiatController extends Controller
     }
 
     public function verificarNit($codSucursal, $numeroDocumento){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionCodigos?wsdl";
+        $codigoAmbiente = 1;
         $codigoModalidad = 2;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -453,7 +453,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -473,8 +473,8 @@ class SiatController extends Controller
     }
 
     public function verificacionEstadoFactura($cuf, $puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
+        $codigoAmbiente = 1;
         $codigoDocumentoSector = 1;
         $codigoEmision = 1;
         $codigoModalidad = 2;
@@ -504,7 +504,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -526,8 +526,8 @@ class SiatController extends Controller
     }
 
     public function recepcionFactura($archivo, $fechaEnvio, $hashArchivo, $puntoVenta, $codSucursal, $codnit){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
+        $codigoAmbiente = 1;
         $codigoDocumentoSector = 1;
         $codigoEmision = 1;
         $codigoModalidad = 2;
@@ -561,7 +561,7 @@ class SiatController extends Controller
         
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -580,8 +580,8 @@ class SiatController extends Controller
     }
 
     public function anulacionFactura($cuf, $motivoSeleccionado, $puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
+        $codigoAmbiente = 1;
         $codigoDocumentoSector = 1;
         $codigoEmision = 1;
         $codigoModalidad = 2;
@@ -613,7 +613,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -635,8 +635,8 @@ class SiatController extends Controller
     }
 
     public function recepcionPaqueteFactura($archivo, $fechaEnvio, $hashArchivo, $numeroFacturas, $puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
+        $codigoAmbiente = 1;
         $codigoDocumentoSector = 1;
         $codigoEmision = 2;
         $codigoModalidad = 2;
@@ -680,7 +680,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -702,8 +702,8 @@ class SiatController extends Controller
     }
 
     public function registroEventoSignificativo($descripcion, $cufdEvento, $codigoMotivoEvento, $inicioEvento, $finEvento, $puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
+        $codigoAmbiente = 1;
         $codigoMotivoEvento = $codigoMotivoEvento;
         $codigoPuntoVenta = $puntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
@@ -733,7 +733,7 @@ class SiatController extends Controller
         //dd($params);
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -753,8 +753,8 @@ class SiatController extends Controller
     }
 
     public function validacionRecepcionPaqueteFactura($puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/ServicioFacturacionCompraVenta?wsdl";
+        $codigoAmbiente = 1;
         $codigoDocumentoSector = 1;
         $codigoEmision = 2;
         $codigoModalidad = 2;
@@ -785,7 +785,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -807,8 +807,8 @@ class SiatController extends Controller
     }
 
     public function registroPuntoVenta($nombre, $descripcion, $nit, $idtipopuntoventa, $idsucursal, $puntoVenta, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
+        $codigoAmbiente = 1;
         $codigoModalidad = 2;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -833,7 +833,7 @@ class SiatController extends Controller
 
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -855,8 +855,8 @@ class SiatController extends Controller
     }
 
     public function cierrePuntoVenta($codigoPuntoVenta, $nit, $codSucursal){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
+        $codigoAmbiente = 1;
         $codigoPuntoVenta = $codigoPuntoVenta;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = $codSucursal;
@@ -875,7 +875,7 @@ class SiatController extends Controller
         //dd($params);
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );
@@ -897,8 +897,8 @@ class SiatController extends Controller
     }
 
     public function consultaPuntoVenta(){
-        $wsdl="https://pilotosiatservicios.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
-        $codigoAmbiente = 2;
+        $wsdl="https://siatrest.impuestos.gob.bo/v2/FacturacionOperaciones?wsdl";
+        $codigoAmbiente = 1;
         $codigoSistema = "77535546B712DD409D7A387";
         $codigoSucursal = 0;
         $cuis = $_SESSION['scuis'];
@@ -913,7 +913,7 @@ class SiatController extends Controller
         ));
         $options = array(
             'http' => array(
-                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMwNTk5NTksImlhdCI6MTc4MTUzODMyOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.jBz4CyJTGZD4quM3-gDV4KXW7eUF-QXSt_Jix67Fkk8JTcvKz5ySPXFJGc5VxkLd0eRAOjfnf2Qu3mWeTROlLQ",
+                'header' => "apikey: TokenApi eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjNTI0NTQzOThAZ21haWwuY29tIiwiY29kaWdvU2lzdGVtYSI6Ijc3NTM1NTQ2QjcxMkRENDA5RDdBMzg3Iiwibml0IjoiSDRzSUFBQUFBQUFBQUxNd003Y3dNREEzTURRQUFBNFBTZDBLQUFBQSIsImlkIjo1MDE4MTI5LCJleHAiOjE4MTMyNTUwNjksImlhdCI6MTc4MTczMzQzOSwibml0RGVsZWdhZG8iOjUxNTM2MTAwMTIsInN1YnNpc3RlbWEiOiJTRkUifQ.cV8T4ugv4JNql9XdOdlm0yRvI_mVIptN7gEyp4fQTMTS-5dr7lMwBDxzPRveu9wyoTTIQCvZr-wOovMQ-juLvQ",
                 'timeout' => 5
             )
         );

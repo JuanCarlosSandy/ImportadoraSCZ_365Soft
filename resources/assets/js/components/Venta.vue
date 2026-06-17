@@ -720,16 +720,19 @@
 
                           <div class="d-flex flex-column flex-md-column mt-2 mt-md-0 text-center">
                             <div class="d-flex flex-row justify-content-center mb-1">
-                              <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
+                              <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 1)">
                                 <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid"
                                   style="height: 24px;" />
+                              </button>-->
+                              <button type="button" @click="aplicarDescuentoRecibo(1, 1)" class="btn btn-secondary mr-2">
+                                <i class="fa fa-file mr-2"></i> Recibo
                               </button>
                               <button type="button" @click="aplicarDescuento(1, 1)" class="btn btn-success">
                                 <i class="fa fa-book mr-2"></i> Facturar
                               </button>
                             </div>
                             <small style="color: #777; font-size: 0.75rem;">
-                              Click en el botón verde para Factura o en la imagen para Recibos
+                              Click en el botón verde para Factura o en boton gris para Recibo
                             </small>
                           </div>
                         </div>
@@ -759,16 +762,19 @@
                         </div>
 
                         <div class="d-flex flex-row flex-md-row mt-2 mt-md-0 justify-content-center">
-                          <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
+                          <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 7)">
                             <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
-                          </button>
+                          </button>-->
+                          <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-secondary mr-2">
+                                <i class="fa fa-file mr-2"></i> Recibo
+                              </button>
                           <button type="button" @click="aplicarDescuento(1, 7)" class="btn btn-success">
                             <i class="fa fa-book mr-2"></i> Facturar
                           </button>
                         </div>
                         <div class="text-center mt-1">
                           <small style="color: #777; font-size: 0.75rem;">
-                            Click en el botón verde para Factura o en la imagen para Recibos
+                            Click en el botón verde para Factura o en boton gris para Recibo
                           </small>
                         </div>
                       </div>
@@ -846,10 +852,14 @@
                           </div>
                           <div class="d-flex flex-row flex-md-row mt-2 mt-md-0">
 
-                            <button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 13)">
+                            <!--<button class="btn btn-light mr-2" @click="aplicarDescuentoRecibo(1, 13)">
                               <img src="/img/logoPrincipal.png" alt="Botón Imagen" class="img-fluid"
                                 style="height: 24px;" />
-                            </button>
+                            </button>-->
+
+                            <button type="button" @click="aplicarDescuentoRecibo(1, 13)" class="btn btn-secondary mr-2">
+                                <i class="fa fa-file mr-2"></i> Recibo
+                              </button>
 
                             <button type="button" @click="aplicarDescuento(1, 13)" class="btn btn-success">
                               <i class="fa fa-book mr-2"></i> Facturar
@@ -857,8 +867,7 @@
                           </div>
                         </div>
                         <small style="color: #777; font-size: 0.75rem;">
-                          Click en el botón verde para Factura o en la imagen
-                          para Recibos
+                          Click en el botón verde para Factura o en boton gris para Recibo
                         </small>
                       </div>
                     </div>
@@ -3980,7 +3989,7 @@ export default {
 
     verificarFactura(cuf, numeroFactura) {
       var url =
-        "https://pilotosiat.impuestos.gob.bo/consulta/QR?nit=8678007010&cuf=" +
+        "https://siat.impuestos.gob.bo/consulta/QR?nit=8678007010&cuf=" +
         cuf +
         "&numero=" +
         numeroFactura +
