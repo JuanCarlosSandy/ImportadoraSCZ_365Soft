@@ -10532,7 +10532,7 @@ base-chart.chart {
 .sidebar .nav-link.active i,
 .sidebar .navbar .active.dropdown-toggle i,
 .navbar .sidebar .active.dropdown-toggle i {
-  color: #2F47CC;
+  color: #8b0000;
 }
 .sidebar .nav-link:hover,
 .sidebar .navbar .dropdown-toggle:hover,
@@ -10546,7 +10546,7 @@ base-chart.chart {
 .sidebar .nav-link:hover i,
 .sidebar .navbar .dropdown-toggle:hover i,
 .navbar .sidebar .dropdown-toggle:hover i {
-  color: #2F47CC;
+  color: #8b0000;
   transition: color 0.3s ease;
 }
 .sidebar .nav-link,
@@ -10758,7 +10758,7 @@ base-chart.chart {
 }
 
 .sidebar .nav-dropdown.open > .nav-link > i {
-  color: #2F47CC !important;
+  color: #8b0000 !important;
 }
 .sidebar .nav-dropdown.open > .nav-link {
   color: #000000 !important;       /* texto negro */
@@ -10779,7 +10779,7 @@ base-chart.chart {
   transform-origin: center;
   width: 10px;          /* ancho inicial más pequeño */
   height: 4px;
-  background: #2F47CC;
+  background: #8b0000;
   border-radius: 2px;
   animation: barraTransform 0.35s forwards ease-out;
 }
@@ -10797,7 +10797,7 @@ base-chart.chart {
 }
 
 .sidebar .nav-dropdown.open > .nav-link i {
-  color: #2F47CC !important;       /* icono naranja */
+  color: #8b0000 !important;       /* icono naranja */
 }
 
 .sidebar .nav-dropdown.open > .nav-link.nav-dropdown-toggle::before,
@@ -10874,7 +10874,7 @@ base-chart.chart {
   background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14'%3E%3Cpath fill='%23fff' d='M9.148 2.352l-4.148 4.148 4.148 4.148q0.148 0.148 0.148 0.352t-0.148 0.352l-1.297 1.297q-0.148 0.148-0.352 0.148t-0.352-0.148l-5.797-5.797q-0.148-0.148-0.148-0.352t0.148-0.352l5.797-5.797q0.148-0.148 0.352-0.148t0.352 0.148l1.297 1.297q0.148 0.148 0.148 0.352t-0.148 0.352z'/%3E%3C/svg%3E");
 }
 .sidebar .nav-dropdown.open .nav-link i {
-  color: #2F47CC !important;  
+  color: #8b0000 !important;  
 }
 @media (min-width: 992px) {
   .sidebar-compact .sidebar .sidebar-nav {
@@ -12758,7 +12758,7 @@ hr.transparent {
 }
 
 .sidebar .nav-dropdown-items .nav-link:hover i {
-  color: #2F47CC !important;                     
+  color: #8b0000 !important;                     
 }
 
 .sidebar .nav-dropdown-items .nav-link:active {
@@ -12766,7 +12766,7 @@ hr.transparent {
 }
 
 .sidebar .nav-dropdown-items .nav-link:active i {
-  color: #2F47CC !important;        
+  color: #8b0000 !important;        
 }
 
 .sidebar .nav-dropdown-toggle.active {
@@ -12774,15 +12774,15 @@ hr.transparent {
 }
 
 .sidebar .nav-dropdown-toggle.active i {
-  color: #2F47CC !important;      /* ícono naranja */
+  color: #8b0000 !important;      /* ícono naranja */
 }
 
 .sidebar .nav-dropdown.open > .nav-link.nav-dropdown-toggle i {
-  color: #2F47CC !important;
+  color: #8b0000 !important;
 }
 
 .sidebar .nav-dropdown-items .nav-link.active i {
-  color: #2F47CC !important;
+  color: #8b0000 !important;
 }
 
 /* Barra superior delgada */

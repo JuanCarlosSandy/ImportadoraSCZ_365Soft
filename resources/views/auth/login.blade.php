@@ -2,75 +2,113 @@
 
 @section('login')
 
-<div class="content" id="app">
-  <!-- Logo en la esquina inferior derecha -->
-  <div class="logo-container">
-    <img src="{{ asset('img/logoPrincipal.png') }}" alt="Logo" class="login-logo">
+<div class="login-wrapper" id="app">
+  <!-- Panel izquierdo - Formulario -->
+  <div class="login-left">
+    <div class="login-content">
+      <!-- Logo -->
+      <div class="logo-container">
+        <img src="{{ asset('img/logoPrincipal.png') }}" alt="Logo" class="login-logo">
+      </div>
+
+      <!-- Título -->
+      <p class="login-subtitle">Bienvenido de nuevo</p>
+      <h1 class="login-title">Iniciar Sesión</h1>
+
+      <!-- Formulario -->
+      <form class="login-form" method="POST" action="{{ route('login')}}">
+        {{ csrf_field() }}
+        
+  <div class="form-group">
+          <label for="usuario" class="form-label">Usuario</label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              value="{{old('usuario')}}" 
+              name="usuario" 
+              id="usuario" 
+              class="form-input" 
+              placeholder="Ingrese su usuario"
+              autocomplete="off"
+            >
+            <span class="input-icon">
+              <i class="fas fa-user"></i>
+            </span>
+          </div>
+          @if($errors->has('usuario'))
+            <span class="error-message">{{ $errors->first('usuario') }}</span>
+          @endif
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Contraseña</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              name="password" 
+              id="password" 
+              class="form-input" 
+              placeholder="••••••••"
+            >
+            <span class="input-icon toggle-password" id="togglePassword">
+              <i class="fas fa-eye" id="eyeIcon"></i>
+            </span>
+          </div>
+          @if($errors->has('password'))
+            <span class="error-message">{{ $errors->first('password') }}</span>
+          @endif
+        </div>
+
+        <!-- Botón de envío -->
+        <button type="submit" class="btn-login">
+          <span>Iniciar Sesión</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- Footer -->
+     <div class="login-footer">
+      <p>
+        BROKEN - Importadora de Productos<br>
+        Más de 20 años al servicio de nuestros Clientes.
+      </p>
+    </div>
+    </div>
   </div>
 
-  <!-- Formulario central -->
-  <div class="login-box">
-    <h1 class="login-title">Iniciar sesión</h1>
-    
-    <form class="formulario" method="POST" action="{{ route('login')}}">
-      {{ csrf_field() }}
-      
-      <!-- Input Usuario -->
-      <div class="container-input">
-        <input type="text" value="{{old('usuario')}}" name="usuario" id="usuario" class="input-field" placeholder="Usuario" autocomplete="off">
-        <div class="message">
-          {!!$errors->first('usuario','<span class="invalid-feedback">El campo Usuario es obligatorio.</span>')!!}
-        </div>
+  <!-- Panel derecho - Imagen decorativa -->
+  <div class="login-right">
+    <div class="decorative-bg">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+    <div class="right-content">
+      <div class="brand-text">
+        <h2>Sistema de Gestión de Empresa</h2>
+        <p>BROKEN IMPORTACIONES</p>
       </div>
-      
-      <!-- Input Contraseña con ojito -->
-      <div class="container-input password-container">
-        <input type="password" name="password" id="password" class="input-field" placeholder="Contraseña">
-        <button type="button" id="togglePassword" class="toggle-password">
-          <i class="fa-solid fa-eye" id="eyeIcon"></i>
-        </button>
-        <div class="message">
-          {!!$errors->first('password','<span class="invalid-feedback">El campo Contraseña es obligatorio</span>')!!}
-        </div>
-      </div>
-      
-      <!-- Botón Iniciar sesión -->
-      <div class="container-input btn-container">
-        <button type="submit" class="btn-ingresar">Iniciar sesión</button>
-      </div>
-    </form>
-    
-    <!-- Nombre de la tienda -->
-    <div class="store-name">KID TOYS</div>
-    
-    <!-- Frase motivadora -->
-    <div class="motivational-phrase">¡Los mejores juguetes para tu hogar!</div>
-    
-    <!-- Aviso de credenciales -->
-    <div class="credentials-notice">
-      <i class="fa-solid fa-circle-info"></i>
-      Si olvidó sus credenciales, comuníquese con el administrador
     </div>
   </div>
 </div>
 
 <script>
-  // Funcionalidad del ojito para mostrar/ocultar contraseña
+  // Toggle password visibility
   const togglePassword = document.getElementById('togglePassword');
   const passwordInput = document.getElementById('password');
   const eyeIcon = document.getElementById('eyeIcon');
 
-  togglePassword.addEventListener('click', function () {
-    const isPassword = passwordInput.type === 'password';
-    passwordInput.type = isPassword ? 'text' : 'password';
+  if (togglePassword) {
+    togglePassword.addEventListener('click', function () {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      eyeIcon.classList.toggle('fa-eye');
+      eyeIcon.classList.toggle('fa-eye-slash');
+    });
+  }
 
-    // Cambiar clase del ícono
-    eyeIcon.classList.toggle('fa-eye');
-    eyeIcon.classList.toggle('fa-eye-slash');
-  });
-</script>
-
-<script>
+  // Clear password on error
   @if($errors->has('password'))
     document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('password').value = '';
