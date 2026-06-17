@@ -15,6 +15,12 @@
           <h4 class="panel-title">CLIENTES</h4>
         </div>
       </template>
+      <div class="info-tip">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            Filtre por nombre del cliente, teléfono o numero de documento. Edite o registre nuevos clientes.
+          </span>
+        </div>
       <div class="toolbar-container">
 
         <div class="search-bar">
@@ -27,22 +33,30 @@
 
 
         <div class="toolbar">
-           <Button icon="pi pi-refresh" class="p-button-help p-button-sm btn-sm-input" @click="resetBuscar"
-              v-tooltip="'Limpiar búsqueda'" />
+           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="btn-edit p-button-sm btn-sm-input" @click="resetBuscar"
+              :title="'Limpiar búsqueda'" />
 
           <Button icon="pi pi-plus" :label="mostrarLabel ? 'Nuevo' : ''" class="p-button-secondary p-button-sm btn-sm-input"
-            @click="abrirModal('persona', 'registrar')" />
+            @click="abrirModal('persona', 'registrar')" :title="'Registrar Cliente'" />
 
           <!-- 🟢 Nuevo botón Monto Bonificación -->
           <Button v-if="permitir_bonificacion == 1" icon="pi pi-wallet" :label="mostrarLabel ? 'Monto Bonificación' : ''"
             class="p-button-success p-button-sm btn-sm-input" @click="abrirDialogMontoCliente()" />
-            <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm btn-sm-input"
-            @click="abrirDialogos('Importar')" />
+            <!--<Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" class="p-button-help p-button-sm btn-sm-input"
+            @click="abrirDialogos('Importar')" />-->
         </div>
       </div>
 
       <DataTable :value="arrayPersona" class="p-datatable-gridlines p-datatable-sm" :paginator="true" :rows="11"
         responsiveLayout="scroll">
+         <Column header="Acciones">
+          <template #body="slotProps">
+            <Button icon="pi pi-pencil" class="btn-edit btn-mini"
+              @click="abrirModal('persona', 'actualizar', slotProps.data)" :title="'Editar'"/>
+            <Button icon="pi pi-trash" class="p-button-danger btn-mini"
+              @click="confirmarEliminacion(slotProps.data)" :title="'Eliminar'" />
+          </template>
+        </Column>
         <Column field="nombre" header="Nombres" class="d-none d-md-table-cell"></Column>
          <Column header="Teléfono">
           <template #body="slotProps">
@@ -63,15 +77,6 @@
         <Column field="direccion" header="Dirección" class="d-none d-md-table-cell">
           <template #body="slotProps">
             {{ slotProps.data.direccion || '—' }}
-          </template>
-        </Column>
-
-        <Column header="Acciones">
-          <template #body="slotProps">
-            <Button icon="pi pi-pencil" class="p-button-warning p-button-sm btn-mini"
-              @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'"/>
-            <Button icon="pi pi-trash" class="p-button-danger p-button-sm btn-mini ml-1"
-              @click="confirmarEliminacion(slotProps.data)" v-tooltip.top="'Eliminar'" />
           </template>
         </Column>
       </DataTable>
@@ -649,41 +654,26 @@ export default {
       }
       return { existe: false, texto: "No registrado" };
     },
-    toastSuccess(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `.<br>
-    </div>`,
-        {
-          type: "success",
-          position: "bottom-right",
-          duration: 2000,
-        }
-      );
+     toastSuccess(mensaje) {
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     toastError(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `<br>
-    </div>`,
-        {
-          type: "error",
-          position: "bottom-right",
-          duration: 2000,
-        }
-      );
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
     },
     resetBuscar() {
       this.buscar = "";
       this.listarPersona(this.buscar, this.criterio);
+      this.toastSuccess("Búsqueda limpiada. Mostrando todos los registros")
     },
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768;
@@ -1086,6 +1076,67 @@ export default {
 </script>
 
 <style scoped>
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 /* Arreglar icono de lupa - Centrado perfecto */
 .search-bar .p-input-icon-left {
   position: relative;
@@ -1868,11 +1919,6 @@ export default {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {

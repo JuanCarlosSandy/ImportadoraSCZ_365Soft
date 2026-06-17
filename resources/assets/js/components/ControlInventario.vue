@@ -150,14 +150,13 @@
             <h4 class="panel-title" style="margin: 0;">CONTROL DE INVENTARIO</h4>
           </div>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-primary p-button-sm btn-sm-input"
-            @click="validarAcceso" />
-
-          <Button v-if="rolUsuario == 4" label="Llaves de Acceso" icon="pi pi-key"
-            class="p-button-warning p-button-sm btn-sm-input" @click="abrirDialogLlaves" />
-        </div>
       </template>
+      <div class="info-tip">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            Filtre los registros por un rango de fechas y tambien seleccionando el almacen correspondiente.
+          </span>
+        </div>
       <div class="mt-3">
         <div class="toolbar-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
 
@@ -166,7 +165,7 @@
               Desde
             </label>
             <input type="date" v-model="fechaInicio" class="p-inputtext p-component p-inputtext-sm input-date-full"
-              style="width: 100%;" />
+              style="width: 100%;" @change="listarControles()" />
           </div>
 
           <div style="flex: 1 1 150px;">
@@ -174,26 +173,25 @@
               Hasta
             </label>
             <input type="date" v-model="fechaFin" class="p-inputtext p-component p-inputtext-sm input-date-full"
-              style="width: 100%;" />
+              style="width: 100%;" @change="listarControles()" />
           </div>
 
           <div style="flex: 1 1 180px;">
             <label class="label-fecha"
               style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Almacén</label>
             <Dropdown v-model="idAlmacen" :options="arrayAlmacenes" optionLabel="nombre_almacen" optionValue="id"
-              placeholder="Todos" showClear class="dropdown-full" style="width: 100%;" />
-          </div>
-
-          <div style="padding-bottom: 2px;">
-            <Button :label="mostrarLabel ? 'Filtrar' : ''" icon="pi pi-filter"
-              class="p-button-help p-button-sm btn-sm-input" title="Aplicar Filtros"
-              @click="listarControles(1, buscar, '')" />
+              placeholder="Todos" showClear class="dropdown-full" style="width: 100%;" @change="listarControles()"/>
           </div>
 
           <div class="toolbar" style="padding-bottom: 2px;">
             <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetFiltros"
-              class="p-button-secondary p-button-sm btn-sm-input" title="Restablecer filtros" />
+              class="btn-edit p-button-sm btn-sm-input" title="Restablecer filtros" />
+            <Button v-if="rolUsuario == 4" label="Llaves de Acceso" icon="pi pi-key"
+              class="p-button-primary p-button-sm btn-sm-input" @click="abrirDialogLlaves" />
+            <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
+              @click="validarAcceso" />
           </div>
+
         </div>
         <DataTable :value="arrayDatosControl" class="p-datatable-sm p-datatable-gridlines tabla-pro"
           responsiveLayout="scroll">
@@ -2812,6 +2810,24 @@ export default {
 };
 </script>
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 .icono-ojo:hover {
   color: #111827;
 }
@@ -3656,11 +3672,6 @@ body.p-overflow-hidden {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {

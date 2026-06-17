@@ -35,11 +35,11 @@
 
         <div class="toolbar">
           <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" @click="resetBusqueda"
-            class="btn-edit p-button-sm btn-sm-input" :title="'Limpiar búsqueda'" />
+            class="btn-edit btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" @click="cargarReporteUsuariosExcel()"
-            class="p-button-success p-button-sm  btn-sm-input" :title="'Exportar a Excel'" />
+            class="p-button-success btn-sm-input" :title="'Exportar a Excel'" />
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
-            class="p-button-secondary p-button-sm  btn-sm-input" :title="'Nuevo usuario'" />
+            class="p-button-secondary btn-sm-input" :title="'Nuevo usuario'" />
         </div>
       </div>
 
@@ -48,16 +48,14 @@
           class="p-datatable-gridlines p-datatable-sm tabla-pro" responsiveLayout="scroll">
           <Column header="Acciones">
             <template #body="slotProps">
-              <div style="display: flex; gap: 0.25rem; align-items: center;">
-                <Button icon="pi pi-pencil" class="p-button p-button-warning btn-mini"
-                  @click="abrirModal('persona', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
+                <Button icon="pi pi-pencil" class="p-button btn-edit btn-mini"
+                  @click="abrirModal('persona', 'actualizar', slotProps.data)" :title="'Editar'" />
                 <Button v-if="slotProps.data.condicion" icon="pi pi-trash" class="p-button p-button-danger btn-mini"
-                  @click="desactivarUsuario(slotProps.data.id)" v-tooltip.top="'Desactivar'" />
+                  @click="desactivarUsuario(slotProps.data.id)" :title="'Desactivar'" />
                 <Button v-else icon="pi pi-check" class="p-button p-button-info btn-mini"
-                  @click="activarUsuario(slotProps.data.id)" v-tooltip.top="'Activar'" />
+                  @click="activarUsuario(slotProps.data.id)" :title="'Activar'" />
                 <Button icon="pi pi-image" class="p-button p-button-secondary p-button-outlined btn-mini"
-                  @click="verFoto(slotProps.data.fotografia)" v-tooltip.top="'Ver Foto'" />
-              </div>
+                  @click="verFoto(slotProps.data.fotografia)" :title="'Ver Foto'" />
             </template>
           </Column>
           <Column field="nombre" header="Nombre"></Column>
@@ -244,7 +242,7 @@
       </template>
     </Dialog>
 
-    <Dialog :visible.sync="modalFoto" :modal="true" :closable="true" :closeOnEscape="true"
+    <Dialog :visible.sync="modalFoto" :modal="true" :closable="false" :closeOnEscape="true"
       :containerStyle="{ width: '400px' }">
       <template #header>
         <div class="dialog-header">
@@ -434,6 +432,7 @@ export default {
     resetBusqueda() {
       this.buscar = "";
       this.listarPersona(this.buscar);
+      this.toastSuccess("Búsqueda limpiada. Mostrando todos los registros")
     },
     toastSuccess(mensaje) {
       this.$toast.add({
@@ -927,6 +926,49 @@ export default {
 </script>
 
 <style scoped>
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
 .info-tip {
   display: flex;
   align-items: center;
@@ -1605,11 +1647,6 @@ export default {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {

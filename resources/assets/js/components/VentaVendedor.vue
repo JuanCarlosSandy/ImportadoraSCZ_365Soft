@@ -1666,7 +1666,7 @@ export default {
         },
 
         verificarFactura(cuf, numeroFactura){
-            var url = 'https://siat.impuestos.gob.bo/consulta/QR?nit=8033811015&cuf='+cuf+'&numero='+numeroFactura+'&t=2';
+            var url = 'https://siat.impuestos.gob.bo/consulta/QR?nit=8678007010&cuf='+cuf+'&numero='+numeroFactura+'&t=2';
             window.open(url);        
         },
 
@@ -2380,8 +2380,8 @@ aplicarDescuento(idtipopago) {
         var factura = [];
         factura.push({
             cabecera: {
-                nitEmisor: "8033811015",
-                razonSocialEmisor: "MARIBEL QUISPE CHOQUE",
+                nitEmisor: "8678007010",
+                razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
                 municipio: "Quillacollo",
                 telefono: "77497231",
                 numeroFactura: numeroFactura,

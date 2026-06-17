@@ -50,7 +50,7 @@
         responsiveLayout="scroll">
         <Column v-for="(column, index) in computedColumns" :key="index" :field="column.field" :header="column.header">
           <template #body="slotProps">
-            <span v-if="column.type === 'button'" class="d-flex align-items-center justify-content-center gap-1">
+            <span v-if="column.type === 'button'">
               <Button v-if="column.field === 'acciones'" icon="pi pi-pencil" class="p-button-warning btn-mini"
                 @click="abrirModal('articulo', 'actualizar', slotProps.data)" v-tooltip.top="'Editar'" />
               <Button v-if="column.field === 'acciones' && slotProps.data.condicion" icon="pi pi-ban"
@@ -2703,7 +2703,7 @@ registrarArticulo(data) {
 }
 
 >>>.p-datatable.p-datatable-gridlines .p-datatable-tbody>tr>td {
-  text-align: center;
+  text-align: left;
 }
 
 .bold-input {
@@ -3080,11 +3080,6 @@ registrarArticulo(data) {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {

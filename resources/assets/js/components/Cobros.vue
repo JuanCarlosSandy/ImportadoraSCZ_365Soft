@@ -4266,7 +4266,7 @@ console.log(me.ventaSeleccionada);
 
     verificarFactura(cuf, numeroFactura) {
       var url =
-        "https://siat.impuestos.gob.bo/consulta/QR?nit=8033811015&cuf=" +
+        "https://siat.impuestos.gob.bo/consulta/QR?nit=8678007010&cuf=" +
         cuf +
         "&numero=" +
         numeroFactura +
@@ -5305,10 +5305,10 @@ console.log(me.ventaSeleccionada);
         var factura = [];
         factura.push({
           cabecera: {
-            nitEmisor: "8033811015",
-            razonSocialEmisor: "MARIBEL QUISPE CHOQUE",
+            nitEmisor: "8678007010",
+            razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
             municipio: "Cochabamba",
-            telefono: "72784124",
+            telefono: "77902574",
             numeroFactura: numeroFactura,
             cuf: cuf,
             cufd: cufd,
@@ -5531,10 +5531,10 @@ console.log(me.ventaSeleccionada);
         var factura = [];
         factura.push({
           cabecera: {
-            nitEmisor: "8033811015",
-            razonSocialEmisor: "MARIBEL QUISPE CHOQUE",
+            nitEmisor: "8678007010",
+            razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
             municipio: "Cochabamba",
-            telefono: "72784124",
+            telefono: "77902574",
             numeroFactura: numeroFactura,
             cuf: cuf,
             cufd: cufd,

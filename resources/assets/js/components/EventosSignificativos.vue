@@ -435,7 +435,7 @@
             cerrarModal(){
                 this.modal=0;
                 this.tituloModal='';
-                this.nit= '8033811015'
+                this.nit= '8678007010'
             },
             abrirModal(modelo, accion, data = []){
                 switch(modelo){
@@ -448,7 +448,7 @@
 
                                 this.modal = 1;
                                 this.tituloModal = 'Registrar Nuevo Evento Significativo';
-                                this.nit = '8033811015';
+                                this.nit = '8678007010';
                                 this.tipoAccion = 1;
                                 break;
                             }

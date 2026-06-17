@@ -37,7 +37,7 @@
           </div>
 
           <div class="toolbar">
-            <Button icon="pi pi-refresh" class="btn-edit p-button-sm btn-sm-input" @click="resetBuscar"
+            <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="btn-edit p-button-sm btn-sm-input" @click="resetBuscar"
               :title="'Limpiar búsqueda'" />
             <Button @click="mostrarDetalle()" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
               class="p-button-secondary p-button-sm btn-sm-input" :title="'Nuevo Registro'" />
@@ -1522,11 +1522,6 @@ export default {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {

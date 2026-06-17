@@ -2556,7 +2556,7 @@ export default {
         },
 
         verificarFactura(cuf, numeroFactura) {
-            var url = 'https://siat.impuestos.gob.bo/consulta/QR?nit=8033811015&cuf=' + cuf + '&numero=' + numeroFactura + '&t=2';
+            var url = 'https://siat.impuestos.gob.bo/consulta/QR?nit=8678007010&cuf=' + cuf + '&numero=' + numeroFactura + '&t=2';
             window.open(url);
         },
 
@@ -2910,7 +2910,7 @@ export default {
             var factura = [];
             factura.push({
                 cabecera: {
-                    nitEmisor: "8033811015",
+                    nitEmisor: "8678007010",
                     razonSocialEmisor: "365 SOFT",
                     municipio: "Cochabamba",
                     telefono: "77490451",

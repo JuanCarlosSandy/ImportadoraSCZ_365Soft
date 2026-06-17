@@ -59,11 +59,11 @@
 
           <div style="display: flex; gap: 10px;">
             <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-filter-slash"
-              class="p-button-warning p-button-sm btn-input-sm" v-tooltip="'Limpiar filtros'" @click="limpiarFiltros" />
+              class="btn-edit p-button-sm btn-input-sm" :title="'Limpiar filtros'" @click="limpiarFiltros" />
 
             <Button :label="mostrarLabel ? 'Nuevo Traspaso' : ''" icon="pi pi-plus"
               @click="abrirModal('traspaso', 'registrar')" class="p-button-secondary p-button-sm btn-input-sm"
-              v-tooltip="'Nuevo Traspaso'" />
+              :title="'Nuevo Traspaso'" />
           </div>
 
         </div>
@@ -73,12 +73,12 @@
       <div class="p-fluid">
         <DataTable :value="traspasos" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro"
           paginator :rows="13" showCurrentPageReport>
-          <Column header="Acciones" style="width: 120px; text-align: center;">
+          <Column header="Acciones">
             <template #body="slotProps">
               <Button icon="pi pi-eye" class="p-button-success btn-mini" @click="verTraspaso(slotProps.data.id)"
                 title="Ver Detalle" />
 
-              <Button icon="pi pi-file-pdf" class="p-button-warning btn-mini"
+              <Button icon="pi pi-file-pdf" class="btn-edit btn-mini"
                 @click="exportarPdfTraspaso(slotProps.data.id)" title="Descargar PDF" :disabled="isLoading" />
 
               <Button v-if="slotProps.data.estado == 1" icon="pi pi-trash" class="p-button-danger btn-mini"
@@ -1981,11 +1981,6 @@ export default {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {

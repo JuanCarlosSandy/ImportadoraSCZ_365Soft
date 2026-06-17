@@ -152,7 +152,7 @@ export default {
             datosFormulario: {
                 nombre: "",
                 descripcion: "",
-                nit: "8033811015",
+                nit: "8678007010",
                 idtipopuntoventa: "",
                 idsucursal: "",
                 codigoPuntoVenta: "",
@@ -471,7 +471,7 @@ export default {
                                     this.datosFormulario = {
                                         nombre: "",
                                         descripcion: "",
-                                        nit: "8033811015",
+                                        nit: "8678007010",
                                         idtipopuntoventa: "",
                                         idsucursal: "",
                                     };
