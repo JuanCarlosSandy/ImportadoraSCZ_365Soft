@@ -286,6 +286,12 @@
 
                         <span>Tipo Reporte:</span>
                         {{ ucfirst($tipo) }}
+&nbsp;&nbsp;&nbsp;&nbsp;
+                        <span>Sucursal:</span>
+                        {{ ucfirst($resumenCaja['nombreSucursal'] )}}
+&nbsp;&nbsp;&nbsp;&nbsp;
+                        <span>Encargado:</span>
+                        {{ ucfirst($resumenCaja['nombreUsuario'] )}}
                     </div>
 
                 </td>

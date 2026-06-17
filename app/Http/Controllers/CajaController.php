@@ -282,6 +282,17 @@ class CajaController extends Controller
         $caja = Caja::findOrFail($idCaja);
         $idsucursal = $caja->idsucursal;
 
+        $sucursal = \DB::table('sucursales')
+            ->where('id', $caja->idsucursal)
+            ->first();
+
+        $usuario = \DB::table('users')
+            ->where('id', $caja->idusuario)
+            ->first();
+
+        $nombreSucursal = $sucursal->nombre ?? '';
+        $nombreUsuario = $usuario->usuario ?? '';
+
         $stocksHistoricos = \DB::table('historial_inventario')
             ->where('idcaja', $caja->id)
             ->pluck('stock_historico', 'idarticulo')
@@ -646,6 +657,8 @@ class CajaController extends Controller
             'saldoFaltante' => $saldoFaltante,
             'saldoSobrante' => $saldoSobrante,
             'monto_arqueo' => $montoArqueo,
+            'nombreSucursal' => $nombreSucursal,
+            'nombreUsuario' => $nombreUsuario,
         ];
 
         $pdf = Pdf::loadView('pdf.caja', compact('caja', 'historial', 'tipo', 'resumenCaja'))

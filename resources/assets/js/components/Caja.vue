@@ -334,7 +334,21 @@
 
       <!-- Contenido -->
       <div class="p-fluid">
-        <TransaccionExtra :data="extra" :key="extraKey" />
+        <TabView>
+          <TabPanel header="Transacciones">
+            <TransaccionExtra
+              :data="extra"
+              :key="'trans-' + extraKey"
+            />
+          </TabPanel>
+
+          <TabPanel header="Ventas">
+            <VentasCaja
+              :data="ventasCaja"
+              :key="'ventas-' + extraKey"
+            />
+          </TabPanel>
+        </TabView>
       </div>
 
       <!-- Footer -->
@@ -401,6 +415,8 @@ import Paginator from "primevue/paginator";
 import TabView from "primevue/tabview";
 import TabPanel from "primevue/tabpanel";
 import TransaccionExtra from "./Tables/TransaccionExtra.vue";
+import VentasCaja from "./Tables/VentasCaja.vue";
+
 import Swal from "sweetalert2";
 import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
@@ -424,6 +440,7 @@ export default {
     Toast,
     Dropdown,
     TransaccionExtra,
+    VentasCaja
   },
   directives: {
     'tooltip': Tooltip
@@ -477,8 +494,9 @@ export default {
       egreso: null,
       montoCierre: 0,
       ingreso: null,
-      extra: null,
-      modal: 0,
+extra: {},
+    ventasCaja: {},
+          modal: 0,
       modal2: 0,
       modal3: 0,
       modal4: 0,
@@ -1099,6 +1117,7 @@ async generarReporte(idCaja) {
                   me.egreso = respuesta.ingresos;
                   me.ingreso = respuesta.ventas;
                   me.extra = respuesta.transacciones;
+                  me.ventasCaja = respuesta.ventas;
                   me.extraKey++; // Esto forzará la recreación del componente
                 })
                 .catch(function (error) {
