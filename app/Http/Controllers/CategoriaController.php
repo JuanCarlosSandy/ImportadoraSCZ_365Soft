@@ -129,8 +129,8 @@ class CategoriaController extends Controller
             $categoria = new Categoria();
             $categoria->nombre = $nombre;
             $categoria->descripcion = $request->descripcion ?? null;
-            $categoria->codigoProductoSin = 1003655; // o tu lógica
-            $categoria->actividadEconomica = 4772100; // o tu lógica
+            $categoria->codigoProductoSin = $request->codigoProductoSin ?? null;
+            $categoria->actividadEconomica = $request->actividadEconomica ?? null;
             $categoria->tipo_categoria = $request->tipo_categoria ?? null;
             $categoria->condicion = '1';
             $categoria->save();
@@ -165,8 +165,8 @@ class CategoriaController extends Controller
         $categoria = Categoria::findOrFail($request->id);
         $categoria->nombre = $nombre;
         $categoria->descripcion = $request->descripcion;
-        $categoria->codigoProductoSin = 62253;
-        $categoria->actividadEconomica = 477300;
+        $categoria->codigoProductoSin = $request->codigoProductoSin ?? null;
+        $categoria->actividadEconomica = $request->actividadEconomica ?? null;
         $categoria->condicion = '1';
         //$categoria->condicion = '1';
         $categoria->save();
@@ -241,8 +241,8 @@ class CategoriaController extends Controller
             $categoria = new Categoria();
             $categoria->nombre = $nombre;
             $categoria->descripcion = $request->descripcion ?? null;
-            $categoria->codigoProductoSin = 1003655; // o tu lógica
-            $categoria->actividadEconomica = 4772100; // o tu lógica
+            $categoria->codigoProductoSin = $request->codigoProductoSin; // o tu lógica
+            $categoria->actividadEconomica = $request->actividadEconomica; // o tu lógica
             $categoria->tipo_categoria = 'S';
             $categoria->condicion = '1';
             $categoria->save();

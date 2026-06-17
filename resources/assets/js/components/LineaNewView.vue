@@ -60,10 +60,13 @@
             </span>
           </template>
         </Column>
+        <Column field="actividadEconomica" header="Actividad Económica"></Column>
+        <Column field="codigoProductoSin" header="Código Producto SIN"></Column>
+
       </DataTable>
 
-      <Dialog :visible.sync="modal" modal :closable="false" @hide="cerrarModal"
-        :containerStyle="dialogContainerStyle" class="responsive-dialog">
+      <Dialog :visible.sync="modal" modal :closable="false" @hide="cerrarModal" :containerStyle="dialogContainerStyle"
+        class="responsive-dialog">
 
         <template #header>
           <div class="dialog-header">
@@ -88,7 +91,41 @@
               Descripción
               <span class="optional-tag">Opcional</span>
             </label>
-            <InputText id="descripcion" v-model="descripcion" class="input-full" autocomplete="off"/>
+            <InputText id="descripcion" v-model="descripcion" class="input-full" autocomplete="off" />
+          </div>
+
+          <div class="p-field input-container">
+            <label for="nombre" class="label-input">
+              <span class="text-required">*</span>
+              Codigo Actividad Economica
+            </label>
+            <select v-model="codigoActividadEconomica" class="form-control" :class="{ 'input-error': codigoActividadEconomicaError }">
+              <option value="0" disabled>Seleccione su Actividad Economica</option>
+              <option v-for="actividadEconomica in arrayActividadEconomica" :value="actividadEconomica.codigoCaeb"
+                v-text="actividadEconomica.descripcion"></option>
+            </select>
+            <small class="p-error error-message" v-if="codigoActividadEconomicaError"><strong>{{ codigoActividadEconomicaError }}</strong></small>
+
+          </div>
+
+          <div class="p-field input-container">
+            <label for="nombre" class="label-input">
+              <span class="text-required">*</span>
+              Codigo Producto SIN
+            </label>
+
+            <select v-model="codigoProductoServicio" class="form-control" :disabled="codigoActividadEconomica == 0" :class="{ 'input-error': codigoProductoSinError }">
+              <option value="0" disabled>
+                Seleccione el Codigo Siat
+              </option>
+
+              <option v-for="productoServicio in productosFiltrados" :key="productoServicio.codigoProducto"
+                :value="productoServicio.codigoProducto">
+                {{ productoServicio.descripcionProducto }}
+              </option>
+            </select>
+            <small class="p-error error-message" v-if="codigoProductoSinError"><strong>{{ codigoProductoSinError }}</strong></small>
+
           </div>
         </div>
 
@@ -156,8 +193,6 @@ export default {
       tipoAccion: 1,
       nombre: "",
       descripcion: "",
-      codigoProductoSin: "",
-      codigoProductoSinError: "",
       nombreError: "",
       descripcionError: "",
       codigoError: "",
@@ -171,11 +206,26 @@ export default {
       movil: "9",
       arrayProductoServicio: [],
       arrayActividadEconomica: [],
-      codigoActividadEconomica: "",
+      codigoActividadEconomica: 0,
+      codigoProductoServicio: 0,
+       codigoProductoSin: "",
+      codigoProductoSinError: "",
+      codigoActividadEconomicaError: "",
       idrol: null,
     };
   },
   computed: {
+    productosFiltrados() {
+      if (!this.codigoActividadEconomica || this.codigoActividadEconomica == 0) {
+        return [];
+      }
+
+      return this.arrayProductoServicio.filter(
+        p =>
+          String(p.codigoActividad) ===
+          String(this.codigoActividadEconomica)
+      );
+    },
     isMobile() {
       return window.innerWidth <= 768;
     },
@@ -188,6 +238,19 @@ export default {
         return { width: "85vw", maxWidth: "900px", margin: "0 auto" };
       } else {
         return { width: "800px", maxWidth: "90vw", margin: "0 auto" };
+      }
+    },
+  },
+  watch: {
+    codigoActividadEconomica(valor) {
+      if (valor && valor != 0) {
+        this.codigoActividadEconomicaError = "";
+      }
+    },
+
+    codigoProductoServicio(valor) {
+      if (valor && valor != 0) {
+        this.codigoProductoSinError = "";
       }
     },
   },
@@ -316,25 +379,7 @@ export default {
         this.nombreError = "";
       }
     },
-    validarDescripcionEnTiempoReal() {
-      // La descripción es opcional, solo validar si hay contenido
-      if (this.descripcion && this.descripcion.length > 255) {
-        this.descripcionError = "La descripción no puede exceder 255 caracteres.";
-      } else {
-        this.descripcionError = "";
-      }
-    },
-    validarCodigoEnTiempoReal() {
-      if (
-        this.codigoProductoSin === null ||
-        this.codigoProductoSin === undefined ||
-        String(this.codigoProductoSin).trim() === ""
-      ) {
-        this.codigoProductoSinError = "El código no puede estar vacío.";
-      } else {
-        this.codigoProductoSinError = "";
-      }
-    },
+
     async registrarCategoria() {
       if (this.validarCategoria()) {
         return;
@@ -347,12 +392,13 @@ export default {
         await axios.post("/categoria/registrar", {
           nombre: this.nombre,
           descripcion: this.descripcion,
-          codigoProductoSin: this.codigoProductoSin,
+          codigoProductoSin: this.codigoProductoServicio,
+          actividadEconomica: this.codigoActividadEconomica,
           tipo_categoria: "M"
         });
 
         me.cerrarModal();
-        await me.listarCategoria(1, "", "nombre");
+        await me.listarCategoria(1, me.buscar, "nombre");
 
         // 🟢 TOAST DE ÉXITO
         this.toastSuccess("La categoría fue registrada correctamente.");
@@ -371,6 +417,7 @@ export default {
     validarCategoria() {
       let hasError = false;
       this.codigoProductoSinError = "";
+      this.codigoActividadEconomicaError = "";
       this.descripcionError = "";
       this.nombreError = "";
 
@@ -382,17 +429,29 @@ export default {
 
       // Validar código SIN
       if (
-        this.codigoProductoSin === null ||
-        this.codigoProductoSin === undefined ||
-        String(this.codigoProductoSin).trim() === ""
+        this.codigoProductoServicio === null ||
+        this.codigoProductoServicio === undefined ||
+        this.codigoProductoServicio == 0 ||
+        String(this.codigoProductoServicio).trim() === ""
       ) {
-        this.codigoProductoSinError = "El código no puede estar vacío.";
+        this.codigoProductoSinError = "El código producto SIN no puede estar vacío.";
+        hasError = true;
+      }
+
+      // Validar código actividad económica
+      if (
+        this.codigoActividadEconomica === null ||
+        this.codigoActividadEconomica === undefined ||
+        this.codigoActividadEconomica == 0 ||
+        String(this.codigoActividadEconomica).trim() === ""
+      ) {
+        this.codigoActividadEconomicaError = "El código actividad económica no puede estar vacío.";
         hasError = true;
       }
 
       // Validar nombre
       if (!this.nombre || !this.nombre.trim()) {
-        this.nombreError = "El nombre de la línea no puede estar vacío.";
+        this.nombreError = "El nombre de la categoría no puede estar vacío.";
         hasError = true;
       }
 
@@ -416,12 +475,13 @@ export default {
         await axios.put("/categoria/actualizar", {
           nombre: this.nombre,
           descripcion: this.descripcion,
-          codigoProductoSin: this.codigoProductoSin,
+          codigoProductoSin: this.codigoProductoServicio,
+          actividadEconomica: this.codigoActividadEconomica,
           id: this.categoria_id,
         });
 
         me.cerrarModal();
-        await me.listarCategoria(1, "", "nombre");
+        await me.listarCategoria(1, me.buscar, "nombre");
 
         // 🟢 TOAST DE ÉXITO
         this.toastSuccess("La categoría fue actualizada correctamente.");
@@ -572,7 +632,8 @@ export default {
               this.tituloModal = "REGISTRAR CATEGORÍA";
               this.nombre = "";
               this.descripcion = "";
-              this.codigoProductoSin = 0;
+              this.codigoProductoServicio = "";
+              this.codigoActividadEconomica = "";
               this.tipoAccion = 1;
               break;
             }
@@ -584,7 +645,8 @@ export default {
               this.categoria_id = data["id"];
               this.nombre = data["nombre"];
               this.descripcion = data["descripcion"];
-              this.codigoProductoSin = data["codigoProductoSin"];
+              this.codigoProductoServicio = data["codigoProductoSin"];
+              this.codigoActividadEconomica = data["actividadEconomica"];
               break;
             }
           }
@@ -596,10 +658,11 @@ export default {
       this.tituloModal = "";
       this.nombre = "";
       this.descripcion = "";
-      this.codigoProductoSin = "";
+      this.codigoProductoServicio = "";
       this.nombreError = "";
       this.descripcionError = "";
       this.codigoProductoSinError = "";
+      this.codigoActividadEconomicaError = "";
     },
     cerrarModalImportar() {
       this.importar = false;
@@ -674,6 +737,7 @@ export default {
   top: 1rem !important;
   right: 1rem !important;
 }
+
 /* 🔹 Botones pequeños */
 .btn-sm {
   font-size: 0.8rem;

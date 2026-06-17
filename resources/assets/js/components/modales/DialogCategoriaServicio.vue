@@ -17,6 +17,12 @@
           <span class="header-title"> Categorias Combos/Ofertas</span>
         </div>
       </template>
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre el nombre, edite y registre nuevas categorías para combos/ofertas.
+        </span>
+      </div>
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
@@ -26,7 +32,7 @@
           </span>
         </div>
         <div class="toolbar">
-          <Button label="Nuevo" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm"
+          <Button label="Nuevo" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
             @click="abrirModal('categoria', 'registrar')" />
         </div>
       </div>
@@ -55,6 +61,13 @@
         </div>
       </template>
 
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Ingrese un nombre, la descripción es opcional, y seleccione los codigos de actividad economica y producto.
+        </span>
+      </div>
+
       <div class="p-fluid ">
         <div class="p-field input-container">
           <label for="nombre" class="label-input">
@@ -71,6 +84,39 @@
           </label>
           <InputText id="descripcion" class="input-full" v-model="descripcion" :autocomplete="'off'" />
         </div>
+        <div class="p-field input-container">
+            <label for="nombre" class="label-input">
+              <span class="text-required">*</span>
+              Codigo Actividad Economica
+            </label>
+            <select v-model="codigoActividadEconomica" class="form-control" :class="{ 'input-error': codigoActividadEconomicaError }">
+              <option value="0" disabled>Seleccione su Actividad Economica</option>
+              <option v-for="actividadEconomica in arrayActividadEconomica" :value="actividadEconomica.codigoCaeb"
+                v-text="actividadEconomica.descripcion"></option>
+            </select>
+            <small class="p-error error-message" v-if="codigoActividadEconomicaError"><strong>{{ codigoActividadEconomicaError }}</strong></small>
+
+          </div>
+
+          <div class="p-field input-container">
+            <label for="nombre" class="label-input">
+              <span class="text-required">*</span>
+              Codigo Producto SIN
+            </label>
+
+            <select v-model="codigoProductoServicio" class="form-control" :disabled="codigoActividadEconomica == 0" :class="{ 'input-error': codigoProductoSinError }">
+              <option value="0" disabled>
+                Seleccione el Codigo Siat
+              </option>
+
+              <option v-for="productoServicio in productosFiltrados" :key="productoServicio.codigoProducto"
+                :value="productoServicio.codigoProducto">
+                {{ productoServicio.descripcionProducto }}
+              </option>
+            </select>
+            <small class="p-error error-message" v-if="codigoProductoSinError"><strong>{{ codigoProductoSinError }}</strong></small>
+
+          </div>
       </div>
 
       <template #footer>
@@ -120,16 +166,32 @@ export default {
       arrayCategoria: [],
       nombre: "",
       descripcion: "",
-      codigoProductoSin: 0,
-      codigoProductoSinError: "",
       nombreError: "",
       descripcionError: "",
       tituloModal: "",
       tipoAccion: "",
       lineaSeleccionado: null,
+      arrayProductoServicio: [],
+      arrayActividadEconomica: [],
+      codigoActividadEconomica: 0,
+      codigoProductoServicio: 0,
+       codigoProductoSin: "",
+      codigoProductoSinError: "",
+      codigoActividadEconomicaError: "",
     };
   },
   computed: {
+    productosFiltrados() {
+      if (!this.codigoActividadEconomica || this.codigoActividadEconomica == 0) {
+        return [];
+      }
+
+      return this.arrayProductoServicio.filter(
+        p =>
+          String(p.codigoActividad) ===
+          String(this.codigoActividadEconomica)
+      );
+    },
     dialogContainerStyle() {
       if (window.innerWidth <= 480) {
         return { width: "95vw", maxWidth: "95vw", margin: "0 auto" };
@@ -153,7 +215,51 @@ export default {
       }
     },
   },
+   watch: {
+    codigoActividadEconomica(valor) {
+      if (valor && valor != 0) {
+        this.codigoActividadEconomicaError = "";
+      }
+    },
+
+    codigoProductoServicio(valor) {
+      if (valor && valor != 0) {
+        this.codigoProductoSinError = "";
+      }
+    },
+  },
   methods: {
+    consultaProductosServicios() {
+      let me = this;
+      var url = "/categoria/consultaProductosServicios";
+      axios
+        .get(url)
+        .then(function (response) {
+          var respuesta = response.data;
+          me.arrayProductoServicio =
+            respuesta.RespuestaListaProductos.listaCodigos;
+          console.log(respuesta.RespuestaListaProductos.listaCodigos);
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+
+    consultaActividadEconomica() {
+      let me = this;
+      var url = "/categoria/consultaActividadEconomica";
+      axios
+        .get(url)
+        .then(function (response) {
+          var respuesta = response.data;
+          me.arrayActividadEconomica =
+            respuesta.RespuestaListaActividades.listaActividades;
+          console.log(respuesta.RespuestaListaActividades.listaActividades);
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
     toastSuccess(mensaje) {
       this.$toast.add({
         severity: "success",
@@ -224,7 +330,8 @@ export default {
         .post("/categoria/servicio/registrar", {
           nombre: me.nombre,
           descripcion: me.descripcion,
-          codigoProductoSin: me.codigoProductoSin,
+          codigoProductoSin: me.codigoProductoServicio,
+          actividadEconomica: me.codigoActividadEconomica,
         })
         .then(function (response) {
           me.toastSuccess(
@@ -264,7 +371,8 @@ export default {
         .put("/categoria/actualizar", {
           nombre: me.nombre,
           descripcion: me.descripcion,
-          codigoProductoSin: me.codigoProductoSin,
+          codigoProductoSin: me.codigoProductoServicio,
+          actividadEconomica: me.codigoActividadEconomica,
           id: me.categoria_id,
         })
         .then(function (response) {
@@ -294,17 +402,52 @@ export default {
         });
     },
     validarCategoria() {
+      let hasError = false;
+      this.codigoProductoSinError = "";
+      this.codigoActividadEconomicaError = "";
+      this.descripcionError = "";
       this.nombreError = "";
 
-      if (!this.nombre || !this.nombre.trim()) {
-        this.nombreError = "El nombre de la categoría no puede estar vacío.";
-
-        this.toastError(this.nombreError);
-
-        return true; // Hay error
+      // Validar descripción (opcional)
+      if (this.descripcion && this.descripcion.length > 255) {
+        this.descripcionError = "La descripción no puede exceder 255 caracteres.";
+        hasError = true;
       }
 
-      return false; // No hay error
+      // Validar código SIN
+      if (
+        this.codigoProductoServicio === null ||
+        this.codigoProductoServicio === undefined ||
+        this.codigoProductoServicio == 0 ||
+        String(this.codigoProductoServicio).trim() === ""
+      ) {
+        this.codigoProductoSinError = "El código producto SIN no puede estar vacío.";
+        hasError = true;
+      }
+
+      // Validar código actividad económica
+      if (
+        this.codigoActividadEconomica === null ||
+        this.codigoActividadEconomica === undefined ||
+        this.codigoActividadEconomica == 0 ||
+        String(this.codigoActividadEconomica).trim() === ""
+      ) {
+        this.codigoActividadEconomicaError = "El código actividad económica no puede estar vacío.";
+        hasError = true;
+      }
+
+      // Validar nombre
+      if (!this.nombre || !this.nombre.trim()) {
+        this.nombreError = "El nombre de la categoría no puede estar vacío.";
+        hasError = true;
+      }
+
+      // 🔥 Si hay cualquier error → mostrar toast GENERAL una sola vez
+      if (hasError) {
+        this.toastWarning("Por favor verifique los campos marcados en rojo.");
+      }
+
+      return hasError;
     },
     listarCategoria(page, buscar, criterio) {
       let me = this;
@@ -328,6 +471,8 @@ export default {
         });
     },
     abrirModal(modelo, accion, data = []) {
+      this.consultaProductosServicios();
+      this.consultaActividadEconomica();
       switch (modelo) {
         case "categoria": {
           switch (accion) {
@@ -337,7 +482,8 @@ export default {
               this.tituloModal = "REGISTRAR CATEGORÍA";
               this.nombre = "";
               this.descripcion = "";
-              this.codigoProductoSin = 0;
+              this.codigoProductoServicio = "";
+              this.codigoActividadEconomica = "";
               this.tipoAccion = 1;
               break;
             }
@@ -349,7 +495,8 @@ export default {
               this.categoria_id = data["id"];
               this.nombre = data["nombre"];
               this.descripcion = data["descripcion"];
-              this.codigoProductoSin = data["codigoProductoSin"];
+              this.codigoProductoServicio = data["codigoProductoSin"];
+              this.codigoActividadEconomica = data["actividadEconomica"];
               break;
             }
           }
@@ -362,10 +509,11 @@ export default {
       this.tituloModal = "";
       this.nombre = "";
       this.descripcion = "";
-      this.codigoProductoSin = "";
+      this.codigoProductoServicio = "";
       this.nombreError = "";
       this.descripcionError = "";
       this.codigoProductoSinError = "";
+      this.codigoActividadEconomicaError = "";
     },
   },
   mounted() {
@@ -374,6 +522,24 @@ export default {
 };
 </script>
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
 /* Estilos del loader */
 .loading-overlay {
   position: fixed;
@@ -913,11 +1079,6 @@ export default {
     padding: 0 4px !important;
     margin: 1px !important;
   }
-}
-
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
