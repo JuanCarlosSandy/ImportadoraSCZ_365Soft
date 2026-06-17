@@ -1198,7 +1198,7 @@ class ArticuloController extends Controller
             });
         }
 
-        $articulos = $query->orderBy('articulos.id', 'desc')->paginate(6);
+        $articulos = $query->orderBy('articulos.id', 'desc')->paginate(12);
 
         foreach ($articulos as $articulo) {
             $lotes = \DB::table('inventarios')

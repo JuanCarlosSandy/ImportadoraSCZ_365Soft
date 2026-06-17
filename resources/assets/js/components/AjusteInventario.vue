@@ -1,5 +1,7 @@
 <template>
   <main class="main">
+    <Toast :breakpoints="{ '920px': { width: '100%', right: '0', left: '0' } }" style="padding-top: 10px;"
+      appendTo="body" :baseZIndex="99999"></Toast>
     <div class="loading-overlay" v-if="isLoading">
       <div class="loading-container">
         <div class="spinner"></div>
@@ -15,32 +17,66 @@
         </div>
       </template>
 
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Registre el ajuste de inventario, seleccionando filtros de almacen, el motivo del ajuste y modifique la
+          cantidad.
+        </span>
+      </div>
+
       <form @submit.prevent="enviarFormulario">
-        <!-- PARTE 1: ALMACÉN Y PROVEEDOR -->
-        <div class="row mt-3">
-          <div class="col-md-6">
+        <div class="row mt-3 align-items-end">
+
+          <!-- MOTIVO DE BAJA -->
+          <div class="col-md-4">
             <div class="form-group">
-              <label class="font-weight-bold" for="almacen">
-                Almacén <span class="text-danger">*</span>
+
+              <label for="nombreAlmacen" class="label-input">
+                <span class="text-required">*</span>
+                Seleccionar Motivo de Baja
+              </label>
+              <div class="p-inputgroup">
+                <InputText placeholder="Seleccione un Motivo" v-model="motivoseleccionado.nombre" :disabled="true"
+                  class="form-control input-full" />
+
+                <Button icon="pi pi-ellipsis-h" class="p-button-primary btn-sm-input" @click="abrirModal2('Motivo')" />
+              </div>
+            </div>
+          </div>
+
+          <!-- ALMACÉN -->
+          <div class="col-md-3">
+            <div class="form-group">
+              <label for="nombreAlmacen" class="label-input">
+                <span class="text-required">*</span>
+                Seleccionar Almacén
               </label>
               <Dropdown id="almacen" v-model="idAlmacenSeleccionado" :options="arrayAlmacenes"
-                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione un almacén" class="form-control"
+                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione un almacén" class="dropdown-full"
                 @change="limpiarProductosSeleccionados" />
             </div>
           </div>
-          <div class="col-md-6">
+
+          <!-- PROVEEDOR -->
+          <div class="col-md-3">
             <div class="form-group">
-              <label class="font-weight-bold">Proveedor</label>
+              <label for="ubicacion" class="optional-field">
+                <i class="pi pi-info-circle optional-icon"></i>
+                Filtrar por Proveedor
+                <span class="optional-tag">Opcional</span>
+              </label>
               <div class="input-con-desplegable">
                 <div class="p-inputgroup">
                   <input type="text" v-model="proveedorSeleccionado.nombre" @input="buscarProveedores($event)"
                     @keydown.down="moverSeleccionProveedor('abajo')" @keydown.up="moverSeleccionProveedor('arriba')"
                     @keydown.enter="seleccionarProveedorConEnter" placeholder="Buscar proveedor..."
-                    class="p-inputtext p-component" />
-                  <!-- Botón para limpiar el proveedor seleccionado -->
+                    class="p-inputtext p-component input-full" />
+
                   <Button v-if="proveedorSeleccionado.nombre" icon="pi pi-times" class="p-button-danger p-button-sm"
                     @click="limpiarProveedorSeleccionado" style="margin-left: 5px;" />
                 </div>
+
                 <ul v-if="mostrarDesplegableProveedor && proveedoresFiltrados.length > 0" class="desplegable-simple">
                   <li v-for="(proveedor, index) in proveedoresFiltrados" :key="proveedor.id"
                     @click="seleccionarProveedor(proveedor)"
@@ -51,127 +87,102 @@
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- PARTE 2: MOTIVO DE BAJA Y BOTÓN AGREGAR PRODUCTO -->
-        <div class="row mt-3">
-          <div class="col-md-8">
+          <!-- BOTÓN -->
+          <div class="col-md-2">
             <div class="form-group">
-              <label class="font-weight-bold">
-                Motivo de Baja <span class="text-danger">*</span>
-              </label>
-              <div class="p-inputgroup">
-                <InputText placeholder="Seleccione un Motivo" v-model="motivoseleccionado.nombre" :disabled="true"
-                  class="form-control" />
-                <Button icon="pi pi-ellipsis-h" class="p-button-primary" @click="abrirModal2('Motivo')" />
-              </div>
+              <Button label="Agregar Producto" icon="pi pi-plus" class="p-button-success btn-sm-input w-100"
+                @click="abrirDialogoProductos" :disabled="!idAlmacenSeleccionado" />
             </div>
           </div>
-          <div class="col-md-4 d-flex align-items-end">
-            <Button label="Agregar Producto" icon="pi pi-plus" class="p-button-success w-100"
-              @click="abrirDialogoProductos" :disabled="!idAlmacenSeleccionado" />
-          </div>
+
         </div>
 
         <!-- Tabla de Productos Seleccionados -->
-        <div class="row mt-3" v-if="productosSeleccionados.length > 0">
-          <div class="col-md-12">
-            <label class="font-weight-bold">Productos Seleccionados para Ajuste</label>
-            <DataTable :value="productosSeleccionados" class="p-datatable-sm p-datatable-gridlines"
-              responsiveLayout="scroll">
-              <Column field="nombre" header="Producto">
-                <template #body="slotProps">
-                  <div>
-                    <strong>{{ slotProps.data.nombre }}</strong>
-                    <br>
-                    <small class="text-muted">
-                      <i class="pi pi-building"></i> {{ slotProps.data.nombre_proveedor || 'Sin proveedor' }}
-                    </small>
-                  </div>
-                </template>
-              </Column>
+        <div class="row mt-3"></div>
+        <div class="col-md-12">
+          <label class="font-weight-bold">Productos Seleccionados para Ajuste</label>
+          <DataTable :value="productosSeleccionados" class="p-datatable-sm p-datatable-gridlines tabla-pro"
+            responsiveLayout="scroll">
+            <Column field="nombre" header="Producto">
+              <template #body="slotProps">
+                <div>
+                  <strong>{{ slotProps.data.nombre }}</strong>
+                </div>
+              </template>
+            </Column>
 
-              <Column field="stock_actual" header="Stock Actual">
-                <template #body="slotProps">
-                  <span class="badge badge-info">
+            <Column field="stock_actual" header="Stock Actual">
+              <template #body="slotProps">
+                <span class="badge badge-info">
 
-                    <template v-if="slotProps.data.modo_ajuste === 'unidad'">
-                      {{ slotProps.data.stock_actual_unidades }} unidades
-                    </template>
+                  <template v-if="slotProps.data.modo_ajuste === 'unidad'">
+                    {{ slotProps.data.stock_actual_unidades }} unidades
+                  </template>
 
-                    <template v-else>
-                      {{ slotProps.data.stock_actual_cajas }} cajas y
-                      {{ slotProps.data.stock_actual_unidades_sueltas }} u.
-                    </template>
+                  <template v-else>
+                    {{ slotProps.data.stock_actual_cajas }} cajas y
+                    {{ slotProps.data.stock_actual_unidades_sueltas }} u.
+                  </template>
 
-                  </span> </template>
-              </Column>
-              <Column header="Stock Real">
-                <template #body="slotProps">
-                  <InputText 
-                      type="number" 
-                      v-model="slotProps.data.stock_real" 
-                      class="form-control text-center font-weight-bold" 
-                      placeholder="0"
-                      :min="0" 
-                      @input="calcularDiferencia(slotProps.data)"
-                      @keydown.tab.prevent="moverFoco(slotProps.index, $event, 'stock_real')"
-                      :ref="'stock_real-' + slotProps.index" 
-                  />
-                  <small class="text-muted d-block text-center mt-1">
-                      {{ slotProps.data.modo_ajuste === 'unidad' ? 'Unidades' : 'Cajas' }}
-                  </small>
-                </template>
-              </Column>
-              <Column header="Diferencia (Ajuste)">
-                <template #body="slotProps">
-                  <div class="text-center">
-                      <span style="font-size: 1.1em; font-weight: bold;"
-                            :class="slotProps.data.es_aumento ? 'text-success' : 'text-danger'">
-                          {{ slotProps.data.cantidad_ajuste }}
-                      </span>
-                      
-                      <div class="mt-1">
-                          <span v-if="slotProps.data.cantidad_ajuste > 0" 
-                                class="badge" 
-                                :class="slotProps.data.es_aumento ? 'badge-success' : 'badge-danger'">
-                              {{ slotProps.data.es_aumento ? 'ENTRADA (+)' : 'SALIDA (-)' }}
-                          </span>
-                          <span v-else class="badge badge-secondary">Sin cambios</span>
-                      </div>
-                  </div>
-                </template>
-              </Column>
-              <Column field="stock_restante" header="Stock Ajustado">
-                <template #body="slotProps">
-                  <span class="badge" :class="slotProps.data.stock_restante < 0 ? 'badge-danger' : 'badge-success'">
-                    {{ slotProps.data.stock_restante }}
+                </span> </template>
+            </Column>
+            <Column header="Stock Real">
+              <template #body="slotProps">
+                <InputText type="number" v-model="slotProps.data.stock_real" class="form-control input-full"
+                  placeholder="0" :min="0" @input="calcularDiferencia(slotProps.data)"
+                  @keydown.tab.prevent="moverFoco(slotProps.index, $event, 'stock_real')"
+                  :ref="'stock_real-' + slotProps.index" />
+              </template>
+            </Column>
+            <Column header="Diferencia (Ajuste)">
+              <template #body="slotProps">
+                <div class="d-flex align-items-center justify-content-center">
+                  <span style="font-size: 1.1em; font-weight: bold;"
+                    :class="slotProps.data.es_aumento ? 'text-success' : 'text-danger'">
+                    {{ slotProps.data.cantidad_ajuste }}
                   </span>
-                </template>
-              </Column>
-              <Column header="Acciones">
-                <template #body="slotProps">
-                  <Button icon="pi pi-trash" class="p-button-danger p-button-sm"
-                    @click="eliminarProducto(slotProps.index)" title="Eliminar producto" />
-                  <Button :label="slotProps.data.modo_ajuste === 'unidad' ? 'Unidad' : 'Caja'" :class="[
-                    'p-button-sm',
-                    slotProps.data.modo_ajuste === 'unidad'
-                      ? 'p-button-info'
-                      : 'p-button-success'
-                  ]" @click="toggleModoAjuste(slotProps.data)" style="width: 90px; font-weight: bold;" />
-                </template>
-              </Column>
-            </DataTable>
 
-            <!-- Resumen de Totales -->
-            <div class="mt-3 p-3" style="background-color: #f8f9fa; border-radius: 5px;">
-              <div class="row" style="display: flex; justify-content: space-between;">
-                <div class="col-md-4">
-                  <strong><i class="pi pi-shopping-cart"></i> Productos: {{ productosSeleccionados.length }}</strong>
+                  <span v-if="slotProps.data.cantidad_ajuste > 0" class="badge ml-2"
+                    :class="slotProps.data.es_aumento ? 'badge-success' : 'badge-danger'">
+                    {{ slotProps.data.es_aumento ? 'ENTRADA (+)' : 'SALIDA (-)' }}
+                  </span>
+
+                  <span v-else class="badge badge-secondary ml-2">
+                    Sin cambios
+                  </span>
                 </div>
-                <div class="col-md-4">
-                  <strong><i class="pi pi-box"></i> Total Unidades: {{ totalUnidadesAjuste }}</strong>
-                </div>
+              </template>
+            </Column>
+            <Column field="stock_restante" header="Stock Ajustado">
+              <template #body="slotProps">
+                <span class="badge" :class="slotProps.data.stock_restante < 0 ? 'badge-danger' : 'badge-success'">
+                  {{ slotProps.data.stock_restante }}
+                </span>
+              </template>
+            </Column>
+            <Column header="Acciones">
+              <template #body="slotProps">
+                <Button icon="pi pi-trash" class="p-button-danger btn-mini" @click="eliminarProducto(slotProps.index)"
+                  title="Eliminar producto" />
+                <!--<Button :label="slotProps.data.modo_ajuste === 'unidad' ? 'Unidad' : 'Caja'" :class="[
+                  'p-button-sm',
+                  slotProps.data.modo_ajuste === 'unidad'
+                    ? 'p-button-info'
+                    : 'p-button-success'
+                ]" @click="toggleModoAjuste(slotProps.data)" style="width: 90px; font-weight: bold;" />-->
+              </template>
+            </Column>
+          </DataTable>
+
+          <!-- Resumen de Totales -->
+          <div class="mt-3 p-3" style="background-color: #f8f9fa; border-radius: 5px;">
+            <div class="row" style="display: flex; justify-content: space-between;">
+              <div class="col-md-4">
+                <strong><i class="pi pi-shopping-cart"></i> Productos: {{ productosSeleccionados.length }}</strong>
+              </div>
+              <div class="col-md-4">
+                <strong><i class="pi pi-box"></i> Total Unidades: {{ totalUnidadesAjuste }}</strong>
               </div>
             </div>
           </div>
@@ -187,9 +198,9 @@
 
           <!-- Derecha (cancelar y procesar) -->
           <div class="col-md-6 d-flex justify-content-end">
-            <Button label="Cancelar" icon="pi pi-times" class="p-button-danger mr-2" @click="confirmarCancelar" />
+            <Button label="Cancelar" icon="pi pi-times" class="p-button-danger mr-2 btn-sm" @click="confirmarCancelar" />
 
-            <Button label="Procesar Ajuste" icon="pi pi-check" class="p-button-success" @click="enviarFormulario"
+            <Button label="Procesar Ajuste" icon="pi pi-check" class="p-button-success btn-sm" @click="enviarFormulario"
               :disabled="!puedeEnviarFormulario()" :loading="isLoading" />
           </div>
 
@@ -200,124 +211,93 @@
 
     <Panel v-if="vistaActual === 'tabla'">
       <template #header>
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1rem;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1rem;">
           <div style="display: flex; align-items: center;">
             <i class="pi pi-list mr-2" style="font-size: 1.5rem;"></i>
             <h4 class="panel-title mb-0">AJUSTE DE INVENTARIO</h4>
           </div>
-          
-          <div style="display: flex; gap: 10px;">
-            <Button label="PDF" icon="pi pi-file-pdf" class="p-button-danger p-button-sm" @click="exportarReportePdf()"
-              title="Descargar Reporte PDF" 
-            />
-
-            <Button label="Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarReporteExcel()"
-              title="Descargar Reporte Excel" 
-            />
-
-            <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-primary p-button-sm" @click="vistaActual = 'formulario'" />
-          </div>
         </div>
       </template>
+      <div class="info-tip">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Filtre por rango de fechas, almacen, o el nombre del productos sus registros de ajuste de inventario.
+        </span>
+      </div>
       <div class="mt-3">
         <div class="toolbar-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-            
-            <div style="flex: 1 1 150px;">
-              <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Desde</label>
-              <Calendar 
-                v-model="fechaInicio" 
-                dateFormat="yy-mm-dd" 
-                showIcon 
-                :appendTo="'body'"
-                class="p-inputtext-sm" 
-                style="width: 100%;" 
-              />
-            </div>
 
-            <div style="flex: 1 1 150px;">
-              <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Hasta</label>
-              <Calendar 
-                v-model="fechaFin" 
-                dateFormat="yy-mm-dd" 
-                showIcon 
-                :appendTo="'body'"
-                class="p-inputtext-sm" 
-                style="width: 100%;" 
-              />
-            </div>
+          <div style="flex: 1 1 150px;">
+            <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">
+              Desde
+            </label>
 
-            <div style="flex: 1 1 180px;">
-              <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Almacén</label>
-              <Dropdown 
-                v-model="idAlmacen" 
-                :options="arrayAlmacenes" 
-                optionLabel="nombre_almacen" 
-                optionValue="id"
-                placeholder="Todos" 
-                showClear 
-                class="p-inputtext-sm" 
-                style="width: 100%;" 
-              />
-            </div>
+            <input type="date" v-model="fechaInicio" class="p-inputtext p-component p-inputtext-sm input-date-full"
+              style="width: 100%;" @change="listarAjuste(1, buscar, '')" />
+          </div>
 
-            <div style="padding-bottom: 2px;">
-              <Button 
-                :label="mostrarLabel ? 'Filtrar' : ''"
-                icon="pi pi-filter" 
-                class="p-button-help p-button-sm" 
-                title="Aplicar Filtros" 
-                @click="listarAjuste(1, buscar, '')" 
-              />
-            </div>
+          <div style="flex: 1 1 150px;">
+            <label class="label-fecha" style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">
+              Hasta
+            </label>
 
-            <div class="search-bar" style="flex: 2 1 200px;">
-              <span class="p-input-icon-left" style="width: 100%;">
-                <i class="pi pi-search" />
-                <InputText 
-                  v-model="buscar" 
-                  class="form-control" 
-                  placeholder="Buscar por producto..." 
-                  style="width: 100%;"
-                  @keyup.enter="listarAjuste(1, buscar, '')"
-                />
-              </span>
-            </div>
+            <input type="date" v-model="fechaFin" class="p-inputtext p-component p-inputtext-sm input-date-full"
+              style="width: 100%;" @change="listarAjuste(1, buscar, '')" />
+          </div>
 
-            <div class="toolbar" style="padding-bottom: 2px;">
-              <Button 
-                label="Limpiar" 
-                icon="pi pi-refresh" 
-                @click="resetFiltros" 
-                class="p-button-secondary p-button-sm"
-                title="Restablecer filtros" 
-              />
-            </div>
+          <div style="flex: 1 1 180px;">
+            <label class="label-fecha"
+              style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Almacén</label>
+            <Dropdown v-model="idAlmacen" :options="arrayAlmacenes" optionLabel="nombre_almacen" optionValue="id"
+              placeholder="Todos" showClear class="dropdown-full" style="width: 100%;"
+              @change="listarAjuste(1, buscar, '')" />
+          </div>
+
+          <div class="search-bar" style="flex: 2 1 200px;">
+            <span class="p-input-icon-left" style="width: 100%;">
+              <i class="pi pi-search" />
+              <InputText v-model="buscar" class="input-full" placeholder="Buscar por producto..." style="width: 100%;"
+                @keyup.enter="listarAjuste(1, buscar, '')" />
+            </span>
+          </div>
+
+          <div class="toolbar" style="padding-bottom: 2px;">
+            <Button label="Limpiar" icon="pi pi-refresh" @click="resetFiltros" class="btn-edit p-button-sm btn-sm-input"
+              title="Restablecer filtros" />
+            <Button label="Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm btn-sm-input"
+              @click="exportarReporteExcel()" title="Descargar Reporte Excel" />
+
+            <Button label="PDF" icon="pi pi-file-pdf" class="p-button-danger p-button-sm btn-sm-input"
+              @click="exportarReportePdf()" title="Descargar Reporte PDF" />
+
+            <Button label="Nuevo Ajuste" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
+              @click="vistaActual = 'formulario'" />
+          </div>
         </div>
-        <DataTable :value="arrayAjuste" class="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">           
+        <DataTable :value="arrayAjuste" class="p-datatable-sm p-datatable-gridlines tabla-pro"
+          responsiveLayout="scroll">
           <Column field="nombre_almacen" header="ALMACEN" />
 
           <Column header="MOVIMIENTO" style="text-align: center; width: 140px;">
-              <template #body="slotProps">
-                  <span :class="slotProps.data.tipo_movimiento === 'entrada' ? 'badge badge-success' : 'badge badge-danger'"
-                        style="font-size: 0.9em; padding: 5px 10px;">
-                      
-                      <i :class="slotProps.data.tipo_movimiento === 'entrada' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'" 
-                        style="margin-right: 5px; font-weight: bold;"></i>
-                      
-                      {{ slotProps.data.tipo_movimiento === 'entrada' ? 'ENTRADA' : 'SALIDA' }}
-                  </span>
-              </template>
+            <template #body="slotProps">
+              <span :class="slotProps.data.tipo_movimiento === 'entrada' ? 'badge badge-success' : 'badge badge-danger'"
+                class="tag-mini">
+
+                <i :class="slotProps.data.tipo_movimiento === 'entrada' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"
+                  style="margin-right: 5px; font-weight: bold;"></i>
+
+                {{ slotProps.data.tipo_movimiento === 'entrada' ? 'ENTRADA' : 'SALIDA' }}
+              </span>
+            </template>
           </Column>
           <Column field="nombre" header="ARTICULO">
-              <template #body="slotProps">
-                  {{ slotProps.data.nombre }}
-                  <small v-if="slotProps.data.descripcion_fabrica" class="text-muted d-block">
-                      {{ slotProps.data.descripcion_fabrica }}
-                  </small>
-              </template>
+            <template #body="slotProps">
+              {{ slotProps.data.nombre }}
+            </template>
           </Column>
           <Column field="cantidad" header="CANTIDAD" style="text-align: center; font-weight: bold;" />
-          <Column field="tipo" header="MOTIVO / JUSTIFICACIÓN" /> 
+          <Column field="tipo" header="MOTIVO / JUSTIFICACIÓN" />
           <Column field="created_at" header="FECHA Y HORA" />
         </DataTable>
         <Paginator :rows="pagination.per_page" :totalRecords="pagination.total"
@@ -335,28 +315,26 @@
         <div class="search-bar p-flex-grow-1">
           <span class="p-input-icon-left p-w-full">
             <i class="pi pi-search" />
-            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control p-w-full" placeholder="Texto a buscar"
-              @keyup="filtrarProductos" />
+            <InputText ref="inputBusqueda" v-model="buscarA" class="form-control input-full"
+              placeholder="Texto a buscar" @keyup="filtrarProductos" />
           </span>
         </div>
         <div class="p-d-flex p-gap-2">
-          <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaProductos" class="p-button-help p-button-sm"
+          <Button label="Limpiar" icon="pi pi-refresh" @click="resetBusquedaProductos" class="btn-edit btn-sm-input"
             title="Limpiar" :disabled="!buscarA" />
-          <Button label="Agregar Todos" icon="pi pi-plus" class="p-button-success p-button-sm"
-            @click="agregarTodosProductos" :disabled="!proveedorSeleccionado.id || arrayBuscador.length === 0" />
-          <Button label="Escanear Código" icon="pi pi-qrcode" class="p-button-info p-button-sm"
-            @click="iniciarEscaneo" />
+          <!--<Button label="Agregar Todos" icon="pi pi-plus" class="p-button-success btn-sm-input"
+            @click="agregarTodosProductos" :disabled="!proveedorSeleccionado.id || arrayBuscador.length === 0" />-->
         </div>
       </div>
 
       <!-- Tabla de productos -->
       <div class="table-responsive" style="margin-top: 2%">
-        <DataTable :value="arrayBuscador" class="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">
+        <DataTable :value="arrayBuscador" class="p-datatable-sm p-datatable-gridlines tabla-pro"
+          responsiveLayout="scroll">
           <!-- Columnas de la tabla (sin cambios) -->
           <Column header="Seleccionar" style="width: 12%">
             <template #body="slotProps">
-              <Button icon="pi pi-plus" class="p-button-primary p-button-sm"
-                @click="seleccionarProducto(slotProps.data)"
+              <Button icon="pi pi-plus" class="p-button-primary btn-mini" @click="seleccionarProducto(slotProps.data)"
                 :disabled="productosSeleccionados.some(p => p.id === slotProps.data.id)"
                 :title="productosSeleccionados.some(p => p.id === slotProps.data.id) ? 'Ya seleccionado' : 'Agregar producto'" />
             </template>
@@ -365,8 +343,7 @@
             <template #body="slotProps">
               <div>
                 <strong>{{ slotProps.data.nombre }}</strong>
-                <br>
-                <small class="text-muted">{{ slotProps.data.nombre_proveedor || 'Sin proveedor' }}</small>
+
               </div>
             </template>
           </Column>
@@ -423,32 +400,41 @@
     </Dialog>
 
     <!-- MODAL PARA SELECCIONAR MOTIVOS -->
-    <Dialog :visible.sync="modal2" modal :header="tituloModal2" :closable="true" @hide="cerrarModal2"
-      class="responsive-dialog" :containerStyle="dialogContainerStyle">
+    <Dialog :visible.sync="modal2" modal :closable="false" @hide="cerrarModal2" class="responsive-dialog"
+      :containerStyle="dialogContainerStyle">
+
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-book header-icon"></i>
+          <span class="header-title">{{ tituloModal2 }}</span>
+        </div>
+      </template>
+
       <!-- Contenido del modal -->
       <div class="toolbar-container">
         <div class="search-bar">
           <span class="p-input-icon-left">
             <i class="pi pi-search" />
-            <InputText v-model="buscarA" @keyup="listarMotivo(1, buscarA, criterioA)" class="form-control"
+            <InputText v-model="buscarA" @keyup="listarMotivo(1, buscarA, criterioA)" class="form-control input-full"
               placeholder="Buscar motivo..." />
           </span>
         </div>
         <div class="toolbar">
-          <Button label="Reset" icon="pi pi-refresh" @click="resetBusquedaMotivos" class="p-button-help p-button-sm"
-            title="Limpiar" />
+          <Button label="Limpiar" icon="pi pi-refresh" @click="resetBusquedaMotivos"
+            class="btn-edit p-button-sm btn-sm-input" title="Limpiar" />
           <!-- Botón para añadir nuevo motivo -->
-          <Button label="Nuevo Motivo" icon="pi pi-plus" class="p-button-secondary p-button-sm"
+          <Button label="Nuevo Motivo" icon="pi pi-plus" class="p-button-secondary p-button-sm btn-sm-input"
             @click="abrirModalNuevoMotivo" />
         </div>
       </div>
 
       <div class="table-responsive">
-        <DataTable :value="arrayBuscador" class="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">
+        <DataTable :value="arrayBuscador" class="p-datatable-sm p-datatable-gridlines tabla-pro"
+          responsiveLayout="scroll">
           <!-- Columnas de la tabla de motivos -->
           <Column header="Seleccionar" style="width: 15%">
             <template #body="slotProps">
-              <Button icon="pi pi-check" class="p-button-success p-button-sm" @click="seleccionar(slotProps.data)" />
+              <Button icon="pi pi-check" class="p-button-success btn-mini" @click="seleccionar(slotProps.data)" />
             </template>
           </Column>
           <Column field="nombre" header="Motivo de Baja" />
@@ -459,33 +445,44 @@
         :first="(pagination.current_page - 1) * pagination.per_page" @page="onPageChange" />
 
       <template #footer>
-        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm" @click="cerrarModal2"
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="cerrarModal2"
           type="button" />
       </template>
     </Dialog>
 
     <!-- MODAL PARA REGISTRAR NUEVO MOTIVO -->
-    <Dialog :visible.sync="modal3" modal :header="tituloModal3" :closable="true" @hide="cerrarModal3"
-      class="responsive-dialog" :containerStyle="dialogContainerStyle">
+    <Dialog :visible.sync="modal3" modal :closable="false" @hide="cerrarModal3" class="responsive-dialog"
+      :containerStyle="dialogContainerStyle">
+
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-book header-icon"></i>
+          <span class="header-title">{{ tituloModal3 }}</span>
+        </div>
+      </template>
+
       <!-- Contenido del modal -->
       <div v-if="tituloModal2 !== 'Proveedors'">
         <form class="form-horizontal">
           <div v-if="tituloModal2 !== 'Grupos' && tituloModal2 !== 'Lineas'" class="form-group row">
-            <label class="col-md-3 form-control-label" for="text-input">
-              Nombre
-            </label>
-            <div class="col-md-9">
-              <InputText type="text" v-model="nombre" class="form-control1" placeholder="Ingrese nombre del motivo" />
+            <div class="p-field p-col-12">
+              <label for="nombreAlmacen" class="label-input">
+                <span class="text-required">*</span>
+                Nombre del motivo
+              </label>
+              <InputText type="text" v-model="nombre" class="form-control1 input-full"
+                placeholder="Ingrese nombre del motivo" />
+
             </div>
           </div>
         </form>
       </div>
       <template #footer>
-        <Button label="Cerrar" icon="pi pi-times" class="p-button-secondary p-button-sm" @click="cerrarModal3"
+        <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm" @click="cerrarModal3"
           type="button" />
-        <Button v-if="tipoAccion2 == 5" class="p-button-primary p-button-sm" label="Guardar" icon="pi pi-check"
+        <Button v-if="tipoAccion2 == 5" class="p-button-success p-button-sm btn-sm" label="Guardar" icon="pi pi-check"
           @click="registrarMarca" type="button" />
-        <Button v-if="tipoAccion2 == 6" class="p-button-primary p-button-sm" label="Actualizar" icon="pi pi-check"
+        <Button v-if="tipoAccion2 == 6" class="btn-edit p-button-sm btn-sm" label="Actualizar" icon="pi pi-check"
           @click="actualizarMarca" type="button" />
       </template>
     </Dialog>
@@ -507,6 +504,8 @@ import Panel from "primevue/panel";
 import Sidebar from 'primevue/sidebar';
 import AutoComplete from 'primevue/autocomplete';
 import Calendar from "primevue/calendar";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
 
 export default {
   components: {
@@ -521,7 +520,9 @@ export default {
     Panel,
     Sidebar,
     AutoComplete,
-    Calendar
+    Calendar,
+    ToastService,
+    Toast,
   },
   data() {
     return {
@@ -780,36 +781,28 @@ export default {
       this.cambiarPagina(page);
     },
     toastSuccess(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `.<br>
-    </div>`,
-        {
-          type: "success",
-          position: "bottom-right",
-          duration: 4000,
-        }
-      );
+      this.$toast.add({
+        severity: "success",
+        summary: "Éxito",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     toastError(mensaje) {
-      this.$toasted.show(
-        `
-    <div style="height: 60px;font-size:16px;">
-        <br>
-        ` +
-        mensaje +
-        `<br>
-    </div>`,
-        {
-          type: "error",
-          position: "bottom-right",
-          duration: 4000,
-        }
-      );
+      this.$toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: mensaje,
+        life: 3500,
+      });
+    },
+    toastWarning(mensaje) {
+      this.$toast.add({
+        severity: "warn",
+        summary: "Advertencia",
+        detail: mensaje,
+        life: 2000,
+      });
     },
     asignarCampos() {
       this.datosFormulario.producto = this.productoseleccionado.id;
@@ -821,65 +814,65 @@ export default {
     },
 
     async enviarFormulario() {
-        if (!this.motivoseleccionado || !this.motivoseleccionado.id) {
-            this.toastError("Seleccione un motivo.");
-            return;
-        }
+      if (!this.motivoseleccionado || !this.motivoseleccionado.id) {
+        this.toastError("Seleccione un motivo.");
+        return;
+      }
 
-        const productosAProcesar = this.productosSeleccionados.filter(p => {
-            const cantidad = parseFloat(p.cantidad_ajuste) || 0;
-            return cantidad > 0;
-        });
+      const productosAProcesar = this.productosSeleccionados.filter(p => {
+        const cantidad = parseFloat(p.cantidad_ajuste) || 0;
+        return cantidad > 0;
+      });
 
-        if (productosAProcesar.length === 0) {
-            this.toastError("No hay diferencias de stock para registrar.");
-            return;
-        }
+      if (productosAProcesar.length === 0) {
+        this.toastError("No hay diferencias de stock para registrar.");
+        return;
+      }
 
-        const productosInvalidos = productosAProcesar.filter(p => {
-            if (p.es_aumento) return false;
-            return p.cantidad_ajuste > p.stock_actual_unidades;
-        });
+      const productosInvalidos = productosAProcesar.filter(p => {
+        if (p.es_aumento) return false;
+        return p.cantidad_ajuste > p.stock_actual_unidades;
+      });
 
-        if (productosInvalidos.length > 0) {
-            this.toastError(`Error: El producto "${productosInvalidos[0].nombre}" no tiene suficiente stock.`);
-            return;
-        }
+      if (productosInvalidos.length > 0) {
+        this.toastError(`Error: El producto "${productosInvalidos[0].nombre}" no tiene suficiente stock.`);
+        return;
+      }
 
-        try {
-            this.isLoading = true;
+      try {
+        this.isLoading = true;
 
-            const ajustesData = {
-                almacen_id: this.idAlmacenSeleccionado,
-                motivo_id: this.motivoseleccionado.id,
-                productos: productosAProcesar.map(p => {
-                    return {
-                        producto_id: p.id,
-                        cantidad: parseFloat(p.cantidad_ajuste),
-                        tipo_movimiento: p.es_aumento ? 'entrada' : 'salida',
-                    };
-                })
+        const ajustesData = {
+          almacen_id: this.idAlmacenSeleccionado,
+          motivo_id: this.motivoseleccionado.id,
+          productos: productosAProcesar.map(p => {
+            return {
+              producto_id: p.id,
+              cantidad: parseFloat(p.cantidad_ajuste),
+              tipo_movimiento: p.es_aumento ? 'entrada' : 'salida',
             };
+          })
+        };
 
-            await this.registrarAjusteMultiple(ajustesData);
+        await this.registrarAjusteMultiple(ajustesData);
 
-            this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Inventario ajustado correctamente.', life: 2000 });
-            
-            setTimeout(() => {
-                this.vistaActual = 'tabla';
-                this.productosSeleccionados = [];
-            }, 1500);
+        this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Inventario ajustado correctamente.', life: 2000 });
 
-        } catch (error) {
-            console.error("Error:", error);
-            let msg = "Error al procesar.";
-            if (error.response && error.response.data && error.response.data.message) {
-                msg = error.response.data.message;
-            }
-            this.$toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 5000 });
-        } finally {
-            this.isLoading = false;
+        setTimeout(() => {
+          this.vistaActual = 'tabla';
+          this.productosSeleccionados = [];
+        }, 1500);
+
+      } catch (error) {
+        console.error("Error:", error);
+        let msg = "Error al procesar.";
+        if (error.response && error.response.data && error.response.data.message) {
+          msg = error.response.data.message;
         }
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 5000 });
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     guardarYVolver() {
@@ -937,6 +930,7 @@ export default {
       if (this.tituloModal2 == "Motivo") {
         this.motivoseleccionado = selected;
         this.marcaseleccionadaVacio = false;
+        this.toastSuccess("Motivo seleccionado correctamente")
       } else if (this.tituloModal2 == "Productos") {
         if (selected.condicion == 1) {
           this.agregarProductoSeleccionado(selected);
@@ -1153,25 +1147,25 @@ export default {
     },
 
     puedeEnviarFormulario() {
-        if (!this.idAlmacenSeleccionado) return false;
-        if (!this.motivoseleccionado || !this.motivoseleccionado.id) return false;
-        if (this.productosSeleccionados.length === 0) return false;
+      if (!this.idAlmacenSeleccionado) return false;
+      if (!this.motivoseleccionado || !this.motivoseleccionado.id) return false;
+      if (this.productosSeleccionados.length === 0) return false;
 
-        const hayCambios = this.productosSeleccionados.some(p => {
-            const cantidad = parseFloat(p.cantidad_ajuste) || 0;
-            return cantidad > 0;
-        });
+      const hayCambios = this.productosSeleccionados.some(p => {
+        const cantidad = parseFloat(p.cantidad_ajuste) || 0;
+        return cantidad > 0;
+      });
 
-        if (!hayCambios) return false;
+      if (!hayCambios) return false;
 
-        const hayErroresStock = this.productosSeleccionados.some(p => {
-            const cantidad = parseFloat(p.cantidad_ajuste) || 0;
-            const stockActual = parseFloat(p.stock_actual) || 0; 
-            if (!p.es_aumento && cantidad > p.stock_actual_unidades) return true; 
-            return false;
-        });
+      const hayErroresStock = this.productosSeleccionados.some(p => {
+        const cantidad = parseFloat(p.cantidad_ajuste) || 0;
+        const stockActual = parseFloat(p.stock_actual) || 0;
+        if (!p.es_aumento && cantidad > p.stock_actual_unidades) return true;
+        return false;
+      });
 
-        return !hayErroresStock;
+      return !hayErroresStock;
     },
 
     validarFormularioMultiple() {
@@ -1187,24 +1181,24 @@ export default {
     },
 
     async registrarAjusteMultiple(datosParaEnviar) {
-        try {
-          this.isLoading = true;
-          
-          const response = await axios.post("/ajuste/registrar-multiple", datosParaEnviar, {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+      try {
+        this.isLoading = true;
 
-          this.cerrarModal();
-          await this.listarAjuste(1, "", "");
-          this.toastSuccess("Ajuste de Inventario registrado correctamente");            
-        } catch (error) {
-          console.error("Error:", error);
-          throw error; 
-        } finally {
-          this.isLoading = false;
-        }
+        const response = await axios.post("/ajuste/registrar-multiple", datosParaEnviar, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        this.cerrarModal();
+        await this.listarAjuste(1, "", "");
+        this.toastSuccess("Ajuste de Inventario registrado correctamente");
+      } catch (error) {
+        console.error("Error:", error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     formatearPrecio(precio) {
@@ -1233,48 +1227,48 @@ export default {
     },
 
     async listarAjuste(page, buscar, criterio) {
-        try {
-          this.isLoading = true;
-          let me = this;
-
-          const fInicio = this.formatDate(this.fechaInicio);
-          const fFin = this.formatDate(this.fechaFin);
-
-          let url = `/ajusteinv?page=${page}&buscar=${buscar || ""}&criterio=${criterio || ""}`;
-
-          if(fInicio) url += `&fechaInicio=${fInicio}`;
-          if(fFin)    url += `&fechaFin=${fFin}`;
-          if(this.idAlmacen) url += `&idAlmacen=${this.idAlmacen}`;
-
-          const response = await axios.get(url);
-          var respuesta = response.data;
-          me.arrayAjuste = respuesta.ajuste.data;
-          me.pagination = respuesta.pagination;
-        } catch (error) {
-          console.error("Error al listar ajustes:", error);
-        } finally {
-          this.isLoading = false;
-        }
-    },
-
-    generarReporte(tipo) {
-        if (!this.fechaInicio || !this.fechaFin) {
-            swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
-            return;
-        }
+      try {
+        this.isLoading = true;
+        let me = this;
 
         const fInicio = this.formatDate(this.fechaInicio);
         const fFin = this.formatDate(this.fechaFin);
-        const almacen = this.idAlmacen ? this.idAlmacen : '';
-        const busqueda = this.buscar ? this.buscar : '';
-        let url = `/ajusteinv/reporte/${tipo}?fechaInicio=${fInicio}&fechaFin=${fFin}&idAlmacen=${almacen}&buscar=${busqueda}`;
-        window.open(url, '_blank');
+
+        let url = `/ajusteinv?page=${page}&buscar=${buscar || ""}&criterio=${criterio || ""}`;
+
+        if (fInicio) url += `&fechaInicio=${fInicio}`;
+        if (fFin) url += `&fechaFin=${fFin}`;
+        if (this.idAlmacen) url += `&idAlmacen=${this.idAlmacen}`;
+
+        const response = await axios.get(url);
+        var respuesta = response.data;
+        me.arrayAjuste = respuesta.ajuste.data;
+        me.pagination = respuesta.pagination;
+      } catch (error) {
+        console.error("Error al listar ajustes:", error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    generarReporte(tipo) {
+      if (!this.fechaInicio || !this.fechaFin) {
+        swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
+        return;
+      }
+
+      const fInicio = this.formatDate(this.fechaInicio);
+      const fFin = this.formatDate(this.fechaFin);
+      const almacen = this.idAlmacen ? this.idAlmacen : '';
+      const busqueda = this.buscar ? this.buscar : '';
+      let url = `/ajusteinv/reporte/${tipo}?fechaInicio=${fInicio}&fechaFin=${fFin}&idAlmacen=${almacen}&buscar=${busqueda}`;
+      window.open(url, '_blank');
     },
 
     formatDate(date) {
       if (!date) return '';
       if (typeof date === 'string') return date;
-      
+
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
@@ -1392,6 +1386,7 @@ export default {
       this.idAlmacen = null;
       this.establecerFechasPorDefecto();
       this.listarAjuste(1, this.buscar, this.criterio);
+      this.toastSuccess("Búsqueda limpiada. Mostrando todos los registros")
     },
 
     establecerFechasPorDefecto() {
@@ -1427,34 +1422,34 @@ export default {
     },
 
     seleccionarProducto(producto) {
-        const productoExistente = this.productosSeleccionados.find(p => p.id === producto.id);
+      const productoExistente = this.productosSeleccionados.find(p => p.id === producto.id);
 
-        if (!productoExistente) {
-            
-            let stockTotal = parseFloat(producto.stock_total_unidades) || 0;
-            let stockCajas = parseFloat(producto.stock_total_cajas) || 0;
-            let stockSueltas = parseFloat(producto.stock_total_unidades_sueltas) || 0;
-            
-            this.productosSeleccionados.push({
-                ...producto,
-                cantidad_ajuste: 0,
-                
-                stock_actual_unidades: stockTotal,
-                stock_actual_cajas: stockCajas,
-                stock_actual_unidades_sueltas: stockSueltas,
-                
-                modo_ajuste: 'unidad',
-                es_paquete: false, 
-                es_aumento: true,  
+      if (!productoExistente) {
 
-                stock_real: stockTotal,
-                stock_restante: stockTotal
-            });
+        let stockTotal = parseFloat(producto.stock_total_unidades) || 0;
+        let stockCajas = parseFloat(producto.stock_total_cajas) || 0;
+        let stockSueltas = parseFloat(producto.stock_total_unidades_sueltas) || 0;
 
-            this.$toast.add({ severity: 'success', summary: 'Agregado', detail: 'Producto listo para ajustar', life: 1000 });
-        } else {
-            this.$toast.add({ severity: 'warn', summary: 'Atención', detail: 'El producto ya está en la lista' });
-        }
+        this.productosSeleccionados.push({
+          ...producto,
+          cantidad_ajuste: 0,
+
+          stock_actual_unidades: stockTotal,
+          stock_actual_cajas: stockCajas,
+          stock_actual_unidades_sueltas: stockSueltas,
+
+          modo_ajuste: 'unidad',
+          es_paquete: false,
+          es_aumento: true,
+
+          stock_real: stockTotal,
+          stock_restante: stockTotal
+        });
+
+        this.$toast.add({ severity: 'success', summary: 'Agregado', detail: 'Producto listo para ajustar', life: 1000 });
+      } else {
+        this.$toast.add({ severity: 'warn', summary: 'Atención', detail: 'El producto ya está en la lista' });
+      }
     },
 
 
@@ -1527,34 +1522,34 @@ export default {
     },
 
     calcularDiferencia(producto) {
-        if (producto.stock_real === undefined || producto.stock_real === null || producto.stock_real === '') {
-            this.$set(producto, 'cantidad_ajuste', 0);
-            return;
-        }
+      if (producto.stock_real === undefined || producto.stock_real === null || producto.stock_real === '') {
+        this.$set(producto, 'cantidad_ajuste', 0);
+        return;
+      }
 
-        const envase = Number(producto.unidad_envase) || 1;
-        const inputUsuario = Number(producto.stock_real);
-        const stockActualUnidades = Number(producto.stock_actual_unidades); 
+      const envase = Number(producto.unidad_envase) || 1;
+      const inputUsuario = Number(producto.stock_real);
+      const stockActualUnidades = Number(producto.stock_actual_unidades);
 
-        let stockFisicoEnUnidades = 0;
+      let stockFisicoEnUnidades = 0;
 
-        if (producto.modo_ajuste === 'caja') {
-            stockFisicoEnUnidades = inputUsuario * envase;
-        } else {
-            stockFisicoEnUnidades = inputUsuario;
-        }
+      if (producto.modo_ajuste === 'caja') {
+        stockFisicoEnUnidades = inputUsuario * envase;
+      } else {
+        stockFisicoEnUnidades = inputUsuario;
+      }
 
-        const diferencia = stockFisicoEnUnidades - stockActualUnidades;
+      const diferencia = stockFisicoEnUnidades - stockActualUnidades;
 
-        if (diferencia >= 0) {
-            this.$set(producto, 'es_aumento', true);
-            this.$set(producto, 'cantidad_ajuste', diferencia);
-        } else {
-            this.$set(producto, 'es_aumento', false);
-            this.$set(producto, 'cantidad_ajuste', Math.abs(diferencia));
-        }
+      if (diferencia >= 0) {
+        this.$set(producto, 'es_aumento', true);
+        this.$set(producto, 'cantidad_ajuste', diferencia);
+      } else {
+        this.$set(producto, 'es_aumento', false);
+        this.$set(producto, 'cantidad_ajuste', Math.abs(diferencia));
+      }
 
-        this.$set(producto, 'stock_restante', stockFisicoEnUnidades);
+      this.$set(producto, 'stock_restante', stockFisicoEnUnidades);
     },
 
     moverFoco(index, event, tipoCampo) {
@@ -1639,6 +1634,7 @@ export default {
         })
         .then(function (response) {
           me.cerrarModal3();
+          me.toastSuccess("Motivo registrado correctamente")
           //me.modal3=0;
           me.listarMotivo(1, "", "id");
         })
@@ -1755,131 +1751,131 @@ export default {
       this.rolUsuario = window.userData.rol;
     },
 
-async exportarReportePdf() {
-  if (!this.fechaInicio || !this.fechaFin) {
-    swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
-    return;
-  }
-  this.isLoading = true;
-  try {
-    const fInicio = this.formatDate(this.fechaInicio);
-    const fFin = this.formatDate(this.fechaFin);
-    const fechaInicioNombre = (fInicio || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
-    const fechaFinNombre = (fFin || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
-    const almacen = this.idAlmacen ? this.idAlmacen : '';
-    const busqueda = this.buscar ? this.buscar : '';
-
-    const response = await axios.get(`/ajusteinv/reporte/pdf`, {
-      params: {
-        fechaInicio: fInicio,
-        fechaFin: fFin,
-        idAlmacen: almacen,
-        buscar: busqueda
-      },
-      responseType: 'blob',
-      timeout: 600000 
-    });
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    
-    let filename = `ReporteAjustes_${fechaInicioNombre}_${fechaFinNombre}.pdf`;
-    const disposition = response.headers['content-disposition'];
-    if (disposition && disposition.indexOf('attachment') !== -1) {
-      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-      const matches = filenameRegex.exec(disposition);
-      if (matches != null && matches[1]) { 
-        filename = matches[1].replace(/['"]/g, '');
+    async exportarReportePdf() {
+      if (!this.fechaInicio || !this.fechaFin) {
+        swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
+        return;
       }
-    }
+      this.isLoading = true;
+      try {
+        const fInicio = this.formatDate(this.fechaInicio);
+        const fFin = this.formatDate(this.fechaFin);
+        const fechaInicioNombre = (fInicio || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
+        const fechaFinNombre = (fFin || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
+        const almacen = this.idAlmacen ? this.idAlmacen : '';
+        const busqueda = this.buscar ? this.buscar : '';
 
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+        const response = await axios.get(`/ajusteinv/reporte/pdf`, {
+          params: {
+            fechaInicio: fInicio,
+            fechaFin: fFin,
+            idAlmacen: almacen,
+            buscar: busqueda
+          },
+          responseType: 'blob',
+          timeout: 600000
+        });
 
-    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
-  } catch (error) {
-    console.error("Error al exportar PDF:", error);
-    let mensaje = "No se pudo exportar el reporte PDF";
-    if (error.code === 'ECONNABORTED') {
-      mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
-    }
-    this.$toast.add({ severity: 'error', summary: 'Error', detail: mensaje, life: 5000 });
-  } finally {
-    this.isLoading = false;
-  }
-},
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
 
-async exportarReporteExcel() {
-  if (!this.fechaInicio || !this.fechaFin) {
-    swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
-    return;
-  }
-  this.isLoading = true;
-  try {
-    const fInicio = this.formatDate(this.fechaInicio);
-    const fFin = this.formatDate(this.fechaFin);
-    const fechaInicioNombre = (fInicio || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
-    const fechaFinNombre = (fFin || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
-    const almacen = this.idAlmacen ? this.idAlmacen : '';
-    const busqueda = this.buscar ? this.buscar : '';
+        let filename = `ReporteAjustes_${fechaInicioNombre}_${fechaFinNombre}.pdf`;
+        const disposition = response.headers['content-disposition'];
+        if (disposition && disposition.indexOf('attachment') !== -1) {
+          const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+          const matches = filenameRegex.exec(disposition);
+          if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
 
-    const response = await axios.get(`/ajusteinv/reporte/excel`, {
-      params: {
-        fechaInicio: fInicio,
-        fechaFin: fFin,
-        idAlmacen: almacen,
-        buscar: busqueda
-      },
-      responseType: 'blob',
-      timeout: 600000
-    });
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-
-    let filename = `ReporteAjustes_${fechaInicioNombre}_${fechaFinNombre}.xlsx`;
-    const disposition = response.headers['content-disposition'];
-    if (disposition && disposition.indexOf('attachment') !== -1) {
-      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-      const matches = filenameRegex.exec(disposition);
-      if (matches != null && matches[1]) { 
-        filename = matches[1].replace(/['"]/g, '');
+        this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte PDF descargado', life: 3000 });
+      } catch (error) {
+        console.error("Error al exportar PDF:", error);
+        let mensaje = "No se pudo exportar el reporte PDF";
+        if (error.code === 'ECONNABORTED') {
+          mensaje = "El reporte es demasiado grande y ha excedido el tiempo de espera.";
+        }
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: mensaje, life: 5000 });
+      } finally {
+        this.isLoading = false;
       }
-    }
+    },
 
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    async exportarReporteExcel() {
+      if (!this.fechaInicio || !this.fechaFin) {
+        swal("Atención", "Por favor selecciona un rango de fechas válido.", "warning");
+        return;
+      }
+      this.isLoading = true;
+      try {
+        const fInicio = this.formatDate(this.fechaInicio);
+        const fFin = this.formatDate(this.fechaFin);
+        const fechaInicioNombre = (fInicio || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
+        const fechaFinNombre = (fFin || '').replace(/-/g, '') || this.formatDate(new Date()).replace(/-/g, '');
+        const almacen = this.idAlmacen ? this.idAlmacen : '';
+        const busqueda = this.buscar ? this.buscar : '';
 
-    this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
-  } catch (error) {
-    console.error("Error al exportar Excel:", error);
-    this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el reporte Excel', life: 5000 });
-  } finally {
-    this.isLoading = false;
-  }
-},
+        const response = await axios.get(`/ajusteinv/reporte/excel`, {
+          params: {
+            fechaInicio: fInicio,
+            fechaFin: fFin,
+            idAlmacen: almacen,
+            buscar: busqueda
+          },
+          responseType: 'blob',
+          timeout: 600000
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+
+        let filename = `ReporteAjustes_${fechaInicioNombre}_${fechaFinNombre}.xlsx`;
+        const disposition = response.headers['content-disposition'];
+        if (disposition && disposition.indexOf('attachment') !== -1) {
+          const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+          const matches = filenameRegex.exec(disposition);
+          if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
+
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        this.$toast.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte Excel descargado', life: 3000 });
+      } catch (error) {
+        console.error("Error al exportar Excel:", error);
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo exportar el reporte Excel', life: 5000 });
+      } finally {
+        this.isLoading = false;
+      }
+    },
   },
   async mounted() {
     this.handleResize();
     window.addEventListener("resize", this.handleResize);
-    this.establecerFechasPorDefecto(); 
+    this.establecerFechasPorDefecto();
     try {
       this.isLoading = true;
-      
+
       await Promise.all([
-        this.selectAlmacen(),           
+        this.selectAlmacen(),
         this.recuperarIdRol(),
         this.datosConfiguracion(),
         this.obtenerConfiguracionTrabajo(),
-        this.listarAjuste(1, this.buscar, ""), 
+        this.listarAjuste(1, this.buscar, ""),
       ]);
     } catch (error) {
       console.error("Error en la carga inicial:", error);
@@ -1894,6 +1890,215 @@ async exportarReporteExcel() {
 };
 </script>
 <style scoped>
+.info-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.info-tip i {
+  color: #3b82f6;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tabla-pro {
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.tabla-pro .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+.tabla-pro th,
+.tabla-pro td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+.tabla-pro img {
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/* DataTable Responsive */
+>>>.p-datatable {
+  font-size: 0.75rem;
+}
+
+>>>.p-datatable .p-datatable-tbody>tr>td {
+  padding: 0.4rem;
+  word-break: break-word;
+  text-align: left;
+}
+
+>>>.p-datatable .p-datatable-thead>tr>th {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* 🔹 Botones pequeños */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm .pi {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Botones pequeños inputs */
+.btn-sm-input {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  line-height: 1.1;
+}
+
+.btn-sm-input .pi {
+  font-size: 0.65rem;
+  margin-right: 4px;
+}
+
+/* 🔹 Estilo más pequeño para todos los Toasts */
+.p-toast {
+  width: 300px !important;
+  /* más angosto */
+  font-size: 0.75rem !important;
+  /* texto más pequeño */
+}
+
+.p-toast-message {
+  padding: 0.6rem 0.8rem !important;
+  /* menos espacio interno */
+  border-radius: 6px !important;
+}
+
+.p-toast-message-content {
+  gap: 0.4rem !important;
+  /* reduce separación entre ícono y texto */
+}
+
+.p-toast-message-text {
+  line-height: 1.2;
+}
+
+.p-toast-summary {
+  font-weight: 600;
+  font-size: 0.85rem !important;
+}
+
+.p-toast-detail {
+  font-size: 0.8rem !important;
+  opacity: 0.9;
+}
+
+/* 🔹 Ícono más pequeño */
+.p-toast-icon {
+  font-size: 1rem !important;
+}
+
+/* 🔹 Márgenes y posición */
+.p-toast-top-right {
+  top: 1rem !important;
+  right: 1rem !important;
+}
+
+/* Estilo uniforme para Dropdown (igual que InputText) */
+.dropdown-full {
+  width: 100% !important;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* Input dentro del dropdown */
+.dropdown-full>>>.p-dropdown-label {
+  padding: 6px 8px !important;
+  font-size: 0.8rem;
+}
+
+/* Flecha del dropdown */
+.dropdown-full>>>.p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+/* Borde al focus */
+.dropdown-full>>>.p-dropdown {
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.dropdown-full>>>.p-dropdown.p-focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
+}
+
+/* 🔹 Opciones del panel (lista desplegable) */
+.dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  min-height: auto !important;
+  /* evita que queden muy grandes */
+}
+
+/* 🔹 Input principal (Buscar Producto) */
+.input-full {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+  box-sizing: border-box;
+}
+
+/* Ajuste para InputText de PrimeVue */
+.input-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-radius: 6px 0 0 6px;
+}
+
+/* 🔹 Estilo especial para InputNumber */
+.input-number-full {
+  width: 100%;
+}
+
+.input-number-full>>>.p-inputtext {
+  width: 100% !important;
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.input-date-full {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  box-sizing: border-box;
+}
+
+.input-date-full:focus {
+  border-color: #6c9ffe;
+  outline: none;
+}
+
 .p-d-flex .p-button-sm {
   margin: 0 1%;
 }
@@ -2107,24 +2312,34 @@ body.p-overflow-hidden {
 }
 
 /* Estilos para campos obligatorios */
-.required-field {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.label-input {
+  display: block;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #374151;
+  margin-bottom: 4px;
 }
 
-.required-icon {
+.text-required {
   color: #e74c3c;
   font-size: 1rem;
   font-weight: bold;
   margin-right: 0.2rem;
 }
 
+.text-required {
+  color: #dc2626;
+  /* rojo */
+  font-weight: 700;
+}
+
 /* Estilos para campos opcionales */
 .optional-field {
   display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+
   align-items: center;
   gap: 0.4rem;
   font-weight: 500;
@@ -2133,23 +2348,7 @@ body.p-overflow-hidden {
 
 .optional-icon {
   color: #17a2b8;
-  font-size: 0.8rem;
-}
-
-/* DataTable Responsive */
->>>.p-datatable {
-  font-size: 0.9rem;
-}
-
->>>.p-datatable .p-datatable-tbody>tr>td {
-  padding: 0.5rem;
-  word-break: break-word;
-  text-align: left;
-}
-
->>>.p-datatable .p-datatable-thead>tr>th {
-  padding: 0.75rem 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.5rem;
 }
 
 /* Form Grid Responsive */
