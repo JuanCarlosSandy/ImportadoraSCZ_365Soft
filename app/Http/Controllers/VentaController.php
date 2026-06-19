@@ -3158,7 +3158,44 @@ class VentaController extends Controller
         }
 
         // Agrega el QR en la posición ajustada
-        $pdf->Image(public_path('qr/qrcode.png'), $imageX, $textY + 5, $imageWidth, $imageHeight, 'PNG');
+        //$pdf->Image(public_path('qr/qrcode.png'), $imageX, $textY + 5, $imageWidth, $imageHeight, 'PNG');
+        $qrPath = public_path('qr/qrcode.png');
+        $logoPath = public_path('img/logoPrincipal.png');
+
+        $qrWidth = 25;
+        $qrHeight = 25;
+
+        $logoWidth = 25;
+        $logoHeight = 25;
+
+        $espacio = 5; // espacio entre logo y QR
+
+        $totalWidth = $logoWidth + $espacio + $qrWidth;
+
+        // Centrar ambos elementos como un bloque
+        $startX = ($pageWidth - $totalWidth) / 2;
+
+        // Logo a la izquierda
+        if (file_exists($logoPath)) {
+            $pdf->Image(
+                $logoPath,
+                $startX,
+                $textY + 5,
+                $logoWidth,
+                $logoHeight,
+                'PNG'
+            );
+        }
+
+        // QR a la derecha
+        $pdf->Image(
+            $qrPath,
+            $startX + $logoWidth + $espacio,
+            $textY + 5,
+            $qrWidth,
+            $qrHeight,
+            'PNG'
+        );
 
         $pdf->Output(public_path('docs/facturaRollo.pdf'), 'F');
 
