@@ -1211,27 +1211,27 @@
                 </div>
               </template>
             </Column>
-            <!--<Column header="Precio Venta" style="width: 130px; text-align: center;">
-                <template #body="slotProps">
-                  <div v-if="slotProps.data.unidad_envase >= 1" class="d-flex flex-column align-items-center">
-                    <InputSwitch v-model="slotProps.data.es_paquete" @change="cambiarModoVenta(slotProps.data)"
-                      style="transform: scale(0.8);" />
-                    <small :style="{ color: slotProps.data.es_paquete ? '#2196F3' : '#689F38', fontWeight: 'bold' }">
-                      {{ slotProps.data.es_paquete ? 'POR PAQUETE' : 'POR UNIDAD' }}
-                    </small>
-                  </div>
-                  <div v-else>
-                    <span class="badge badge-secondary">Unidad Única</span>
-                  </div>
-                </template>
-              </Column>-->
             <Column field="unidades" header="Cantidad a Vender" style="width: 10%" class="column-unidades">
-              <template #body="slotProps">
-                <InputNumber v-model="slotProps.data.cantidad" :min="1" @input="actualizarDetalle(slotProps.index)"
-                  class="p-inputtext-sm input-unidades" style="height: 32px;"
-                  :ref="'inputCantidad_' + slotProps.index" />
-              </template>
-            </Column>
+  <template #body="slotProps">
+    <InputNumber
+      v-model="slotProps.data.cantidad"
+      :min="1"
+      :max="
+        slotProps.data.tipo === 'itemcompuesto'
+          ? slotProps.data.stockCompuesto
+          : slotProps.data.modoVenta === 'caja'
+            ? slotProps.data.stock_cajas
+            : slotProps.data.modoVenta === 'docena'
+              ? Math.floor(slotProps.data.stock / 12)
+              : slotProps.data.stock
+      "
+      @input="actualizarDetalle(slotProps.index)"
+      class="p-inputtext-sm input-unidades"
+      style="height: 32px;"
+      :ref="'inputCantidad_' + slotProps.index"
+    />
+  </template>
+</Column>
             <Column v-if="permitir_ofertas == 1" field="descuento" header="Descuento por Cantidad (Bs)"
               style="width: 10%" class="column-descuento">
               <template #body="slotProps">
@@ -3585,6 +3585,32 @@ export default {
     actualizarDetalle(index) {
       const det = this.arrayDetalle[index];
       if (!det) return;
+
+      // Validar stock máximo
+      let stockDisponible = 0;
+
+      if (det.tipo === 'itemcompuesto') {
+        stockDisponible = Number(det.stockCompuesto || 0);
+      } else if (det.modoVenta === 'caja') {
+        stockDisponible = Number(det.stock_cajas || 0);
+      } else if (det.modoVenta === 'docena') {
+        stockDisponible = Number(det.stock || 0) / 12;
+      } else {
+        stockDisponible = Number(det.stock || 0);
+      }
+
+      if (det.descripcion_fabrica != '1' && Number(det.cantidad) > stockDisponible) {
+        det.cantidad = 1;
+
+        this.$toast.add({
+          severity: 'warn',
+          summary: 'Stock insuficiente',
+          detail: `Solo hay ${stockDisponible} disponibles. La cantidad fue restablecida a 1.`,
+          life: 3000
+        });
+
+        return;
+      }
 
       const prod = this.arrayProductos.find(
         p => p.codigoProducto === det.codigo_producto
