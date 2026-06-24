@@ -163,6 +163,7 @@ class VentaController extends Controller
                 'users.usuario',
                 'personas.nombre as razonSocial',
                 'personas.num_documento as documentoid',
+                'personas.telefono as telefonoCliente',
                 'facturas.id as idFactura',
                 'facturas.numeroFactura',
                 'facturas.cuf',
@@ -304,6 +305,7 @@ class VentaController extends Controller
                 'users.usuario',
                 'personas.nombre as razonSocial',
                 'personas.num_documento as documentoid',
+                'personas.telefono as telefonoCliente',
                 'facturas.id as idFactura',
                 'facturas.numeroFactura',
                 'facturas.cuf',
@@ -441,6 +443,7 @@ class VentaController extends Controller
                 'users.usuario',
                 'personas.nombre as razonSocial',
                 'personas.num_documento as documentoid',
+                'personas.telefono as telefonoCliente',
                 'sucursales.nombre as nombre_sucursal',
                 DB::raw("
                     CASE 
