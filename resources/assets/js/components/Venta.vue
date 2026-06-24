@@ -177,6 +177,18 @@
             <Column field="num_comprobante" header="N° de Comprobante" class="d-none d-md-table-cell"></Column>
             <Column field="razonSocial" header="Cliente"></Column>
             <Column field="documentoid" header="Documento" class="d-none d-md-table-cell"></Column>
+            <Column field="telefonoCliente" header="Teléfono Cliente">
+              <template #body="slotProps">
+                <span v-if="slotProps.data.telefonoCliente">
+                  <i class="pi pi-phone icono-tabla"></i>
+                  {{ slotProps.data.telefonoCliente }}
+                </span>
+                <span v-else style="color:#6c757d;">
+                  <i class="pi pi-minus-circle icono-tabla"></i>
+                  Sin teléfono
+                </span>
+              </template>
+            </Column>
             <Column header="Tipo Pago">
               <template #body="slotProps">
                 <Tag class="tag-mini" :value="slotProps.data.tipo_pago_texto"
@@ -6359,6 +6371,10 @@ if (productoExistente) {
 </script>
 
 <style scoped>
+.icono-tabla {
+    font-size: 0.75rem;
+    margin-right: 4px;
+}
 .info-tip {
   display: flex;
   align-items: center;
