@@ -727,7 +727,7 @@
                               <button type="button" @click="aplicarDescuentoRecibo(1, 1)" class="btn btn-secondary mr-2">
                                 <i class="fa fa-file mr-2"></i> Recibo
                               </button>
-                              <button type="button" @click="aplicarDescuento(1, 1)" class="btn btn-success">
+                              <button type="button" @click="aplicarDescuento(1)" class="btn btn-success">
                                 <i class="fa fa-book mr-2"></i> Facturar
                               </button>
                             </div>
@@ -768,7 +768,7 @@
                           <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-secondary mr-2">
                                 <i class="fa fa-file mr-2"></i> Recibo
                               </button>
-                          <button type="button" @click="aplicarDescuento(1, 7)" class="btn btn-success">
+                          <button type="button" @click="aplicarDescuento(7)" class="btn btn-success">
                             <i class="fa fa-book mr-2"></i> Facturar
                           </button>
                         </div>
@@ -861,7 +861,7 @@
                                 <i class="fa fa-file mr-2"></i> Recibo
                               </button>
 
-                            <button type="button" @click="aplicarDescuento(1, 13)" class="btn btn-success">
+                            <button type="button" @click="aplicarDescuento(13)" class="btn btn-success">
                               <i class="fa fa-book mr-2"></i> Facturar
                             </button>
                           </div>
