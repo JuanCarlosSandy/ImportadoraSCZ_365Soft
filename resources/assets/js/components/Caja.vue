@@ -22,34 +22,10 @@
 
       <DataTable :key="idrol" :value="arrayCaja" :paginator="false" responsiveLayout="scroll"
         class="p-datatable-gridlines p-datatable-sm tabla-caja">
-        <Column header="Sucursal" style="min-width: 130px;">
-          <template #body="slotProps">
-            <div :class="[
-              'celda-sucursal',
-              slotProps.data.estado ? 'sucursal-activa' : 'sucursal-inactiva'
-            ]">
-              {{ slotProps.data.nombre_sucursal }}
-            </div>
-          </template>
-        </Column>
-
-        <Column field="fechaApertura" header="Fecha Apertura" style="min-width: 130px;" />
-        <Column field="fechaCierre" header="Fecha Cierre" style="min-width: 130px;" />
-        <Column field="saldoInicial" header="Saldo Inicial" style="min-width: 110px; text-align: right;" />
-        <Column field="ventasContado" header="Cobros Efectivo" style="min-width: 120px; text-align: right;" />
-        <Column field="ventasQR" header="Cobros QR" style="min-width: 100px; text-align: right;" />
-        <Column field="saldototalventas" header="Cobros Totales" style="min-width: 120px; text-align: right;" />
-        <Column field="depositos" header="Depósitos Extras" style="min-width: 120px; text-align: right;" />
-        <Column field="salidas" header="Salidas Extras" style="min-width: 120px; text-align: right;" />
-        <Column field="saldoCaja" header="Saldo Caja" style="min-width: 120px; text-align: right;" />
-        <Column field="saldoFaltante" header="Saldo Faltante" style="min-width: 120px; text-align: right;" />
-        <Column field="saldoSobrante" header="Saldo Sobrante" style="min-width: 120px; text-align: right;" />
-        <Column v-if="puedeMostrarMontoArqueo" field="monto_arqueo" header="Monto Arqueo" style="min-width: 120px; text-align: right;" />
-        
-        <Column header="Acciones" style="min-width: 200px; text-align: center;">
+        <Column header="Acciones">
           <template #body="slotProps">
             <div v-if="slotProps.data.estado">
-                          <Button 
+              <Button 
                 icon="pi pi-file-pdf" 
                 class="p-button-danger btn-mini"
                 @click="generarReporte(slotProps.data.id)" 
@@ -81,6 +57,30 @@
             </div>
           </template>
         </Column>
+        <Column header="Sucursal" style="min-width: 130px;">
+          <template #body="slotProps">
+            <div :class="[
+              'celda-sucursal',
+              slotProps.data.estado ? 'sucursal-activa' : 'sucursal-inactiva'
+            ]">
+              {{ slotProps.data.nombre_sucursal }}
+            </div>
+          </template>
+        </Column>
+
+        <Column field="fechaApertura" header="Fecha Apertura" style="min-width: 130px;" />
+        <Column field="fechaCierre" header="Fecha Cierre" style="min-width: 130px;" />
+        <Column field="saldoInicial" header="Saldo Inicial" style="min-width: 110px; text-align: right;" />
+        <Column field="ventasContado" header="Cobros Efectivo" style="min-width: 120px; text-align: right;" />
+        <Column field="ventasQR" header="Cobros QR" style="min-width: 100px; text-align: right;" />
+        <Column field="saldototalventas" header="Cobros Totales" style="min-width: 120px; text-align: right;" />
+        <Column field="depositos" header="Depósitos Extras" style="min-width: 120px; text-align: right;" />
+        <Column field="salidas" header="Salidas Extras" style="min-width: 120px; text-align: right;" />
+        <Column field="saldoCaja" header="Saldo Caja" style="min-width: 120px; text-align: right;" />
+        <Column field="saldoFaltante" header="Saldo Faltante" style="min-width: 120px; text-align: right;" />
+        <Column field="saldoSobrante" header="Saldo Sobrante" style="min-width: 120px; text-align: right;" />
+        <Column v-if="puedeMostrarMontoArqueo" field="monto_arqueo" header="Monto Arqueo" style="min-width: 120px; text-align: right;" />
+        
       </DataTable>
       <Paginator :rows="6" :totalRecords="pagination.total" :first="(pagination.current_page - 1) * 6"
         @page="onPageChange" />
@@ -1417,10 +1417,6 @@ async generarReporte(idCaja) {
     padding: 0.3rem;
   }
 
-  .tabla-caja .p-button.btn-mini {
-    transform: scale(0.9);
-    margin: 0 1px;
-  }
 }
 
 /* Arreglar icono de lupa - Centrado perfecto */
@@ -1873,14 +1869,9 @@ async generarReporte(idCaja) {
   }
 }
 
-/* Action Buttons in DataTable */
->>>.p-datatable .p-button {
-  margin-right: 0.25rem;
-}
-
 @media (max-width: 768px) {
   >>>.p-datatable .p-button {
-    margin-right: 0.15rem;
+    margin-right: 0.05rem;
     margin-bottom: 0.15rem;
   }
 }
