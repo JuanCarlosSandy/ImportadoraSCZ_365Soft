@@ -129,10 +129,6 @@
                   color: slotProps.data.descuento_total > 0 ? 'black' : 'white',
                 }" :title="'Ver'" />
 
-                <!--<Button v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'" icon="pi pi-pencil"
-                  class="p-button-sm p-mr-1 btn-mini btn-negro" title="Editar" @click="editarVenta(slotProps.data)"
-                  v-tooltip.top="'Editar'" />-->
-
                 <!-- Botón eliminar si estado = 1 -->
                 <template v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'">
                   <Button icon="pi pi-trash" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
@@ -144,14 +140,6 @@
                 <Button icon="pi pi-print" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
                   @click="imprimirResivo(slotProps.data.id, slotProps.data.correo)" class="p-button-primary  btn-mini"
                   :title="'Recibo'" />
-                <!--<Button icon="pi pi-print" @click="imprimirRemision(slotProps.data.id, slotProps.data.correo)"
-                  class="p-button-help btn-mini" v-tooltip.top="'Remisión'" />
-                
-                <template v-if="slotProps.data.idtipo_venta == 2 && slotProps.data.estado === '2'">
-                  <Button label="Cobrar" icon="pi pi-wallet" class="p-button-sm p-button-warning p-mr-1 btn-mini"
-                    @click="abrirModalCobro(slotProps.data)" />
-                </template>
-                -->
 
                 <!-- Botones para FACTURA -->
                 <template v-if="slotProps.data.tipo_comprobante === 'FACTURA'">
@@ -5823,22 +5811,76 @@ if (productoExistente) {
     },
 
     imprimirFactura(id) {
+
+      const esCelular = window.innerWidth <= 768;
+
+      // 📱 Activar loading solamente en celular
+      if (esCelular) {
+        this.isLoading = true;
+      }
+
       axios
         .get("/factura/imprimirRollo/" + id)
-        .then(function (response) {
+        .then((response) => {
+
           const fileURL = response.data.url;
-          const newWindow = window.open(fileURL, "_blank");
-          if (newWindow) {
-            newWindow.focus();
-          } else {
-            console.log(
-              "No se pudo abrir una nueva pestaña, asegúrate de que los pop-ups no están bloqueados."
-            );
+
+          // 📱 CELULAR
+          if (esCelular) {
+
+            // Descargar inmediatamente
+            const link = document.createElement("a");
+            link.href = fileURL;
+            link.download = "factura.pdf";
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Detener loading
+            this.isLoading = false;
+
+            // Aviso
+            swal({
+              title: "Factura descargada",
+              text: "La factura se está descargando en tu dispositivo.",
+              icon: "success",
+              button: "OK"
+            });
+
           }
-          console.log("Se generó la factura en Rollo correctamente");
+
+          // 💻 PC
+          else {
+
+            const newWindow = window.open(fileURL, "_blank");
+
+            if (newWindow) {
+              newWindow.focus();
+            } else {
+              console.log(
+                "No se pudo abrir una nueva pestaña, asegúrate de que los pop-ups no estén bloqueados."
+              );
+            }
+
+            console.log("Factura abierta correctamente");
+          }
         })
-        .catch(function (error) {
+        .catch((error) => {
+
           console.log(error);
+
+          // Detener loading solamente si era celular
+          if (esCelular) {
+            this.isLoading = false;
+          }
+
+          swal({
+            title: "Error",
+            text: "No se pudo generar la factura.",
+            icon: "error",
+            button: "OK"
+          });
         });
     },
 
