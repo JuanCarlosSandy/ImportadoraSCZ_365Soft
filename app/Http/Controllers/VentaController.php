@@ -2634,26 +2634,37 @@ class VentaController extends Controller
 
 
     public function formato_xml($temporal, $xml_temporal)
-    {
-        $ns_xsi = "http://www.w3.org/2001/XMLSchema-instance";
-        foreach ($temporal as $key => $value) {
-            if (is_array($value)) {
-                if (!is_numeric($key)) {
-                    $subnodo = $xml_temporal->addChild("$key");
-                    $this->formato_xml($value, $subnodo);
-                } else {
-                    $this->formato_xml($value, $xml_temporal);
-                }
+{
+    $ns_xsi = "http://www.w3.org/2001/XMLSchema-instance";
+
+    foreach ($temporal as $key => $value) {
+
+        if (is_array($value)) {
+
+            if (!is_numeric($key)) {
+                $subnodo = $xml_temporal->addChild("$key");
+                $this->formato_xml($value, $subnodo);
             } else {
-                if ($value == null && $value <> '0') {
-                    $hijo = $xml_temporal->addChild("$key", "$value");
-                    $hijo->addAttribute('xsi:nil', 'true', $ns_xsi);
-                } else {
-                    $xml_temporal->addChild("$key", "$value");
-                }
+                $this->formato_xml($value, $xml_temporal);
+            }
+
+        } else {
+
+            if ($value == null && $value <> '0') {
+
+                $hijo = $xml_temporal->addChild("$key");
+                $hijo->addAttribute('xsi:nil', 'true', $ns_xsi);
+
+            } else {
+
+                $xml_temporal->addChild(
+                    "$key",
+                    htmlspecialchars((string) $value, ENT_XML1, 'UTF-8')
+                );
             }
         }
     }
+}
 
 
     public function registroEventoSignificativo(Request $request)
