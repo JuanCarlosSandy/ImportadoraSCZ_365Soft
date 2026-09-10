@@ -3825,8 +3825,39 @@ export default {
       this.buscarVenta();
     },
 
+    async listarVentaR(page, buscar, criterio) {
+      try {
+        let url = `/ventaReporte?page=${page}&buscar=${buscar}&criterio=${criterio}`;
+
+        if (this.filtroSucursal) {
+          url += `&sucursal_id=${this.filtroSucursal}`;
+        }
+
+        if (this.fechaInicio) {
+          url += `&fecha_inicio=${this.fechaInicio}`;
+        }
+
+        if (this.fechaFin) {
+          url += `&fecha_fin=${this.fechaFin}`;
+        }
+
+        console.log("URL generada:", url);
+
+        const response = await axios.get(url);
+        const respuesta = response.data;
+
+        this.arrayVenta = respuesta.ventas.data;
+        this.pagination = respuesta.pagination;
+
+      } catch (error) {
+        console.error("Error al listar ventas:", error);
+        throw error;
+      }
+    },
+
     listarVentaF(page, buscar, criterio) {
       let me = this;
+
       var url =
         "/ventaReporteFactura?page=" +
         page +
@@ -3834,30 +3865,34 @@ export default {
         buscar +
         "&criterio=" +
         criterio;
+
+      if (this.filtroSucursal) {
+        url += `&sucursal_id=${this.filtroSucursal}`;
+      }
+
+      if (this.fechaInicio) {
+        url += `&fecha_inicio=${this.fechaInicio}`;
+      }
+
+      if (this.fechaFin) {
+        url += `&fecha_fin=${this.fechaFin}`;
+      }
+
+      console.log("URL generada:", url);
+
       axios
         .get(url)
         .then(function (response) {
           var respuesta = response.data;
+
           me.arrayVenta = respuesta.ventas.data;
           me.pagination = respuesta.pagination;
-          console.log("lista: ", me.arrayVenta);
+
+          console.log("lista:", me.arrayVenta);
         })
         .catch(function (error) {
           console.log(error);
         });
-    },
-
-    async listarVentaR(page, buscar, criterio) {
-      try {
-        const url = `/ventaReporte?page=${page}&buscar=${buscar}&criterio=${criterio}`;
-        const response = await axios.get(url);
-        const respuesta = response.data;
-        this.arrayVenta = respuesta.ventas.data;
-        this.pagination = respuesta.pagination;
-      } catch (error) {
-        console.error("Error al listar ventas:", error);
-        throw error; // Re-lanzar el error para manejarlo en mounted
-      }
     },
     async listarVentaPorTipo(page, buscar = '', criterio = '', tipoVenta) {
       try {
