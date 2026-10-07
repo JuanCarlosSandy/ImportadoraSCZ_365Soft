@@ -7,126 +7,55 @@
       </div>
     </div>
     <template #header>
-      <div
-        style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
-      >
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <i class="pi pi-bars panel-icon"></i>
           <h4 class="panel-title" style="margin: 0;">PRODUCTOS CON BAJO STOCK</h4>
         </div>
         <div class="botones-export">
-          <Button
-            icon="pi pi-file"
-            label="PDF"
-            class="p-button-secondary p-button-sm bt-pdf btn-sm"
-            @click="exportarPDF"
-          />
-          <Button
-            icon="pi pi-table"
-            label="Excel"
-            class="p-button-secondary p-button-sm bt-ex btn-sm"
-            @click="cargarExcel"
-          />
+          <Button icon="pi pi-file" label="PDF" class="p-button-secondary p-button-sm bt-pdf btn-sm"
+            @click="exportarPDF" />
+          <Button icon="pi pi-table" label="Excel" class="p-button-secondary p-button-sm bt-ex btn-sm"
+            @click="cargarExcel" />
         </div>
       </div>
     </template>
 
-    <div
-      class="filters-container"
-      style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;"
-    >
-      <div
-        class="p-fluid grid formgrid"
-        style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;"
-      >
+    <div class="filters-container"
+      style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
+      <div class="p-fluid grid formgrid" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
-          <label for="almacen" style="font-weight: bold; font-size: 0.9rem;"
-            >Seleccionar Almacén</label
-          >
-          <Dropdown
-            id="almacen"
-            v-model="filtros.almacen_id"
-            :options="arrayAlmacenes"
-            optionLabel="nombre_almacen"
-            optionValue="id"
-            placeholder="Todos los almacenes"
-            showClear
-            @change="listarInventario(1)"
-            class="dropdown-full"
-          />
+          <label for="almacen" style="font-weight: bold; font-size: 0.9rem;">Seleccionar Almacén</label>
+          <Dropdown id="almacen" v-model="filtros.almacen_id" :options="arrayAlmacenes" optionLabel="nombre_almacen"
+            optionValue="id" placeholder="Todos los almacenes" showClear @change="listarInventario(1)"
+            class="dropdown-full" />
         </div>
 
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
-          <label for="laboratorio" style="font-weight: bold; font-size: 0.9rem;"
-            >Buscar Proveedor</label
-          >
-          <InputText
-            id="laboratorio"
-            v-model="filtros.laboratorio"
-            placeholder="Escribe para buscar..."
-            class="input-full p-inputtext-sm"
-            @input="buscarConRetraso"
-          />
+          <label for="medicamento" style="font-weight: bold; font-size: 0.9rem;">Buscar Producto</label>
+          <InputText id="medicamento" v-model="filtros.medicamento" placeholder="Escribe para buscar..."
+            class="input-full p-inputtext-sm" @input="buscarConRetraso" />
         </div>
 
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
-          <label for="medicamento" style="font-weight: bold; font-size: 0.9rem;"
-            >Buscar Producto</label
-          >
-          <InputText
-            id="medicamento"
-            v-model="filtros.medicamento"
-            placeholder="Escribe para buscar..."
-            class="input-full p-inputtext-sm"
-            @input="buscarConRetraso"
-          />
-        </div>
-
-        <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
-          <label for="codigo" style="font-weight: bold; font-size: 0.9rem;"
-            >Código de Producto</label
-          >
-          <InputText
-            id="codigo"
-            v-model="filtros.codigo"
-            placeholder="Escribe código..."
-            class="input-full p-inputtext-sm"
-            @input="buscarConRetraso"
-          />
+          <label for="codigo" style="font-weight: bold; font-size: 0.9rem;">Código de Producto</label>
+          <InputText id="codigo" v-model="filtros.codigo" placeholder="Escribe código..."
+            class="input-full p-inputtext-sm" @input="buscarConRetraso" />
         </div>
 
         <div style="display: flex;">
-          <Button
-            icon="pi pi-filter-slash"
-            class="p-button-help p-button-sm p-button-outlined btn-sm-input"
-            @click="resetFiltros"
-            title="Limpiar todos los filtros"
-            label="Limpiar"
-          />
+          <Button icon="pi pi-filter-slash" class="p-button-help p-button-sm p-button-outlined btn-sm-input"
+            @click="resetFiltros" title="Limpiar todos los filtros" label="Limpiar" />
         </div>
       </div>
     </div>
 
-    <DataTable
-      :value="arrayInventario"
-      :rowClass="getRowClass"
-      responsiveLayout="scroll"
-      stripedRows
-      rowGroupMode="subheader"
-      groupRowsBy="nombre_almacen"
-      sortMode="single"
-      sortField="nombre_almacen"
-      :sortOrder="1"
-      class="p-datatable-sm p-datatable-gridlines tabla-pro"
-    >
+    <DataTable :value="arrayInventario" :rowClass="getRowClass" responsiveLayout="scroll" stripedRows
+      rowGroupMode="subheader" groupRowsBy="nombre_almacen" sortMode="single" sortField="nombre_almacen" :sortOrder="1"
+      class="p-datatable-sm p-datatable-gridlines tabla-pro">
       <template #groupheader="slotProps">
-        <div
-          style="display: flex; align-items: center; gap: 10px; padding: 10px; background-color: #e9ecef;"
-        >
-          <i
-            class="pi pi-building"
-            style="font-size: 1.2rem; color: #495057;"
-          ></i>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background-color: #e9ecef;">
+          <i class="pi pi-building" style="font-size: 1.2rem; color: #495057;"></i>
           <span style="font-weight: bold; font-size: 1.1rem; color: #495057;">
             {{ slotProps.data.nombre_almacen }}
           </span>
@@ -135,13 +64,8 @@
 
       <Column field="codigo" header="Código"></Column>
       <Column field="nombre_producto" header="Producto"></Column>
-      <Column field="nombre_proveedor" header="Proveedor">
-        <template #body="slotProps">
-          <span>
-            {{ slotProps.data.nombre_proveedor || "Sin proveedor" }}
-          </span>
-        </template>
-      </Column>
+            <Column field="stock_almacen_2" header="Stock Deposito"></Column>
+
       <Column field="stock" header="Stock Minimo">
         <template #body="slotProps">
           <span style="font-weight: bold; font-size: 1.1em;">
@@ -160,29 +84,14 @@
 
       <Column header="Estado">
         <template #body="slotProps">
-          <Tag
-            v-if="Number(slotProps.data.saldo_stock) === 0"
-            severity="danger"
-            icon="pi pi-times-circle"
-            value="Sin Stock"
-            class="tag-mini"
-          />
-          <Tag
-            v-else
-            severity="warning"
-            icon="pi pi-exclamation-triangle"
-            value="Bajo Stock"
-            class="tag-mini"
-          />
+          <Tag v-if="Number(slotProps.data.saldo_stock) === 0" severity="danger" icon="pi pi-times-circle"
+            value="Sin Stock" class="tag-mini" />
+          <Tag v-else severity="warning" icon="pi pi-exclamation-triangle" value="Bajo Stock" class="tag-mini" />
         </template>
       </Column>
     </DataTable>
-    <Paginator
-      :rows="pagination.per_page"
-      :totalRecords="pagination.total"
-      :first="(pagination.current_page - 1) * pagination.per_page"
-      @page="onPageChange"
-    />
+    <Paginator :rows="pagination.per_page" :totalRecords="pagination.total"
+      :first="(pagination.current_page - 1) * pagination.per_page" @page="onPageChange" />
   </Panel>
 </template>
 
@@ -212,7 +121,7 @@ export default {
   },
   data() {
     return {
-            isLoading: false,
+      isLoading: false,
 
       mostrarLabel: true,
       arrayInventario: [],
@@ -511,13 +420,17 @@ export default {
 .bt-pdf,
 .bt-ex {
   /* o el verde */
-  border: 2px solid transparent; /* 👈 ya reserva el espacio */
-  box-sizing: border-box; /* evita que crezca */
+  border: 2px solid transparent;
+  /* 👈 ya reserva el espacio */
+  box-sizing: border-box;
+  /* evita que crezca */
   transform: none;
 }
+
 .bt-pdf {
   background-color: rgb(220, 53, 69);
 }
+
 .bt-ex {
   background-color: rgb(40, 167, 69);
 }
@@ -590,40 +503,40 @@ export default {
 }
 
 /* Panel Content Spacing */
->>> .p-panel .p-panel-content {
+>>>.p-panel .p-panel-content {
   padding: 1rem;
 }
 
->>> .p-panel .p-panel-header {
+>>>.p-panel .p-panel-header {
   padding: 0.75rem 1rem;
   background: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
 }
 
->>> .p-panel .p-panel-header .p-panel-title {
+>>>.p-panel .p-panel-header .p-panel-title {
   font-weight: 600;
 }
 
 /* Responsive Dialog Styles */
-.responsive-dialog >>> .p-dialog {
+.responsive-dialog>>>.p-dialog {
   margin: 0.75rem;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   overflow-x: auto;
   padding: 0.75rem 1rem;
   /* Reducido padding vertical */
 }
 
-.responsive-dialog >>> .p-dialog-header {
+.responsive-dialog>>>.p-dialog-header {
   padding: 0.75rem 1.5rem;
   /* Reducido padding vertical */
   font-size: 1.1rem;
 }
 
-.responsive-dialog >>> .p-dialog-footer {
+.responsive-dialog>>>.p-dialog-footer {
   padding: 0.5rem 1.5rem;
   /* Reducido padding vertical */
   gap: 0.5rem;
@@ -659,18 +572,18 @@ export default {
 }
 
 /* Formulario compacto - Reducir espacios entre campos */
-.form-compact >>> .p-field {
+.form-compact>>>.p-field {
   margin-bottom: 0.25rem !important;
   /* Reducido de 0.5rem a 0.25rem */
 }
 
->>> .p-fluid .p-field {
+>>>.p-fluid .p-field {
   margin-bottom: 0.25rem;
   /* Reducido de 0.5rem a 0.25rem */
 }
 
 /* Reducir padding del contenedor del diálogo */
-.responsive-dialog >>> .p-dialog-content {
+.responsive-dialog>>>.p-dialog-content {
   padding: 0.75rem 1rem !important;
   /* Reducido padding vertical */
 }
@@ -733,22 +646,22 @@ export default {
 }
 
 /* SweetAlert z-index para que aparezca por encima de los diálogos */
->>> .swal2-container {
+>>>.swal2-container {
   z-index: 99999 !important;
 }
 
->>> .swal2-popup {
+>>>.swal2-popup {
   z-index: 99999 !important;
 }
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.5rem;
     max-height: 95vh;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.85rem;
   }
 }
@@ -759,23 +672,23 @@ export default {
     display: none;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.25rem;
     max-height: 98vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.5rem 0.75rem;
     /* Más compacto en móviles */
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.5rem 1rem;
     /* Reducido padding vertical */
     font-size: 1rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.4rem 1rem;
     /* Reducido padding vertical */
     justify-content: flex-end;
@@ -785,28 +698,28 @@ export default {
     gap: 0.5rem;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.8rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.4rem 0.3rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.5rem 0.3rem;
     font-size: 0.75rem;
   }
 
   /* Ajustar botones en móviles */
-  >>> .p-button-sm {
+  >>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
     min-width: auto !important;
   }
 
   /* Ajustar botón "Nuevo" para que coincida con otros botones */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -826,9 +739,9 @@ export default {
     font-size: 0.6rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
@@ -847,29 +760,29 @@ export default {
     display: none;
   }
 
-  .responsive-dialog >>> .p-dialog {
+  .responsive-dialog>>>.p-dialog {
     margin: 0.1rem;
     max-height: 99vh;
   }
 
-  .responsive-dialog >>> .p-dialog-content {
+  .responsive-dialog>>>.p-dialog-content {
     padding: 0.4rem 0.5rem;
     /* Más compacto en móviles extra pequeños */
   }
 
-  .responsive-dialog >>> .p-dialog-header {
+  .responsive-dialog>>>.p-dialog-header {
     padding: 0.4rem 0.75rem;
     /* Reducido padding vertical */
     font-size: 0.95rem;
   }
 
-  .responsive-dialog >>> .p-dialog-footer {
+  .responsive-dialog>>>.p-dialog-footer {
     padding: 0.3rem 0.75rem;
     /* Reducido padding vertical */
     justify-content: flex-end;
   }
 
-  .responsive-dialog >>> .p-dialog-footer .p-button {
+  .responsive-dialog>>>.p-dialog-footer .p-button {
     width: auto;
     margin-bottom: 0.25rem;
   }
@@ -891,7 +804,7 @@ export default {
   }
 
   /* Ajustar botones para que coincidan */
-  .toolbar >>> .p-button-sm {
+  .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
@@ -902,15 +815,15 @@ export default {
     font-size: 0.8rem !important;
   }
 
-  >>> .p-datatable {
+  >>>.p-datatable {
     font-size: 0.75rem;
   }
 
-  >>> .p-datatable .p-datatable-tbody > tr > td {
+  >>>.p-datatable .p-datatable-tbody>tr>td {
     padding: 0.3rem 0.2rem;
   }
 
-  >>> .p-datatable .p-datatable-thead > tr > th {
+  >>>.p-datatable .p-datatable-thead>tr>th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
   }
@@ -924,14 +837,14 @@ export default {
     font-size: 0.55rem;
   }
 
-  >>> .p-inputtext,
-  >>> .p-dropdown,
-  >>> .p-inputnumber-input {
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
     font-size: 0.85rem;
     padding: 0.4rem;
   }
 
-  >>> .p-tag {
+  >>>.p-tag {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
@@ -946,18 +859,18 @@ export default {
 
 /* Paginator Responsive */
 @media (max-width: 768px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     flex-wrap: wrap !important;
     justify-content: center;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 32px !important;
     height: 32px !important;
     font-size: 0.85rem !important;
@@ -967,16 +880,16 @@ export default {
 }
 
 @media (max-width: 480px) {
-  >>> .p-paginator {
+  >>>.p-paginator {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
 
-  >>> .p-paginator .p-paginator-page,
-  >>> .p-paginator .p-paginator-next,
-  >>> .p-paginator .p-paginator-prev,
-  >>> .p-paginator .p-paginator-first,
-  >>> .p-paginator .p-paginator-last {
+  >>>.p-paginator .p-paginator-page,
+  >>>.p-paginator .p-paginator-next,
+  >>>.p-paginator .p-paginator-prev,
+  >>>.p-paginator .p-paginator-first,
+  >>>.p-paginator .p-paginator-last {
     min-width: 28px !important;
     height: 28px !important;
     font-size: 0.8rem !important;
@@ -986,18 +899,18 @@ export default {
 }
 
 /* Action Buttons in DataTable */
->>> .p-datatable .p-button {
+>>>.p-datatable .p-button {
   margin-right: 0.25rem;
 }
 
 @media (max-width: 768px) {
-  >>> .p-datatable .p-button {
+  >>>.p-datatable .p-button {
     margin-right: 0.15rem;
     margin-bottom: 0.15rem;
   }
 }
 
->>> .p-fileupload .p-button.p-fileupload-choose {
+>>>.p-fileupload .p-button.p-fileupload-choose {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
   color: #ffffff !important;
@@ -1005,32 +918,30 @@ export default {
 }
 
 /* Efecto hover */
->>> .p-fileupload .p-button.p-fileupload-choose:enabled:hover {
+>>>.p-fileupload .p-button.p-fileupload-choose:enabled:hover {
   background-color: #16a34a !important;
   border-color: #16a34a !important;
 }
 
 /* Efecto focus */
->>> .p-fileupload .p-button.p-fileupload-choose:focus {
+>>>.p-fileupload .p-button.p-fileupload-choose:focus {
   box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.5) !important;
 }
 
 /* Efecto active (cuando se hace clic) */
->>> .p-fileupload .p-button.p-fileupload-choose:enabled:active {
+>>>.p-fileupload .p-button.p-fileupload-choose:enabled:active {
   background-color: #15803d !important;
   border-color: #15803d !important;
 }
 
 /* Estilo cuando está deshabilitado */
->>> .p-fileupload .p-button.p-fileupload-choose:disabled {
+>>>.p-fileupload .p-button.p-fileupload-choose:disabled {
   background-color: #22c55e !important;
   border-color: #22c55e !important;
   opacity: 0.6;
 }
 
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose) {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose) {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
@@ -1038,38 +949,30 @@ export default {
 }
 
 /* Efecto hover */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):enabled:hover {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
 }
 
 /* Efecto focus */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):focus {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):focus {
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
 }
 
 /* Efecto active (cuando se hace clic) */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):enabled:active {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):enabled:active {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
 }
 
 /* Estilo cuando está deshabilitado */
->>> .p-fileupload
-  .p-fileupload-buttonbar
-  .p-button.p-component:not(.p-fileupload-choose):disabled {
+>>>.p-fileupload .p-fileupload-buttonbar .p-button.p-component:not(.p-fileupload-choose):disabled {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   opacity: 0.6;
 }
 
->>> .p-fileupload .p-fileupload-files .p-button {
+>>>.p-fileupload .p-fileupload-files .p-button {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
@@ -1077,39 +980,39 @@ export default {
 }
 
 /* Efecto hover */
->>> .p-fileupload .p-fileupload-files .p-button:enabled:hover {
+>>>.p-fileupload .p-fileupload-files .p-button:enabled:hover {
   background: #dc2626 !important;
   border-color: #dc2626 !important;
 }
 
 /* Efecto focus */
->>> .p-fileupload .p-fileupload-files .p-button:focus {
+>>>.p-fileupload .p-fileupload-files .p-button:focus {
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.5) !important;
 }
 
 /* Efecto active (cuando se hace clic) */
->>> .p-fileupload .p-fileupload-files .p-button:enabled:active {
+>>>.p-fileupload .p-fileupload-files .p-button:enabled:active {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
 }
 
 /* Estilo cuando está deshabilitado */
->>> .p-fileupload .p-fileupload-files .p-button:disabled {
+>>>.p-fileupload .p-fileupload-files .p-button:disabled {
   background: #ef4444 !important;
   border-color: #ef4444 !important;
   opacity: 0.6;
 }
 
 /* Asegurar que el icono dentro del botón también sea blanco */
->>> .p-fileupload .p-fileupload-files .p-button .p-button-icon {
+>>>.p-fileupload .p-fileupload-files .p-button .p-button-icon {
   color: #ffffff !important;
 }
 
->>> .p-fileupload-row > div:first-child {
+>>>.p-fileupload-row>div:first-child {
   display: none !important;
 }
 
->>> .p-dialog .p-dialog-content {
+>>>.p-dialog .p-dialog-content {
   padding: 0 1.5rem 1.5rem 1.5rem;
 }
 

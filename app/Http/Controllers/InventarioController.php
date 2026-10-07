@@ -291,23 +291,56 @@ class InventarioController extends Controller
     }
     public function productosBajoStock(Request $request)
     {
-        if (!$request->ajax())
+        if (!$request->ajax()) {
             return redirect('/');
+        }
 
-        $usuario = \Auth::user(); // Usuario logueado
+        $usuario = \Auth::user();
         $buscar = $request->buscar;
         $criterio = $request->criterio;
-
         $almacen_id = $request->almacen_id;
         $medicamento = $request->medicamento;
         $laboratorio = $request->laboratorio;
         $codigo = trim((string) $request->codigo);
-        $codigo = trim((string) $request->codigo);
 
-        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-            ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
+        $query = Inventario::join(
+            'almacens',
+            'inventarios.idalmacen',
+            '=',
+            'almacens.id'
+        )
+            ->join(
+                'articulos',
+                'inventarios.idarticulo',
+                '=',
+                'articulos.id'
+            )
+            ->leftJoin(
+                'proveedores',
+                'articulos.idproveedor',
+                '=',
+                'proveedores.id'
+            )
+            ->leftJoin(
+                'personas',
+                'proveedores.id',
+                '=',
+                'personas.id'
+            )
+            // Stock del producto en el almacén con ID 2
+            ->leftJoin(
+                DB::raw('(
+                SELECT
+                    idarticulo,
+                    SUM(saldo_stock) AS stock_almacen_2
+                FROM inventarios
+                WHERE idalmacen = 2
+                GROUP BY idarticulo
+            ) AS inventario_almacen_2'),
+                'inventario_almacen_2.idarticulo',
+                '=',
+                'inventarios.idarticulo'
+            )
             ->select(
                 'inventarios.idarticulo',
                 'inventarios.idalmacen',
@@ -318,8 +351,9 @@ class InventarioController extends Controller
                 'articulos.unidad_envase',
                 'articulos.stock',
                 'articulos.precio_costo_unid',
-                DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
-                \DB::raw('SUM(inventarios.saldo_stock) as saldo_stock')
+                DB::raw("COALESCE(MAX(personas.nombre), 'Sin proveedor') as nombre_proveedor"),
+                DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
+                DB::raw('COALESCE(inventario_almacen_2.stock_almacen_2, 0) as stock_almacen_2')
             )
             ->groupBy(
                 'inventarios.idarticulo',
@@ -331,42 +365,67 @@ class InventarioController extends Controller
                 'articulos.unidad_envase',
                 'articulos.stock',
                 'articulos.precio_costo_unid',
-                DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
+                'inventario_almacen_2.stock_almacen_2'
             )
-            ->havingRaw('articulos.stock > SUM(inventarios.saldo_stock)');
+            ->havingRaw(
+                'articulos.stock > SUM(inventarios.saldo_stock)'
+            );
 
-
-        // ✅ Filtrar por sucursal del usuario (solo si no es rol 4)
+        // Filtrar por sucursal del usuario
         if ($usuario->idrol != 4) {
-            $query->where('almacens.sucursal', $usuario->idsucursal);
+            $query->where(
+                'almacens.sucursal',
+                $usuario->idsucursal
+            );
         }
 
-
+        // Búsqueda general
         if ($buscar != '') {
-            $query->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
+            $query->where(
+                'inventarios.' . $criterio,
+                'like',
+                '%' . $buscar . '%'
+            );
         }
 
+        // Almacén
         if (!empty($almacen_id)) {
-            $query->where('inventarios.idalmacen', $almacen_id);
+            $query->where(
+                'inventarios.idalmacen',
+                $almacen_id
+            );
         }
 
-
+        // Medicamento
         if (!empty($medicamento)) {
-            $query->where('articulos.nombre', 'like', '%' . $medicamento . '%');
+            $query->where(
+                'articulos.nombre',
+                'like',
+                '%' . $medicamento . '%'
+            );
         }
 
-
+        // Laboratorio / proveedor
         if (!empty($laboratorio)) {
-            $query->whereRaw("COALESCE(personas.nombre, 'Sin proveedor') like ?", ['%' . $laboratorio . '%']);
+            $query->whereRaw(
+                "COALESCE(personas.nombre, 'Sin proveedor') like ?",
+                ['%' . $laboratorio . '%']
+            );
         }
 
+        // Código
         if ($codigo !== '') {
-            $query->where('articulos.codigo', 'like', '%' . $codigo . '%');
+            $query->where(
+                'articulos.codigo',
+                'like',
+                '%' . $codigo . '%'
+            );
         }
 
         $inventarios = $query
+            ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
             ->orderBy('almacens.nombre_almacen', 'asc')
-            ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc")
+            ->orderBy('articulos.nombre', 'asc')
             ->paginate(6);
 
         return [
@@ -999,17 +1058,17 @@ class InventarioController extends Controller
             }
 
             $inventarios = $query->groupBy(
-    'articulos.id',
-    'articulos.codigo',
-    'articulos.nombre',
-    'categorias.nombre',
-    'proveedores.contacto',
-    'articulos.unidad_envase'
-)
-    ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
-    ->orderBy('categorias.nombre')
-    ->orderBy('articulos.nombre')
-    ->get();
+                'articulos.id',
+                'articulos.codigo',
+                'articulos.nombre',
+                'categorias.nombre',
+                'proveedores.contacto',
+                'articulos.unidad_envase'
+            )
+                ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
+                ->orderBy('categorias.nombre')
+                ->orderBy('articulos.nombre')
+                ->get();
         } else {
             // Modo lote
             $query = \DB::table('articulos')
@@ -1229,12 +1288,45 @@ class InventarioController extends Controller
         $buscar = $request->buscar;
         $criterio = $request->criterio;
 
-        // 2. CONSULTA (Copiada EXACTA de tu función productosBajoStock)
-        // Quitamos los GROUP BY y SUM sql, usamos la lógica fila por fila
-        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-            ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
+        // 2. CONSULTA
+        $query = Inventario::join(
+            'almacens',
+            'inventarios.idalmacen',
+            '=',
+            'almacens.id'
+        )
+            ->join(
+                'articulos',
+                'inventarios.idarticulo',
+                '=',
+                'articulos.id'
+            )
+            ->leftJoin(
+                'proveedores',
+                'articulos.idproveedor',
+                '=',
+                'proveedores.id'
+            )
+            ->leftJoin(
+                'personas',
+                'proveedores.id',
+                '=',
+                'personas.id'
+            )
+            // Stock del producto en el almacén con ID 2
+            ->leftJoin(
+                DB::raw('(
+                SELECT
+                    idarticulo,
+                    SUM(saldo_stock) AS stock_almacen_2
+                FROM inventarios
+                WHERE idalmacen = 2
+                GROUP BY idarticulo
+            ) AS inventario_almacen_2'),
+                'inventario_almacen_2.idarticulo',
+                '=',
+                'inventarios.idarticulo'
+            )
             ->select(
                 'inventarios.idarticulo',
                 'inventarios.idalmacen',
@@ -1245,7 +1337,8 @@ class InventarioController extends Controller
                 'articulos.unidad_envase',
                 'articulos.stock as stock_minimo',
                 DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
-                DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor")
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
+                DB::raw('COALESCE(inventario_almacen_2.stock_almacen_2, 0) as stock_almacen_2')
             )
             ->groupBy(
                 'inventarios.idarticulo',
@@ -1256,61 +1349,107 @@ class InventarioController extends Controller
                 'articulos.nombre',
                 'articulos.unidad_envase',
                 'articulos.stock',
-                DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor')"),
+                'inventario_almacen_2.stock_almacen_2'
             )
-            ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
+            ->havingRaw(
+                'SUM(inventarios.saldo_stock) <= articulos.stock'
+            );
 
         // 3. APLICAR LOS MISMOS FILTROS
+
         $usuario = \Auth::user();
+
         if ($usuario->idrol != 4) {
-            $query->where('almacens.sucursal', $usuario->idsucursal);
+            $query->where(
+                'almacens.sucursal',
+                $usuario->idsucursal
+            );
         }
 
-        // Filtros del buscador nuevo
+        // Filtro almacén
         if (!empty($almacen_id) && $almacen_id !== 'null') {
-            $query->where('inventarios.idalmacen', $almacen_id);
+            $query->where(
+                'inventarios.idalmacen',
+                $almacen_id
+            );
         }
+
+        // Filtro medicamento
         if (!empty($medicamento) && $medicamento !== 'null') {
-            $query->where('articulos.nombre', 'like', '%' . $medicamento . '%');
+            $query->where(
+                'articulos.nombre',
+                'like',
+                '%' . $medicamento . '%'
+            );
         }
+
+        // Filtro laboratorio / proveedor
         if (!empty($laboratorio) && $laboratorio !== 'null') {
-            $query->whereRaw("COALESCE(personas.nombre, 'Sin proveedor') like ?", ['%' . $laboratorio . '%']);
+            $query->whereRaw(
+                "COALESCE(personas.nombre, 'Sin proveedor') like ?",
+                ['%' . $laboratorio . '%']
+            );
         }
+
+        // Filtro código
         if (!empty($codigo) && $codigo !== 'null') {
-            $query->where('articulos.codigo', 'like', '%' . $codigo . '%');
+            $query->where(
+                'articulos.codigo',
+                'like',
+                '%' . $codigo . '%'
+            );
         }
 
         // Filtro legacy (buscador antiguo)
         if (!empty($buscar)) {
-            $query->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
+            $query->where(
+                'inventarios.' . $criterio,
+                'like',
+                '%' . $buscar . '%'
+            );
         }
 
-        // 4. OBTENER DATOS (Sin paginar)
-        $data = $query->orderBy('almacens.nombre_almacen', 'asc')
-            ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc")
+        // 4. OBTENER DATOS
+        // Ordenado de menor a mayor stock
+        $data = $query
+            ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
+            ->orderBy('almacens.nombre_almacen', 'asc')
+            ->orderBy('articulos.nombre', 'asc')
             ->get();
 
         // 5. AGRUPAR PARA EL PDF (Visualmente)
-        // Esto no filtra datos, solo los organiza para que el PDF dibuje los títulos
         $inventarios = $data->groupBy('nombre_almacen');
 
         // --- GENERACIÓN DEL PDF ---
+
         $pdf = new PDFBajoStockReporte('L', 'mm', 'A4');
+
         $pdf->AliasNbPages();
+
         $pdf->SetMargins(10, 10, 10);
+
         $pdf->SetAutoPageBreak(true, 20);
+
         $nombreAlmacenFiltro = 'Todos';
+
         if (!empty($almacen_id) && $almacen_id !== 'null') {
-            $nombreAlmacenFiltro = \DB::table('almacens')->where('id', $almacen_id)->value('nombre_almacen') ?? $almacen_id;
+            $nombreAlmacenFiltro = \DB::table('almacens')
+                ->where('id', $almacen_id)
+                ->value('nombre_almacen') ?? $almacen_id;
         }
 
         $proveedorFiltro = !empty($request->proveedor) && $request->proveedor !== 'null'
             ? $request->proveedor
-            : ((!empty($laboratorio) && $laboratorio !== 'null') ? $laboratorio : 'Todos');
+            : ((!empty($laboratorio) && $laboratorio !== 'null')
+                ? $laboratorio
+                : 'Todos');
 
         $busquedaFiltro = !empty($request->producto) && $request->producto !== 'null'
             ? $request->producto
-            : ((!empty($medicamento) && $medicamento !== 'null') ? $medicamento : 'Ninguna');
+            : ((!empty($medicamento) && $medicamento !== 'null')
+                ? $medicamento
+                : 'Ninguna');
 
         if (!empty($codigo) && $codigo !== 'null') {
             $busquedaFiltro = $busquedaFiltro === 'Ninguna'
@@ -1318,46 +1457,94 @@ class InventarioController extends Controller
                 : $busquedaFiltro . ' / ' . $codigo;
         }
 
-        $pdf->setFiltros($nombreAlmacenFiltro, $proveedorFiltro, 'Todas', $busquedaFiltro);
+        $pdf->setFiltros(
+            $nombreAlmacenFiltro,
+            $proveedorFiltro,
+            'Todas',
+            $busquedaFiltro
+        );
+
         $pdf->AddPage();
+
         if (false) {
 
-            // LOGICA VISUAL DE FILTROS (Para que sepas qué imprimiste)
+            // LOGICA VISUAL DE FILTROS
             $filtrosTexto = [];
+
             if (!empty($almacen_id) && $almacen_id !== 'null') {
-                $nombre = \DB::table('almacens')->where('id', $almacen_id)->value('nombre_almacen');
+
+                $nombre = \DB::table('almacens')
+                    ->where('id', $almacen_id)
+                    ->value('nombre_almacen');
+
                 $filtrosTexto[] = "Almacén: " . ($nombre ?? $almacen_id);
+
             } else {
+
                 $filtrosTexto[] = "Almacén: Todos";
             }
-            if (!empty($medicamento) && $medicamento !== 'null')
+
+            if (!empty($medicamento) && $medicamento !== 'null') {
                 $filtrosTexto[] = "Med: " . $medicamento;
-            if (!empty($laboratorio) && $laboratorio !== 'null')
+            }
+
+            if (!empty($laboratorio) && $laboratorio !== 'null') {
                 $filtrosTexto[] = "Lab: " . $laboratorio;
-            if (!empty($codigo) && $codigo !== 'null')
+            }
+
+            if (!empty($codigo) && $codigo !== 'null') {
                 $filtrosTexto[] = "Cod: " . $codigo;
+            }
 
             // Imprimir filtros debajo del título
             $pdf->SetFont('Arial', '', 9);
+
             $pdf->SetTextColor(100);
-            $pdf->Cell(0, 6, utf8_decode("Filtros: " . implode(" | ", $filtrosTexto)), 0, 1, 'C');
+
+            $pdf->Cell(
+                0,
+                6,
+                utf8_decode(
+                    "Filtros: " . implode(" | ", $filtrosTexto)
+                ),
+                0,
+                1,
+                'C'
+            );
+
             $pdf->Ln(2);
 
             // Total de registros encontrados
-            $this->addReportInfo($pdf, $data->count());
+            $this->addReportInfo(
+                $pdf,
+                $data->count()
+            );
         }
 
         foreach ($inventarios as $nombreAlmacen => $productos) {
-            $this->addAlmacenHeader($pdf, $nombreAlmacen);
-            $this->addStyledTable($pdf, $productos);
+
+            $this->addAlmacenHeader(
+                $pdf,
+                $nombreAlmacen
+            );
+
+            $this->addStyledTable(
+                $pdf,
+                $productos
+            );
         }
 
         $this->addFooter($pdf);
 
         $fechaGeneracion = date('Y-m-d');
+
         $nombreArchivo = "Productos_bajo_stock_{$fechaGeneracion}.pdf";
 
-        $pdf->Output('D', $nombreArchivo);
+        $pdf->Output(
+            'D',
+            $nombreArchivo
+        );
+
         exit;
     }
     private function addHeader($pdf)
@@ -1405,7 +1592,7 @@ class InventarioController extends Controller
 
         // Ancho útil total en A4 horizontal con márgenes 10/10 = 277 mm
         $widths = [28, 82, 62, 20, 20, 20, 45];
-        $headers = ['Código', 'Producto', 'Proveedor', 'Unidad', 'Mínimo', 'Actual', 'Estado'];
+        $headers = ['Código', 'Producto', 'Stock Deposito', 'Unidad', 'Mínimo', 'Actual', 'Estado'];
 
         $x = 10;
         foreach ($headers as $i => $header) {
@@ -1443,7 +1630,7 @@ class InventarioController extends Controller
             $data = [
                 utf8_decode($inv->codigo),
                 utf8_decode($this->truncateText($inv->nombre_producto, 40)),
-                utf8_decode($this->truncateText($nombreProveedor, 30)),
+                utf8_decode($inv->stock_almacen_2),
                 utf8_decode($inv->unidad_envase),
                 utf8_decode($inv->stock_minimo),
                 utf8_decode($inv->saldo_stock),
