@@ -305,35 +305,35 @@ class InventarioController extends Controller
         $codigo = trim((string) $request->codigo);
 
         $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-        ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-        ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-        ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
-        ->select(
-            'inventarios.idarticulo',
-            'inventarios.idalmacen',
-            'almacens.nombre_almacen',
-            'almacens.ubicacion',
-            'articulos.codigo',
-            'articulos.nombre as nombre_producto',
-            'articulos.unidad_envase',
-            'articulos.stock',
-            'articulos.precio_costo_unid',
-            DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
-            \DB::raw('SUM(inventarios.saldo_stock) as saldo_stock')
-        )
-        ->groupBy(
-            'inventarios.idarticulo',
-            'inventarios.idalmacen',
-            'almacens.nombre_almacen',
-            'almacens.ubicacion',
-            'articulos.codigo',
-            'articulos.nombre',
-            'articulos.unidad_envase',
-            'articulos.stock',
-            'articulos.precio_costo_unid',
-            DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
-        )
-        ->havingRaw('articulos.stock > SUM(inventarios.saldo_stock)');
+            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
+            ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
+            ->select(
+                'inventarios.idarticulo',
+                'inventarios.idalmacen',
+                'almacens.nombre_almacen',
+                'almacens.ubicacion',
+                'articulos.codigo',
+                'articulos.nombre as nombre_producto',
+                'articulos.unidad_envase',
+                'articulos.stock',
+                'articulos.precio_costo_unid',
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
+                \DB::raw('SUM(inventarios.saldo_stock) as saldo_stock')
+            )
+            ->groupBy(
+                'inventarios.idarticulo',
+                'inventarios.idalmacen',
+                'almacens.nombre_almacen',
+                'almacens.ubicacion',
+                'articulos.codigo',
+                'articulos.nombre',
+                'articulos.unidad_envase',
+                'articulos.stock',
+                'articulos.precio_costo_unid',
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
+            )
+            ->havingRaw('articulos.stock > SUM(inventarios.saldo_stock)');
 
 
         // ✅ Filtrar por sucursal del usuario (solo si no es rol 4)
@@ -341,7 +341,7 @@ class InventarioController extends Controller
             $query->where('almacens.sucursal', $usuario->idsucursal);
         }
 
-        
+
         if ($buscar != '') {
             $query->where('inventarios.' . $criterio, 'like', '%' . $buscar . '%');
         }
@@ -350,12 +350,12 @@ class InventarioController extends Controller
             $query->where('inventarios.idalmacen', $almacen_id);
         }
 
-        
+
         if (!empty($medicamento)) {
             $query->where('articulos.nombre', 'like', '%' . $medicamento . '%');
         }
 
-        
+
         if (!empty($laboratorio)) {
             $query->whereRaw("COALESCE(personas.nombre, 'Sin proveedor') like ?", ['%' . $laboratorio . '%']);
         }
@@ -383,15 +383,15 @@ class InventarioController extends Controller
     }
 
 
-   public function listarReporteBajoStockExcel(Request $request)
+    public function listarReporteBajoStockExcel(Request $request)
     {
         $fechaGeneracion = date('Y-m-d');
         $nombreArchivo = "Productos_bajo_stock_{$fechaGeneracion}.xlsx";
 
         return Excel::download(
             new ProductosBajoStockExport(
-                $request->almacen_id, 
-                $request->medicamento, 
+                $request->almacen_id,
+                $request->medicamento,
                 $request->laboratorio,
                 $request->codigo
             ),
@@ -437,7 +437,7 @@ class InventarioController extends Controller
 
         $filtrosY = $pdf->GetY();
         $txtFiltros = [
-            'Código: ' . $toAscii($filtros['codigo'] ?: 'Todos'),        
+            'Código: ' . $toAscii($filtros['codigo'] ?: 'Todos'),
             'Almacen: ' . $toAscii($filtros['nombre_almacen'] ?? 'Todos'),
             'Productos: ' . $toAscii($filtros['productos'] ?: 'Todos'),
             'Codigo: ' . $toAscii($filtros['codigo'] ?: 'Todos'),
@@ -729,11 +729,21 @@ class InventarioController extends Controller
 
                 )
                 ->where('articulos.condicion', '=', 1)
-                ->groupBy('articulos.codigo', 'articulos.nombre', 'almacens.nombre_almacen', 'articulos.unidad_envase', 'proveedores.contacto', 'articulos.descripcion_fabrica', 'categorias.nombre')
+                ->groupBy(
+                    'articulos.codigo',
+                    'articulos.nombre',
+                    'almacens.nombre_almacen',
+                    'articulos.unidad_envase',
+                    'proveedores.contacto',
+                    'articulos.descripcion_fabrica',
+                    'categorias.nombre'
+                )
+                ->orderByRaw('IFNULL(SUM(inventarios.saldo_stock), 0) ASC')
                 ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre')
                 ->orderBy('almacens.nombre_almacen');
         } else if ($tipo === 'lote') {
+
             $inventarios = Articulo::leftJoin('inventarios', function ($join) use ($idAlmacen) {
                 $join->on('articulos.id', '=', 'inventarios.idarticulo')
                     ->where('inventarios.idalmacen', '=', $idAlmacen);
@@ -754,6 +764,7 @@ class InventarioController extends Controller
                     DB::raw('IFNULL(inventarios.saldo_stock, 0) % articulos.unidad_envase as unidades_restantes')
                 )
                 ->where('articulos.condicion', '=', 1)
+                ->orderByRaw('IFNULL(inventarios.saldo_stock, 0) ASC')
                 ->orderBy('articulos.nombre');
         }
 
@@ -987,10 +998,18 @@ class InventarioController extends Controller
                 });
             }
 
-            $inventarios = $query->groupBy('articulos.id', 'articulos.codigo', 'articulos.nombre', 'categorias.nombre', 'proveedores.contacto', 'articulos.unidad_envase')
-                ->orderBy('categorias.nombre')
-                ->orderBy('articulos.nombre')
-                ->get();
+            $inventarios = $query->groupBy(
+    'articulos.id',
+    'articulos.codigo',
+    'articulos.nombre',
+    'categorias.nombre',
+    'proveedores.contacto',
+    'articulos.unidad_envase'
+)
+    ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
+    ->orderBy('categorias.nombre')
+    ->orderBy('articulos.nombre')
+    ->get();
         } else {
             // Modo lote
             $query = \DB::table('articulos')
@@ -1083,7 +1102,7 @@ class InventarioController extends Controller
                 $pdf->SetFont('Arial', 'B', 9);
                 $pdf->SetFillColor(52, 73, 94); // Azul oscuro corporativo
                 $pdf->SetTextColor(255, 255, 255);
-                
+
                 $pdf->Cell(30, 8, utf8_decode('Codigo'), 1, 0, 'C', true);
                 $pdf->Cell(82, 8, utf8_decode('Producto'), 1, 0, 'C', true);
                 $pdf->Cell(50, 8, utf8_decode('Categoria'), 1, 0, 'C', true);
@@ -1111,7 +1130,7 @@ class InventarioController extends Controller
                     if ($nombreCategoria === null || $nombreCategoria === '') {
                         $nombreCategoria = 'Sin categoria';
                     }
-                    
+
                     $pdf->Cell(30, 7, utf8_decode(substr($codigoProducto, 0, 18)), 1, 0, 'L', true);
                     $pdf->Cell(82, 7, utf8_decode(substr($inv->item, 0, 45)), 1, 0, 'L', true);
                     $pdf->Cell(50, 7, utf8_decode(substr($nombreCategoria, 0, 28)), 1, 0, 'L', true);
@@ -1127,7 +1146,7 @@ class InventarioController extends Controller
             $pdf->SetFont('Arial', 'B', 9);
             $pdf->SetFillColor(52, 73, 94);
             $pdf->SetTextColor(255, 255, 255);
-            
+
             $pdf->Cell(30, 8, utf8_decode('CODIGO'), 1, 0, 'C', true);
             $pdf->Cell(60, 8, utf8_decode('PRODUCTO'), 1, 0, 'C', true);
             $pdf->Cell(42, 8, utf8_decode('CATEGORIA'), 1, 0, 'C', true);
@@ -1157,7 +1176,7 @@ class InventarioController extends Controller
                 if ($nombreCategoria === null || $nombreCategoria === '') {
                     $nombreCategoria = 'Sin categoria';
                 }
-                
+
                 $pdf->Cell(30, 7, utf8_decode(substr($codigoProducto, 0, 18)), 1, 0, 'L', true);
                 $pdf->Cell(60, 7, utf8_decode(substr($inv->item, 0, 35)), 1, 0, 'L', true);
                 $pdf->Cell(42, 7, utf8_decode(substr($nombreCategoria, 0, 24)), 1, 0, 'L', true);
@@ -1174,7 +1193,7 @@ class InventarioController extends Controller
         $nombreArchivoLimpio = preg_replace('/[^a-zA-Z0-9_-]/', '_', $nombreAlmacen);
         $nombreArchivoLimpio = preg_replace('/_+/', '_', $nombreArchivoLimpio);
         $filename = 'reporteInventario_' . $nombreArchivoLimpio . '_' . $fecha . '.pdf';
-        
+
         return response($pdf->Output('S'), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
@@ -1205,41 +1224,41 @@ class InventarioController extends Controller
         $medicamento = $request->medicamento;
         $laboratorio = $request->laboratorio;
         $codigo = trim((string) $request->codigo);
-        
+
         // Variables legacy por si acaso
-        $buscar = $request->buscar; 
+        $buscar = $request->buscar;
         $criterio = $request->criterio;
 
         // 2. CONSULTA (Copiada EXACTA de tu función productosBajoStock)
         // Quitamos los GROUP BY y SUM sql, usamos la lógica fila por fila
-      $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
-        ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
-        ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
-        ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
-        ->select(
-            'inventarios.idarticulo',
-            'inventarios.idalmacen',
-            'almacens.nombre_almacen',
-            'almacens.ubicacion',
-            'articulos.codigo',
-            'articulos.nombre as nombre_producto',
-            'articulos.unidad_envase',
-            'articulos.stock as stock_minimo',
-            DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
-            DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor")
-        )
-        ->groupBy(
-            'inventarios.idarticulo',
-            'inventarios.idalmacen',
-            'almacens.nombre_almacen',
-            'almacens.ubicacion',
-            'articulos.codigo',
-            'articulos.nombre',
-            'articulos.unidad_envase',
-            'articulos.stock',
-            DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
-        )
-        ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
+        $query = Inventario::join('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
+            ->join('articulos', 'inventarios.idarticulo', '=', 'articulos.id')
+            ->leftJoin('proveedores', 'articulos.idproveedor', '=', 'proveedores.id')
+            ->leftJoin('personas', 'proveedores.id', '=', 'personas.id')
+            ->select(
+                'inventarios.idarticulo',
+                'inventarios.idalmacen',
+                'almacens.nombre_almacen',
+                'almacens.ubicacion',
+                'articulos.codigo',
+                'articulos.nombre as nombre_producto',
+                'articulos.unidad_envase',
+                'articulos.stock as stock_minimo',
+                DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor")
+            )
+            ->groupBy(
+                'inventarios.idarticulo',
+                'inventarios.idalmacen',
+                'almacens.nombre_almacen',
+                'almacens.ubicacion',
+                'articulos.codigo',
+                'articulos.nombre',
+                'articulos.unidad_envase',
+                'articulos.stock',
+                DB::raw("COALESCE(personas.nombre, 'Sin proveedor')")
+            )
+            ->havingRaw('SUM(inventarios.saldo_stock) <= articulos.stock');
 
         // 3. APLICAR LOS MISMOS FILTROS
         $usuario = \Auth::user();
@@ -1268,8 +1287,8 @@ class InventarioController extends Controller
 
         // 4. OBTENER DATOS (Sin paginar)
         $data = $query->orderBy('almacens.nombre_almacen', 'asc')
-                    ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc")
-                    ->get();
+            ->orderByRaw("COALESCE(personas.nombre, 'Sin proveedor') asc")
+            ->get();
 
         // 5. AGRUPAR PARA EL PDF (Visualmente)
         // Esto no filtra datos, solo los organiza para que el PDF dibuje los títulos
@@ -1303,26 +1322,29 @@ class InventarioController extends Controller
         $pdf->AddPage();
         if (false) {
 
-        // LOGICA VISUAL DE FILTROS (Para que sepas qué imprimiste)
-        $filtrosTexto = [];
-        if (!empty($almacen_id) && $almacen_id !== 'null') {
-            $nombre = \DB::table('almacens')->where('id', $almacen_id)->value('nombre_almacen');
-            $filtrosTexto[] = "Almacén: " . ($nombre ?? $almacen_id);
-        } else {
-            $filtrosTexto[] = "Almacén: Todos";
-        }
-        if (!empty($medicamento) && $medicamento !== 'null') $filtrosTexto[] = "Med: " . $medicamento;
-        if (!empty($laboratorio) && $laboratorio !== 'null') $filtrosTexto[] = "Lab: " . $laboratorio;
-        if (!empty($codigo) && $codigo !== 'null') $filtrosTexto[] = "Cod: " . $codigo;
-        
-        // Imprimir filtros debajo del título
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->SetTextColor(100);
-        $pdf->Cell(0, 6, utf8_decode("Filtros: " . implode(" | ", $filtrosTexto)), 0, 1, 'C');
-        $pdf->Ln(2);
+            // LOGICA VISUAL DE FILTROS (Para que sepas qué imprimiste)
+            $filtrosTexto = [];
+            if (!empty($almacen_id) && $almacen_id !== 'null') {
+                $nombre = \DB::table('almacens')->where('id', $almacen_id)->value('nombre_almacen');
+                $filtrosTexto[] = "Almacén: " . ($nombre ?? $almacen_id);
+            } else {
+                $filtrosTexto[] = "Almacén: Todos";
+            }
+            if (!empty($medicamento) && $medicamento !== 'null')
+                $filtrosTexto[] = "Med: " . $medicamento;
+            if (!empty($laboratorio) && $laboratorio !== 'null')
+                $filtrosTexto[] = "Lab: " . $laboratorio;
+            if (!empty($codigo) && $codigo !== 'null')
+                $filtrosTexto[] = "Cod: " . $codigo;
 
-        // Total de registros encontrados
-        $this->addReportInfo($pdf, $data->count());
+            // Imprimir filtros debajo del título
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetTextColor(100);
+            $pdf->Cell(0, 6, utf8_decode("Filtros: " . implode(" | ", $filtrosTexto)), 0, 1, 'C');
+            $pdf->Ln(2);
+
+            // Total de registros encontrados
+            $this->addReportInfo($pdf, $data->count());
         }
 
         foreach ($inventarios as $nombreAlmacen => $productos) {
@@ -1338,7 +1360,7 @@ class InventarioController extends Controller
         $pdf->Output('D', $nombreArchivo);
         exit;
     }
-     private function addHeader($pdf)
+    private function addHeader($pdf)
     {
         $pdf->SetFillColor(52, 73, 94);
         $pdf->Rect(10, 10, 277, 20, 'F');

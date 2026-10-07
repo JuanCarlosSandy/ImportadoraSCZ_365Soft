@@ -32,7 +32,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
         $this->idAlmacen = $idAlmacen;
         $this->buscar = $buscar;
         $this->fechaGeneracion = date('d/m/Y H:i:s');
-        
+
         // Obtener nombre del almacén
         $almacen = DB::table('almacens')->where('id', $idAlmacen)->first();
         $this->nombreAlmacen = $almacen ? $almacen->nombre_almacen : 'Todos';
@@ -51,36 +51,44 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
         if (!empty($this->buscar)) {
             $query->where(function ($q) {
                 $q->where('articulos.nombre', 'like', '%' . $this->buscar . '%')
-                  ->orWhere('categorias.nombre', 'like', '%' . $this->buscar . '%')
-                  ->orWhere('personas.nombre', 'like', '%' . $this->buscar . '%')
-                  ->orWhere('articulos.codigo', 'like', '%' . $this->buscar . '%');
+                    ->orWhere('categorias.nombre', 'like', '%' . $this->buscar . '%')
+                    ->orWhere('personas.nombre', 'like', '%' . $this->buscar . '%')
+                    ->orWhere('articulos.codigo', 'like', '%' . $this->buscar . '%');
             });
         }
 
         if ($this->modo === 'item') {
             return $query->select(
+                'articulos.codigo',
+                'articulos.nombre as nombre_producto',
+                'categorias.nombre as categoria',
+                'personas.nombre as proveedor',
+                'articulos.unidad_envase',
+                DB::raw('SUM(inventarios.saldo_stock) as stock_unidades')
+            )
+                ->groupBy(
+                    'articulos.id',
                     'articulos.codigo',
-                    'articulos.nombre as nombre_producto',
-                    'categorias.nombre as categoria',
-                    'personas.nombre as proveedor',
+                    'articulos.nombre',
+                    'personas.nombre',
                     'articulos.unidad_envase',
-                    DB::raw('SUM(inventarios.saldo_stock) as stock_unidades')
+                    'categorias.nombre'
                 )
-                ->groupBy('articulos.id', 'articulos.codigo', 'articulos.nombre', 'personas.nombre', 'articulos.unidad_envase', 'categorias.nombre')
+                ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
                 ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre');
         } else {
             return $query->select(
-                    'articulos.codigo',
-                    'articulos.nombre as nombre_producto',
-                    'categorias.nombre as categoria',
-                    'personas.nombre as proveedor',
-                    'articulos.unidad_envase',
-                    'inventarios.saldo_stock',
-                    DB::raw('FLOOR(inventarios.saldo_stock / COALESCE(articulos.unidad_envase, 1)) as stock_cajas'),
-                    'inventarios.created_at',
-                    'inventarios.fecha_vencimiento'
-                )
+                'articulos.codigo',
+                'articulos.nombre as nombre_producto',
+                'categorias.nombre as categoria',
+                'personas.nombre as proveedor',
+                'articulos.unidad_envase',
+                'inventarios.saldo_stock',
+                DB::raw('FLOOR(inventarios.saldo_stock / COALESCE(articulos.unidad_envase, 1)) as stock_cajas'),
+                'inventarios.created_at',
+                'inventarios.fecha_vencimiento'
+            )
                 ->orderBy('categorias.nombre')
                 ->orderBy('articulos.nombre');
         }
@@ -145,7 +153,7 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
     {
         $drawings = [];
         $rutaLogo = public_path('img/logoPrincipal.png');
-        
+
         if (file_exists($rutaLogo)) {
             $drawing = new Drawing();
             $drawing->setName('Logo');
@@ -186,18 +194,18 @@ class InventarioExport implements FromQuery, WithHeadings, WithMapping, WithColu
 
             // Alinear columnas numéricas a la derecha (Desde E que es 'Unidades por paquete' en adelante)
             $sheet->getStyle('E9:' . $lastColumn . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            
+
             // Alinear código al centro
             $sheet->getStyle('A9:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
-        
+
         return [];
     }
 
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet;
                 $lastColumn = $this->modo === 'item' ? 'F' : 'I';
 
