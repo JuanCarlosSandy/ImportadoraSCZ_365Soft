@@ -57,6 +57,7 @@ class ProductosBajoStockExport implements FromQuery, WithHeadings, WithColumnWid
                 '=',
                 'articulos.id'
             )
+            ->where('articulos.condicion', 1)
             ->leftJoin(
                 'proveedores',
                 'articulos.idproveedor',

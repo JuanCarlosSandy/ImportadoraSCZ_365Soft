@@ -321,6 +321,7 @@ class InventarioController extends Controller
                 '=',
                 'proveedores.id'
             )
+            ->where('articulos.condicion', 1)
             ->leftJoin(
                 'personas',
                 'proveedores.id',
@@ -1340,6 +1341,7 @@ class InventarioController extends Controller
                 DB::raw("COALESCE(personas.nombre, 'Sin proveedor') as nombre_proveedor"),
                 DB::raw('COALESCE(inventario_almacen_2.stock_almacen_2, 0) as stock_almacen_2')
             )
+            ->where('articulos.condicion', 1)
             ->groupBy(
                 'inventarios.idarticulo',
                 'inventarios.idalmacen',
