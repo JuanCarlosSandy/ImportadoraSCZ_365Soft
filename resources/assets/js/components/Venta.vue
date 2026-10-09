@@ -53,40 +53,42 @@
           </div>
 
           <div class="field">
-            <Button icon="pi pi-refresh" @click="ejecutarSecuencial"
-              class="p-button-secondary p-button-sm btn-sm-input" :title="'Verificar Facturación'" />
+            <Button icon="pi pi-refresh" @click="ejecutarSecuencial" class="p-button-secondary p-button-sm btn-sm-input"
+              :title="'Verificar Facturación'" />
           </div>
 
 
-<template v-if="idrol == 4">
-          <div class="field">
-            <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Sucursal</label>
-            <select v-model="filtroSucursal" @change="buscarVenta"
-              class="p-inputtext p-component p-inputtext-sm input-full">
-              <option value="">Todas las sucursales</option>
-              <option v-for="suc in arraySucursales" :key="suc.id" :value="suc.id">
-                {{ suc.nombre }}
-              </option>
-            </select>
-          </div>
+          <template v-if="idrol == 4">
+            <div class="field">
+              <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Sucursal</label>
+              <select v-model="filtroSucursal" @change="buscarVenta"
+                class="p-inputtext p-component p-inputtext-sm input-full">
+                <option value="">Todas las sucursales</option>
+                <option v-for="suc in arraySucursales" :key="suc.id" :value="suc.id">
+                  {{ suc.nombre }}
+                </option>
+              </select>
+            </div>
 
-          <div class="field">
-            <label for="fechaInicio" style="display:block; font-size: 12px; font-weight: bold;">Fecha Inicio</label>
-            <input type="date" v-model="fechaInicio" @change="buscarVenta"
-              class="p-inputtext p-component p-inputtext-sm input-date-full" style="height: 35px;" />
-          </div>
+            <div class="field">
+              <label for="fechaInicio" style="display:block; font-size: 12px; font-weight: bold;">Fecha Inicio</label>
+              <input type="date" v-model="fechaInicio" @change="buscarVenta"
+                class="p-inputtext p-component p-inputtext-sm input-date-full" style="height: 35px;" />
+            </div>
 
-          <div class="field">
-            <label for="fechaFin" style="display:block; font-size: 12px; font-weight: bold;">Fecha Fin</label>
-            <input type="date" v-model="fechaFin" @change="buscarVenta"
-              class="p-inputtext p-component p-inputtext-sm input-date-full" style="height: 35px;" />
-          </div>
+            <div class="field">
+              <label for="fechaFin" style="display:block; font-size: 12px; font-weight: bold;">Fecha Fin</label>
+              <input type="date" v-model="fechaFin" @change="buscarVenta"
+                class="p-inputtext p-component p-inputtext-sm input-date-full" style="height: 35px;" />
+            </div>
 
-          <div class="field">
-            <Button @click="limpiarFiltros" label="Limpiar" icon="pi pi-filter-slash"
-              class="p-button-warning p-button-sm btn-sm-input" :title="'Limpiar Filtros'" />
-          </div>
+            <div class="field">
+              <Button @click="limpiarFiltros" label="Limpiar" icon="pi pi-filter-slash"
+                class="p-button-warning p-button-sm btn-sm-input" :title="'Limpiar Filtros'" />
+            </div>
+
           </template>
+
           <div class="field">
             <label for="filtroSucursal" style="display:block; font-size: 12px; font-weight: bold;">Vista</label>
 
@@ -100,6 +102,24 @@
               <button
                 :class="['btn', 'btn-sm-input', filtroVentasActivo === 'todos' ? 'btn-primary' : 'btn-outline-primary']"
                 @click="filtroVentasActivo = 'todos'; listarVenta(1, buscar, criterio);">TODOS</button>
+            </div>
+          </div>
+
+          <!-- RESUMEN DE IMPORTES -->
+          <div class="resumen-importes-ventas"> <!-- VENTAS ACTIVAS -->
+            <div class="resumen-importe-card resumen-importe-activo">
+              <div class="resumen-importe-icono"> <i class="pi pi-wallet"></i> </div>
+              <div class="resumen-importe-contenido"> <span class="resumen-importe-titulo"> TOTAL IMPORTE </span>
+                <strong class="resumen-importe-valor"> {{ formatearImporte(totalesVentas.total_ventas_activas) }}
+                </strong>
+              </div>
+            </div> <!-- VENTAS ANULADAS -->
+            <div class="resumen-importe-card resumen-importe-anulado">
+              <div class="resumen-importe-icono"> <i class="pi pi-ban"></i> </div>
+              <div class="resumen-importe-contenido"> <span class="resumen-importe-titulo"> TOTAL ANULADAS </span>
+                <strong class="resumen-importe-valor"> {{ formatearImporte(totalesVentas.total_ventas_anuladas) }}
+                </strong>
+              </div>
             </div>
           </div>
         </div>
@@ -532,17 +552,11 @@
 
                 <div style="width: 100%; padding-top: 0.5rem;">
                   <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
-                  <label class="label-input">
+                    <label class="label-input">
                       Tipo de Documento <span class="text-required">*</span>
                     </label>
-                    <Dropdown
-                      v-model="tipo_documento"
-                      :options="tiposDocumento"
-                      optionLabel="nombre"
-                      optionValue="valor"
-                      placeholder="Seleccione"
-                      class="dropdown-full"
-                    />
+                    <Dropdown v-model="tipo_documento" :options="tiposDocumento" optionLabel="nombre"
+                      optionValue="valor" placeholder="Seleccione" class="dropdown-full" />
                   </div>
 
                   <div class="p-mb-3" style="margin-bottom: 1.5rem; position: relative;">
@@ -724,7 +738,8 @@
                                 <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid"
                                   style="height: 24px;" />
                               </button>-->
-                              <button type="button" @click="aplicarDescuentoRecibo(1, 1)" class="btn btn-secondary mr-2">
+                              <button type="button" @click="aplicarDescuentoRecibo(1, 1)"
+                                class="btn btn-secondary mr-2">
                                 <i class="fa fa-file mr-2"></i> Recibo
                               </button>
                               <button type="button" @click="aplicarDescuento(1)" class="btn btn-success">
@@ -766,8 +781,8 @@
                             <img src="/img/logoPrincipal.png" alt="Recibo" class="img-fluid" style="height: 24px;" />
                           </button>-->
                           <button type="button" @click="aplicarDescuentoRecibo(1, 7)" class="btn btn-secondary mr-2">
-                                <i class="fa fa-file mr-2"></i> Recibo
-                              </button>
+                            <i class="fa fa-file mr-2"></i> Recibo
+                          </button>
                           <button type="button" @click="aplicarDescuento(7)" class="btn btn-success">
                             <i class="fa fa-book mr-2"></i> Facturar
                           </button>
@@ -858,8 +873,8 @@
                             </button>-->
 
                             <button type="button" @click="aplicarDescuentoRecibo(1, 13)" class="btn btn-secondary mr-2">
-                                <i class="fa fa-file mr-2"></i> Recibo
-                              </button>
+                              <i class="fa fa-file mr-2"></i> Recibo
+                            </button>
 
                             <button type="button" @click="aplicarDescuento(13)" class="btn btn-success">
                               <i class="fa fa-book mr-2"></i> Facturar
@@ -1212,26 +1227,18 @@
               </template>
             </Column>
             <Column field="unidades" header="Cantidad a Vender" style="width: 10%" class="column-unidades">
-  <template #body="slotProps">
-    <InputNumber
-      v-model="slotProps.data.cantidad"
-      :min="1"
-      :max="
-        slotProps.data.tipo === 'itemcompuesto'
-          ? slotProps.data.stockCompuesto
-          : slotProps.data.modoVenta === 'caja'
-            ? slotProps.data.stock_cajas
-            : slotProps.data.modoVenta === 'docena'
-              ? Math.floor(slotProps.data.stock / 12)
-              : slotProps.data.stock
-      "
-      @input="actualizarDetalle(slotProps.index)"
-      class="p-inputtext-sm input-unidades"
-      style="height: 32px;"
-      :ref="'inputCantidad_' + slotProps.index"
-    />
-  </template>
-</Column>
+              <template #body="slotProps">
+                <InputNumber v-model="slotProps.data.cantidad" :min="1" :max="slotProps.data.tipo === 'itemcompuesto'
+                  ? slotProps.data.stockCompuesto
+                  : slotProps.data.modoVenta === 'caja'
+                    ? slotProps.data.stock_cajas
+                    : slotProps.data.modoVenta === 'docena'
+                      ? Math.floor(slotProps.data.stock / 12)
+                      : slotProps.data.stock
+                  " @input="actualizarDetalle(slotProps.index)" class="p-inputtext-sm input-unidades"
+                  style="height: 32px;" :ref="'inputCantidad_' + slotProps.index" />
+              </template>
+            </Column>
             <Column v-if="permitir_ofertas == 1" field="descuento" header="Descuento por Cantidad (Bs)"
               style="width: 10%" class="column-descuento">
               <template #body="slotProps">
@@ -1481,11 +1488,11 @@
         :closable="false" class="responsive-dialog" @hide="cerrarModalPago">
 
         <template #header>
-        <div class="dialog-header">
-          <i class="pi pi-book header-icon"></i>
-          <span class="header-title">Emisión / Pago - Venta #{{ idventaa }}</span>
-        </div>
-      </template>
+          <div class="dialog-header">
+            <i class="pi pi-book header-icon"></i>
+            <span class="header-title">Emisión / Pago - Venta #{{ idventaa }}</span>
+          </div>
+        </template>
 
         <TabView>
           <TabPanel header="Factura">
@@ -1514,7 +1521,8 @@
 
         <template #footer>
           <Button label="Cerrar" icon="pi pi-times" @click="cerrarModalPago" class="p-button-danger btn-sm" />
-          <Button label="Enviar al SIAT / Pagar" icon="pi pi-check" class="p-button-success btn-sm" @click="aplicarDescuento2" />
+          <Button label="Enviar al SIAT / Pagar" icon="pi pi-check" class="p-button-success btn-sm"
+            @click="aplicarDescuento2" />
         </template>
       </Dialog>
 
@@ -1848,16 +1856,20 @@ export default {
   },
   data() {
     return {
-      tiposDocumento: [
-      {
-        nombre: "CI",
-        valor: 1
+      totalesVentas: {
+        total_ventas_activas: 0,
+        total_ventas_anuladas: 0
       },
-      {
-        nombre: "NIT",
-        valor: 5
-      }
-    ],
+      tiposDocumento: [
+        {
+          nombre: "CI",
+          valor: 1
+        },
+        {
+          nombre: "NIT",
+          valor: 5
+        }
+      ],
       montoQRCompuesto: 0,
       recibidoCompuesto: 0,
       autoVerificarQR: false,
@@ -2336,6 +2348,12 @@ export default {
   },
 
   methods: {
+    formatearImporte(valor) {
+      return Number(valor || 0).toLocaleString('es-BO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    },
     getTipoPagoSeverity(tipo) {
       switch (tipo) {
         case 'EFECTIVO':
@@ -3808,8 +3826,25 @@ export default {
           if (respuesta.ventas && respuesta.ventas.data) {
             me.arrayVenta = respuesta.ventas.data;
             me.pagination = respuesta.pagination;
+            me.totalesVentas = {
+  total_ventas_activas: Number(
+    response.data.total_ventas_activas || 0
+  ),
+  total_ventas_anuladas: Number(
+    response.data.total_ventas_anuladas || 0
+  )
+};
+console.log("totales", me.totalesVentas);
           } else {
             me.arrayVenta = respuesta.ventas;
+                        me.totalesVentas = {
+  total_ventas_activas: Number(
+    response.data.total_ventas_activas || 0
+  ),
+  total_ventas_anuladas: Number(
+    response.data.total_ventas_anuladas || 0
+  )
+};
           }
         })
         .catch(function (error) {
@@ -3848,6 +3883,13 @@ export default {
 
         this.arrayVenta = respuesta.ventas;
         this.pagination = respuesta.pagination;
+        this.totalesVentas = {
+          total_ventas_activas:
+            Number(response.data.total_ventas_activas || 0),
+
+          total_ventas_anuladas:
+            Number(response.data.total_ventas_anuladas || 0)
+        };
 
       } catch (error) {
         console.error("Error al listar ventas:", error);
@@ -3885,8 +3927,15 @@ export default {
         .then(function (response) {
           var respuesta = response.data;
 
-          me.arrayVenta = respuesta.ventas  ;
+          me.arrayVenta = respuesta.ventas;
           me.pagination = respuesta.pagination;
+          me.totalesVentas = {
+            total_ventas_activas:
+              Number(response.data.total_ventas_activas || 0),
+
+            total_ventas_anuladas:
+              Number(response.data.total_ventas_anuladas || 0)
+          };
 
           console.log("lista:", me.arrayVenta);
         })
@@ -4473,28 +4522,28 @@ export default {
           }
 
           const productoExistente = this.arrayProductos.find(
-  p => p.codigoProducto === data.codigo
-);
+            p => p.codigoProducto === data.codigo
+          );
 
-if (productoExistente) {
-  productoExistente.cantidad += 1;
-  productoExistente.subTotal =
-    productoExistente.cantidad * productoExistente.precioUnitario;
-} else {
-  this.arrayProductos.push({
-    actividadEconomica: data.actividadEconomica || "",
-    codigoProductoSin: data.codigoProductoSin || "",
-    codigoProducto: data.codigo || "",
-    descripcion: data.nombre,
-    cantidad: 1,
-    unidadMedida: data.codigoClasificador || "",
-    precioUnitario: precioCompuesto,
-    montoDescuento: 0,
-    subTotal: precioCompuesto,
-    numeroSerie: null,
-    numeroImei: null,
-  });
-}
+          if (productoExistente) {
+            productoExistente.cantidad += 1;
+            productoExistente.subTotal =
+              productoExistente.cantidad * productoExistente.precioUnitario;
+          } else {
+            this.arrayProductos.push({
+              actividadEconomica: data.actividadEconomica || "",
+              codigoProductoSin: data.codigoProductoSin || "",
+              codigoProducto: data.codigo || "",
+              descripcion: data.nombre,
+              cantidad: 1,
+              unidadMedida: data.codigoClasificador || "",
+              precioUnitario: precioCompuesto,
+              montoDescuento: 0,
+              subTotal: precioCompuesto,
+              numeroSerie: null,
+              numeroImei: null,
+            });
+          }
 
           this.$toast.add({
             severity: "success",
@@ -5812,7 +5861,7 @@ if (productoExistente) {
               "Comunicacion con SIAT fallida",
               "error"
             );
-            
+
             me.reiniciarFormulario();
             me.mostrarSpinner = false;
             me.idtipo_pago = "";
@@ -6448,10 +6497,135 @@ if (productoExistente) {
 </script>
 
 <style scoped>
-.icono-tabla {
-    font-size: 0.75rem;
-    margin-right: 4px;
+/* RESUMEN DE IMPORTES DE VENTAS */
+.resumen-importes-ventas {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
 }
+
+.resumen-importe-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 190px;
+  padding: 9px 14px;
+  background: #fff;
+  border: 1px solid #e5e9ed;
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(20, 35, 45, 0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.resumen-importe-card:hover {
+  box-shadow: 0 4px 12px rgba(20, 35, 45, 0.09);
+  transform: translateY(-1px);
+}
+
+.resumen-importe-activo {
+  border-left: 4px solid #16833b;
+}
+
+.resumen-importe-anulado {
+  border-left: 4px solid #d92d3a;
+}
+
+.resumen-importe-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 37px;
+  height: 37px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  font-size: 17px;
+}
+
+.resumen-importe-activo .resumen-importe-icono {
+  color: #16833b;
+  background: #e9f7ee;
+}
+
+.resumen-importe-anulado .resumen-importe-icono {
+  color: #d92d3a;
+  background: #fff0f1;
+}
+
+.resumen-importe-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resumen-importe-titulo {
+  color: #68737d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.resumen-importe-valor {
+  color: #232323;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.resumen-importe-detalle {
+  color: #7a858e;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* ETIQUETA DE LOS FILTROS */
+.filtro-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #343a40;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .resumen-importes-ventas {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resumen-importe-card {
+    min-width: 0;
+    padding: 9px;
+    gap: 8px;
+  }
+
+  .resumen-importe-valor {
+    font-size: 14px;
+  }
+
+  .resumen-importe-icono {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 380px) {
+  .resumen-importes-ventas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.icono-tabla {
+  font-size: 0.75rem;
+  margin-right: 4px;
+}
+
 .info-tip {
   display: flex;
   align-items: center;
@@ -6470,6 +6644,7 @@ if (productoExistente) {
   font-size: 14px;
   flex-shrink: 0;
 }
+
 /* 🔹 Botones pequeños */
 .btn-sm {
   font-size: 0.8rem;

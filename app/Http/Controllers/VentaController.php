@@ -249,6 +249,30 @@ class VentaController extends Controller
 
         $query->orderBy('ventas.fecha_hora', 'desc');
 
+        // Calcular totales conservando los filtros aplicados
+        $totalesQuery = clone $query;
+
+        // Limpiar las columnas del listado
+        $totalesQuery->getQuery()->columns = null;
+
+        // Eliminar el ordenamiento de la consulta clonada
+        $totalesQuery->getQuery()->orders = null;
+
+        // Calcular los totales por estado
+        $totales = $totalesQuery
+            ->selectRaw("
+        COALESCE(SUM(
+            CASE WHEN ventas.estado = 1
+            THEN ventas.total ELSE 0 END
+        ), 0) as total_ventas_activas,
+
+        COALESCE(SUM(
+            CASE WHEN ventas.estado = 0
+            THEN ventas.total ELSE 0 END
+        ), 0) as total_ventas_anuladas
+    ")
+            ->first();
+
         // ✅ SIN PAGINACIÓN
         $ventas = $query->get();
 
@@ -257,6 +281,9 @@ class VentaController extends Controller
             'usuario' => $usuario,
             'codigoPuntoVenta' => $codigoPuntoVenta,
             'codigoSucursal' => $codigoSucursal,
+            // Totales por estado
+            'total_ventas_activas' => (float) $totales->total_ventas_activas,
+            'total_ventas_anuladas' => (float) $totales->total_ventas_anuladas,
         ];
     }
     public function indexFactura(Request $request)
@@ -378,6 +405,30 @@ class VentaController extends Controller
             });
         }
 
+        // Calcular totales conservando los filtros aplicados
+        $totalesQuery = clone $query;
+
+        // Limpiar las columnas del listado
+        $totalesQuery->getQuery()->columns = null;
+
+        // Eliminar el ordenamiento de la consulta clonada
+        $totalesQuery->getQuery()->orders = null;
+
+        // Calcular los totales por estado
+        $totales = $totalesQuery
+            ->selectRaw("
+        COALESCE(SUM(
+            CASE WHEN ventas.estado = 1
+            THEN ventas.total ELSE 0 END
+        ), 0) as total_ventas_activas,
+
+        COALESCE(SUM(
+            CASE WHEN ventas.estado = 0
+            THEN ventas.total ELSE 0 END
+        ), 0) as total_ventas_anuladas
+    ")
+            ->first();
+
         $ventas = $query->get();
 
         return [
@@ -385,6 +436,9 @@ class VentaController extends Controller
             'usuario' => $usuario,
             'codigoPuntoVenta' => $codigoPuntoVenta,
             'codigoSucursal' => $codigoSucursal,
+            // Totales por estado
+            'total_ventas_activas' => (float) $totales->total_ventas_activas,
+            'total_ventas_anuladas' => (float) $totales->total_ventas_anuladas,
         ];
     }
 
@@ -494,6 +548,30 @@ class VentaController extends Controller
             });
         }
 
+        // Calcular totales conservando los filtros aplicados
+        $totalesQuery = clone $query;
+
+        // Limpiar las columnas del listado
+        $totalesQuery->getQuery()->columns = null;
+
+        // Eliminar el ordenamiento de la consulta clonada
+        $totalesQuery->getQuery()->orders = null;
+
+        // Calcular los totales por estado
+        $totales = $totalesQuery
+            ->selectRaw("
+        COALESCE(SUM(
+            CASE WHEN ventas.estado = 1
+            THEN ventas.total ELSE 0 END
+        ), 0) as total_ventas_activas,
+
+        COALESCE(SUM(
+            CASE WHEN ventas.estado = 0
+            THEN ventas.total ELSE 0 END
+        ), 0) as total_ventas_anuladas
+    ")
+            ->first();
+
         $ventas = $query->get();
 
         return [
@@ -501,11 +579,11 @@ class VentaController extends Controller
             'usuario' => $usuario,
             'codigoPuntoVenta' => $codigoPuntoVenta,
             'codigoSucursal' => $codigoSucursal,
+            // Totales por estado
+            'total_ventas_activas' => (float) $totales->total_ventas_activas,
+            'total_ventas_anuladas' => (float) $totales->total_ventas_anuladas,
         ];
     }
-
-
-
 
     public function ventaOffline(Request $request)
     {
