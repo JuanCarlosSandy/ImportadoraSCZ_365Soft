@@ -209,7 +209,7 @@ class VentaController extends Controller
             // Filtro por Fechas
             if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
                 $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio)
-                      ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+                    ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
             } elseif ($request->filled('fecha_inicio')) {
                 $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio);
             } elseif ($request->filled('fecha_fin')) {
@@ -219,15 +219,15 @@ class VentaController extends Controller
         } elseif ($idrol == 1) {
             // Ventas de su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
-                  ->whereDate('ventas.fecha_hora', $hoy);
+                ->whereDate('ventas.fecha_hora', $hoy);
         } elseif ($idrol == 2) {
             // Solo su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
-                  ->whereDate('ventas.fecha_hora', $hoy)
-                  ->where(function ($q) use ($usuario) {
-                      $q->where('ventas.idusuario', $usuario->id)
+                ->whereDate('ventas.fecha_hora', $hoy)
+                ->where(function ($q) use ($usuario) {
+                    $q->where('ventas.idusuario', $usuario->id)
                         ->orWhere('users.idrol', 1);
-                  });
+                });
         } else {
             $query->where('ventas.idusuario', $usuario->id);
         }
@@ -344,7 +344,7 @@ class VentaController extends Controller
             // Filtro por Fechas
             if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
                 $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio)
-                      ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+                    ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
             } elseif ($request->filled('fecha_inicio')) {
                 $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio);
             } elseif ($request->filled('fecha_fin')) {
@@ -354,15 +354,15 @@ class VentaController extends Controller
         } elseif ($idrol == 1) {
             // Ventas de su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
-                  ->whereDate('ventas.fecha_hora', $hoy);
+                ->whereDate('ventas.fecha_hora', $hoy);
         } elseif ($idrol == 2) {
             // Solo su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
-                  ->whereDate('ventas.fecha_hora', $hoy)
-                  ->where(function ($q) use ($usuario) {
-                      $q->where('ventas.idusuario', $usuario->id)
+                ->whereDate('ventas.fecha_hora', $hoy)
+                ->where(function ($q) use ($usuario) {
+                    $q->where('ventas.idusuario', $usuario->id)
                         ->orWhere('users.idrol', 1);
-                  });
+                });
         } else {
             $query->where('ventas.idusuario', $usuario->id);
         }
@@ -378,17 +378,9 @@ class VentaController extends Controller
             });
         }
 
-        $ventas = $query->paginate(10);
+        $ventas = $query->get();
 
         return [
-            'pagination' => [
-                'total' => $ventas->total(),
-                'current_page' => $ventas->currentPage(),
-                'per_page' => $ventas->perPage(),
-                'last_page' => $ventas->lastPage(),
-                'from' => $ventas->firstItem(),
-                'to' => $ventas->lastItem(),
-            ],
             'ventas' => $ventas,
             'usuario' => $usuario,
             'codigoPuntoVenta' => $codigoPuntoVenta,
@@ -468,7 +460,7 @@ class VentaController extends Controller
             // Filtro por Fechas
             if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
                 $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio)
-                      ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
+                    ->whereDate('ventas.fecha_hora', '<=', $request->fecha_fin);
             } elseif ($request->filled('fecha_inicio')) {
                 $query->whereDate('ventas.fecha_hora', '>=', $request->fecha_inicio);
             } elseif ($request->filled('fecha_fin')) {
@@ -478,15 +470,15 @@ class VentaController extends Controller
         } elseif ($idrol == 1) {
             // Ventas de su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
-                  ->whereDate('ventas.fecha_hora', $hoy);
+                ->whereDate('ventas.fecha_hora', $hoy);
         } elseif ($idrol == 2) {
             // Solo su sucursal y SOLO del día actual.
             $query->where('users.idsucursal', $idsucursal)
-                  ->whereDate('ventas.fecha_hora', $hoy)
-                  ->where(function ($q) use ($usuario) {
-                      $q->where('ventas.idusuario', $usuario->id)
+                ->whereDate('ventas.fecha_hora', $hoy)
+                ->where(function ($q) use ($usuario) {
+                    $q->where('ventas.idusuario', $usuario->id)
                         ->orWhere('users.idrol', 1);
-                  });
+                });
         } else {
             $query->where('ventas.idusuario', $usuario->id);
         }
@@ -502,17 +494,9 @@ class VentaController extends Controller
             });
         }
 
-        $ventas = $query->paginate(10);
+        $ventas = $query->get();
 
         return [
-            'pagination' => [
-                'total' => $ventas->total(),
-                'current_page' => $ventas->currentPage(),
-                'per_page' => $ventas->perPage(),
-                'last_page' => $ventas->lastPage(),
-                'from' => $ventas->firstItem(),
-                'to' => $ventas->lastItem(),
-            ],
             'ventas' => $ventas,
             'usuario' => $usuario,
             'codigoPuntoVenta' => $codigoPuntoVenta,
@@ -1478,7 +1462,7 @@ class VentaController extends Controller
             // 🔥 PAGO COMPUESTO: dividir entre QR y efectivo
             $montoQR = floatval($request->input('qr_pago', 0));
             $montoEfectivo = floatval($request->input('efectivo_pago', 0));
-            
+
             if ($request->idtipo_venta == 2) {
                 // Sumar a ventas crédito (dividir entre QR y efectivo)
                 $ultimaCaja->ventasQR += $montoQR;
@@ -2011,7 +1995,7 @@ class VentaController extends Controller
             // 🔥 PAGO COMPUESTO: revertir montos de QR y efectivo
             $montoQR = floatval($venta->monto_qr ?? 0);
             $montoEfectivo = floatval($venta->monto_efectivo ?? 0);
-            
+
             $caja->ventasQR -= $montoQR;
             $caja->ventasContado -= $montoEfectivo;
             $caja->saldoCaja -= $montoEfectivo;
@@ -2634,37 +2618,37 @@ class VentaController extends Controller
 
 
     public function formato_xml($temporal, $xml_temporal)
-{
-    $ns_xsi = "http://www.w3.org/2001/XMLSchema-instance";
+    {
+        $ns_xsi = "http://www.w3.org/2001/XMLSchema-instance";
 
-    foreach ($temporal as $key => $value) {
+        foreach ($temporal as $key => $value) {
 
-        if (is_array($value)) {
+            if (is_array($value)) {
 
-            if (!is_numeric($key)) {
-                $subnodo = $xml_temporal->addChild("$key");
-                $this->formato_xml($value, $subnodo);
-            } else {
-                $this->formato_xml($value, $xml_temporal);
-            }
-
-        } else {
-
-            if ($value == null && $value <> '0') {
-
-                $hijo = $xml_temporal->addChild("$key");
-                $hijo->addAttribute('xsi:nil', 'true', $ns_xsi);
+                if (!is_numeric($key)) {
+                    $subnodo = $xml_temporal->addChild("$key");
+                    $this->formato_xml($value, $subnodo);
+                } else {
+                    $this->formato_xml($value, $xml_temporal);
+                }
 
             } else {
 
-                $xml_temporal->addChild(
-                    "$key",
-                    htmlspecialchars((string) $value, ENT_XML1, 'UTF-8')
-                );
+                if ($value == null && $value <> '0') {
+
+                    $hijo = $xml_temporal->addChild("$key");
+                    $hijo->addAttribute('xsi:nil', 'true', $ns_xsi);
+
+                } else {
+
+                    $xml_temporal->addChild(
+                        "$key",
+                        htmlspecialchars((string) $value, ENT_XML1, 'UTF-8')
+                    );
+                }
             }
         }
     }
-}
 
 
     public function registroEventoSignificativo(Request $request)
@@ -3007,7 +2991,7 @@ class VentaController extends Controller
         $pdf->Cell(0, 3.5, utf8_decode('CON DERECHO A CRÉDITO FISCAL'), 0, 1, 'C');
         $pdf->SetFont('Arial', '', 7);
         $pdf->Cell(0, 3.5, utf8_decode('CRISTIAN ALFREDO PURI RAMOS'), 0, 1, 'C');
-        $pdf->Cell(0, 3.5, utf8_decode('Sucursal No. '. $nombreSucursal), 0, 1, 'C');
+        $pdf->Cell(0, 3.5, utf8_decode('Sucursal No. ' . $nombreSucursal), 0, 1, 'C');
         $pdf->Cell(0, 3.5, utf8_decode('No. Punto de Venta ' . $puntoVenta), 0, 1, 'C');
 
         $pdf->SetFont('Arial', '', 7);
@@ -3097,7 +3081,7 @@ class VentaController extends Controller
         foreach ($detalle as $p) {
             $producto = utf8_decode($p->codigoProducto . " - " . $p->descripcion);
 
-            $pdf->SetFont('Arial', 'B', 7   );
+            $pdf->SetFont('Arial', 'B', 7);
             $pdf->MultiCell(0, 3.5, $producto, 0, 'L');
 
             $medida = $p->unidadMedida;

@@ -118,7 +118,7 @@
           </div>
         </div>
         <div>
-          <DataTable :value="arrayVenta" paginator :rows="10" responsiveLayout="scroll"
+          <DataTable :value="arrayVenta" paginator :rows="14" responsiveLayout="scroll"
             class="p-datatable-gridlines p-datatable-sm tabla-venta">
             <Column header="Opciones">
               <template #body="slotProps">
@@ -3846,7 +3846,7 @@ export default {
         const response = await axios.get(url);
         const respuesta = response.data;
 
-        this.arrayVenta = respuesta.ventas.data;
+        this.arrayVenta = respuesta.ventas;
         this.pagination = respuesta.pagination;
 
       } catch (error) {
@@ -3885,7 +3885,7 @@ export default {
         .then(function (response) {
           var respuesta = response.data;
 
-          me.arrayVenta = respuesta.ventas.data;
+          me.arrayVenta = respuesta.ventas  ;
           me.pagination = respuesta.pagination;
 
           console.log("lista:", me.arrayVenta);
