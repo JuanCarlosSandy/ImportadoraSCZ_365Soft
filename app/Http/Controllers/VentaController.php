@@ -133,12 +133,6 @@ class VentaController extends Controller
             ->leftJoin('sucursales', 'users.idsucursal', '=', 'sucursales.id')
             ->leftJoin('facturas', 'ventas.id', '=', 'facturas.idventa')
 
-            // 🔴 JOIN para excluir proveedores
-            ->leftJoin('proveedores', 'proveedores.id', '=', 'personas.id')
-
-            // 🔴 JOIN para excluir usuarios
-            ->leftJoin('users as u2', 'u2.id', '=', 'personas.id')
-
             ->select(
                 'ventas.tipo_comprobante',
                 DB::raw('COALESCE(ventas.idcliente, personas.id) as idcliente'),
@@ -190,9 +184,6 @@ class VentaController extends Controller
             END as saldo_restante
             ")
 
-            // ✅ AQUÍ SE EXCLUYEN
-            ->whereNull('proveedores.id')
-            ->whereNull('u2.id')
             ->where(function ($q) {
                 $q->whereNotNull('ventas.id') // Si hay venta, la muestra (sea estado 1 o 0)
                     ->orWhereNull('ventas.id'); // Si no hay venta (null), también
