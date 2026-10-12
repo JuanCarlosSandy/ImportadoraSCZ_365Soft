@@ -60,7 +60,7 @@
                 <span class="text-required">*</span> Almacen Destino
               </label>
               <Dropdown id="almacen" v-model="AlmacenSeleccionado" :options="arrayAlmacenes"
-                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione" :disabled="idrolUsuario != 4"
+                optionLabel="nombre_almacen" optionValue="id" placeholder="Seleccione"
                 class="dropdown-full" />
             </div>
           </div>

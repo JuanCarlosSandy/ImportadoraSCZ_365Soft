@@ -513,29 +513,43 @@
 </template>
 @elseif (Auth::user()->idrol == 3)
 <template v-if="menu==0">
-    <dashboard></dashboard>
-</template>
-
-<template v-if="menu==3">
     <ingreso></ingreso>
 </template>
 
+<template v-if="menu==1">
+    <almacenes></almacenes>
+</template>
+
+<template v-if="menu==2">
+    <inventarios></inventarios>
+</template>
+
+<template v-if="menu==3">
+    <ajusteinventarios></ajusteinventarios>
+</template>
+
 <template v-if="menu==4">
+    <traspasoproducto></traspasoproducto>
+</template>
+
+<template v-if="menu==5">
+    <articulonewview></articulonewview>
+</template>
+
+<template v-if="menu==6">
+    <lineanewview></lineanewview>
+</template>
+
+<template v-if="menu==7">
     <proveedor></proveedor>
 </template>
+
+<template v-if="menu==8">
+    <reportestock></reportestock>
+</template>
+
 <template v-if="menu==9">
-    <consultaingreso></consultaingreso>
-</template>
-<template v-if="menu==11">
-    <h1>Ayuda</h1>
-</template>
-
-<template v-if="menu==12">
-    <h1>Acerca de</h1>
-</template>
-
-<template v-if="menu==17">
-    <editarperfil></editarperfil>
+    <reporteinventariofisico></reporteinventariofisico>
 </template>
 
 @elseif (Auth::user()->idrol == 4)

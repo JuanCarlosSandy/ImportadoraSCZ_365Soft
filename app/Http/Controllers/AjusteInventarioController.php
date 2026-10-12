@@ -14,20 +14,40 @@ use FPDF;
 
 class AjusteInventarioController extends Controller
 {
+
     public function index(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax()) {
+            return redirect('/');
+        }
 
         $buscar = $request->buscar;
         $criterio = $request->criterio;
-        
+
         $fechaInicio = $request->fechaInicio;
         $fechaFin = $request->fechaFin;
         $idAlmacen = $request->idAlmacen;
 
-        $query = AjusteInvetario::join('articulos', 'ajuste_invetarios.producto', '=', 'articulos.id')
-            ->join('tipo_bajas', 'ajuste_invetarios.idtipobajas', '=', 'tipo_bajas.id')
-            ->join('almacens', 'ajuste_invetarios.almacen', '=', 'almacens.id')
+        $usuario = \Auth::user();
+
+        $query = AjusteInvetario::join(
+            'articulos',
+            'ajuste_invetarios.producto',
+            '=',
+            'articulos.id'
+        )
+            ->join(
+                'tipo_bajas',
+                'ajuste_invetarios.idtipobajas',
+                '=',
+                'tipo_bajas.id'
+            )
+            ->join(
+                'almacens',
+                'ajuste_invetarios.almacen',
+                '=',
+                'almacens.id'
+            )
             ->select(
                 'ajuste_invetarios.*',
                 'articulos.nombre as nombre',
@@ -36,46 +56,59 @@ class AjusteInventarioController extends Controller
                 'articulos.descripcion_fabrica'
             );
 
+        // Filtrar por sucursal para los roles 1, 2 y 3
+        if (in_array($usuario->idrol, [1, 2, 3])) {
+            $query->where(
+                'almacens.sucursal',
+                $usuario->idsucursal
+            );
+        }
+
+        // Filtro por fechas
         if (!empty($fechaInicio) && !empty($fechaFin)) {
             $query->whereBetween('ajuste_invetarios.created_at', [
-                $fechaInicio . ' 00:00:00', 
+                $fechaInicio . ' 00:00:00',
                 $fechaFin . ' 23:59:59'
             ]);
         }
 
+        // Filtro por almacén seleccionado
         if (!empty($idAlmacen)) {
             $query->where('ajuste_invetarios.almacen', $idAlmacen);
         }
 
+        // Búsqueda
         if ($buscar != '') {
             $query->where(function ($q) use ($buscar, $criterio) {
                 if ($criterio != '') {
                     $q->where($criterio, 'like', "%$buscar%");
-                } 
-                else {
+                } else {
                     $q->where('articulos.nombre', 'like', "%$buscar%")
-                    ->orWhere('tipo_bajas.nombre', 'like', "%$buscar%")
-                    ->orWhere('almacens.nombre_almacen', 'like', "%$buscar%")
-                    ->orWhere('ajuste_invetarios.cantidad', 'like', "%$buscar%")
-                    ->orWhere('ajuste_invetarios.created_at', 'like', "%$buscar%");
+                        ->orWhere('tipo_bajas.nombre', 'like', "%$buscar%")
+                        ->orWhere('almacens.nombre_almacen', 'like', "%$buscar%")
+                        ->orWhere('ajuste_invetarios.cantidad', 'like', "%$buscar%")
+                        ->orWhere('ajuste_invetarios.created_at', 'like', "%$buscar%");
                 }
             });
         }
 
-        $ajuste = $query->orderBy('ajuste_invetarios.id', 'desc')->paginate(10);
+        $ajuste = $query
+            ->orderBy('ajuste_invetarios.id', 'desc')
+            ->paginate(10);
 
         return [
             'pagination' => [
-                'total'        => $ajuste->total(),
+                'total' => $ajuste->total(),
                 'current_page' => $ajuste->currentPage(),
-                'per_page'     => $ajuste->perPage(),
-                'last_page'    => $ajuste->lastPage(),
-                'from'         => $ajuste->firstItem(),
-                'to'           => $ajuste->lastItem(),
+                'per_page' => $ajuste->perPage(),
+                'last_page' => $ajuste->lastPage(),
+                'from' => $ajuste->firstItem(),
+                'to' => $ajuste->lastItem(),
             ],
             'ajuste' => $ajuste
         ];
     }
+
 
     public function listarMotivo(Request $request)
     {
@@ -148,7 +181,8 @@ class AjusteInventarioController extends Controller
 
     public function registrarMultiple(Request $request)
     {
-        if (!$request->ajax()) return redirect('/');
+        if (!$request->ajax())
+            return redirect('/');
 
         $request->validate([
             'almacen_id' => 'required|integer',
@@ -162,7 +196,7 @@ class AjusteInventarioController extends Controller
 
         try {
             foreach ($request->productos as $productoData) {
-                
+
                 $inventario = Inventario::where('idarticulo', $productoData['producto_id'])
                     ->where('idalmacen', $request->almacen_id)
                     ->first();
@@ -197,9 +231,9 @@ class AjusteInventarioController extends Controller
                         $nuevoInv->idarticulo = $ajuste->producto;
                         $nuevoInv->idalmacen = $ajuste->almacen;
                         $nuevoInv->saldo_stock = $ajuste->cantidad;
-                        $nuevoInv->cantidad = $ajuste->cantidad; 
-                        
-                        $nuevoInv->fecha_vencimiento = '2099-12-31'; 
+                        $nuevoInv->cantidad = $ajuste->cantidad;
+
+                        $nuevoInv->fecha_vencimiento = '2099-12-31';
 
                         $nuevoInv->save();
                     } else {
@@ -227,12 +261,13 @@ class AjusteInventarioController extends Controller
 
         $inventarios = Inventario::where('idalmacen', $idAlmacen)
             ->where('idarticulo', $detalle['idarticulo'])
-            ->where('saldo_stock', '>', 0) 
-            ->orderBy('fecha_vencimiento', 'asc') 
+            ->where('saldo_stock', '>', 0)
+            ->orderBy('fecha_vencimiento', 'asc')
             ->get();
 
         foreach ($inventarios as $inventario) {
-            if ($cantidadRestante <= 0) break;
+            if ($cantidadRestante <= 0)
+                break;
 
             if ($inventario->saldo_stock >= $cantidadRestante) {
                 $inventario->saldo_stock -= $cantidadRestante;
@@ -272,10 +307,10 @@ class AjusteInventarioController extends Controller
 
         if ($tipo == 'excel') {
             return Excel::download(
-                new AjusteInventarioExport($fechaInicio, $fechaFin, $idAlmacen, $buscar), 
+                new AjusteInventarioExport($fechaInicio, $fechaFin, $idAlmacen, $buscar),
                 $nombreBase . '.xlsx'
             );
-        }         
+        }
         if ($tipo == 'pdf') {
             return $this->exportarPDF($fechaInicio, $fechaFin, $idAlmacen, $buscar);
         }
@@ -307,7 +342,7 @@ class AjusteInventarioController extends Controller
 
         $ajustes = $query->orderBy('ajuste_invetarios.id', 'desc')->get();
 
-        $pdf = new PDFConFooter('L', 'mm', 'A4'); 
+        $pdf = new PDFConFooter('L', 'mm', 'A4');
         $pdf->AliasNbPages();
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 20);
@@ -349,12 +384,12 @@ class AjusteInventarioController extends Controller
         $pdf->Cell(35, 8, utf8_decode('Búsqueda:'), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
         $pdf->Cell(100, 8, utf8_decode($buscar ?: 'Ninguna'), 0, 0, 'L');
-        
+
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(25, 8, utf8_decode('Registros:'), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
         $pdf->Cell(100, 8, $ajustes->count(), 0, 1, 'L');
-        
+
         $pdf->Ln(5);
 
         // --- CABECERA DE TABLA ---
@@ -381,9 +416,9 @@ class AjusteInventarioController extends Controller
         $fill = false;
         foreach ($ajustes as $row) {
             $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
-            
+
             $tipo = strtoupper($row->tipo_movimiento) == 'ENTRADA' ? 'ENTRADA' : 'SALIDA';
-            
+
             $pdf->Cell(30, 7, date('d/m/y H:i', strtotime($row->created_at)), 1, 0, 'C', true);
             $pdf->Cell(45, 7, utf8_decode(substr($row->nombre_almacen, 0, 30)), 1, 0, 'L', true);
             $pdf->Cell(20, 7, $tipo, 1, 0, 'C', true);

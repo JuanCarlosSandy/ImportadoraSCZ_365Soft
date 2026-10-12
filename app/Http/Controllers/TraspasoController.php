@@ -13,22 +13,24 @@ use FPDF;
 
 class TraspasoController extends Controller
 {
-    public function index(Request $request)
+   
+public function index(Request $request)
 {
-    if (!$request->ajax())
+    if (!$request->ajax()) {
         return redirect('/');
+    }
 
     $fechaInicio = $request->fechaInicio;
     $fechaFin = $request->fechaFin;
 
-    $articulos = [];
+    $usuario = \Auth::user();
 
     $articulos = collect(explode(',', $request->articulos))
-    ->filter()
-    ->map(function ($id) {
-        return (int) $id;
-    })
-    ->toArray();
+        ->filter()
+        ->map(function ($id) {
+            return (int) $id;
+        })
+        ->toArray();
 
     $traspasos = Traspaso::select(
         'traspasos.id',
@@ -42,16 +44,32 @@ class TraspasoController extends Controller
         'ad.nombre_almacen as nombre_almacen_destino',
         'personas.nombre as nombre_usuario'
     )
-        ->join('almacens as ao', 'traspasos.almacen_origen', '=', 'ao.id')
-        ->join('almacens as ad', 'traspasos.almacen_destino', '=', 'ad.id')
+        ->join(
+            'almacens as ao',
+            'traspasos.almacen_origen',
+            '=',
+            'ao.id'
+        )
+        ->join(
+            'almacens as ad',
+            'traspasos.almacen_destino',
+            '=',
+            'ad.id'
+        )
         ->join('users', 'traspasos.idusuario', '=', 'users.id')
         ->join('personas', 'users.id', '=', 'personas.id');
 
-    // Si hay artículos seleccionados
+    // Filtrar por sucursal para los roles 1, 2 y 3
+    if (in_array($usuario->idrol, [1, 2, 3])) {
+        $traspasos->where(function ($query) use ($usuario) {
+            $query->where('ao.sucursal', $usuario->idsucursal)
+                ->orWhere('ad.sucursal', $usuario->idsucursal);
+        });
+    }
+
+    // Filtrar por artículos seleccionados
     if (!empty($articulos)) {
-
         $traspasos->whereExists(function ($query) use ($articulos) {
-
             $query->select(\DB::raw(1))
                 ->from('detalle_traspasos')
                 ->join(
@@ -69,10 +87,8 @@ class TraspasoController extends Controller
                     $articulos
                 );
         });
-
     } else {
-
-        // Si no hay artículos, filtrar por fecha
+        // Filtrar por fecha cuando no se seleccionan artículos
         if ($fechaInicio && $fechaFin) {
             $traspasos->whereBetween(
                 'traspasos.fecha_traspaso',

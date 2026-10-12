@@ -37,8 +37,8 @@
           </div>
 
           <div class="toolbar">
-            <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh" class="p-button-warning p-button-sm btn-sm-input" @click="resetBuscar"
-              :title="'Limpiar búsqueda'" />
+            <Button :label="mostrarLabel ? 'Limpiar' : ''" icon="pi pi-refresh"
+              class="p-button-warning p-button-sm btn-sm-input" @click="resetBuscar" :title="'Limpiar búsqueda'" />
             <Button @click="mostrarDetalle()" :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus"
               class="p-button-secondary p-button-sm btn-sm-input" :title="'Nuevo Registro'" />
           </div>
@@ -55,12 +55,12 @@
               <Button @click="imprimirIngreso(slotProps.data)" icon="pi pi-print" severity="warning" size="small"
                 :title="'Imprimir PDF'" class="p-button-primary btn-mini" :disabled="isLoading" />
 
-              <template v-if="puedeModificarIngreso(slotProps.data)">
-                <Button icon="pi pi-pencil" class="p-button-warning btn-mini"
-                  @click="editarIngreso(slotProps.data.id)" :title="'Editar Compra'" />
+              <template v-if="idrol == 4 && puedeModificarIngreso(slotProps.data)">
+                <Button icon="pi pi-pencil" class="p-button-warning btn-mini" @click="editarIngreso(slotProps.data.id)"
+                  title="Editar Compra" />
 
-                <Button @click="anularCompra(slotProps.data.id)" icon="pi pi-trash"
-                  class="p-button-danger btn-mini" :title="'Anular Compra'" />
+                <Button icon="pi pi-trash" class="p-button-danger btn-mini" @click="anularCompra(slotProps.data.id)"
+                  title="Anular Compra" />
               </template>
 
             </template>
@@ -126,7 +126,8 @@
           </div>
         </div>
 
-        <DataTable :value="arrayDetalle" responsiveLayout="scroll" class="p-datatable-gridlines p-datatable-sm tabla-pro">
+        <DataTable :value="arrayDetalle" responsiveLayout="scroll"
+          class="p-datatable-gridlines p-datatable-sm tabla-pro">
           <Column header="Cant.">
             <template #body="slotProps">
               <span class="tipo-compra-badge tag-mini"
@@ -231,6 +232,7 @@ export default {
   },
   data() {
     return {
+      idrol: null,
       monedaPrincipal: 'BOB',
       ingresoSeleccionado: null, // <-- aquí guardamos el ingreso a editar
       isEditing: false, // se activa cuando cargamos datos para editar
@@ -480,6 +482,7 @@ export default {
         const response = await axios.get(url);
         this.arrayIngreso = response.data.ingresos.data;
         this.pagination = response.data.pagination;
+        this.idrol = response.data.idrol;
       } catch (error) { }
     },
 
@@ -696,11 +699,13 @@ export default {
   font-size: 14px;
   flex-shrink: 0;
 }
+
 /* Estilos para detalles fuera del TabView */
 .detalle-overlay {
   animation: fadeIn 0.3s ease-in;
   padding: 1rem;
 }
+
 /* Estilo de tabla con scroll horizontal */
 .tabla-pro {
   width: 100%;

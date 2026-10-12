@@ -211,34 +211,34 @@ class AlmacenController extends Controller
         $encargados = explode(',', $request->encargado);
         $almacenes->encargado = json_encode($encargados);
     }
-  public function selectAlmacen(Request $request)
-{
-    if (!$request->ajax()) {
-        return redirect('/');
+    public function selectAlmacen(Request $request)
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
+        }
+
+        $usuario = \Auth::user(); // Usuario logueado
+        $idsucursal = $usuario->idsucursal;
+        $idrol = $usuario->idrol; // Asegúrate de que el modelo User tenga esta relación o campo
+
+        // Si el usuario tiene rol 1 o 2, solo mostrar los almacenes de su sucursal
+        if (in_array($idrol, [1, 2, 3])) {
+            $almacenes = Almacen::where('condicion', '=', '1')
+                ->where('sucursal', '=', $idsucursal)
+                ->select('id', 'nombre_almacen', 'sucursal')
+                ->orderBy('nombre_almacen', 'asc')
+                ->get();
+        } else {
+            // Caso contrario, listar todos los almacenes priorizando la sucursal del usuario
+            $almacenes = Almacen::where('condicion', '=', '1')
+                ->select('id', 'nombre_almacen', 'sucursal')
+                ->orderByRaw("CASE WHEN sucursal = ? THEN 0 ELSE 1 END", [$idsucursal])
+                ->orderBy('nombre_almacen', 'asc')
+                ->get();
+        }
+
+        return ['almacenes' => $almacenes];
     }
-
-    $usuario = \Auth::user(); // Usuario logueado
-    $idsucursal = $usuario->idsucursal;
-    $idrol = $usuario->idrol; // Asegúrate de que el modelo User tenga esta relación o campo
-
-    // Si el usuario tiene rol 1 o 2, solo mostrar los almacenes de su sucursal
-    if (in_array($idrol, [1, 2])) {
-        $almacenes = Almacen::where('condicion', '=', '1')
-            ->where('sucursal', '=', $idsucursal)
-            ->select('id', 'nombre_almacen', 'sucursal')
-            ->orderBy('nombre_almacen', 'asc')
-            ->get();
-    } else {
-        // Caso contrario, listar todos los almacenes priorizando la sucursal del usuario
-        $almacenes = Almacen::where('condicion', '=', '1')
-            ->select('id', 'nombre_almacen', 'sucursal')
-            ->orderByRaw("CASE WHEN sucursal = ? THEN 0 ELSE 1 END", [$idsucursal])
-            ->orderBy('nombre_almacen', 'asc')
-            ->get();
-    }
-
-    return ['almacenes' => $almacenes];
-}
 
 
     public function AlmacenesLista(Request $request)

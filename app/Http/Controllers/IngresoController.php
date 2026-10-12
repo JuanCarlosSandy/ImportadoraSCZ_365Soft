@@ -190,6 +190,7 @@ class IngresoController extends Controller
                 "to" => $ingresos->lastItem(),
             ],
             "ingresos" => $ingresos,
+            'idrol' => \Auth::user()->idrol
         ];
     }
 
