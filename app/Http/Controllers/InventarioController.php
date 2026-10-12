@@ -289,6 +289,7 @@ class InventarioController extends Controller
     {
         return Excel::download(new ProductosVencidosExport, 'articulosVencidos.xlsx');
     }
+
     public function productosBajoStock(Request $request)
     {
         if (!$request->ajax()) {
@@ -296,12 +297,70 @@ class InventarioController extends Controller
         }
 
         $usuario = \Auth::user();
+
         $buscar = $request->buscar;
         $criterio = $request->criterio;
         $almacen_id = $request->almacen_id;
         $medicamento = $request->medicamento;
         $laboratorio = $request->laboratorio;
         $codigo = trim((string) $request->codigo);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Obtener los almacenes del mismo departamento
+        |--------------------------------------------------------------------------
+        */
+
+        $almacenesColumnas = collect();
+
+        if (!empty($almacen_id)) {
+
+            $almacenSeleccionado = DB::table('almacens')
+                ->join(
+                    'sucursales',
+                    'almacens.sucursal',
+                    '=',
+                    'sucursales.id'
+                )
+                ->where('almacens.id', $almacen_id)
+                ->select(
+                    'almacens.id',
+                    'almacens.nombre_almacen',
+                    'sucursales.departamento'
+                )
+                ->first();
+
+            if ($almacenSeleccionado) {
+
+                $almacenesColumnas = DB::table('almacens')
+                    ->join(
+                        'sucursales',
+                        'almacens.sucursal',
+                        '=',
+                        'sucursales.id'
+                    )
+                    ->where(
+                        'sucursales.departamento',
+                        $almacenSeleccionado->departamento
+                    )
+                    // No repetir el almacén seleccionado
+                    ->where('almacens.id', '<>', (int) $almacen_id)
+                    // El depósito siempre tendrá su columna fija
+                    ->where('almacens.id', '<>', 2)
+                    ->select(
+                        'almacens.id',
+                        'almacens.nombre_almacen'
+                    )
+                    ->orderBy('almacens.nombre_almacen', 'asc')
+                    ->get();
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Consulta principal de inventarios
+        |--------------------------------------------------------------------------
+        */
 
         $query = Inventario::join(
             'almacens',
@@ -321,14 +380,19 @@ class InventarioController extends Controller
                 '=',
                 'proveedores.id'
             )
-            ->where('articulos.condicion', 1)
             ->leftJoin(
                 'personas',
                 'proveedores.id',
                 '=',
                 'personas.id'
             )
-            // Stock del producto en el almacén con ID 2
+
+            /*
+            |--------------------------------------------------------------------------
+            | Stock fijo del depósito (ID 2)
+            |--------------------------------------------------------------------------
+            */
+
             ->leftJoin(
                 DB::raw('(
                 SELECT
@@ -342,6 +406,9 @@ class InventarioController extends Controller
                 '=',
                 'inventarios.idarticulo'
             )
+
+            ->where('articulos.condicion', 1)
+
             ->select(
                 'inventarios.idarticulo',
                 'inventarios.idalmacen',
@@ -352,27 +419,80 @@ class InventarioController extends Controller
                 'articulos.unidad_envase',
                 'articulos.stock',
                 'articulos.precio_costo_unid',
-                DB::raw("COALESCE(MAX(personas.nombre), 'Sin proveedor') as nombre_proveedor"),
-                DB::raw('SUM(inventarios.saldo_stock) as saldo_stock'),
-                DB::raw('COALESCE(inventario_almacen_2.stock_almacen_2, 0) as stock_almacen_2')
-            )
-            ->groupBy(
-                'inventarios.idarticulo',
-                'inventarios.idalmacen',
-                'almacens.nombre_almacen',
-                'almacens.ubicacion',
-                'articulos.codigo',
-                'articulos.nombre',
-                'articulos.unidad_envase',
-                'articulos.stock',
-                'articulos.precio_costo_unid',
-                'inventario_almacen_2.stock_almacen_2'
-            )
-            ->havingRaw(
-                'articulos.stock > SUM(inventarios.saldo_stock)'
+
+                DB::raw("
+                COALESCE(
+                    MAX(personas.nombre),
+                    'Sin proveedor'
+                ) AS nombre_proveedor
+            "),
+
+                DB::raw(
+                    'SUM(inventarios.saldo_stock) AS saldo_stock'
+                ),
+
+                DB::raw(
+                    'COALESCE(
+                    inventario_almacen_2.stock_almacen_2,
+                    0
+                ) AS stock_almacen_2'
+                )
             );
 
-        // Filtrar por sucursal del usuario
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Agregar el stock individual de cada almacén del departamento
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($almacenesColumnas as $almacenColumna) {
+
+            $idAlmacenColumna = (int) $almacenColumna->id;
+
+            $query->addSelect(DB::raw(
+                '(SELECT COALESCE(SUM(inv2.saldo_stock), 0)
+              FROM inventarios AS inv2
+              WHERE inv2.idarticulo = inventarios.idarticulo
+              AND inv2.idalmacen = ' . $idAlmacenColumna . ')
+              AS stock_almacen_' . $idAlmacenColumna
+            ));
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Agrupación
+        |--------------------------------------------------------------------------
+        */
+
+        $query->groupBy(
+            'inventarios.idarticulo',
+            'inventarios.idalmacen',
+            'almacens.nombre_almacen',
+            'almacens.ubicacion',
+            'articulos.codigo',
+            'articulos.nombre',
+            'articulos.unidad_envase',
+            'articulos.stock',
+            'articulos.precio_costo_unid',
+            'inventario_almacen_2.stock_almacen_2'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Mostrar productos con bajo stock
+        |--------------------------------------------------------------------------
+        */
+
+        $query->havingRaw(
+            'articulos.stock > SUM(inventarios.saldo_stock)'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Filtrar por sucursal del usuario
+        |--------------------------------------------------------------------------
+        */
+
         if ($usuario->idrol != 4) {
             $query->where(
                 'almacens.sucursal',
@@ -380,8 +500,14 @@ class InventarioController extends Controller
             );
         }
 
-        // Búsqueda general
-        if ($buscar != '') {
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Búsqueda general
+        |--------------------------------------------------------------------------
+        */
+
+        if (!empty($buscar) && !empty($criterio)) {
+
             $query->where(
                 'inventarios.' . $criterio,
                 'like',
@@ -389,7 +515,12 @@ class InventarioController extends Controller
             );
         }
 
-        // Almacén
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Filtrar por almacén seleccionado
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($almacen_id)) {
             $query->where(
                 'inventarios.idalmacen',
@@ -397,7 +528,12 @@ class InventarioController extends Controller
             );
         }
 
-        // Medicamento
+        /*
+        |--------------------------------------------------------------------------
+        | 9. Filtrar por medicamento
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($medicamento)) {
             $query->where(
                 'articulos.nombre',
@@ -406,15 +542,25 @@ class InventarioController extends Controller
             );
         }
 
-        // Laboratorio / proveedor
+        /*
+        |--------------------------------------------------------------------------
+        | 10. Filtrar por laboratorio o proveedor
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($laboratorio)) {
             $query->whereRaw(
-                "COALESCE(personas.nombre, 'Sin proveedor') like ?",
+                "COALESCE(personas.nombre, 'Sin proveedor') LIKE ?",
                 ['%' . $laboratorio . '%']
             );
         }
 
-        // Código
+        /*
+        |--------------------------------------------------------------------------
+        | 11. Filtrar por código
+        |--------------------------------------------------------------------------
+        */
+
         if ($codigo !== '') {
             $query->where(
                 'articulos.codigo',
@@ -423,11 +569,23 @@ class InventarioController extends Controller
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | 12. Ordenar y paginar
+        |--------------------------------------------------------------------------
+        */
+
         $inventarios = $query
             ->orderByRaw('SUM(inventarios.saldo_stock) ASC')
             ->orderBy('almacens.nombre_almacen', 'asc')
             ->orderBy('articulos.nombre', 'asc')
-            ->paginate(6);
+            ->paginate(13);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 13. Respuesta para Vue
+        |--------------------------------------------------------------------------
+        */
 
         return [
             'pagination' => [
@@ -438,10 +596,12 @@ class InventarioController extends Controller
                 'from' => $inventarios->firstItem(),
                 'to' => $inventarios->lastItem(),
             ],
-            'inventarios' => $inventarios
+
+            'inventarios' => $inventarios,
+
+            'almacenes_columnas' => $almacenesColumnas
         ];
     }
-
 
     public function listarReporteBajoStockExcel(Request $request)
     {

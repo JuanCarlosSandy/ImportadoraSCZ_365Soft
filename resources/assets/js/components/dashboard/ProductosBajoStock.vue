@@ -27,8 +27,7 @@
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
           <label for="almacen" style="font-weight: bold; font-size: 0.9rem;">Seleccionar Almacén</label>
           <Dropdown id="almacen" v-model="filtros.almacen_id" :options="arrayAlmacenes" optionLabel="nombre_almacen"
-            optionValue="id" placeholder="Todos los almacenes" showClear @change="listarInventario(1)"
-            class="dropdown-full" />
+            optionValue="id" placeholder="Todos los almacenes" @change="listarInventario(1)" class="dropdown-full" />
         </div>
 
         <div class="field col-12 md:col-3" style="flex: 1; min-width: 200px;">
@@ -50,9 +49,10 @@
       </div>
     </div>
 
-    <DataTable :value="arrayInventario" :rowClass="getRowClass" responsiveLayout="scroll" stripedRows
-      rowGroupMode="subheader" groupRowsBy="nombre_almacen" sortMode="single" sortField="nombre_almacen" :sortOrder="1"
-      class="p-datatable-sm p-datatable-gridlines tabla-pro">
+    <DataTable :key="keyTablaInventario" :value="arrayInventario" :rowClass="getRowClass" responsiveLayout="scroll"
+      stripedRows rowGroupMode="subheader" groupRowsBy="nombre_almacen" sortMode="single" sortField="nombre_almacen"
+      :sortOrder="1" class="p-datatable-sm p-datatable-gridlines tabla-pro">
+
       <template #groupheader="slotProps">
         <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background-color: #e9ecef;">
           <i class="pi pi-building" style="font-size: 1.2rem; color: #495057;"></i>
@@ -63,17 +63,29 @@
       </template>
 
       <Column field="codigo" header="Código"></Column>
-      <Column field="nombre_producto" header="Producto"></Column>
-            <Column field="stock_almacen_2" header="Stock Deposito"></Column>
 
-      <Column field="stock" header="Stock Minimo">
+      <Column field="nombre_producto" header="Producto"></Column>
+
+      <!-- Esta columna siempre permanece visible -->
+      <Column field="stock_almacen_2" header="Stock Depósito">
         <template #body="slotProps">
-          <span style="font-weight: bold; font-size: 1.1em;">
-            {{ slotProps.data.stock }}
+          <span class="tag-mini">
+            {{ slotProps.data.stock_almacen_2 || 0 }}
           </span>
         </template>
       </Column>
 
+      <!-- Columnas de los demás almacenes del mismo departamento -->
+      <Column v-for="almacen in almacenesColumnas" :key="almacen.id" :field="'stock_almacen_' + almacen.id"
+        :header="'Stock ' + almacen.nombre_almacen">
+        <template #body="slotProps">
+          <span class="tag-mini">
+            {{ slotProps.data['stock_almacen_' + almacen.id] || 0 }}
+          </span>
+        </template>
+      </Column>
+
+      <!-- Se conserva tu columna de stock actual -->
       <Column field="saldo_stock" header="Stock Actual">
         <template #body="slotProps">
           <span style="font-weight: bold; font-size: 1.1em;">
@@ -121,13 +133,15 @@ export default {
   },
   data() {
     return {
+      keyTablaInventario: 0,
+      almacenesColumnas: [],
       isLoading: false,
 
       mostrarLabel: true,
       arrayInventario: [],
       pagination: { total: 0, current_page: 1, per_page: 10, last_page: 0 },
       filtros: {
-        almacen_id: null,
+        almacen_id: 1,
         medicamento: "",
         laboratorio: "",
         codigo: "",
@@ -156,26 +170,63 @@ export default {
       }, 500);
     },
 
+
+
+
     listarInventario(page = 1) {
+      this.isLoading = true;
+
+      this.almacenesColumnas = [];
+      this.arrayInventario = [];
+
+      const almacenSeleccionado = this.filtros.almacen_id;
+
       const params = {
         page: page,
-        almacen_id: this.filtros.almacen_id,
+        almacen_id: almacenSeleccionado,
         medicamento: this.filtros.medicamento,
         laboratorio: this.filtros.laboratorio,
         codigo: this.filtros.codigo,
       };
 
       axios
-        .get("/inventarios/productosbajostock", { params: params })
+        .get("/inventarios/productosbajostock", { params })
         .then((response) => {
+          if (
+            String(this.filtros.almacen_id || '') !==
+            String(almacenSeleccionado || '')
+          ) {
+            return;
+          }
+
           this.arrayInventario = response.data.inventarios.data;
           this.pagination = response.data.pagination;
+
+          const columnas = response.data.almacenes_columnas;
+
+          // Forzar la recreación del DataTable
+          this.keyTablaInventario++;
+
+          this.almacenesColumnas = Array.isArray(columnas)
+            ? columnas.filter(a => a && a.id != null)
+            : [];
+
+          console.log('Almacén seleccionado:', almacenSeleccionado);
+          console.log('Columnas recibidas:', this.almacenesColumnas);
         })
-        .catch((error) => console.error(error));
+        .catch((error) => {
+          this.almacenesColumnas = [];
+
+          console.error('Error al listar inventario:', error);
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
 
+
     resetFiltros() {
-      this.filtros = { almacen_id: null, medicamento: "", laboratorio: "", codigo: "" };
+      this.filtros = { almacen_id: 1, medicamento: "", laboratorio: "", codigo: "" };
       this.listarInventario(1);
     },
 
