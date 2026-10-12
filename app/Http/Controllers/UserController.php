@@ -77,7 +77,8 @@ class UserController extends Controller
         $personas = $query->orderBy('personas.id', 'desc')->get();
 
         return [
-            'personas' => $personas
+            'personas' => $personas,
+            'idrol' => \Auth::user()->idrol
         ];
     }
 

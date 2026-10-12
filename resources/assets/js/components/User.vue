@@ -38,6 +38,9 @@
             class="p-button-warning btn-sm-input" :title="'Limpiar búsqueda'" />
           <Button :label="mostrarLabel ? 'Excel' : ''" icon="pi pi-file-excel" @click="cargarReporteUsuariosExcel()"
             class="p-button-success btn-sm-input" :title="'Exportar a Excel'" />
+          <Button v-if="idrol_auth == 4" :label="mostrarLabel ? 'Clave' : ''" icon="pi pi-lock"
+            class="p-button-danger p-button-sm btn-sm-input" @click="abrirDialogClave"
+            :title="'Administrar clave'"/>
           <Button :label="mostrarLabel ? 'Nuevo' : ''" icon="pi pi-plus" @click="abrirModal('persona', 'registrar')"
             class="p-button-secondary btn-sm-input" :title="'Nuevo usuario'" />
         </div>
@@ -261,6 +264,49 @@
       </template>
     </Dialog>
 
+    <Dialog :visible.sync="dialogClaveAdministrativa" :modal="true" :closable="false"
+      :containerStyle="{ width: '450px', borderRadius: '10px' }" position="center">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-lock header-icon"></i>
+          <span class="header-title">
+            CLAVE ADMINISTRATIVA
+          </span>
+        </div>
+      </template>
+
+      <div class="p-fluid">
+
+        <div class="form-group">
+          <label for="claveAdministrativa">
+            <i class="pi pi-key mr-2"></i>
+            Nueva clave
+          </label>
+
+          <Password id="claveAdministrativa" v-model="claveAdministrativa" placeholder="Ingrese la nueva clave"
+            :feedback="false" toggleMask class="input-full" />
+        </div>
+
+        <small class="text-muted">
+          Esta clave será utilizada para autorizar la anulación
+          de ventas de los usuarios que no sean administradores.
+        </small>
+
+      </div>
+
+      <template #footer>
+        <div class="d-flex justify-content-end gap-2">
+
+          <Button label="Cerrar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm"
+            @click="cerrarDialogClave" />
+
+          <Button label="Guardar" icon="pi pi-save" class="p-button-success p-button-sm btn-sm"
+            @click="guardarClaveAdministrativa" />
+
+        </div>
+      </template>
+    </Dialog>
+
   </div>
 </template>
 
@@ -298,6 +344,10 @@ export default {
   },
   data() {
     return {
+      dialogClaveAdministrativa: false,
+      claveAdministrativa: '',
+      idrol_auth: null,
+
       arrayPuntoVenta: [],
       idpuntoventa: '',
       modalFoto: false,
@@ -404,6 +454,63 @@ export default {
     },
   },
   methods: {
+    abrirDialogClave() {
+
+      this.claveAdministrativa = '';
+
+      this.dialogClaveAdministrativa = true;
+    },
+    cerrarDialogClave() {
+
+      this.claveAdministrativa = '';
+
+      this.dialogClaveAdministrativa = false;
+    },
+    guardarClaveAdministrativa() {
+
+      if (!this.claveAdministrativa) {
+
+        this.toastInfo("Debe ingresar una clave.");
+        return;
+      }
+
+      if (this.claveAdministrativa.length < 4) {
+
+        this.toastInfo("La clave debe tener al menos 4 caracteres.");
+        return;
+      }
+
+      let me = this;
+
+      axios.post('/clave-administrativa/guardar', {
+        clave: this.claveAdministrativa
+      })
+        .then(function (response) {
+
+          if (response.data.id > 0) {
+
+            me.claveAdministrativa = '';
+            me.dialogClaveAdministrativa = false;
+
+            me.toastSuccess(response.data.mensaje);
+          } else {
+
+            me.toastError(
+              response.data.error || "No se pudo guardar la clave administrativa."
+            );
+          }
+
+        })
+        .catch(function (error) {
+
+          console.log(error);
+
+          me.toastError(
+            "No se pudo guardar la clave administrativa."
+          );
+        });
+    },
+
     obtenerPuntosDeVenta() {
       if (this.idsucursal === '0') {
         return;
@@ -492,6 +599,8 @@ export default {
         const url = "/user?buscar=" + buscar;
         const response = await axios.get(url);
         me.arrayPersona = response.data.personas;
+        me.idrol_auth = response.data.idrol;
+        console.log("user rol: ", me.idrol_auth);
       } catch (error) {
         console.error("Error al listar usuarios:", error);
         Swal.fire("Error", "No se pudieron cargar los usuarios", "error");

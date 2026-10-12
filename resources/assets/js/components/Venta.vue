@@ -149,11 +149,11 @@
                   color: slotProps.data.descuento_total > 0 ? 'black' : 'white',
                 }" :title="'Ver'" />
 
-                <!-- Botón eliminar si estado = 1 -->
+                <!-- Botón anular recibo -->
                 <template v-if="slotProps.data.estado === '1' || slotProps.data.estado === '2'">
-                  <Button icon="pi pi-trash" v-if="slotProps.data.tipo_comprobante === 'RESIVO'"
-                    @click="desactivarVenta(slotProps.data.id)" class="p-button-danger btn-mini"
-                    :title="'Desactivar'" />
+                  <Button v-if="slotProps.data.tipo_comprobante === 'RESIVO'" icon="pi pi-trash"
+                    @click="solicitarClaveAnulacion('venta', slotProps.data)" class="p-button-danger btn-mini"
+                    title="Desactivar" />
                 </template>
 
                 <!-- Botones para RESIVO -->
@@ -168,8 +168,8 @@
                   <Button icon="pi pi-print" @click="imprimirFactura(slotProps.data.idFactura, slotProps.data.correo)"
                     class="p-button-primary btn-mini" :title="'Imprimir'" />
                   <Button v-if="slotProps.data.estado === '1'" icon="pi pi-trash"
-                    @click="abrirDialogAnularFactura(slotProps.data)" class="p-button-danger btn-mini"
-                    :title="'Anular Factura'" />
+                    @click="solicitarClaveAnulacion('factura', slotProps.data)" class="p-button-danger btn-mini"
+                    title="Anular factura" />
                   <!-- 🔸 BOTÓN PAGAR -->
                   <template v-if="slotProps.data.estado == '4' || slotProps.data.facturaValidada == 0"> <Button
                       label="Facturar" icon="pi pi-wallet" class="p-button-warning btn-mini"
@@ -1799,6 +1799,54 @@
         </div>
       </template>
     </Dialog>
+
+    <Dialog :visible.sync="dialogClaveAnulacion" :modal="true" :closable="false"
+      :containerStyle="{ width: '400px', borderRadius: '10px' }" position="center">
+      <template #header>
+        <div class="dialog-header">
+          <i class="pi pi-lock header-icon"></i>
+          <span class="header-title">
+            AUTORIZACIÓN
+          </span>
+        </div>
+      </template>
+
+      <div class="p-fluid">
+
+        <div class="form-group">
+
+          <label for="claveAnulacion">
+            Clave administrativa
+          </label>
+
+          <Password id="claveAnulacion" v-model="claveAnulacion" placeholder="Ingrese la clave" :feedback="false"
+            toggleMask class="input-full" @keyup.enter="validarClaveAnulacion" />
+
+        </div>
+
+        <small class="text-muted">
+          Se requiere autorización administrativa para realizar
+          esta acción.
+        </small>
+
+      </div>
+
+      <template #footer>
+
+        <div class="d-flex justify-content-end gap-2">
+
+          <Button label="Cancelar" icon="pi pi-times" class="p-button-danger p-button-sm btn-sm"
+            @click="cerrarDialogClaveAnulacion" />
+
+          <Button label="Continuar" icon="pi pi-check" class="p-button-success p-button-sm btn-sm"
+            @click="validarClaveAnulacion" />
+
+        </div>
+
+      </template>
+
+    </Dialog>
+
   </main>
 </template>
 
@@ -1826,6 +1874,7 @@ import TabPanel from 'primevue/tabpanel';
 import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
 import Tooltip from 'primevue/tooltip';
+import Password from "primevue/password";
 
 export default {
   components: {
@@ -1850,12 +1899,18 @@ export default {
     InputSwitch,
     ProgressBar,
     ToastService,
-    Toast
+    Toast,
+    Password
+
   }, directives: {
     'tooltip': Tooltip
   },
   data() {
     return {
+      dialogClaveAnulacion: false,
+      claveAnulacion: '',
+      tipoAnulacion: '',
+      datosAnulacion: {},
       totalesVentas: {
         total_ventas_activas: 0,
         total_ventas_anuladas: 0
@@ -2348,6 +2403,94 @@ export default {
   },
 
   methods: {
+
+    solicitarClaveAnulacion(tipo, venta) {
+      // El administrador puede continuar directamente
+      if (this.idrol == 4) {
+        if (tipo === 'factura') {
+          this.abrirDialogAnularFactura(venta);
+        } else if (tipo === 'venta') {
+          this.desactivarVenta(venta.id);
+        }
+
+        return;
+      }
+
+      // Guardar la operación pendiente
+      this.tipoAnulacion = tipo;
+      this.datosAnulacion = Object.assign({}, venta);
+      this.claveAnulacion = '';
+
+      // Mostrar autorización
+      this.dialogClaveAnulacion = true;
+    },
+
+    validarClaveAnulacion() {
+      if (!this.claveAnulacion) {
+        this.toastInfo('Debe ingresar la clave administrativa.');
+        return;
+      }
+
+      if (this.validandoClaveAnulacion) {
+        return;
+      }
+
+      this.validandoClaveAnulacion = true;
+
+      axios.post('/clave-administrativa/validar', {
+        clave: this.claveAnulacion
+      })
+        .then((response) => {
+          if (!response.data.valido) {
+            this.toastError(
+              response.data.error ||
+              'La clave administrativa es incorrecta.'
+            );
+
+            this.claveAnulacion = '';
+            return;
+          }
+
+          // Guardar la operación antes de cerrar el diálogo
+          const tipo = this.tipoAnulacion;
+          const venta = Object.assign({}, this.datosAnulacion);
+
+          this.claveAnulacion = '';
+          this.dialogClaveAnulacion = false;
+
+          this.tipoAnulacion = '';
+          this.datosAnulacion = {};
+
+          // Continuar con el proceso original
+          this.$nextTick(() => {
+            if (tipo === 'factura') {
+              // Abrir el diálogo existente para elegir EFECTIVO o QR
+              this.abrirDialogAnularFactura(venta);
+            } else if (tipo === 'venta') {
+              // Continuar con la anulación del recibo
+              this.desactivarVenta(venta.id);
+            }
+          });
+        })
+        .catch((error) => {
+          console.error('Error al validar clave:', error);
+
+          this.toastError(
+            'No se pudo validar la clave administrativa.'
+          );
+        })
+        .finally(() => {
+          this.validandoClaveAnulacion = false;
+        });
+    },
+
+    cerrarDialogClaveAnulacion() {
+      this.claveAnulacion = '';
+      this.tipoAnulacion = '';
+      this.datosAnulacion = {};
+      this.dialogClaveAnulacion = false;
+    },
+
     formatearImporte(valor) {
       return Number(valor || 0).toLocaleString('es-BO', {
         minimumFractionDigits: 2,
@@ -3827,24 +3970,24 @@ export default {
             me.arrayVenta = respuesta.ventas.data;
             me.pagination = respuesta.pagination;
             me.totalesVentas = {
-  total_ventas_activas: Number(
-    response.data.total_ventas_activas || 0
-  ),
-  total_ventas_anuladas: Number(
-    response.data.total_ventas_anuladas || 0
-  )
-};
-console.log("totales", me.totalesVentas);
+              total_ventas_activas: Number(
+                response.data.total_ventas_activas || 0
+              ),
+              total_ventas_anuladas: Number(
+                response.data.total_ventas_anuladas || 0
+              )
+            };
+            console.log("totales", me.totalesVentas);
           } else {
             me.arrayVenta = respuesta.ventas;
-                        me.totalesVentas = {
-  total_ventas_activas: Number(
-    response.data.total_ventas_activas || 0
-  ),
-  total_ventas_anuladas: Number(
-    response.data.total_ventas_anuladas || 0
-  )
-};
+            me.totalesVentas = {
+              total_ventas_activas: Number(
+                response.data.total_ventas_activas || 0
+              ),
+              total_ventas_anuladas: Number(
+                response.data.total_ventas_anuladas || 0
+              )
+            };
           }
         })
         .catch(function (error) {

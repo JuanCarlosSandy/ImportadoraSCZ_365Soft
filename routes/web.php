@@ -1084,6 +1084,11 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get('/reporte-productos-vendidos', 'ReportesVentas@ReporteProductosVendidos');
         Route::get('/reporte-productos-vendidos-pdf', 'ReportesVentas@ReporteProductosVendidosPDF');
         Route::get('/reporte-productos-vendidos-excel', 'ReportesVentas@exportarExcel');
+
+        //CLAVES ADMINISTRATIVAS
+        Route::get('/clave-administrativa', 'ClaveAdministrativaController@index');
+        Route::post('/clave-administrativa/guardar', 'ClaveAdministrativaController@store');
+        Route::post('/clave-administrativa/validar', 'ClaveAdministrativaController@validar');
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA
