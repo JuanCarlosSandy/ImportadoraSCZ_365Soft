@@ -21,7 +21,9 @@
       <div class="info-tip">
         <i class="pi pi-info-circle"></i>
         <span>
-          Filtre por almacén para poder ver los datos. Importar datos desde un Excel, Exportar un reporte en Excel o PDF del inventario seleccionado.
+          Filtre por almacén para poder ver los datos. Importar datos desde un Excel, Exportar un reporte en Excel o PDF
+          del
+          inventario seleccionado.
         </span>
       </div>
 
@@ -35,13 +37,23 @@
               optionValue="id" placeholder="Seleccione un almacén" @change="getDatosAlmacen" class="dropdown-full" />
           </div>
 
+
+          <!-- Ordenar inventario -->
+          <div class="filter-group-almacen">
+            <label class="filter-label">ORDENAR PRODUCTOS</label>
+
+            <Dropdown v-model="ordenInventario" :options="opcionesOrden" optionLabel="label" optionValue="value"
+              placeholder="Ordenar por" @change="cambiarOrdenInventario" class="dropdown-full" />
+          </div>
+
+
           <!-- Acciones -->
           <div class="filter-group-actions">
             <label class="filter-label">ACCIONES</label>
 
             <div class="panel-actions">
-              <Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" @click="abrirModalImportar()"
-                class="p-button-success p-button-sm btn-sm-input" />
+              <!--<Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" @click="abrirModalImportar()"
+                class="p-button-success p-button-sm btn-sm-input" />-->
 
               <Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-download" @click="exportarInventario"
                 class="p-button-info p-button-sm btn-sm-input" />
@@ -64,26 +76,66 @@
         </div>
       </div>
       <!-- DataTable para vista por Item -->
+
       <DataTable v-if="tipoSeleccionado == 'item'" :value="arrayInventario"
         class="p-datatable-sm p-datatable-gridlines tabla-pro" responsiveLayout="scroll">
-        <Column field="codigo" header="Codigo"></Column>
+
+        <Column field="codigo" header="Código"></Column>
+
         <Column field="nombre_producto" header="Producto"></Column>
-        <Column field="nombre_categoria" header="Categoria"></Column>
-        <Column field="nombre_proveedor" header="Proveedor"></Column>
-        <Column field="unidad_envase" header="Unid x Paq"></Column>
-        <Column field="saldo_stock_total" header="Stock Actual">
+
+        <!-- Stock del almacén seleccionado -->
+        <Column header="Stock Actual">
           <template #body="slotProps">
-            <span v-if="slotProps.data.saldo_stock_total == 0"
-              style="color: #dc2626; font-weight: bold; display: flex; align-items: center;">
-              <i class="pi pi-exclamation-triangle tag-mini" style="margin-right: 6px; font-size: 1.1em;"></i>
+
+            <span v-if="slotProps.data.saldo_stock_total == 0" style="color: #dc2626; font-weight: bold;">
+              <i class="pi pi-exclamation-triangle" style="margin-right: 5px;"></i>
               Sin Stock
             </span>
+
             <span v-else>
-              {{ slotProps.data.saldo_stock_total }} {{ slotProps.data.descripcion_fabrica }}
+              {{ slotProps.data.saldo_stock_total }}
+              {{ slotProps.data.descripcion_fabrica }}
             </span>
+
           </template>
         </Column>
+
+        <!-- Stock del depósito: ocultar si el depósito es el seleccionado -->
+        <Column v-if="Number(AlmacenSeleccionado) !== 2" header="Stock Depósito">
+          <template #body="slotProps">
+
+            <span v-if="Number(slotProps.data.stock_deposito || 0) === 0" style="color: #dc2626; font-weight: 600;">
+              Sin Stock
+            </span>
+
+            <span v-else>
+              {{ slotProps.data.stock_deposito }}
+              {{ slotProps.data.descripcion_fabrica }}
+            </span>
+
+          </template>
+        </Column>
+
+        <!-- Columnas dinámicas de otros almacenes -->
+        <Column v-for="almacen in arrayAlmacenesColumnas" :key="almacen.id" :header="almacen.nombre_almacen">
+          <template #body="slotProps">
+
+            <span v-if="Number(slotProps.data['stock_almacen_' + almacen.id] || 0) === 0"
+              style="color: #dc2626; font-weight: 600;">
+              Sin Stock
+            </span>
+
+            <span v-else>
+              {{ slotProps.data['stock_almacen_' + almacen.id] }}
+              {{ slotProps.data.descripcion_fabrica }}
+            </span>
+
+          </template>
+        </Column>
+
       </DataTable>
+
 
       <!-- DataTable para vista por Lote -->
       <DataTable v-if="tipoSeleccionado == 'lote'" :value="arrayInventario" class="p-datatable-sm p-datatable-gridlines"
@@ -162,6 +214,23 @@ export default {
   },
   data() {
     return {
+      ordenInventario: 'stock_asc',
+
+      opcionesOrden: [
+        {
+          label: 'Nombre del producto (A - Z)',
+          value: 'nombre_asc'
+        },
+        {
+          label: 'Menor a mayor stock',
+          value: 'stock_asc'
+        },
+        {
+          label: 'Mayor a menor stock',
+          value: 'stock_desc'
+        }
+      ],
+      arrayAlmacenesColumnas: [],
       mostrarLabel: true,
       isLoading: false,
       arrayInventario: [],
@@ -244,6 +313,9 @@ export default {
         detail: mensaje,
         life: 2000,
       });
+    },
+    async cambiarOrdenInventario() {
+      await this.listarInventario(1, this.buscar, "");
     },
     async descargarArchivoReporte(url, nombreArchivo) {
       this.isLoading = true;
@@ -371,24 +443,34 @@ export default {
 
     async listarInventario(page, buscar, criterio) {
       let me = this;
+
       try {
         let url =
           "/inventarios/itemLote/" +
           me.tipoSeleccionado +
-          "?&idAlmacen=" +
+          "?idAlmacen=" +
           me.almacenSeleccionado +
           "&buscar=" +
-          buscar +
+          encodeURIComponent(buscar || "") +
           "&criterio=" +
-          criterio +
+          encodeURIComponent(criterio || "") +
+          "&orden=" +
+          encodeURIComponent(me.ordenInventario) +
           "&page=" +
           page;
 
         const response = await axios.get(url);
-        var respuesta = response.data;
+        const respuesta = response.data;
+
         me.arrayInventario = respuesta.inventarios.data;
         me.pagination = respuesta.pagination;
+
+        me.arrayAlmacenesColumnas = Array.isArray(respuesta.almacenes_columnas)
+          ? respuesta.almacenes_columnas
+          : [];
+
       } catch (error) {
+        console.error(error);
         Swal.fire("Error", "No se pudo cargar el inventario", "error");
       }
     },
@@ -418,42 +500,42 @@ export default {
     },
 
     async getDatosAlmacen() {
-  let me = this;
+      let me = this;
 
-  try {
-    if (!me.AlmacenSeleccionado) {
-      return;
-    }
+      try {
+        if (!me.AlmacenSeleccionado) {
+          return;
+        }
 
-    me.isLoading = true;
+        me.isLoading = true;
 
-    me.almacenSeleccionado = me.AlmacenSeleccionado;
-    me.idalmacen = Number(me.AlmacenSeleccionado);
+        me.almacenSeleccionado = me.AlmacenSeleccionado;
+        me.idalmacen = Number(me.AlmacenSeleccionado);
 
-    await me.listarInventario(1, me.buscar, "");
+        await me.listarInventario(1, me.buscar, "");
 
-    // Obtener nombre del almacén
-    const almacen = me.arrayAlmacenes.find(
-      a => a.id == me.AlmacenSeleccionado
-    );
+        // Obtener nombre del almacén
+        const almacen = me.arrayAlmacenes.find(
+          a => a.id == me.AlmacenSeleccionado
+        );
 
-    const nombreAlmacen = almacen
-      ? almacen.nombre_almacen
-      : "seleccionado";
+        const nombreAlmacen = almacen
+          ? almacen.nombre_almacen
+          : "seleccionado";
 
-    me.toastSuccess(`Inventario actualizado: ${nombreAlmacen}`);
+        me.toastSuccess(`Inventario actualizado: ${nombreAlmacen}`);
 
-  } catch (error) {
-    console.error("Error al obtener datos del almacén:", error);
-    Swal.fire(
-      "Error",
-      "No se pudieron cargar los datos del almacén",
-      "error"
-    );
-  } finally {
-    me.isLoading = false;
-  }
-},
+      } catch (error) {
+        console.error("Error al obtener datos del almacén:", error);
+        Swal.fire(
+          "Error",
+          "No se pudieron cargar los datos del almacén",
+          "error"
+        );
+      } finally {
+        me.isLoading = false;
+      }
+    },
     async cambiarTipo() {
       try {
         this.isLoading = true; // Activar loading
@@ -532,6 +614,7 @@ export default {
   top: 1rem !important;
   right: 1rem !important;
 }
+
 .info-tip {
   display: flex;
   align-items: center;
@@ -763,7 +846,8 @@ export default {
 
 .filter-row {
   display: flex;
-  flex-wrap: nowrap; /* nunca bajar a otra línea */
+  flex-wrap: nowrap;
+  /* nunca bajar a otra línea */
   justify-content: space-between;
   align-items: flex-end;
   gap: 1rem;

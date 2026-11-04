@@ -902,6 +902,7 @@ class InventarioController extends Controller
             'inventarios' => $inventarios
         ];
     }
+
     public function indexItemLote(Request $request, $tipo)
     {
         if (!$request->ajax()) {
@@ -910,8 +911,67 @@ class InventarioController extends Controller
 
         $idAlmacen = $request->idAlmacen;
         $buscar = $request->buscar;
+        $orden = $request->get('orden', 'stock_asc');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Obtener los almacenes del mismo departamento
+        |--------------------------------------------------------------------------
+        */
+
+        $almacenesColumnas = collect();
+
+        if (!empty($idAlmacen)) {
+
+            $almacenSeleccionado = DB::table('almacens')
+                ->join(
+                    'sucursales',
+                    'almacens.sucursal',
+                    '=',
+                    'sucursales.id'
+                )
+                ->where('almacens.id', $idAlmacen)
+                ->select(
+                    'almacens.id',
+                    'almacens.nombre_almacen',
+                    'sucursales.departamento'
+                )
+                ->first();
+
+            if ($almacenSeleccionado) {
+
+                $almacenesColumnas = DB::table('almacens')
+                    ->join(
+                        'sucursales',
+                        'almacens.sucursal',
+                        '=',
+                        'sucursales.id'
+                    )
+                    ->where(
+                        'sucursales.departamento',
+                        $almacenSeleccionado->departamento
+                    )
+                    // Excluir el almacén seleccionado
+                    ->where('almacens.id', '<>', (int) $idAlmacen)
+                    // Excluir el depósito
+                    ->where('almacens.id', '<>', 2)
+                    ->select(
+                        'almacens.id',
+                        'almacens.nombre_almacen'
+                    )
+                    ->orderBy('almacens.nombre_almacen', 'asc')
+                    ->get();
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Consulta principal según el tipo
+        |--------------------------------------------------------------------------
+        */
 
         if ($tipo === 'item') {
+
             $inventarios = Articulo::leftJoin('inventarios', function ($join) use ($idAlmacen) {
                 $join->on('articulos.id', '=', 'inventarios.idarticulo')
                     ->where('inventarios.idalmacen', '=', $idAlmacen);
@@ -920,6 +980,7 @@ class InventarioController extends Controller
                 ->join('categorias', 'articulos.idcategoria', '=', 'categorias.id')
                 ->leftJoin('almacens', 'inventarios.idalmacen', '=', 'almacens.id')
                 ->select(
+                    'articulos.id',
                     'articulos.codigo',
                     'articulos.nombre as nombre_producto',
                     'articulos.unidad_envase',
@@ -928,28 +989,59 @@ class InventarioController extends Controller
                     'articulos.descripcion_fabrica',
                     'categorias.nombre as nombre_categoria',
 
-                    // Total unidades
+                    // Stock total del almacén seleccionado
                     DB::raw('IFNULL(SUM(inventarios.saldo_stock), 0) as saldo_stock_total'),
 
-                    // Cajas completas (sin decimales)
+                    // Stock del depósito
+                    DB::raw('
+    (
+        SELECT COALESCE(SUM(inv2.saldo_stock), 0)
+        FROM inventarios AS inv2
+        WHERE inv2.idarticulo = articulos.id
+        AND inv2.idalmacen = 2
+    ) AS stock_deposito
+'),
+
+                    // Cajas completas
                     DB::raw('FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)) as cajas'),
 
                     // Unidades sueltas
-                    DB::raw('(IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase) as unidades'),
+                    DB::raw('(IFNULL(SUM(inventarios.saldo_stock), 0) % NULLIF(articulos.unidad_envase, 0)) as unidades'),
 
-                    // Formato final listo para el frontend
+                    // Stock formateado
                     DB::raw("
-                        CONCAT(
-                            FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)),
-                            ' cajas y ',
-                            (IFNULL(SUM(inventarios.saldo_stock), 0) % articulos.unidad_envase),
-                            ' unidades'
-                        ) as stock_formateado
-                    ")
+                    CONCAT(
+                        FLOOR(IFNULL(SUM(inventarios.saldo_stock), 0) / NULLIF(articulos.unidad_envase, 0)),
+                        ' cajas y ',
+                        (IFNULL(SUM(inventarios.saldo_stock), 0) % NULLIF(articulos.unidad_envase, 0)),
+                        ' unidades'
+                    ) as stock_formateado
+                ")
+                );
 
-                )
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Agregar stock individual de cada almacén del departamento
+            |--------------------------------------------------------------------------
+            */
+
+            foreach ($almacenesColumnas as $almacenColumna) {
+
+                $idAlmacenColumna = (int) $almacenColumna->id;
+
+                $inventarios->addSelect(DB::raw(
+                    '(SELECT COALESCE(SUM(inv2.saldo_stock), 0)
+                    FROM inventarios AS inv2
+                    WHERE inv2.idarticulo = articulos.id
+                    AND inv2.idalmacen = ' . $idAlmacenColumna . ')
+                    AS stock_almacen_' . $idAlmacenColumna
+                ));
+            }
+
+            $inventarios
                 ->where('articulos.condicion', '=', 1)
                 ->groupBy(
+                    'articulos.id',
                     'articulos.codigo',
                     'articulos.nombre',
                     'almacens.nombre_almacen',
@@ -957,12 +1049,9 @@ class InventarioController extends Controller
                     'proveedores.contacto',
                     'articulos.descripcion_fabrica',
                     'categorias.nombre'
-                )
-                ->orderByRaw('IFNULL(SUM(inventarios.saldo_stock), 0) ASC')
-                ->orderBy('categorias.nombre')
-                ->orderBy('articulos.nombre')
-                ->orderBy('almacens.nombre_almacen');
-        } else if ($tipo === 'lote') {
+                );
+
+        } elseif ($tipo === 'lote') {
 
             $inventarios = Articulo::leftJoin('inventarios', function ($join) use ($idAlmacen) {
                 $join->on('articulos.id', '=', 'inventarios.idarticulo')
@@ -980,26 +1069,40 @@ class InventarioController extends Controller
                     DB::raw('DATE_FORMAT(inventarios.created_at, "%Y-%m-%d") as fecha_ingreso'),
                     'inventarios.fecha_vencimiento',
                     'almacens.nombre_almacen',
-                    DB::raw('FLOOR(IFNULL(inventarios.saldo_stock, 0) / articulos.unidad_envase) as stock_en_paquetes'),
-                    DB::raw('IFNULL(inventarios.saldo_stock, 0) % articulos.unidad_envase as unidades_restantes')
+                    DB::raw('FLOOR(IFNULL(inventarios.saldo_stock, 0) / NULLIF(articulos.unidad_envase, 0)) as stock_en_paquetes'),
+                    DB::raw('IFNULL(inventarios.saldo_stock, 0) % NULLIF(articulos.unidad_envase, 0) as unidades_restantes')
                 )
                 ->where('articulos.condicion', '=', 1)
                 ->orderByRaw('IFNULL(inventarios.saldo_stock, 0) ASC')
                 ->orderBy('articulos.nombre');
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Búsqueda general
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($buscar)) {
-            $palabras = explode(' ', $buscar); // Dividir el texto en palabras
+
+            $palabras = explode(' ', $buscar);
+
             $inventarios = $inventarios->where(function ($query) use ($palabras, $tipo) {
+
                 foreach ($palabras as $palabra) {
+
                     $query->where(function ($sub) use ($palabra, $tipo) {
+
                         if ($tipo === 'item') {
+
                             $sub->where('articulos.nombre', 'like', '%' . $palabra . '%')
                                 ->orWhere('proveedores.contacto', 'like', '%' . $palabra . '%')
                                 ->orWhere('articulos.codigo', 'like', '%' . $palabra . '%')
                                 ->orWhere('categorias.nombre', 'like', '%' . $palabra . '%')
                                 ->orWhere('almacens.nombre_almacen', 'like', '%' . $palabra . '%');
+
                         } elseif ($tipo === 'lote') {
+
                             $sub->where('articulos.nombre', 'like', '%' . $palabra . '%')
                                 ->orWhere('proveedores.contacto', 'like', '%' . $palabra . '%')
                                 ->orWhere('almacens.nombre_almacen', 'like', '%' . $palabra . '%')
@@ -1011,7 +1114,64 @@ class InventarioController extends Controller
             });
         }
 
+        /*
+    |--------------------------------------------------------------------------
+    | Ordenamiento del inventario
+    |--------------------------------------------------------------------------
+    */
+
+        if ($tipo === 'item') {
+
+            switch ($orden) {
+
+                case 'nombre_asc':
+
+                    // Orden alfabético A - Z
+                    $inventarios->orderBy('articulos.nombre', 'asc')
+                        ->orderBy('categorias.nombre', 'asc');
+
+                    break;
+
+                case 'stock_desc':
+
+                    // Mayor a menor stock
+                    $inventarios->orderByRaw(
+                        'IFNULL(SUM(inventarios.saldo_stock), 0) DESC'
+                    );
+
+                    $inventarios->orderBy('articulos.nombre', 'asc');
+
+                    break;
+
+                case 'stock_asc':
+                default:
+
+                    // Menor a mayor stock
+                    $inventarios->orderByRaw(
+                        'IFNULL(SUM(inventarios.saldo_stock), 0) ASC'
+                    );
+
+                    $inventarios->orderBy('articulos.nombre', 'asc');
+
+                    break;
+            }
+
+            $inventarios->orderBy('almacens.nombre_almacen', 'asc');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Paginar
+        |--------------------------------------------------------------------------
+        */
+
         $inventarios = $inventarios->paginate(20);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Respuesta para Vue
+        |--------------------------------------------------------------------------
+        */
 
         return [
             'pagination' => [
@@ -1022,9 +1182,13 @@ class InventarioController extends Controller
                 'from' => $inventarios->firstItem(),
                 'to' => $inventarios->lastItem(),
             ],
-            'inventarios' => $inventarios
+
+            'inventarios' => $inventarios,
+
+            'almacenes_columnas' => $almacenesColumnas
         ];
     }
+
 
     //LISTA PARA OBTENER EL SALDO_STOCK POR ITEM POR EL ALMACEN,NOMBRE Y ID DE ARTICULO
     public function indexsaldostock(Request $request)
