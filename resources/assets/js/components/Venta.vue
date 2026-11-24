@@ -1167,9 +1167,9 @@
                     ? eliminarDetalle(slotProps.data.id)
                     : eliminarKit(slotProps.data.idkit)
                   " />
-                <Button :label="getLabelModoVenta(slotProps.data.modoVenta)" class="p-button-info p-button-sm btn-mini"
+                <!--<Button :label="getLabelModoVenta(slotProps.data.modoVenta)" class="p-button-info p-button-sm btn-mini"
                   style="margin-left: 5px" :disabled="slotProps.data.descripcion_fabrica == 1"
-                  @click="cambiarModoVenta(slotProps.data)" />
+                  @click="cambiarModoVenta(slotProps.data)" />-->
               </template>
             </Column>
             <Column field="articulo" header="Producto" />
