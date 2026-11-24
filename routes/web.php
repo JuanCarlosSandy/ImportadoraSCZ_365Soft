@@ -1092,7 +1092,7 @@ Route::group(["middleware" => ["auth"]], function () {
 
         //INVENTARIO HISTORICO
         Route::get("/inventariohistorico/listar/{tipo}", "InventarioController@indexHistorico");
-        
+
         Route::get(
             '/inventariohistorico/exportar-pdf',
             'InventarioController@exportarInventarioHistoricoPdf'
@@ -1101,6 +1101,11 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get(
             '/inventariohistorico/exportar-excel',
             'InventarioController@exportarInventarioHistoricoExcel'
+        );
+
+        Route::get(
+            '/inventariohistorico/movimientos',
+            'InventarioController@listarMovimientosHistoricos'
         );
     });
 

@@ -21,79 +21,57 @@
       <div class="info-tip">
         <i class="pi pi-info-circle"></i>
         <span>
-          Seleccione una fecha y un almacén para consultar las existencias. Puede exportar los resultados en Excel o PDF.
+          Seleccione una fecha y un almacén para consultar las existencias. Puede exportar los resultados en Excel o
+          PDF.
         </span>
       </div>
 
       <div class="filters-container">
-  <div class="filter-row">
+        <div class="filter-row">
 
-    <!-- Fecha de consulta -->
-    <div class="filter-group-almacen">
-      <label for="fechaConsulta" class="filter-label">
-        FECHA DE CONSULTA
-      </label>
+          <!-- Fecha de consulta -->
+          <div class="filter-group-almacen">
+            <label for="fechaConsulta" class="filter-label">
+              FECHA DE CONSULTA
+            </label>
 
-      <input
-        id="fechaConsulta"
-        type="date"
-        v-model="fechaConsulta"
-        :max="fechaActual"
-        @change="cambiarFechaConsulta"
-        class="p-inputtext p-component p-inputtext-sm input-date-full"
-      />
-    </div>
+            <input id="fechaConsulta" type="date" v-model="fechaConsulta" :max="fechaActual"
+              @change="cambiarFechaConsulta" class="p-inputtext p-component p-inputtext-sm input-date-full" />
+          </div>
 
-    <!-- Almacén -->
-    <div class="filter-group-almacen">
-      <label class="filter-label">
-        ALMACÉN DE TRABAJO
-      </label>
+          <!-- Almacén -->
+          <div class="filter-group-almacen">
+            <label class="filter-label">
+              ALMACÉN DE TRABAJO
+            </label>
 
-      <Dropdown
-        v-model="AlmacenSeleccionado"
-        :options="arrayAlmacenes"
-        optionLabel="nombre_almacen"
-        optionValue="id"
-        placeholder="Seleccione un almacén"
-        @change="getDatosAlmacen"
-        class="dropdown-full"
-      />
-    </div>
+            <Dropdown v-model="AlmacenSeleccionado" :options="arrayAlmacenes" optionLabel="nombre_almacen"
+              optionValue="id" placeholder="Seleccione un almacén" @change="getDatosAlmacen" class="dropdown-full" />
+          </div>
 
-    <!-- Ordenar inventario -->
-    <div class="filter-group-almacen">
-      <label class="filter-label">
-        ORDENAR PRODUCTOS
-      </label>
+          <!-- Ordenar inventario -->
+          <div class="filter-group-almacen">
+            <label class="filter-label">
+              ORDENAR PRODUCTOS
+            </label>
 
-      <Dropdown
-        v-model="ordenInventario"
-        :options="opcionesOrden"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Ordenar por"
-        @change="cambiarOrdenInventario"
-        class="dropdown-full"
-      />
-    </div>
+            <Dropdown v-model="ordenInventario" :options="opcionesOrden" optionLabel="label" optionValue="value"
+              placeholder="Ordenar por" @change="cambiarOrdenInventario" class="dropdown-full" />
+          </div>
 
-    <!-- Acciones -->
-    <div class="filter-group-actions">
-      <label class="filter-label">ACCIONES</label>
+          <!-- Acciones -->
+          <div class="filter-group-actions">
+            <label class="filter-label">ACCIONES</label>
 
-      <div class="panel-actions">
-        <Button
-          label="Exportar"
-          icon="pi pi-download"
-          @click="exportarInventario" :disabled="isLoading || !consultaRealizada || Number(idrol) === 2"
-          class="p-button-info p-button-sm btn-sm-input"
-        />
+            <div class="panel-actions">
+              <Button label="Exportar" icon="pi pi-download" @click="exportarInventario"
+                :disabled="isLoading || !consultaRealizada || Number(idrol) === 2"
+                class="p-button-info p-button-sm btn-sm-input" />
+            </div>
+          </div>
+
+        </div>
       </div>
-    </div>
-
-  </div>
-</div>
 
       <div class="toolbar-container">
         <div class="search-bar">
@@ -109,155 +87,536 @@
       </div>
       <!-- DataTable para vista por Item -->
 
-      <div
-  v-if="consultaRealizada && tipoConsultaHistorica"
-  class="info-inventario-historico"
->
-  <div class="info-historico-detalle">
+      <div v-if="consultaRealizada && tipoConsultaHistorica" class="info-inventario-historico">
+        <div class="info-historico-detalle">
 
-    <i class="pi pi-calendar"></i>
+          <i class="pi pi-calendar"></i>
 
-    <strong>
-      Inventario al {{ fechaConsultaFormateada }}
-    </strong>
+          <strong>
+            Inventario al {{ fechaConsultaFormateada }}
+          </strong>
 
-    <span
-      v-if="tipoConsultaHistorica === 'ACTUAL'"
-      class="estado-historico estado-actual"
-    >
-      Stock actual
-    </span>
+          <span v-if="tipoConsultaHistorica === 'ACTUAL'" class="estado-historico estado-actual">
+            Stock actual
+          </span>
 
-    <span
-      v-else-if="tipoConsultaHistorica === 'HISTORICO_REGISTRADO'"
-      class="estado-historico estado-registrado"
-    >
-      Stock histórico registrado
-    </span>
+          <span v-else-if="tipoConsultaHistorica === 'HISTORICO_REGISTRADO'" class="estado-historico estado-registrado">
+            Stock histórico registrado
+          </span>
 
-    <span
-      v-else-if="tipoConsultaHistorica === 'HISTORICO_ESTIMADO'"
-      class="estado-historico estado-estimado"
-    >
-      Stock histórico estimado
-    </span>
+          <span v-else-if="tipoConsultaHistorica === 'HISTORICO_ESTIMADO'" class="estado-historico estado-estimado">
+            Stock histórico estimado
+          </span>
 
-  </div>
+        </div>
 
-  <small v-if="mensajeHistorial" class="mensaje-historico">
-    {{ mensajeHistorial }}
-  </small>
-  <small v-if="fechaCorteHistorial" class="mensaje-historico">Inicio del historial registrado: {{ fechaCorteHistorial }}</small>
-</div>
+        <small v-if="mensajeHistorial" class="mensaje-historico">
+          {{ mensajeHistorial }}
+        </small>
+        <small v-if="fechaCorteHistorial" class="mensaje-historico">Inicio del historial registrado: {{
+          fechaCorteHistorial
+        }}</small>
+      </div>
 
       <!-- Inventario histórico por producto -->
-<DataTable v-if="consultaRealizada"
-  :value="arrayInventario"
-  class="p-datatable-sm p-datatable-gridlines tabla-pro"
-  responsiveLayout="scroll"
->
+      <DataTable v-if="consultaRealizada" :value="arrayInventario"
+        class="p-datatable-sm p-datatable-gridlines tabla-pro" responsiveLayout="scroll">
 
-  <!-- Código -->
-  <Column field="codigo" header="Código"></Column>
+        <!-- Código -->
+        <Column field="codigo" header="Código"></Column>
 
-  <!-- Producto -->
-  <Column field="nombre_producto" header="Producto"></Column>
+        <!-- Producto -->
+        <Column field="nombre_producto" header="Producto"></Column>
 
-  <!-- Stock del almacén seleccionado -->
-  <Column
-    field="saldo_stock_total"
-    :header="tituloColumnaStock"
-  >
-    <template #body="slotProps">
+        <!-- Stock del almacén seleccionado -->
+        <Column field="saldo_stock_total" :header="tituloColumnaStock">
+          <template #body="slotProps">
 
-      <span
-        v-if="stockDesconocido(slotProps.data.saldo_stock_total)" class="stock-desconocido">Sin datos</span>
-      <span v-else-if="Number(slotProps.data.saldo_stock_total) === 0"
-        style="color: #dc2626; font-weight: bold;"
-      >
-        <i
-          class="pi pi-exclamation-triangle"
-          style="margin-right: 5px;"
-        ></i>
-        Sin Stock
-      </span>
+            <span v-if="stockDesconocido(slotProps.data.saldo_stock_total)" class="stock-desconocido">Sin datos</span>
+            <span v-else-if="Number(slotProps.data.saldo_stock_total) === 0" style="color: #dc2626; font-weight: bold;">
+              <i class="pi pi-exclamation-triangle" style="margin-right: 5px;"></i>
+              Sin Stock
+            </span>
 
-      <span v-else>
-        {{ slotProps.data.saldo_stock_total }}
-        {{ slotProps.data.descripcion_fabrica }}
-      </span>
+            <span v-else>
+              {{ slotProps.data.saldo_stock_total }}
+              {{ slotProps.data.descripcion_fabrica }}
+            </span>
 
-    </template>
-  </Column>
+          </template>
+        </Column>
 
-  <!-- Stock del depósito -->
-  <Column
-    v-if="Number(AlmacenSeleccionado) !== 2"
-    field="stock_deposito"
-    header="Stock Depósito"
-  >
-    <template #body="slotProps">
+        <!-- Stock del depósito -->
+        <Column v-if="Number(AlmacenSeleccionado) !== 2" field="stock_deposito" header="Stock Depósito">
+          <template #body="slotProps">
 
-      <span
-        v-if="stockDesconocido(slotProps.data.stock_deposito)" class="stock-desconocido">Sin datos</span>
-      <span v-else-if="Number(slotProps.data.stock_deposito) === 0"
-        style="color: #dc2626; font-weight: 600;"
-      >
-        Sin Stock
-      </span>
+            <span v-if="stockDesconocido(slotProps.data.stock_deposito)" class="stock-desconocido">Sin datos</span>
+            <span v-else-if="Number(slotProps.data.stock_deposito) === 0" style="color: #dc2626; font-weight: 600;">
+              Sin Stock
+            </span>
 
-      <span v-else>
-        {{ slotProps.data.stock_deposito }}
-        {{ slotProps.data.descripcion_fabrica }}
-      </span>
+            <span v-else>
+              {{ slotProps.data.stock_deposito }}
+              {{ slotProps.data.descripcion_fabrica }}
+            </span>
 
-    </template>
-  </Column>
+          </template>
+        </Column>
 
-  <!-- Columnas dinámicas de otros almacenes -->
-  <Column
-    v-for="almacen in arrayAlmacenesColumnas"
-    :key="almacen.id"
-    :field="'stock_almacen_' + almacen.id"
-    :header="almacen.nombre_almacen"
-  >
-    <template #body="slotProps">
+        <!-- Columnas dinámicas de otros almacenes -->
+        <Column v-for="almacen in arrayAlmacenesColumnas" :key="almacen.id" :field="'stock_almacen_' + almacen.id"
+          :header="almacen.nombre_almacen">
+          <template #body="slotProps">
 
-      <span
-        v-if="stockDesconocido(slotProps.data['stock_almacen_' + almacen.id])" class="stock-desconocido">Sin datos</span>
-      <span v-else-if="Number(slotProps.data['stock_almacen_' + almacen.id]) === 0"
-        style="color: #dc2626; font-weight: 600;"
-      >
-        Sin Stock
-      </span>
+            <span v-if="stockDesconocido(slotProps.data['stock_almacen_' + almacen.id])" class="stock-desconocido">Sin
+              datos</span>
+            <span v-else-if="Number(slotProps.data['stock_almacen_' + almacen.id]) === 0"
+              style="color: #dc2626; font-weight: 600;">
+              Sin Stock
+            </span>
 
-      <span v-else>
-        {{ slotProps.data['stock_almacen_' + almacen.id] }}
-        {{ slotProps.data.descripcion_fabrica }}
-      </span>
+            <span v-else>
+              {{ slotProps.data['stock_almacen_' + almacen.id] }}
+              {{ slotProps.data.descripcion_fabrica }}
+            </span>
 
-    </template>
-  </Column>
+          </template>
+        </Column>
 
-  <!-- Sin resultados -->
-  <template #empty>
-    <div class="text-center p-3">
-      No se encontraron productos para la consulta seleccionada.
-    </div>
-  </template>
+        <!-- Acciones -->
+        <Column header="Acciones" :headerStyle="{ width: '85px', textAlign: 'center' }"
+          :bodyStyle="{ textAlign: 'center' }">
 
-</DataTable>
+          <template #body="slotProps">
 
-<!-- Paginación manual del servidor -->
-<div v-if="consultaRealizada && pagination.total > 0" class="barra-paginacion">
-  <span class="contador-registros">Mostrando {{ pagination.from }} - {{ pagination.to }} de {{ pagination.total }} productos</span>
-<Paginator
-  :rows="pagination.per_page"
-  :totalRecords="pagination.total"
-  :first="(pagination.current_page - 1) * pagination.per_page"
-  @page="onPageChange"
-/>
-</div>
+            <Button icon="pi pi-history" class="btn-mini btn-historial" title="Ver historial de movimientos"
+              @click="abrirDetalleMovimientos(slotProps.data)" />
+
+          </template>
+
+        </Column>
+
+        <!-- Sin resultados -->
+        <template #empty>
+          <div class="text-center p-3">
+            No se encontraron productos para la consulta seleccionada.
+          </div>
+        </template>
+
+      </DataTable>
+
+      <!-- Paginación manual del servidor -->
+      <div v-if="consultaRealizada && pagination.total > 0" class="barra-paginacion">
+        <span class="contador-registros">Mostrando {{ pagination.from }} - {{ pagination.to }} de {{ pagination.total }}
+          productos</span>
+        <Paginator :rows="pagination.per_page" :totalRecords="pagination.total"
+          :first="(pagination.current_page - 1) * pagination.per_page" @page="onPageChange" />
+      </div>
+
+      <Dialog :visible.sync="dialogMovimientos" :modal="true" :closable="true" :dismissableMask="false"
+        :containerStyle="{ width: '95vw', maxWidth: '1400px' }" class="dialog-historial-movimientos"
+        @hide="cerrarDetalleMovimientos">
+
+        <!-- Encabezado -->
+        <template #header>
+
+          <div class="historial-dialog-header">
+
+            <div class="historial-header-icon">
+              <i class="pi pi-history"></i>
+            </div>
+
+            <div>
+              <div class="historial-header-subtitle">
+                INVENTARIO · TRAZABILIDAD
+              </div>
+
+              <h3>Historial de movimientos</h3>
+            </div>
+
+          </div>
+
+        </template>
+
+        <div v-if="productoHistorial">
+
+          <!-- Información del producto -->
+          <div class="historial-info-producto">
+
+            <div class="historial-info-item">
+              <span>Código</span>
+              <strong>{{ productoHistorial.codigo }}</strong>
+            </div>
+
+            <div class="historial-info-item">
+              <span>Producto</span>
+              <strong>{{ productoHistorial.nombre_producto }}</strong>
+            </div>
+
+            <div class="historial-info-item">
+              <span>Unidad de medida</span>
+              <strong>
+                {{ productoHistorial.descripcion_fabrica || '-' }}
+              </strong>
+            </div>
+
+            <div class="historial-info-item">
+              <span>Fecha del inventario consultado</span>
+              <strong>{{ fechaReferenciaHistorial }}</strong>
+            </div>
+
+          </div>
+
+          <!-- Filtros -->
+          <div class="historial-filtros">
+
+            <div class="historial-filtro">
+              <label>Almacén</label>
+
+              <Dropdown v-model="almacenHistorial" :options="almacenesHistorial" optionLabel="nombre_almacen"
+                optionValue="id" placeholder="Seleccione almacén" :disabled="cargandoMovimientos"
+                @change="listarMovimientos(1)" />
+            </div>
+
+            <div class="historial-filtro">
+              <label>Fecha desde</label>
+
+              <input type="date" v-model="fechaDesdeHistorial" :max="fechaHastaHistorial"
+                :disabled="cargandoMovimientos" class="p-inputtext p-component" />
+            </div>
+
+            <div class="historial-filtro">
+              <label>Fecha hasta</label>
+
+              <input type="date" v-model="fechaHastaHistorial" :min="fechaDesdeHistorial" :max="fechaLimiteHistorial"
+                :disabled="cargandoMovimientos" class="p-inputtext p-component" />
+            </div>
+
+            <div class="historial-filtro">
+              <label>Tipo de movimiento</label>
+
+              <Dropdown v-model="tipoMovimientoHistorial" :options="tiposMovimientosHistorial" optionLabel="label"
+                optionValue="value" :disabled="cargandoMovimientos" />
+            </div>
+
+            <div class="historial-filtro historial-filtro-boton">
+
+              <Button label="Consultar" icon="pi pi-search" class="p-button-sm" :disabled="cargandoMovimientos"
+                @click="listarMovimientos(1)" />
+
+            </div>
+
+          </div>
+
+          <!-- Cargando -->
+          <div v-if="cargandoMovimientos" class="historial-loading">
+
+            <ProgressSpinner style="width: 40px; height: 40px;" strokeWidth="4" />
+
+            <span>Consultando movimientos de inventario...</span>
+
+          </div>
+
+          <div v-else-if="errorMovimientos" class="historial-error">
+
+            <i class="pi pi-exclamation-triangle"></i>
+
+            {{ errorMovimientos }}
+
+          </div>
+
+          <div v-else-if="consultaMovimientosRealizada">
+
+            <!-- Indicador del historial -->
+            <div class="historial-indicador" :class="claseTipoHistorial">
+
+              <i class="pi pi-info-circle"></i>
+
+              <div>
+                <strong>{{ tituloTipoHistorial }}</strong>
+                <p>{{ mensajeDetalleHistorial }}</p>
+              </div>
+
+            </div>
+
+            <!-- Resumen -->
+            <div class="historial-resumen">
+
+              <!-- Stock inicial -->
+              <div class="historial-resumen-card">
+
+                <div class="historial-resumen-label">
+                  <span>Stock inicial</span>
+                  <i class="pi pi-box"></i>
+                </div>
+
+                <div class="historial-resumen-valor">
+                  {{ formatearCantidadHistorial(resumenHistorial.stock_inicial) }}
+                  <small>{{ productoHistorial.descripcion_fabrica }}</small>
+                </div>
+
+                <span class="historial-resumen-descripcion">
+                  Existencias al inicio del período
+                </span>
+
+              </div>
+
+              <!-- Entradas -->
+              <div class="historial-resumen-card resumen-entrada">
+
+                <div class="historial-resumen-label">
+                  <span>Total entradas</span>
+                  <i class="pi pi-arrow-down-left"></i>
+                </div>
+
+                <div class="historial-resumen-valor">
+                  {{ formatearCantidadHistorial(resumenHistorial.total_entradas) }}
+                  <small>{{ productoHistorial.descripcion_fabrica }}</small>
+                </div>
+
+                <span class="historial-resumen-descripcion">
+                  Ingresos de mercadería
+                </span>
+
+              </div>
+
+              <!-- Salidas -->
+              <div class="historial-resumen-card resumen-salida">
+
+                <div class="historial-resumen-label">
+                  <span>Total salidas</span>
+                  <i class="pi pi-arrow-up-right"></i>
+                </div>
+
+                <div class="historial-resumen-valor">
+                  {{ formatearCantidadHistorial(resumenHistorial.total_salidas) }}
+                  <small>{{ productoHistorial.descripcion_fabrica }}</small>
+                </div>
+
+                <span class="historial-resumen-descripcion">
+                  Retiros de mercadería
+                </span>
+
+              </div>
+
+              <!-- Stock final -->
+              <div class="historial-resumen-card resumen-final">
+
+                <div class="historial-resumen-label">
+                  <span>Stock final</span>
+                  <i class="pi pi-check-circle"></i>
+                </div>
+
+                <div class="historial-resumen-valor">
+                  {{ formatearCantidadHistorial(resumenHistorial.stock_final) }}
+                  <small>{{ productoHistorial.descripcion_fabrica }}</small>
+                </div>
+
+                <span class="historial-resumen-descripcion">
+                  Existencias al cierre del período
+                </span>
+
+              </div>
+
+            </div>
+
+            <!-- Tabla de movimientos -->
+            <div class="historial-tabla-contenedor">
+
+              <div class="historial-tabla-titulo">
+
+                <i class="pi pi-list"></i>
+
+                Detalle cronológico de movimientos
+
+              </div>
+
+              <DataTable :value="arrayMovimientosHistorial"
+                class="p-datatable-sm p-datatable-gridlines tabla-pro tabla-movimientos">
+
+                <!-- Fecha y hora -->
+                <Column field="fecha_movimiento" header="Fecha y hora">
+
+                  <template #body="slotProps">
+
+                    <span class="historial-fecha">
+                      {{ formatearFechaMovimiento(slotProps.data.fecha_movimiento) }}
+                    </span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Tipo de movimiento -->
+                <Column field="tipo_movimiento" header="Movimiento">
+
+                  <template #body="slotProps">
+
+                    <span class="historial-tag" :class="claseMovimientoHistorial(slotProps.data)">
+                      {{ nombreMovimientoHistorial(slotProps.data.tipo_movimiento) }}
+                    </span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Referencia -->
+                <Column header="Referencia">
+
+                  <template #body="slotProps">
+
+                    <span class="historial-referencia">
+                      {{ slotProps.data.referencia || '-' }}
+                    </span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Entrada -->
+                <Column header="Entrada">
+
+                  <template #body="slotProps">
+
+                    <span v-if="esEntradaHistorial(slotProps.data)" class="historial-cantidad-entrada">
+                      +{{ formatearCantidadHistorial(slotProps.data.cantidad) }}
+                    </span>
+
+                    <span v-else class="historial-guion">—</span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Salida -->
+                <Column header="Salida">
+
+                  <template #body="slotProps">
+
+                    <span v-if="esSalidaHistorial(slotProps.data)" class="historial-cantidad-salida">
+                      -{{ formatearCantidadHistorial(Math.abs(Number(slotProps.data.cantidad))) }}
+                    </span>
+
+                    <span v-else class="historial-guion">—</span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Stock anterior -->
+                <Column field="stock_anterior" header="Stock anterior">
+
+                  <template #body="slotProps">
+
+                    {{ formatearCantidadHistorial(slotProps.data.stock_anterior) }}
+
+                  </template>
+
+                </Column>
+
+                <!-- Stock resultante -->
+                <Column field="stock_actual" header="Stock resultante">
+
+                  <template #body="slotProps">
+
+                    <span class="historial-stock-resultante" :class="{
+                      'historial-stock-negativo':
+                        Number(slotProps.data.stock_actual) < 0
+                    }">
+                      {{ formatearCantidadHistorial(slotProps.data.stock_actual) }}
+                    </span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Usuario -->
+                <Column field="usuario" header="Usuario">
+
+                  <template #body="slotProps">
+
+                    {{ slotProps.data.usuario || '-' }}
+
+                  </template>
+
+                </Column>
+
+                <!-- Origen de la información -->
+                <Column header="Origen">
+
+                  <template #body="slotProps">
+
+                    <span v-if="slotProps.data.es_estimado" class="historial-tag tag-estimado">
+                      Estimado
+                    </span>
+
+                    <span v-else class="historial-tag tag-registrado">
+                      Registrado
+                    </span>
+
+                  </template>
+
+                </Column>
+
+                <!-- Observación -->
+                <Column field="observacion" header="Observación">
+
+                  <template #body="slotProps">
+
+                    <span class="historial-observacion">
+                      {{ slotProps.data.observacion || '-' }}
+                    </span>
+
+                  </template>
+
+                </Column>
+
+                <template #empty>
+
+                  <div class="historial-empty">
+
+                    <i class="pi pi-inbox"></i>
+
+                    <span>
+                      No se encontraron movimientos para el período seleccionado.
+                    </span>
+
+                  </div>
+
+                </template>
+
+              </DataTable>
+
+            </div>
+
+            <!-- Paginación -->
+            <div v-if="paginationMovimientos.total > 0" class="barra-paginacion">
+
+              <span class="contador-registros">
+                Mostrando {{ paginationMovimientos.from }}
+                - {{ paginationMovimientos.to }}
+                de {{ paginationMovimientos.total }} movimientos
+              </span>
+
+              <Paginator :rows="paginationMovimientos.per_page" :totalRecords="paginationMovimientos.total"
+                :first="(paginationMovimientos.current_page - 1) * paginationMovimientos.per_page"
+                @page="onPageMovimientos" />
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <template #footer>
+
+          <Button label="Cerrar" icon="pi pi-times" class="p-button-secondary p-button-sm"
+            @click="dialogMovimientos = false" />
+
+        </template>
+
+      </Dialog>
     </Panel>
     <!-- Fin ejemplo de tabla Listado -->
   </main>
@@ -273,13 +632,95 @@ import InputText from "primevue/inputtext";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Paginator from "primevue/paginator";
+import Dialog from "primevue/dialog";
+import ProgressSpinner from "primevue/progressspinner";
 
 const paginacionInicial = () => ({ total: 0, current_page: 1, per_page: 15, last_page: 1, from: 0, to: 0 });
 
 export default {
-  components: { Toast, Panel, Button, Dropdown, InputText, DataTable, Column, Paginator },
+  components: { Toast, Panel, Button, Dropdown, InputText, DataTable, Column, Paginator, Dialog, ProgressSpinner },
   data() {
     return {
+      // ==========================================
+      // DETALLE DE MOVIMIENTOS DE INVENTARIO
+      // ==========================================
+
+      dialogMovimientos: false,
+      cargandoMovimientos: false,
+      consultaMovimientosRealizada: false,
+      errorMovimientos: "",
+
+      productoHistorial: null,
+
+      almacenHistorial: null,
+      almacenesHistorial: [],
+
+      fechaReferenciaHistorial: "",
+      fechaLimiteHistorial: "",
+      fechaDesdeHistorial: "",
+      fechaHastaHistorial: "",
+
+      tipoMovimientoHistorial: "TODOS",
+
+      tipoDetalleHistorial: null,
+      mensajeDetalleHistorial: "",
+
+      arrayMovimientosHistorial: [],
+
+      solicitudMovimientosActual: 0,
+      filtrosMovimientosConsultados: null,
+
+      resumenHistorial: {
+        stock_inicial: null,
+        total_entradas: null,
+        total_salidas: null,
+        stock_final: null
+      },
+
+      paginationMovimientos: {
+        total: 0,
+        current_page: 1,
+        per_page: 15,
+        last_page: 1,
+        from: 0,
+        to: 0
+      },
+
+      tiposMovimientosHistorial: [
+        { label: "Todos los movimientos", value: "TODOS" },
+
+        { label: "Stock inicial", value: "STOCK_INICIAL" },
+
+        { label: "Compras", value: "COMPRA" },
+        { label: "Anulación de compra", value: "ANULACION_COMPRA" },
+
+        {
+          label: "Actualización compra - Entrada",
+          value: "ACTUALIZACION_COMPRA_ENTRADA"
+        },
+        {
+          label: "Actualización compra - Salida",
+          value: "ACTUALIZACION_COMPRA_SALIDA"
+        },
+
+        { label: "Ventas", value: "VENTA" },
+        { label: "Anulación de venta", value: "ANULACION_VENTA" },
+
+        { label: "Ajuste de entrada", value: "AJUSTE_ENTRADA" },
+        { label: "Ajuste de salida", value: "AJUSTE_SALIDA" },
+
+        { label: "Traspaso de entrada", value: "TRASPASO_ENTRADA" },
+        { label: "Traspaso de salida", value: "TRASPASO_SALIDA" },
+
+        {
+          label: "Anulación traspaso de entrada",
+          value: "ANULACION_TRASPASO_ENTRADA"
+        },
+        {
+          label: "Anulación traspaso de salida",
+          value: "ANULACION_TRASPASO_SALIDA"
+        }
+      ],
       tipoConsultaHistorica: null, fechaCorteHistorial: null, mensajeHistorial: "",
       consultaRealizada: false, fechaConsultada: "", filtrosConsultados: null,
       fechaConsulta: "", fechaActual: "", ordenInventario: "stock_asc",
@@ -300,7 +741,28 @@ export default {
       const almacen = this.arrayAlmacenes.find(a => Number(a.id) === Number(this.AlmacenSeleccionado));
       return almacen ? almacen.nombre_almacen : "Sin almacén";
     },
-    tituloColumnaStock() { return this.tipoConsultaHistorica === "ACTUAL" ? "Stock Actual" : "Stock Histórico"; }
+    tituloColumnaStock() { return this.tipoConsultaHistorica === "ACTUAL" ? "Stock Actual" : "Stock Histórico"; },
+    tituloTipoHistorial() {
+      const titulos = {
+        HISTORICO_REGISTRADO: "Historial registrado",
+        HISTORICO_ESTIMADO: "Historial estimado",
+        HISTORICO_MIXTO: "Historial mixto",
+        ACTUAL: "Movimientos registrados"
+      };
+
+      return titulos[this.tipoDetalleHistorial] || "Historial de movimientos";
+    },
+
+    claseTipoHistorial() {
+      const clases = {
+        HISTORICO_REGISTRADO: "indicador-registrado",
+        HISTORICO_ESTIMADO: "indicador-estimado",
+        HISTORICO_MIXTO: "indicador-mixto",
+        ACTUAL: "indicador-registrado"
+      };
+
+      return clases[this.tipoDetalleHistorial] || "indicador-neutral";
+    },
   },
   methods: {
     toastSuccess(detail) { this.$toast.add({ severity: "success", summary: "Éxito", detail, life: 2000 }); },
@@ -401,7 +863,416 @@ export default {
         this.toastSuccess("Reporte generado correctamente.");
       } catch (error) { console.error(error); this.toastError("No se pudo generar el reporte histórico."); }
       finally { this.isLoading = false; }
-    }
+    },
+    async abrirDetalleMovimientos(producto) {
+
+      if (!producto || !producto.id) {
+        this.toastWarning("No se pudo identificar el producto.");
+        return;
+      }
+
+      if (!this.filtrosConsultados) {
+        this.toastWarning("Debe realizar una consulta de inventario.");
+        return;
+      }
+
+      this.limpiarDetalleMovimientos();
+
+      this.productoHistorial = Object.assign({}, producto);
+
+      const idAlmacenConsultado = Number(
+        this.filtrosConsultados.idAlmacen
+      );
+
+      this.almacenHistorial = idAlmacenConsultado;
+
+      /*
+      |--------------------------------------------------------------------------
+      | Preparar almacenes disponibles
+      |--------------------------------------------------------------------------
+      */
+
+      const idsPermitidos = [
+        idAlmacenConsultado,
+        2,
+        ...this.arrayAlmacenesColumnas.map(
+          almacen => Number(almacen.id)
+        )
+      ];
+
+      const almacenesDisponibles = [
+        ...this.arrayAlmacenes,
+        ...this.arrayAlmacenesColumnas
+      ];
+
+      const almacenesUnicos = {};
+
+      almacenesDisponibles.forEach(almacen => {
+
+        const id = Number(almacen.id);
+
+        if (idsPermitidos.includes(id)) {
+
+          almacenesUnicos[id] = {
+            id: id,
+            nombre_almacen: almacen.nombre_almacen
+          };
+
+        }
+
+      });
+
+      // Conservar almacén seleccionado
+      if (!almacenesUnicos[idAlmacenConsultado]) {
+
+        almacenesUnicos[idAlmacenConsultado] = {
+          id: idAlmacenConsultado,
+          nombre_almacen: this.nombreAlmacenSeleccionado
+        };
+
+      }
+
+      this.almacenesHistorial = Object.values(almacenesUnicos);
+
+      /*
+      |--------------------------------------------------------------------------
+      | Configurar fechas iniciales
+      |--------------------------------------------------------------------------
+      */
+
+      const fechaConsulta = this.filtrosConsultados.fecha_consulta;
+
+      this.fechaReferenciaHistorial = fechaConsulta
+        .split("-")
+        .reverse()
+        .join("/");
+
+      this.fechaLimiteHistorial = fechaConsulta;
+
+      // Primer día del mes consultado
+      this.fechaDesdeHistorial = fechaConsulta.substring(0, 7) + "-01";
+
+      this.fechaHastaHistorial = fechaConsulta;
+
+      this.tipoMovimientoHistorial = "TODOS";
+
+      this.dialogMovimientos = true;
+
+      await this.listarMovimientos(1);
+    },
+    async listarMovimientos(page = 1, usarFiltrosConsultados = false) {
+
+      if (!this.productoHistorial || !this.almacenHistorial) {
+        return;
+      }
+
+      let filtros;
+
+      if (usarFiltrosConsultados && this.filtrosMovimientosConsultados) {
+
+        filtros = Object.assign(
+          {},
+          this.filtrosMovimientosConsultados
+        );
+
+      } else {
+
+        filtros = {
+          idarticulo: this.productoHistorial.id,
+          idAlmacen: this.almacenHistorial,
+          fecha_desde: this.fechaDesdeHistorial,
+          fecha_hasta: this.fechaHastaHistorial,
+          tipo_movimiento: this.tipoMovimientoHistorial
+        };
+
+      }
+
+      if (!filtros.fecha_desde || !filtros.fecha_hasta) {
+
+        this.toastWarning("Debe seleccionar ambas fechas.");
+        return;
+
+      }
+
+      if (filtros.fecha_desde > filtros.fecha_hasta) {
+
+        this.toastWarning(
+          "La fecha inicial no puede ser mayor a la fecha final."
+        );
+
+        return;
+      }
+
+      if (filtros.fecha_hasta > this.fechaLimiteHistorial) {
+
+        this.toastWarning(
+          "La fecha final no puede superar la fecha del inventario consultado."
+        );
+
+        return;
+      }
+
+      const solicitud = ++this.solicitudMovimientosActual;
+
+      this.cargandoMovimientos = true;
+      this.consultaMovimientosRealizada = false;
+      this.errorMovimientos = "";
+
+      try {
+
+        const response = await axios.get(
+          "/inventariohistorico/movimientos",
+          {
+            params: Object.assign({}, filtros, {
+              page: page
+            })
+          }
+        );
+
+        // Ignorar respuestas de consultas anteriores
+        if (
+          solicitud !== this.solicitudMovimientosActual ||
+          !this.dialogMovimientos
+        ) {
+          return;
+        }
+
+        const data = response.data;
+
+        this.arrayMovimientosHistorial =
+          data.movimientos.data || [];
+
+        this.paginationMovimientos = data.pagination;
+
+        this.resumenHistorial = data.resumen;
+
+        this.tipoDetalleHistorial = data.tipo_consulta;
+
+        this.mensajeDetalleHistorial =
+          data.mensaje_historial || "";
+
+        this.filtrosMovimientosConsultados =
+          Object.assign({}, filtros);
+
+        this.consultaMovimientosRealizada = true;
+
+      } catch (error) {
+
+        if (solicitud !== this.solicitudMovimientosActual) {
+          return;
+        }
+
+        console.error(error);
+
+        this.arrayMovimientosHistorial = [];
+
+        this.errorMovimientos =
+          error.response &&
+            error.response.data &&
+            error.response.data.message
+            ? error.response.data.message
+            : "No se pudieron consultar los movimientos de inventario.";
+
+        this.toastError(this.errorMovimientos);
+
+      } finally {
+
+        if (solicitud === this.solicitudMovimientosActual) {
+          this.cargandoMovimientos = false;
+        }
+
+      }
+
+    },
+    onPageMovimientos(event) {
+
+      if (
+        this.cargandoMovimientos ||
+        !this.consultaMovimientosRealizada
+      ) {
+        return;
+      }
+
+      const page = Math.floor(event.first / event.rows) + 1;
+
+      this.listarMovimientos(page, true);
+
+    },
+    limpiarDetalleMovimientos() {
+
+      this.arrayMovimientosHistorial = [];
+
+      this.tipoDetalleHistorial = null;
+      this.mensajeDetalleHistorial = "";
+
+      this.consultaMovimientosRealizada = false;
+      this.errorMovimientos = "";
+
+      this.filtrosMovimientosConsultados = null;
+
+      this.resumenHistorial = {
+        stock_inicial: null,
+        total_entradas: null,
+        total_salidas: null,
+        stock_final: null
+      };
+
+      this.paginationMovimientos = {
+        total: 0,
+        current_page: 1,
+        per_page: 15,
+        last_page: 1,
+        from: 0,
+        to: 0
+      };
+
+    },
+
+    cerrarDetalleMovimientos() {
+
+      // Invalidar solicitudes pendientes
+      this.solicitudMovimientosActual++;
+
+      this.dialogMovimientos = false;
+      this.cargandoMovimientos = false;
+
+      this.productoHistorial = null;
+
+      this.almacenHistorial = null;
+      this.almacenesHistorial = [];
+
+      this.limpiarDetalleMovimientos();
+
+    },
+    formatearCantidadHistorial(valor) {
+
+      if (
+        valor === null ||
+        valor === undefined ||
+        valor === "" ||
+        !Number.isFinite(Number(valor))
+      ) {
+        return "Sin datos";
+      }
+
+      return Number(valor).toLocaleString("es-BO", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 4
+      });
+
+    },
+
+    formatearFechaMovimiento(fecha) {
+
+      if (!fecha) {
+        return "-";
+      }
+
+      const partes = String(fecha)
+        .replace("T", " ")
+        .split(" ");
+
+      const fechaPartes = partes[0].split("-");
+
+      if (fechaPartes.length !== 3) {
+        return fecha;
+      }
+
+      const fechaFormateada = fechaPartes
+        .reverse()
+        .join("/");
+
+      return fechaFormateada +
+        (partes[1] ? " " + partes[1].substring(0, 8) : "");
+
+    },
+    esEntradaHistorial(movimiento) {
+
+      return movimiento.tipo_movimiento !== "STOCK_INICIAL" &&
+        Number(movimiento.cantidad) > 0;
+
+    },
+
+    esSalidaHistorial(movimiento) {
+
+      return movimiento.tipo_movimiento !== "STOCK_INICIAL" &&
+        Number(movimiento.cantidad) < 0;
+
+    },
+    nombreMovimientoHistorial(tipo) {
+
+      const nombres = {
+
+        STOCK_INICIAL: "Stock inicial",
+
+        COMPRA: "Compra",
+
+        ANULACION_COMPRA: "Anulación de compra",
+
+        ACTUALIZACION_COMPRA_ENTRADA:
+          "Actualización compra - Entrada",
+
+        ACTUALIZACION_COMPRA_SALIDA:
+          "Actualización compra - Salida",
+
+        VENTA: "Venta",
+
+        ANULACION_VENTA: "Anulación de venta",
+
+        AJUSTE_ENTRADA: "Ajuste de entrada",
+
+        AJUSTE_SALIDA: "Ajuste de salida",
+
+        TRASPASO_ENTRADA: "Traspaso de entrada",
+
+        TRASPASO_SALIDA: "Traspaso de salida",
+
+        ANULACION_TRASPASO_ENTRADA:
+          "Anulación traspaso de entrada",
+
+        ANULACION_TRASPASO_SALIDA:
+          "Anulación traspaso de salida"
+
+      };
+
+      return nombres[tipo] || tipo || "-";
+
+    },
+    claseMovimientoHistorial(movimiento) {
+
+      const tipo = movimiento.tipo_movimiento || "";
+
+      if (tipo === "STOCK_INICIAL") {
+        return "tag-inicial";
+      }
+
+      if (tipo.indexOf("ANULACION_") === 0) {
+        return "tag-anulacion";
+      }
+
+      if (tipo.indexOf("ACTUALIZACION_") === 0) {
+        return "tag-actualizacion";
+      }
+
+      if (tipo.indexOf("AJUSTE_") === 0) {
+        return "tag-ajuste";
+      }
+
+      if (tipo.indexOf("TRASPASO_") === 0) {
+        return "tag-traspaso";
+      }
+
+      if (Number(movimiento.cantidad) > 0) {
+        return "tag-entrada";
+      }
+
+      if (Number(movimiento.cantidad) < 0) {
+        return "tag-salida";
+      }
+
+      return "tag-inicial";
+
+    },
   },
   async mounted() { this.handleResize(); window.addEventListener("resize", this.handleResize); this.inicializarFechaConsulta(); this.obtenerIdrol(); await this.selectAlmacen(); },
   beforeDestroy() { window.removeEventListener("resize", this.handleResize); this.cancelarBusquedaPendiente(); this.solicitudActual++; }
@@ -1149,9 +2020,506 @@ export default {
   font-size: 12px;
 }
 
-.barra-paginacion { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px 0; }
-.contador-registros { font-size: 12px; color: #64748b; font-weight: 500; }
-.barra-paginacion >>> .p-paginator { padding: 0; border: none; background: transparent; }
-.stock-desconocido { color: #64748b; }
-@media (max-width: 768px) { .barra-paginacion { flex-direction: column; justify-content: center; } }
+.barra-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 5px 0;
+}
+
+.contador-registros {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.barra-paginacion>>>.p-paginator {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.stock-desconocido {
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .barra-paginacion {
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+/* ==========================================
+   BOTÓN HISTORIAL
+========================================== */
+
+.btn-historial {
+  background: #e8eef5 !important;
+  border-color: #d5e0eb !important;
+  color: #34495e !important;
+}
+
+.btn-historial:hover {
+  background: #d5e0eb !important;
+  border-color: #c3d2e0 !important;
+  color: #243b53 !important;
+}
+
+/* ==========================================
+   ENCABEZADO DEL DIALOG
+========================================== */
+
+.historial-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.historial-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #34495e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.historial-header-icon i {
+  font-size: 21px;
+}
+
+.historial-header-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.historial-dialog-header h3 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #26384a;
+  margin: 0;
+}
+
+/* ==========================================
+   INFORMACIÓN DEL PRODUCTO
+========================================== */
+
+.historial-info-producto {
+  display: grid;
+  grid-template-columns: 0.7fr 2fr 0.8fr 1.2fr;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 16px;
+}
+
+.historial-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.historial-info-item span {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.historial-info-item strong {
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   FILTROS
+========================================== */
+
+.historial-filtros {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.5fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.historial-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.historial-filtro label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.historial-filtro .p-dropdown,
+.historial-filtro input {
+  width: 100%;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.historial-filtro input {
+  height: 38px;
+}
+
+.historial-filtro-boton .p-button {
+  min-height: 38px;
+  background: #34495e;
+  border-color: #34495e;
+}
+
+/* ==========================================
+   INDICADOR DE HISTORIAL
+========================================== */
+
+.historial-indicador {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 7px;
+  margin-bottom: 16px;
+  border: 1px solid transparent;
+}
+
+.historial-indicador i {
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+.historial-indicador strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.historial-indicador p {
+  font-size: 12px;
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+.indicador-registrado {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.indicador-estimado {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.indicador-mixto {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.indicador-neutral {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+/* ==========================================
+   TARJETAS DE RESUMEN
+========================================== */
+
+.historial-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.historial-resumen-card {
+  padding: 15px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  border-left: 3px solid #64748b;
+}
+
+.historial-resumen-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.historial-resumen-label i {
+  font-size: 17px;
+}
+
+.historial-resumen-valor {
+  font-size: 27px;
+  font-weight: 700;
+  color: #334155;
+  margin: 10px 0 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.historial-resumen-valor small {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.historial-resumen-descripcion {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.resumen-entrada {
+  border-left-color: #16a34a;
+}
+
+.resumen-entrada .historial-resumen-valor,
+.resumen-entrada .historial-resumen-label i {
+  color: #15803d;
+}
+
+.resumen-salida {
+  border-left-color: #dc2626;
+}
+
+.resumen-salida .historial-resumen-valor,
+.resumen-salida .historial-resumen-label i {
+  color: #dc2626;
+}
+
+.resumen-final {
+  border-left-color: #2563eb;
+  background: #f8fbff;
+}
+
+.resumen-final .historial-resumen-valor,
+.resumen-final .historial-resumen-label i {
+  color: #1d4ed8;
+}
+
+/* ==========================================
+   TABLA DE MOVIMIENTOS
+========================================== */
+
+.historial-tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.historial-tabla-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.tabla-movimientos {
+  min-width: 1100px;
+}
+
+.historial-fecha {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.historial-referencia {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.historial-cantidad-entrada {
+  color: #15803d;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.historial-cantidad-salida {
+  color: #dc2626;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.historial-stock-resultante {
+  font-weight: 700;
+  color: #334155;
+}
+
+.historial-stock-negativo {
+  color: #dc2626 !important;
+}
+
+.historial-guion {
+  color: #cbd5e1;
+}
+
+.historial-observacion {
+  font-size: 11px;
+  color: #64748b;
+  min-width: 150px;
+  display: inline-block;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   ETIQUETAS SOFT UI
+========================================== */
+
+.historial-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tag-entrada,
+.tag-registrado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tag-salida {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tag-anulacion,
+.tag-estimado {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tag-ajuste {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.tag-traspaso {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.tag-actualizacion {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.tag-inicial {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ==========================================
+   ESTADOS DE CARGA Y ERROR
+========================================== */
+
+.historial-loading,
+.historial-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 15px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.historial-empty i {
+  font-size: 30px;
+  color: #94a3b8;
+}
+
+.historial-error {
+  padding: 15px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.historial-error i {
+  margin-right: 6px;
+}
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+@media (max-width: 992px) {
+
+  .historial-info-producto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .historial-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .historial-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 576px) {
+
+  .historial-info-producto,
+  .historial-filtros {
+    grid-template-columns: 1fr;
+  }
+
+  .historial-resumen {
+    gap: 8px;
+  }
+
+  .historial-resumen-card {
+    padding: 10px;
+  }
+
+  .historial-resumen-valor {
+    font-size: 21px;
+  }
+
+  .historial-filtro-boton .p-button {
+    width: 100%;
+  }
+
+  .historial-dialog-header h3 {
+    font-size: 16px;
+  }
+
+}
 </style>

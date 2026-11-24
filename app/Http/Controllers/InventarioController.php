@@ -20,6 +20,9 @@ use Carbon\Carbon;
 use App\ConfiguracionHistorialInventario;
 use App\Exports\InventarioHistoricoExport;
 
+use Illuminate\Pagination\LengthAwarePaginator;
+use App\MovimientoInventario;
+
 class InventarioController extends Controller
 {
 
@@ -4320,6 +4323,1237 @@ class InventarioController extends Controller
                     'No se pudo generar el Excel del inventario histórico.'
             ], 500);
         }
+    }
+    public function listarMovimientosHistoricos(Request $request)
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
+        }
+
+        $request->validate([
+            'idarticulo' => 'required|integer|exists:articulos,id',
+            'idAlmacen' => 'required|integer|exists:almacens,id',
+            'fecha_desde' => 'required|date_format:Y-m-d',
+            'fecha_hasta' => 'required|date_format:Y-m-d|after_or_equal:fecha_desde',
+            'tipo_movimiento' => 'nullable|string|max:50',
+            'page' => 'nullable|integer|min:1'
+        ]);
+
+        try {
+
+            $idArticulo = (int) $request->idarticulo;
+            $idAlmacen = (int) $request->idAlmacen;
+
+            $tipoMovimiento = $request->input(
+                'tipo_movimiento',
+                'TODOS'
+            );
+
+            $fechaDesde = Carbon::parse(
+                $request->fecha_desde,
+                'America/La_Paz'
+            )->startOfDay();
+
+            $fechaHasta = Carbon::parse(
+                $request->fecha_hasta,
+                'America/La_Paz'
+            )->endOfDay();
+
+            $hoy = Carbon::now('America/La_Paz');
+
+            if ($fechaHasta->toDateString() > $hoy->toDateString()) {
+
+                return response()->json([
+                    'message' => 'No puede consultar fechas futuras.'
+                ], 422);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 1. Verificar inicialización del historial
+            |--------------------------------------------------------------------------
+            */
+
+            $configuracion = ConfiguracionHistorialInventario::find(1);
+
+            if (
+                !$configuracion ||
+                !$configuracion->inicializado ||
+                !$configuracion->fecha_corte
+            ) {
+
+                return response()->json([
+                    'message' => 'El historial de inventario todavía no fue inicializado.'
+                ], 422);
+            }
+
+            $fechaCorte = Carbon::parse(
+                $configuracion->fecha_corte->format('Y-m-d H:i:s'),
+                'America/La_Paz'
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Identificar tipo de historial
+            |--------------------------------------------------------------------------
+            */
+
+            if ($fechaDesde->gte($fechaCorte)) {
+
+                $tipoConsulta = 'HISTORICO_REGISTRADO';
+
+            } elseif ($fechaHasta->lt($fechaCorte)) {
+
+                $tipoConsulta = 'HISTORICO_ESTIMADO';
+
+            } else {
+
+                $tipoConsulta = 'HISTORICO_MIXTO';
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Obtener movimientos según el período
+            |--------------------------------------------------------------------------
+            */
+
+            /*
+|--------------------------------------------------------------------------
+| 3. Obtener movimientos según el período
+|--------------------------------------------------------------------------
+*/
+
+            switch ($tipoConsulta) {
+
+                case 'HISTORICO_REGISTRADO':
+
+                    $resultado = $this->obtenerDetalleMovimientosRegistrados(
+                        $idArticulo,
+                        $idAlmacen,
+                        $fechaDesde,
+                        $fechaHasta,
+                        $fechaCorte
+                    );
+
+                    break;
+
+                case 'HISTORICO_ESTIMADO':
+
+                    $resultado = $this->obtenerDetalleMovimientosEstimados(
+                        $idArticulo,
+                        $idAlmacen,
+                        $fechaDesde,
+                        $fechaHasta,
+                        $fechaCorte
+                    );
+
+                    break;
+
+                case 'HISTORICO_MIXTO':
+
+                    $resultado = $this->obtenerDetalleMovimientosMixtos(
+                        $idArticulo,
+                        $idAlmacen,
+                        $fechaDesde,
+                        $fechaHasta,
+                        $fechaCorte
+                    );
+
+                    break;
+
+                default:
+
+                    return response()->json([
+                        'message' => 'Tipo de historial no válido.'
+                    ], 422);
+            }
+
+            $movimientos = $resultado['movimientos'];
+            $resumen = $resultado['resumen'];
+
+            $movimientos = $resultado['movimientos'];
+            $resumen = $resultado['resumen'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | 4. Filtrar movimientos visibles
+            |--------------------------------------------------------------------------
+            |
+            | El resumen y los saldos se calculan antes de aplicar
+            | este filtro para conservar la consistencia del stock.
+            |
+            */
+
+            if ($tipoMovimiento !== 'TODOS') {
+
+                $movimientos = $movimientos->filter(
+                    function ($movimiento) use ($tipoMovimiento) {
+
+                        return $movimiento->tipo_movimiento
+                            === $tipoMovimiento;
+                    }
+                )->values();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 5. Paginación
+            |--------------------------------------------------------------------------
+            */
+
+            $perPage = 15;
+
+            $page = max(
+                1,
+                (int) $request->input('page', 1)
+            );
+
+            $total = $movimientos->count();
+
+            $paginador = new LengthAwarePaginator(
+                $movimientos->forPage($page, $perPage)->values(),
+                $total,
+                $perPage,
+                $page,
+                [
+                    'path' => $request->url(),
+                    'query' => $request->query()
+                ]
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | 6. Respuesta para el frontend
+            |--------------------------------------------------------------------------
+            */
+
+            return response()->json([
+
+                'tipo_consulta' => $tipoConsulta,
+
+                'fecha_corte' => $fechaCorte->format(
+                    'Y-m-d H:i:s'
+                ),
+
+                'mensaje_historial' => $resultado['mensaje_historial'],
+
+                'resumen' => $resumen,
+
+                'pagination' => [
+                    'total' => $paginador->total(),
+                    'current_page' => $paginador->currentPage(),
+                    'per_page' => $paginador->perPage(),
+                    'last_page' => $paginador->lastPage(),
+                    'from' => $paginador->firstItem() ?? 0,
+                    'to' => $paginador->lastItem() ?? 0
+                ],
+
+                'movimientos' => $paginador
+
+            ]);
+
+        } catch (\Throwable $e) {
+
+            Log::error(
+                'Error al consultar movimientos históricos',
+                [
+                    'idarticulo' => $request->idarticulo,
+                    'idalmacen' => $request->idAlmacen,
+                    'error' => $e->getMessage()
+                ]
+            );
+
+            return response()->json([
+                'message' => 'No se pudo consultar el historial de movimientos.'
+            ], 500);
+        }
+    }
+    private function obtenerDetalleMovimientosRegistrados(
+        $idArticulo,
+        $idAlmacen,
+        $fechaDesde,
+        $fechaHasta,
+        $fechaCorte
+    ) {
+
+        $desde = $fechaDesde->format('Y-m-d H:i:s');
+        $hasta = $fechaHasta->format('Y-m-d H:i:s');
+        $corte = $fechaCorte->format('Y-m-d H:i:s');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Consulta base
+        |--------------------------------------------------------------------------
+        */
+
+        $consultaBase = DB::table('movimientos_inventario')
+            ->where('idarticulo', $idArticulo)
+            ->where('idalmacen', $idAlmacen)
+            ->where('fecha_movimiento', '>=', $corte);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Obtener stock al inicio del período
+        |--------------------------------------------------------------------------
+        */
+
+        $ultimoMovimientoAnterior = (clone $consultaBase)
+            ->where('fecha_movimiento', '<', $desde)
+            ->orderBy('fecha_movimiento', 'desc')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $stockInicial = $ultimoMovimientoAnterior
+            ? (int) $ultimoMovimientoAnterior->stock_actual
+            : null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Obtener movimientos del período
+        |--------------------------------------------------------------------------
+        */
+
+        $movimientos = (clone $consultaBase)
+
+            ->leftJoin(
+                'users',
+                'movimientos_inventario.idusuario',
+                '=',
+                'users.id'
+            )
+
+            ->where(
+                'movimientos_inventario.fecha_movimiento',
+                '>=',
+                $desde
+            )
+
+            ->where(
+                'movimientos_inventario.fecha_movimiento',
+                '<=',
+                $hasta
+            )
+
+            ->select(
+                'movimientos_inventario.*',
+                'users.usuario as nombre_usuario'
+            )
+
+            ->orderBy(
+                'movimientos_inventario.fecha_movimiento',
+                'asc'
+            )
+
+            ->orderBy(
+                'movimientos_inventario.id',
+                'asc'
+            )
+
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Inicializar resumen
+        |--------------------------------------------------------------------------
+        */
+
+        $totalEntradas = 0;
+        $totalSalidas = 0;
+
+        $stockFinal = $stockInicial;
+
+        $detalleMovimientos = collect();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Procesar movimientos cronológicamente
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($movimientos as $movimiento) {
+
+            $cantidad = (int) $movimiento->cantidad;
+
+            $esStockInicial =
+                $movimiento->tipo_movimiento === 'STOCK_INICIAL';
+
+            /*
+            |--------------------------------------------------------------------------
+            | Stock inicial del historial
+            |--------------------------------------------------------------------------
+            */
+
+            if ($esStockInicial) {
+
+                $stockInicial = (int) $movimiento->stock_actual;
+
+            } else {
+
+                // Si es el primer movimiento disponible
+                if ($stockInicial === null) {
+
+                    $stockInicial = (int) $movimiento->stock_anterior;
+                }
+
+                // Entradas
+                if ($cantidad > 0) {
+
+                    $totalEntradas += $cantidad;
+                }
+
+                // Salidas
+                if ($cantidad < 0) {
+
+                    $totalSalidas += abs($cantidad);
+                }
+            }
+
+            $stockFinal = (int) $movimiento->stock_actual;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Preparar fila para el frontend
+            |--------------------------------------------------------------------------
+            */
+
+            $detalleMovimientos->push((object) [
+
+                'id' => (int) $movimiento->id,
+
+                'fecha_movimiento' => $movimiento->fecha_movimiento,
+
+                'tipo_movimiento' => $movimiento->tipo_movimiento,
+
+                'cantidad' => $cantidad,
+
+                'stock_anterior' => $esStockInicial
+                    ? null
+                    : (int) $movimiento->stock_anterior,
+
+                'stock_actual' => (int) $movimiento->stock_actual,
+
+                'referencia' => $this->formatearReferenciaMovimiento(
+                    $movimiento->tipo_referencia,
+                    $movimiento->idreferencia
+                ),
+
+                'usuario' => $esStockInicial
+                    ? 'Sistema'
+                    : ($movimiento->nombre_usuario ?? 'No disponible'),
+
+                'observacion' => $movimiento->observacion,
+
+                'es_estimado' => false
+
+            ]);
+        }
+
+        /*
+|--------------------------------------------------------------------------
+| Verificar consistencia del historial registrado
+|--------------------------------------------------------------------------
+*/
+
+        $existeDiferencia = false;
+
+        if ($stockInicial !== null && $stockFinal !== null) {
+
+            $stockCalculado =
+                $stockInicial + $totalEntradas - $totalSalidas;
+
+            $existeDiferencia = $stockCalculado !== $stockFinal;
+
+            if ($existeDiferencia) {
+
+                Log::warning(
+                    'Diferencia en historial registrado de inventario',
+                    [
+                        'idarticulo' => $idArticulo,
+                        'idalmacen' => $idAlmacen,
+                        'stock_inicial' => $stockInicial,
+                        'entradas' => $totalEntradas,
+                        'salidas' => $totalSalidas,
+                        'stock_calculado' => $stockCalculado,
+                        'stock_final' => $stockFinal
+                    ]
+                );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Preparar mensaje informativo
+        |--------------------------------------------------------------------------
+        */
+        $mensaje = 'Movimientos registrados directamente por el '
+            . 'sistema durante el período seleccionado.';
+
+        if ($stockInicial === null) {
+
+            $mensaje = 'No existe información suficiente para '
+                . 'determinar las existencias de este producto '
+                . 'durante el período seleccionado.';
+
+        } elseif ($existeDiferencia) {
+
+            $mensaje .= ' Se identificó una diferencia en la '
+                . 'consistencia de los saldos registrados.';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Devolver resultado
+        |--------------------------------------------------------------------------
+        */
+
+        return [
+
+            'movimientos' => $detalleMovimientos,
+
+            'resumen' => [
+
+                'stock_inicial' => $stockInicial,
+
+                'total_entradas' => $totalEntradas,
+
+                'total_salidas' => $totalSalidas,
+
+                'stock_final' => $stockFinal
+
+            ],
+
+            'mensaje_historial' => $mensaje
+
+        ];
+    }
+
+    private function formatearReferenciaMovimiento(
+        $tipoReferencia,
+        $idReferencia
+    ) {
+
+        if ($tipoReferencia === 'INICIALIZACION') {
+
+            return 'Inicialización';
+        }
+
+        if (!$tipoReferencia || !$idReferencia) {
+
+            return '-';
+        }
+
+        $referencias = [
+
+            'VENTA' => 'Venta',
+
+            'INGRESO' => 'Compra',
+
+            'COMPRA' => 'Compra',
+
+            'TRASPASO' => 'Traspaso',
+
+            'AJUSTE_INVENTARIO' => 'Ajuste',
+
+            'CONTROL_INVENTARIO' => 'Control de inventario'
+
+        ];
+
+        $nombre = $referencias[$tipoReferencia]
+            ?? $tipoReferencia;
+
+        return $nombre . ' #' . $idReferencia;
+    }
+
+    private function consultaDetalleMovimientosEstimados(
+        $idArticulo,
+        $idAlmacen,
+        $fechaDesde,
+        $fechaCorte
+    ) {
+        $idsAlmacenes = [(int) $idAlmacen];
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Reutilizar consultas existentes
+        |--------------------------------------------------------------------------
+        */
+
+        $compras = $this->consultaMovimientosHistoricosCompras(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        $ventas = $this->consultaMovimientosHistoricosVentas(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        $ajustes = $this->consultaMovimientosHistoricosAjustes(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        $traspasos = $this->consultaMovimientosHistoricosTraspasos(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Compras registradas
+        |--------------------------------------------------------------------------
+        */
+
+        $compras[0]
+            ->where('di.idarticulo', $idArticulo)
+            ->addSelect(
+                'i.fecha_hora AS fecha_movimiento',
+                'i.id AS idreferencia',
+                'di.id AS iddetalle_referencia',
+                'i.idusuario',
+                DB::raw("'COMPRA' AS tipo_movimiento"),
+                DB::raw("'INGRESO' AS tipo_referencia"),
+                DB::raw("'Compra histórica reconstruida' AS observacion"),
+                DB::raw('10 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Anulaciones de compras
+        |--------------------------------------------------------------------------
+        */
+
+        $compras[1]
+            ->where('di.idarticulo', $idArticulo)
+            ->addSelect(
+                'i.updated_at AS fecha_movimiento',
+                'i.id AS idreferencia',
+                'di.id AS iddetalle_referencia',
+                DB::raw('NULL AS idusuario'),
+                DB::raw("'ANULACION_COMPRA' AS tipo_movimiento"),
+                DB::raw("'INGRESO' AS tipo_referencia"),
+                DB::raw("'Anulación histórica de compra reconstruida' AS observacion"),
+                DB::raw('20 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Ventas registradas
+        |--------------------------------------------------------------------------
+        */
+
+        $ventas[0]
+            ->where('dv.idarticulo', $idArticulo)
+            ->addSelect(
+                'v.fecha_hora AS fecha_movimiento',
+                'v.id AS idreferencia',
+                'dv.id AS iddetalle_referencia',
+                'v.idusuario',
+                DB::raw("'VENTA' AS tipo_movimiento"),
+                DB::raw("'VENTA' AS tipo_referencia"),
+                DB::raw("'Venta histórica reconstruida' AS observacion"),
+                DB::raw('30 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Anulaciones de ventas
+        |--------------------------------------------------------------------------
+        */
+
+        $ventas[1]
+            ->where('dv.idarticulo', $idArticulo)
+            ->addSelect(
+                'v.updated_at AS fecha_movimiento',
+                'v.id AS idreferencia',
+                'dv.id AS iddetalle_referencia',
+                DB::raw('NULL AS idusuario'),
+                DB::raw("'ANULACION_VENTA' AS tipo_movimiento"),
+                DB::raw("'VENTA' AS tipo_referencia"),
+                DB::raw("'Anulación histórica de venta reconstruida' AS observacion"),
+                DB::raw('40 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Ajustes históricos
+        |--------------------------------------------------------------------------
+        */
+
+        $ajustes[0]
+            ->where('ai.producto', $idArticulo)
+            ->addSelect(
+                'ai.created_at AS fecha_movimiento',
+                'ai.id AS idreferencia',
+                DB::raw('NULL AS iddetalle_referencia'),
+                DB::raw('NULL AS idusuario'),
+
+                DB::raw("
+                CASE
+                    WHEN ai.tipo_movimiento = 'entrada'
+                        THEN 'AJUSTE_ENTRADA'
+                    ELSE 'AJUSTE_SALIDA'
+                END AS tipo_movimiento
+            "),
+
+                DB::raw("'AJUSTE_INVENTARIO' AS tipo_referencia"),
+                DB::raw("'Ajuste histórico de inventario reconstruido' AS observacion"),
+                DB::raw('50 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Traspasos - Salida del almacén origen
+        |--------------------------------------------------------------------------
+        */
+
+        $traspasos[0]
+            ->where('inv.idarticulo', $idArticulo)
+            ->addSelect(
+                't.fecha_traspaso AS fecha_movimiento',
+                't.id AS idreferencia',
+                'dt.id AS iddetalle_referencia',
+                't.idusuario',
+                DB::raw("'TRASPASO_SALIDA' AS tipo_movimiento"),
+                DB::raw("'TRASPASO' AS tipo_referencia"),
+
+                DB::raw("
+                CONCAT(
+                    'Traspaso histórico hacia almacén ID: ',
+                    t.almacen_destino
+                ) AS observacion
+            "),
+
+                DB::raw('60 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Traspasos - Entrada al almacén destino
+        |--------------------------------------------------------------------------
+        */
+
+        $traspasos[1]
+            ->where('inv.idarticulo', $idArticulo)
+            ->addSelect(
+                't.fecha_traspaso AS fecha_movimiento',
+                't.id AS idreferencia',
+                'dt.id AS iddetalle_referencia',
+                't.idusuario',
+                DB::raw("'TRASPASO_ENTRADA' AS tipo_movimiento"),
+                DB::raw("'TRASPASO' AS tipo_referencia"),
+
+                DB::raw("
+                CONCAT(
+                    'Traspaso histórico desde almacén ID: ',
+                    t.almacen_origen
+                ) AS observacion
+            "),
+
+                DB::raw('70 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. Anulación de traspaso - Reposición en origen
+        |--------------------------------------------------------------------------
+        */
+
+        $traspasos[2]
+            ->where('inv.idarticulo', $idArticulo)
+            ->addSelect(
+                't.updated_at AS fecha_movimiento',
+                't.id AS idreferencia',
+                'dt.id AS iddetalle_referencia',
+                DB::raw('NULL AS idusuario'),
+                DB::raw("'ANULACION_TRASPASO_SALIDA' AS tipo_movimiento"),
+                DB::raw("'TRASPASO' AS tipo_referencia"),
+                DB::raw("'Reposición histórica por anulación de traspaso' AS observacion"),
+                DB::raw('80 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. Anulación de traspaso - Retiro del destino
+        |--------------------------------------------------------------------------
+        */
+
+        $traspasos[3]
+            ->where('inv.idarticulo', $idArticulo)
+            ->addSelect(
+                't.updated_at AS fecha_movimiento',
+                't.id AS idreferencia',
+                'dt.id AS iddetalle_referencia',
+                DB::raw('NULL AS idusuario'),
+                DB::raw("'ANULACION_TRASPASO_ENTRADA' AS tipo_movimiento"),
+                DB::raw("'TRASPASO' AS tipo_referencia"),
+                DB::raw("'Retiro histórico por anulación de traspaso' AS observacion"),
+                DB::raw('90 AS orden_evento')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. Unificar todas las consultas
+        |--------------------------------------------------------------------------
+        */
+
+        $consultas = array_merge(
+            $compras,
+            $ventas,
+            $ajustes,
+            $traspasos
+        );
+
+        $movimientos = array_shift($consultas);
+
+        foreach ($consultas as $consulta) {
+            $movimientos->unionAll($consulta);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 12. Recuperar signo original de los movimientos
+        |--------------------------------------------------------------------------
+        */
+
+        return DB::table(
+            DB::raw(
+                '(' . $movimientos->toSql() . ') AS mh'
+            )
+        )
+            ->mergeBindings($movimientos)
+
+            ->leftJoin(
+                'users AS u',
+                'mh.idusuario',
+                '=',
+                'u.id'
+            )
+
+            ->select(
+                'mh.idarticulo',
+                'mh.idalmacen',
+                'mh.fecha_movimiento',
+                'mh.idreferencia',
+                'mh.iddetalle_referencia',
+                'mh.idusuario',
+                'mh.tipo_movimiento',
+                'mh.tipo_referencia',
+                'mh.observacion',
+                'mh.orden_evento',
+                'u.usuario AS nombre_usuario',
+
+                DB::raw('-mh.cantidad AS cantidad')
+            );
+    }
+
+    private function obtenerDetalleMovimientosEstimados(
+        $idArticulo,
+        $idAlmacen,
+        $fechaDesde,
+        $fechaHasta,
+        $fechaCorte
+    ) {
+        $desde = $fechaDesde->format('Y-m-d H:i:s');
+        $hasta = $fechaHasta->format('Y-m-d H:i:s');
+        $corte = $fechaCorte->format('Y-m-d H:i:s');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Obtener existencias en la fecha de corte
+        |--------------------------------------------------------------------------
+        */
+
+        $registroInicial = DB::table('movimientos_inventario')
+            ->where('idarticulo', $idArticulo)
+            ->where('idalmacen', $idAlmacen)
+            ->where('tipo_movimiento', 'STOCK_INICIAL')
+            ->where('fecha_movimiento', $corte)
+            ->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Obtener operaciones hasta la fecha de corte
+        |--------------------------------------------------------------------------
+        |
+        | Es necesario recuperar también las operaciones posteriores
+        | a la fecha final consultada para reconstruir correctamente
+        | el stock inicial del período.
+        |
+        */
+
+        $movimientosHistoricos = $this
+            ->consultaDetalleMovimientosEstimados(
+                $idArticulo,
+                $idAlmacen,
+                $desde,
+                $corte
+            )
+            ->orderBy('mh.fecha_movimiento', 'asc')
+            ->orderBy('mh.orden_evento', 'asc')
+            ->orderBy('mh.idreferencia', 'asc')
+            ->orderBy('mh.iddetalle_referencia', 'asc')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Determinar disponibilidad de información
+        |--------------------------------------------------------------------------
+        */
+
+        $existeInformacion = $registroInicial !== null
+            || $movimientosHistoricos->isNotEmpty();
+
+        if (!$existeInformacion) {
+
+            return [
+                'movimientos' => collect(),
+
+                'resumen' => [
+                    'stock_inicial' => null,
+                    'total_entradas' => 0,
+                    'total_salidas' => 0,
+                    'stock_final' => null
+                ],
+
+                'mensaje_historial' =>
+                    'No existe información histórica suficiente para determinar las existencias de este producto.'
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Calcular stock inicial estimado
+        |--------------------------------------------------------------------------
+        |
+        | Se conserva el mismo criterio del listado histórico:
+        | si no existe registro inicial, se utiliza cero como
+        | base estimada cuando existen operaciones históricas.
+        |
+        */
+
+        $stockFechaCorte = $registroInicial
+            ? (int) $registroInicial->stock_actual
+            : 0;
+
+        $movimientoNeto = (int) $movimientosHistoricos->sum(
+            'cantidad'
+        );
+
+        $stockInicial = $stockFechaCorte - $movimientoNeto;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Inicializar variables
+        |--------------------------------------------------------------------------
+        */
+
+        $stockAcumulado = $stockInicial;
+
+        $totalEntradas = 0;
+        $totalSalidas = 0;
+
+        $detalleMovimientos = collect();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Reconstruir movimientos cronológicamente
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($movimientosHistoricos as $movimiento) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Excluir operaciones posteriores al período solicitado
+            |--------------------------------------------------------------------------
+            */
+
+            if ($movimiento->fecha_movimiento > $hasta) {
+                break;
+            }
+
+            $cantidad = (int) $movimiento->cantidad;
+
+            $stockAnterior = $stockAcumulado;
+
+            $stockAcumulado += $cantidad;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Acumular entradas y salidas
+            |--------------------------------------------------------------------------
+            */
+
+            if ($cantidad > 0) {
+
+                $totalEntradas += $cantidad;
+
+            } elseif ($cantidad < 0) {
+
+                $totalSalidas += abs($cantidad);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Preparar movimiento para el frontend
+            |--------------------------------------------------------------------------
+            */
+
+            $detalleMovimientos->push((object) [
+
+                'id' => implode('-', [
+                    'EST',
+                    $movimiento->orden_evento,
+                    $movimiento->idreferencia,
+                    $movimiento->iddetalle_referencia ?? 0
+                ]),
+
+                'fecha_movimiento' =>
+                    $movimiento->fecha_movimiento,
+
+                'tipo_movimiento' =>
+                    $movimiento->tipo_movimiento,
+
+                'cantidad' => $cantidad,
+
+                'stock_anterior' => $stockAnterior,
+
+                'stock_actual' => $stockAcumulado,
+
+                'referencia' => $this->formatearReferenciaMovimiento(
+                    $movimiento->tipo_referencia,
+                    $movimiento->idreferencia
+                ),
+
+                'usuario' =>
+                    $movimiento->nombre_usuario ?? 'No disponible',
+
+                'observacion' => $movimiento->observacion,
+
+                'es_estimado' => true
+
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Mensaje informativo
+        |--------------------------------------------------------------------------
+        */
+
+        $mensaje = 'Los movimientos y existencias fueron reconstruidos '
+            . 'a partir de los registros históricos de compras, ventas, '
+            . 'ajustes y traspasos. Los saldos son estimados y pueden '
+            . 'presentar diferencias respecto a las existencias reales '
+            . 'de aquellas fechas.';
+
+        if (!$registroInicial) {
+
+            $mensaje .= ' No existe un registro de stock inicial para '
+                . 'este producto y almacén; se utilizó cero como base '
+                . 'de reconstrucción estimada.';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Devolver resultado
+        |--------------------------------------------------------------------------
+        */
+
+        return [
+
+            'movimientos' => $detalleMovimientos,
+
+            'resumen' => [
+
+                'stock_inicial' => $stockInicial,
+
+                'total_entradas' => $totalEntradas,
+
+                'total_salidas' => $totalSalidas,
+
+                'stock_final' => $stockAcumulado
+
+            ],
+
+            'mensaje_historial' => $mensaje
+
+        ];
+    }
+
+    private function obtenerDetalleMovimientosMixtos(
+        $idArticulo,
+        $idAlmacen,
+        $fechaDesde,
+        $fechaHasta,
+        $fechaCorte
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Determinar límite del historial estimado
+        |--------------------------------------------------------------------------
+        */
+
+        $fechaFinEstimado = $fechaCorte
+            ->copy()
+            ->subSecond();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Obtener movimientos estimados
+        |--------------------------------------------------------------------------
+        */
+
+        $estimados = $this->obtenerDetalleMovimientosEstimados(
+            $idArticulo,
+            $idAlmacen,
+            $fechaDesde,
+            $fechaFinEstimado,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Obtener movimientos registrados
+        |--------------------------------------------------------------------------
+        */
+
+        $registrados = $this->obtenerDetalleMovimientosRegistrados(
+            $idArticulo,
+            $idAlmacen,
+            $fechaCorte->copy(),
+            $fechaHasta,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Unificar movimientos
+        |--------------------------------------------------------------------------
+        |
+        | Los movimientos estimados son anteriores a la fecha
+        | de corte. Los registrados comienzan desde dicha fecha.
+        |
+        */
+
+        $movimientos = $estimados['movimientos']
+            ->concat($registrados['movimientos'])
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Calcular resumen general
+        |--------------------------------------------------------------------------
+        */
+
+        $stockInicial = $estimados['resumen']['stock_inicial'];
+
+        $totalEntradas =
+            $estimados['resumen']['total_entradas']
+            + $registrados['resumen']['total_entradas'];
+
+        $totalSalidas =
+            $estimados['resumen']['total_salidas']
+            + $registrados['resumen']['total_salidas'];
+
+        $stockFinal = $registrados['resumen']['stock_final'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Verificar continuidad entre ambos historiales
+        |--------------------------------------------------------------------------
+        */
+
+        $saldoFinalEstimado =
+            $estimados['resumen']['stock_final'];
+
+        $saldoInicialRegistrado =
+            $registrados['resumen']['stock_inicial'];
+
+        $mensaje = 'El período consultado combina movimientos '
+            . 'históricos estimados y movimientos registrados '
+            . 'directamente por el sistema. Cada operación se '
+            . 'identifica según el origen de su información.';
+
+        if ($stockInicial === null) {
+
+            $mensaje .= ' No existe información suficiente para '
+                . 'determinar el stock al inicio del período.';
+        }
+
+        if (
+            $saldoFinalEstimado !== null &&
+            $saldoInicialRegistrado !== null &&
+            (int) $saldoFinalEstimado !== (int) $saldoInicialRegistrado
+        ) {
+
+            $mensaje .= ' Se identificó una diferencia entre el '
+                . 'saldo histórico estimado y el saldo registrado '
+                . 'en la fecha de corte.';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Verificar consistencia del resumen
+        |--------------------------------------------------------------------------
+        */
+
+        if ($stockInicial !== null && $stockFinal !== null) {
+
+            $saldoCalculado =
+                $stockInicial + $totalEntradas - $totalSalidas;
+
+            if ($saldoCalculado !== $stockFinal) {
+
+                $mensaje .= ' El saldo final presenta una diferencia '
+                    . 'respecto al resultado de las entradas y salidas '
+                    . 'del período.';
+
+                Log::warning(
+                    'Diferencia en historial mixto de inventario',
+                    [
+                        'idarticulo' => $idArticulo,
+                        'idalmacen' => $idAlmacen,
+                        'stock_inicial' => $stockInicial,
+                        'entradas' => $totalEntradas,
+                        'salidas' => $totalSalidas,
+                        'saldo_calculado' => $saldoCalculado,
+                        'stock_final' => $stockFinal
+                    ]
+                );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Devolver historial mixto
+        |--------------------------------------------------------------------------
+        */
+
+        return [
+
+            'movimientos' => $movimientos,
+
+            'resumen' => [
+
+                'stock_inicial' => $stockInicial,
+
+                'total_entradas' => $totalEntradas,
+
+                'total_salidas' => $totalSalidas,
+
+                'stock_final' => $stockFinal
+
+            ],
+
+            'mensaje_historial' => $mensaje
+
+        ];
     }
 }
 
