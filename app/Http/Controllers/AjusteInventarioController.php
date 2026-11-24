@@ -12,6 +12,9 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AjusteInventarioExport;
 use FPDF;
 
+use App\MovimientoInventario;
+use App\Services\MovimientoInventarioService;
+
 class AjusteInventarioController extends Controller
 {
 
@@ -185,73 +188,139 @@ class AjusteInventarioController extends Controller
             return redirect('/');
 
         $request->validate([
-            'almacen_id' => 'required|integer',
+            'almacen_id' => 'required|integer|exists:almacens,id',
             'motivo_id' => 'required|integer',
             'productos' => 'required|array|min:1',
+            'productos.*.producto_id' => 'required|integer|exists:articulos,id',
             'productos.*.tipo_movimiento' => 'required|in:entrada,salida',
-            'productos.*.cantidad' => 'required|numeric|min:0.01',
+            'productos.*.cantidad' => 'required|integer|min:1',
         ]);
 
         DB::beginTransaction();
 
         try {
+
             foreach ($request->productos as $productoData) {
 
-                $inventario = Inventario::where('idarticulo', $productoData['producto_id'])
-                    ->where('idalmacen', $request->almacen_id)
+                $idarticulo = (int) $productoData['producto_id'];
+                $idalmacen = (int) $request->almacen_id;
+                $cantidad = (int) $productoData['cantidad'];
+
+                // Bloquear el artículo durante la operación.
+                DB::table('articulos')
+                    ->where('id', $idarticulo)
+                    ->lockForUpdate()
                     ->first();
 
-                $stockActual = $inventario ? $inventario->saldo_stock : 0;
+                // Bloquear los registros de inventario correspondientes.
+                $inventarios = Inventario::where('idarticulo', $idarticulo)
+                    ->where('idalmacen', $idalmacen)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $inventario = $inventarios->first();
+
+                // Stock total antes del movimiento.
+                $stockAnterior = (int) $inventarios->sum('saldo_stock');
+
+                // Stock del registro que se modificará.
+                $stockRegistro = $inventario
+                    ? (int) $inventario->saldo_stock
+                    : 0;
 
                 if ($productoData['tipo_movimiento'] === 'salida') {
-                    if ($productoData['cantidad'] > $stockActual) {
-                        throw new \Exception("No hay suficiente stock para dar de baja ({$productoData['cantidad']}) del producto ID: {$productoData['producto_id']}. Stock actual: {$stockActual}");
+
+                    if ($cantidad > $stockRegistro) {
+                        throw new \Exception(
+                            "No hay suficiente stock para dar de baja "
+                            . "({$cantidad}) del producto ID: {$idarticulo}. "
+                            . "Stock disponible: {$stockRegistro}"
+                        );
                     }
                 }
 
+                // Registrar ajuste de inventario.
                 $ajuste = new AjusteInvetario();
-                $ajuste->cantidad = $productoData['cantidad'];
+                $ajuste->cantidad = $cantidad;
                 $ajuste->idtipobajas = $request->motivo_id;
-                $ajuste->producto = $productoData['producto_id'];
-                $ajuste->almacen = $request->almacen_id;
+                $ajuste->producto = $idarticulo;
+                $ajuste->almacen = $idalmacen;
                 $ajuste->tipo_movimiento = $productoData['tipo_movimiento'];
                 $ajuste->save();
 
+                // Actualizar inventario.
                 if ($inventario) {
+
                     if ($ajuste->tipo_movimiento === 'entrada') {
-                        $inventario->saldo_stock += $ajuste->cantidad;
+                        $inventario->saldo_stock += $cantidad;
                     } else {
-                        $inventario->saldo_stock -= $ajuste->cantidad;
+                        $inventario->saldo_stock -= $cantidad;
                     }
+
                     $inventario->save();
 
                 } else {
+
                     if ($ajuste->tipo_movimiento === 'entrada') {
+
                         $nuevoInv = new Inventario();
-                        $nuevoInv->idarticulo = $ajuste->producto;
-                        $nuevoInv->idalmacen = $ajuste->almacen;
-                        $nuevoInv->saldo_stock = $ajuste->cantidad;
-                        $nuevoInv->cantidad = $ajuste->cantidad;
-
+                        $nuevoInv->idarticulo = $idarticulo;
+                        $nuevoInv->idalmacen = $idalmacen;
+                        $nuevoInv->saldo_stock = $cantidad;
+                        $nuevoInv->cantidad = $cantidad;
                         $nuevoInv->fecha_vencimiento = '2099-12-31';
-
                         $nuevoInv->save();
+
                     } else {
-                        throw new \Exception("No existe inventario del producto para realizar la salida.");
+
+                        throw new \Exception(
+                            "No existe inventario del producto para realizar la salida."
+                        );
                     }
                 }
+
+                // Obtener el stock total después del ajuste.
+                $stockActual = (int) Inventario::where('idarticulo', $idarticulo)
+                    ->where('idalmacen', $idalmacen)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Determinar el tipo de movimiento histórico.
+                $tipoMovimiento = $ajuste->tipo_movimiento === 'entrada'
+                    ? MovimientoInventario::AJUSTE_ENTRADA
+                    : MovimientoInventario::AJUSTE_SALIDA;
+
+                // Registrar movimiento en el historial.
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idalmacen,
+                    $tipoMovimiento,
+                    $stockAnterior,
+                    $stockActual,
+                    'AJUSTE_INVENTARIO',
+                    $ajuste->id,
+                    null,
+                    'Ajuste desde el módulo de ajustes de inventario'
+                );
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Ajuste procesado correctamente"
+                'message' => 'Ajuste procesado correctamente'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 

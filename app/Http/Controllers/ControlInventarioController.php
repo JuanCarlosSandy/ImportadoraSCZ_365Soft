@@ -12,6 +12,8 @@ use Barryvdh\DomPDF\Facade as PDF;
 use App\Exports\ControlInventarioExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use App\MovimientoInventario;
+use App\Services\MovimientoInventarioService;
 class ControlInventarioController extends Controller
 {
     public function index(Request $request)
@@ -245,11 +247,44 @@ class ControlInventarioController extends Controller
         if (!$request->ajax())
             return redirect('/');
 
+        $request->validate([
+            'producto' => 'required|integer|exists:articulos,id',
+            'idAlmacenSeleccionado' => 'required|integer|exists:almacens,id',
+            'cantidad' => 'required|integer|min:1',
+            'tipo_movimiento' => 'required|in:entrada,salida',
+            'iddetalle' => 'required|integer'
+        ]);
+
         DB::beginTransaction();
+
         $cambioEstadoControl = false;
+
         try {
+
+            // Bloquear el detalle para evitar ajustes duplicados.
+            $detalleControl = DetalleControlInventario::where(
+                'id',
+                $request->iddetalle
+            )
+                ->lockForUpdate()
+                ->first();
+
+            if (!$detalleControl) {
+                throw new \Exception(
+                    'No se encontró el detalle del control de inventario.'
+                );
+            }
+
+            // Evitar procesar dos veces el mismo detalle.
+            if ((int) $detalleControl->estado === 2) {
+                throw new \Exception(
+                    'Este producto ya fue verificado anteriormente.'
+                );
+            }
+
+            // Registrar ajuste.
             $ajuste = new AjusteInvetario();
-            $ajuste->cantidad = $request->cantidad;
+            $ajuste->cantidad = (int) $request->cantidad;
             $ajuste->producto = $request->producto;
             $ajuste->almacen = $request->idAlmacenSeleccionado;
             $ajuste->tipo_movimiento = $request->tipo_movimiento;
@@ -259,81 +294,153 @@ class ControlInventarioController extends Controller
             $detalle = [
                 'cantidad' => $ajuste->cantidad,
                 'idarticulo' => $ajuste->producto,
-                'tipo_movimiento' => $request->tipo_movimiento
+                'tipo_movimiento' => $ajuste->tipo_movimiento,
+                'idajuste' => $ajuste->id,
+                'iddetalle_control' => $detalleControl->id
             ];
 
-            $this->actualizarInventario($ajuste->almacen, $detalle);
+            // Actualizar inventario y registrar movimiento histórico.
+            $this->actualizarInventario(
+                $ajuste->almacen,
+                $detalle
+            );
 
-            // 🔥 ACTUALIZAR DETALLE
-            $detalleControl = DetalleControlInventario::find($request->iddetalle);
+            // Bloquear la cabecera del control.
+            $control = ControlInventario::where(
+                'id',
+                $detalleControl->idcontrol
+            )
+                ->lockForUpdate()
+                ->first();
 
-            if ($detalleControl) {
-                $detalleControl->estado = 2; // VERIFICADO
-                $detalleControl->save();
+            if (!$control) {
+                throw new \Exception(
+                    'No se encontró el control de inventario.'
+                );
+            }
 
-                // 🔥 VALIDAR SI TODOS LOS DETALLES YA ESTÁN VERIFICADOS
-                $existenPendientes = DetalleControlInventario::where('idcontrol', $detalleControl->idcontrol)
-                    ->where('estado', 1) // NO VERIFICADO
-                    ->exists();
+            // Marcar detalle como verificado.
+            $detalleControl->estado = 2;
+            $detalleControl->save();
 
-                // 👉 si NO hay pendientes
-                if (!$existenPendientes) {
-                    $control = ControlInventario::find($detalleControl->idcontrol);
-                    if ($control) {
-                        $control->estado = 2; // VERIFICADO
-                        $control->save();
-                        $cambioEstadoControl = true; // 🔥 IMPORTANTE
-                    }
-                }
+            // Verificar si todavía existen detalles pendientes.
+            $existenPendientes = DetalleControlInventario::where(
+                'idcontrol',
+                $detalleControl->idcontrol
+            )
+                ->where('estado', 1)
+                ->exists();
+
+            // Actualizar cabecera si todos están verificados.
+            if (!$existenPendientes) {
+
+                $control->estado = 2;
+                $control->save();
+
+                $cambioEstadoControl = true;
             }
 
             DB::commit();
 
-            return response()->json(['message' => 'Ajuste realizado', 'control_actualizado' => $cambioEstadoControl]);
+            return response()->json([
+                'message' => 'Ajuste realizado',
+                'control_actualizado' => $cambioEstadoControl
+            ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
     public function actualizarInventario($idalmacen, $detalle)
     {
-        $inventario = Inventario::where('idalmacen', $idalmacen)
-            ->where('idarticulo', $detalle['idarticulo'])
+        $idalmacen = (int) $idalmacen;
+        $idarticulo = (int) $detalle['idarticulo'];
+        $cantidad = (int) $detalle['cantidad'];
+
+        // Bloquear artículo durante la operación.
+        DB::table('articulos')
+            ->where('id', $idarticulo)
+            ->lockForUpdate()
             ->first();
 
-        // 🔥 SI NO EXISTE, CREARLO
+        // Obtener y bloquear los registros de inventario.
+        $inventarios = Inventario::where('idalmacen', $idalmacen)
+            ->where('idarticulo', $idarticulo)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $inventario = $inventarios->first();
+
+        // Stock total antes del movimiento.
+        $stockAnterior = (int) $inventarios->sum('saldo_stock');
+
+        // Si no existe inventario, crearlo.
         if (!$inventario) {
 
             $inventario = new Inventario();
             $inventario->idalmacen = $idalmacen;
-            $inventario->idarticulo = $detalle['idarticulo'];
+            $inventario->idarticulo = $idarticulo;
+            $inventario->fecha_vencimiento = '2099-12-31';
 
-            // 🔵 STOCK INICIAL SEGÚN TIPO MOVIMIENTO
-            if ($detalle['tipo_movimiento'] == 'entrada') {
-                $inventario->saldo_stock = $detalle['cantidad'];
-                $inventario->cantidad = $detalle['cantidad'];
+            if ($detalle['tipo_movimiento'] === 'entrada') {
+
+                $inventario->saldo_stock = $cantidad;
+                $inventario->cantidad = $cantidad;
 
             } else {
-                // si es salida, inicia en negativo o 0
-                $inventario->saldo_stock = -$detalle['cantidad'];
-                $inventario->cantidad = -$detalle['cantidad'];
 
+                // Conservamos tu comportamiento actual.
+                $inventario->saldo_stock = -$cantidad;
+                $inventario->cantidad = -$cantidad;
             }
 
-            $inventario->save();
-            return;
-        }
-
-        // 🔵 SI YA EXISTE, ACTUALIZAR
-        if ($detalle['tipo_movimiento'] == 'entrada') {
-            $inventario->saldo_stock += $detalle['cantidad'];
         } else {
-            $inventario->saldo_stock -= $detalle['cantidad'];
+
+            // Actualizar inventario existente.
+            if ($detalle['tipo_movimiento'] === 'entrada') {
+
+                $inventario->saldo_stock += $cantidad;
+
+            } else {
+
+                $inventario->saldo_stock -= $cantidad;
+            }
         }
 
         $inventario->save();
+
+        // Obtener stock total después del movimiento.
+        $stockActual = (int) Inventario::where('idalmacen', $idalmacen)
+            ->where('idarticulo', $idarticulo)
+            ->lockForUpdate()
+            ->get()
+            ->sum('saldo_stock');
+
+        // Determinar tipo de movimiento.
+        $tipoMovimiento = $detalle['tipo_movimiento'] === 'entrada'
+            ? MovimientoInventario::AJUSTE_ENTRADA
+            : MovimientoInventario::AJUSTE_SALIDA;
+
+        // Registrar movimiento histórico.
+        MovimientoInventarioService::registrar(
+            $idarticulo,
+            $idalmacen,
+            $tipoMovimiento,
+            $stockAnterior,
+            $stockActual,
+            'AJUSTE_INVENTARIO',
+            $detalle['idajuste'],
+            null,
+            'Ajuste desde control de inventario. Detalle control ID: '
+            . $detalle['iddetalle_control']
+        );
     }
 
     public function editarStockFisico(Request $request, $id)
