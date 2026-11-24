@@ -10,188 +10,376 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use FPDF;
+use App\MovimientoInventario;
+use App\Services\MovimientoInventarioService;
 
 class TraspasoController extends Controller
 {
-   
-public function index(Request $request)
-{
-    if (!$request->ajax()) {
-        return redirect('/');
-    }
 
-    $fechaInicio = $request->fechaInicio;
-    $fechaFin = $request->fechaFin;
-
-    $usuario = \Auth::user();
-
-    $articulos = collect(explode(',', $request->articulos))
-        ->filter()
-        ->map(function ($id) {
-            return (int) $id;
-        })
-        ->toArray();
-
-    $traspasos = Traspaso::select(
-        'traspasos.id',
-        'traspasos.almacen_origen',
-        'traspasos.almacen_destino',
-        'traspasos.fecha_traspaso',
-        'traspasos.idusuario',
-        'traspasos.created_at',
-        'traspasos.estado',
-        'ao.nombre_almacen as nombre_almacen_origen',
-        'ad.nombre_almacen as nombre_almacen_destino',
-        'personas.nombre as nombre_usuario'
-    )
-        ->join(
-            'almacens as ao',
-            'traspasos.almacen_origen',
-            '=',
-            'ao.id'
-        )
-        ->join(
-            'almacens as ad',
-            'traspasos.almacen_destino',
-            '=',
-            'ad.id'
-        )
-        ->join('users', 'traspasos.idusuario', '=', 'users.id')
-        ->join('personas', 'users.id', '=', 'personas.id');
-
-    // Filtrar por sucursal para los roles 1, 2 y 3
-    if (in_array($usuario->idrol, [1, 2, 3])) {
-        $traspasos->where(function ($query) use ($usuario) {
-            $query->where('ao.sucursal', $usuario->idsucursal)
-                ->orWhere('ad.sucursal', $usuario->idsucursal);
-        });
-    }
-
-    // Filtrar por artículos seleccionados
-    if (!empty($articulos)) {
-        $traspasos->whereExists(function ($query) use ($articulos) {
-            $query->select(\DB::raw(1))
-                ->from('detalle_traspasos')
-                ->join(
-                    'inventarios',
-                    'detalle_traspasos.idinventario',
-                    '=',
-                    'inventarios.id'
-                )
-                ->whereColumn(
-                    'detalle_traspasos.idtraspaso',
-                    'traspasos.id'
-                )
-                ->whereIn(
-                    'inventarios.idarticulo',
-                    $articulos
-                );
-        });
-    } else {
-        // Filtrar por fecha cuando no se seleccionan artículos
-        if ($fechaInicio && $fechaFin) {
-            $traspasos->whereBetween(
-                'traspasos.fecha_traspaso',
-                [$fechaInicio, $fechaFin]
-            );
+    public function index(Request $request)
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
         }
+
+        $fechaInicio = $request->fechaInicio;
+        $fechaFin = $request->fechaFin;
+
+        $usuario = \Auth::user();
+
+        $articulos = collect(explode(',', $request->articulos))
+            ->filter()
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->toArray();
+
+        $traspasos = Traspaso::select(
+            'traspasos.id',
+            'traspasos.almacen_origen',
+            'traspasos.almacen_destino',
+            'traspasos.fecha_traspaso',
+            'traspasos.idusuario',
+            'traspasos.created_at',
+            'traspasos.estado',
+            'ao.nombre_almacen as nombre_almacen_origen',
+            'ad.nombre_almacen as nombre_almacen_destino',
+            'personas.nombre as nombre_usuario'
+        )
+            ->join(
+                'almacens as ao',
+                'traspasos.almacen_origen',
+                '=',
+                'ao.id'
+            )
+            ->join(
+                'almacens as ad',
+                'traspasos.almacen_destino',
+                '=',
+                'ad.id'
+            )
+            ->join('users', 'traspasos.idusuario', '=', 'users.id')
+            ->join('personas', 'users.id', '=', 'personas.id');
+
+        // Filtrar por sucursal para los roles 1, 2 y 3
+        if (in_array($usuario->idrol, [1, 2, 3])) {
+            $traspasos->where(function ($query) use ($usuario) {
+                $query->where('ao.sucursal', $usuario->idsucursal)
+                    ->orWhere('ad.sucursal', $usuario->idsucursal);
+            });
+        }
+
+        // Filtrar por artículos seleccionados
+        if (!empty($articulos)) {
+            $traspasos->whereExists(function ($query) use ($articulos) {
+                $query->select(\DB::raw(1))
+                    ->from('detalle_traspasos')
+                    ->join(
+                        'inventarios',
+                        'detalle_traspasos.idinventario',
+                        '=',
+                        'inventarios.id'
+                    )
+                    ->whereColumn(
+                        'detalle_traspasos.idtraspaso',
+                        'traspasos.id'
+                    )
+                    ->whereIn(
+                        'inventarios.idarticulo',
+                        $articulos
+                    );
+            });
+        } else {
+            // Filtrar por fecha cuando no se seleccionan artículos
+            if ($fechaInicio && $fechaFin) {
+                $traspasos->whereBetween(
+                    'traspasos.fecha_traspaso',
+                    [$fechaInicio, $fechaFin]
+                );
+            }
+        }
+
+        $traspasos = $traspasos
+            ->orderBy('traspasos.created_at', 'desc')
+            ->paginate(100);
+
+        return [
+            'pagination' => [
+                'total' => $traspasos->total(),
+                'current_page' => $traspasos->currentPage(),
+                'per_page' => $traspasos->perPage(),
+                'last_page' => $traspasos->lastPage(),
+                'from' => $traspasos->firstItem(),
+                'to' => $traspasos->lastItem(),
+            ],
+            'traspasos' => $traspasos
+        ];
     }
-
-    $traspasos = $traspasos
-        ->orderBy('traspasos.created_at', 'desc')
-        ->paginate(100);
-
-    return [
-        'pagination' => [
-            'total' => $traspasos->total(),
-            'current_page' => $traspasos->currentPage(),
-            'per_page' => $traspasos->perPage(),
-            'last_page' => $traspasos->lastPage(),
-            'from' => $traspasos->firstItem(),
-            'to' => $traspasos->lastItem(),
-        ],
-        'traspasos' => $traspasos
-    ];
-}
 
     //--registrando datos de Trapaso luego pasando datosa  inventario para registrar---
     public function store(Request $request)
     {
+        $request->validate([
+            'almacen_origen' => 'required|integer|exists:almacens,id',
+            'almacen_destino' => 'required|integer|exists:almacens,id|different:almacen_origen',
+            'fecha_traspaso' => 'required|date',
+            'data' => 'required|array|min:1',
+            'data.*.idarticulo' => 'required|integer|exists:articulos,id',
+            'data.*.cantidad_traspaso' => 'required|integer|min:1',
+        ]);
+
         try {
+
             DB::beginTransaction();
 
-            // Crear el traspaso
+            $idAlmacenOrigen = (int) $request->almacen_origen;
+            $idAlmacenDestino = (int) $request->almacen_destino;
+
+            // Crear la cabecera del traspaso.
             $traspasos = new Traspaso();
             $traspasos->tipo_traspaso = $request->tipo_traspaso;
             $traspasos->idusuario = \Auth::user()->id;
-            $traspasos->almacen_origen = $request->almacen_origen;
-            $traspasos->almacen_destino = $request->almacen_destino;
+            $traspasos->almacen_origen = $idAlmacenOrigen;
+            $traspasos->almacen_destino = $idAlmacenDestino;
             $traspasos->fecha_traspaso = $request->fecha_traspaso;
             $traspasos->save();
 
-            // Obtener los detalles del traspaso
             $detalles = $request->data;
 
-            foreach ($detalles as $detalle) {
-                $cantidadRestante = $detalle['cantidad_traspaso'];
+            // Bloquear los artículos en un orden consistente.
+            $idsArticulos = collect($detalles)
+                ->pluck('idarticulo')
+                ->map(function ($id) {
+                    return (int) $id;
+                })
+                ->unique()
+                ->sort()
+                ->values();
 
-                // Inventarios origen (múltiples, ordenados por fecha de vencimiento)
-                $inventariosOrigen = Inventario::where('idalmacen', $detalle['idalmacen'])
-                    ->where('idarticulo', $detalle['idarticulo'])
-                    ->where('saldo_stock', '>', 0)
-                    ->orderBy('fecha_vencimiento', 'asc')
+            foreach ($idsArticulos as $idArticulo) {
+                DB::table('articulos')
+                    ->where('id', $idArticulo)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            foreach ($detalles as $detalle) {
+
+                $idarticulo = (int) $detalle['idarticulo'];
+                $cantidadRestante = (int) $detalle['cantidad_traspaso'];
+
+                // Validar que los almacenes del detalle coincidan
+                // con los almacenes de la cabecera.
+                if (
+                    (int) $detalle['idalmacen'] !== $idAlmacenOrigen ||
+                    (int) $detalle['idalmacendes'] !== $idAlmacenDestino
+                ) {
+                    throw new \Exception(
+                        'Los almacenes del detalle no coinciden con el traspaso.'
+                    );
+                }
+
+                // Bloquear inventarios de origen y destino.
+                $inventariosBloqueados = Inventario::where('idarticulo', $idarticulo)
+                    ->whereIn('idalmacen', [
+                        $idAlmacenOrigen,
+                        $idAlmacenDestino
+                    ])
+                    ->orderBy('idalmacen')
+                    ->orderBy('id')
+                    ->lockForUpdate()
                     ->get();
 
-                foreach ($inventariosOrigen as $inventarioOrigen) {
-                    if ($cantidadRestante <= 0)
-                        break;
+                // Obtener stock total del almacén de origen.
+                $stockAnteriorOrigen = (int) $inventariosBloqueados
+                    ->where('idalmacen', $idAlmacenOrigen)
+                    ->sum('saldo_stock');
 
-                    $cantidadADescontar = min($cantidadRestante, $inventarioOrigen->saldo_stock);
+                // Obtener stock total del almacén de destino.
+                $stockAnteriorDestino = (int) $inventariosBloqueados
+                    ->where('idalmacen', $idAlmacenDestino)
+                    ->sum('saldo_stock');
+
+                // Inventarios disponibles en el almacén de origen.
+                $inventariosOrigen = Inventario::where('idalmacen', $idAlmacenOrigen)
+                    ->where('idarticulo', $idarticulo)
+                    ->where('saldo_stock', '>', 0)
+                    ->orderBy('fecha_vencimiento', 'asc')
+                    ->orderBy('id', 'asc')
+                    ->lockForUpdate()
+                    ->get();
+
+                // Validar disponibilidad antes de realizar el traspaso.
+                $stockDisponible = (int) $inventariosOrigen->sum('saldo_stock');
+
+                if ($cantidadRestante > $stockDisponible) {
+                    throw new \Exception(
+                        'Stock insuficiente para completar el traspaso del artículo: '
+                        . $idarticulo
+                        . '. Stock disponible: '
+                        . $stockDisponible
+                    );
+                }
+
+                foreach ($inventariosOrigen as $inventarioOrigen) {
+
+                    if ($cantidadRestante <= 0) {
+                        break;
+                    }
+
+                    $cantidadADescontar = min(
+                        $cantidadRestante,
+                        (int) $inventarioOrigen->saldo_stock
+                    );
+
+                    // ==========================================
+                    // 1. DESCONTAR STOCK DEL ALMACÉN ORIGEN
+                    // ==========================================
+
                     $inventarioOrigen->saldo_stock -= $cantidadADescontar;
                     $inventarioOrigen->save();
 
-                    // Buscar o crear inventario en el destino con la misma fecha de vencimiento
-                    $inventarioDestino = Inventario::where('idalmacen', $detalle['idalmacendes'])
-                        ->where('idarticulo', $detalle['idarticulo'])
+                    // ==========================================
+                    // 2. INCREMENTAR STOCK DEL ALMACÉN DESTINO
+                    // ==========================================
+
+                    $inventarioDestino = Inventario::where('idalmacen', $idAlmacenDestino)
+                        ->where('idarticulo', $idarticulo)
                         ->where('fecha_vencimiento', $inventarioOrigen->fecha_vencimiento)
+                        ->orderBy('id')
+                        ->lockForUpdate()
                         ->first();
 
                     if ($inventarioDestino) {
+
                         $inventarioDestino->saldo_stock += $cantidadADescontar;
                         $inventarioDestino->cantidad += $cantidadADescontar;
+
                     } else {
+
                         $inventarioDestino = new Inventario();
-                        $inventarioDestino->idalmacen = $detalle['idalmacendes'];
-                        $inventarioDestino->idarticulo = $detalle['idarticulo'];
+                        $inventarioDestino->idalmacen = $idAlmacenDestino;
+                        $inventarioDestino->idarticulo = $idarticulo;
                         $inventarioDestino->saldo_stock = $cantidadADescontar;
                         $inventarioDestino->cantidad = $cantidadADescontar;
-                        $inventarioDestino->fecha_vencimiento = $inventarioOrigen->fecha_vencimiento;
+                        $inventarioDestino->fecha_vencimiento =
+                            $inventarioOrigen->fecha_vencimiento;
                     }
+
                     $inventarioDestino->save();
 
-                    // Registrar detalle del traspaso por lote
+                    // ==========================================
+                    // 3. REGISTRAR DETALLE DEL TRASPASO
+                    // ==========================================
+
                     $detalletraspaso = new DetalleTraspaso();
                     $detalletraspaso->idtraspaso = $traspasos->id;
                     $detalletraspaso->idinventario = $inventarioDestino->id;
                     $detalletraspaso->cantidad_traspaso = $cantidadADescontar;
-                    $detalletraspaso->stock_actual_destino = $inventarioDestino->saldo_stock;
+                    $detalletraspaso->stock_actual_destino =
+                        $inventarioDestino->saldo_stock;
                     $detalletraspaso->save();
+
+                    // ==========================================
+                    // 4. OBTENER STOCK ACTUAL DE AMBOS ALMACENES
+                    // ==========================================
+
+                    $stockActualOrigen = (int) Inventario::where(
+                        'idalmacen',
+                        $idAlmacenOrigen
+                    )
+                        ->where('idarticulo', $idarticulo)
+                        ->lockForUpdate()
+                        ->get()
+                        ->sum('saldo_stock');
+
+                    $stockActualDestino = (int) Inventario::where(
+                        'idalmacen',
+                        $idAlmacenDestino
+                    )
+                        ->where('idarticulo', $idarticulo)
+                        ->lockForUpdate()
+                        ->get()
+                        ->sum('saldo_stock');
+
+                    // Verificar que las variaciones sean correctas.
+                    if (
+                        ($stockAnteriorOrigen - $stockActualOrigen) !== $cantidadADescontar ||
+                        ($stockActualDestino - $stockAnteriorDestino) !== $cantidadADescontar
+                    ) {
+                        throw new \Exception(
+                            'Inconsistencia en el movimiento de inventario del artículo: '
+                            . $idarticulo
+                        );
+                    }
+
+                    // ==========================================
+                    // 5. REGISTRAR HISTORIAL DE SALIDA
+                    // ==========================================
+
+                    MovimientoInventarioService::registrar(
+                        $idarticulo,
+                        $idAlmacenOrigen,
+                        MovimientoInventario::TRASPASO_SALIDA,
+                        $stockAnteriorOrigen,
+                        $stockActualOrigen,
+                        'TRASPASO',
+                        $traspasos->id,
+                        $detalletraspaso->id,
+                        'Traspaso hacia almacén ID: ' . $idAlmacenDestino
+                    );
+
+                    // ==========================================
+                    // 6. REGISTRAR HISTORIAL DE ENTRADA
+                    // ==========================================
+
+                    MovimientoInventarioService::registrar(
+                        $idarticulo,
+                        $idAlmacenDestino,
+                        MovimientoInventario::TRASPASO_ENTRADA,
+                        $stockAnteriorDestino,
+                        $stockActualDestino,
+                        'TRASPASO',
+                        $traspasos->id,
+                        $detalletraspaso->id,
+                        'Traspaso desde almacén ID: ' . $idAlmacenOrigen
+                    );
+
+                    // Actualizar saldos de referencia para el siguiente lote.
+                    $stockAnteriorOrigen = $stockActualOrigen;
+                    $stockAnteriorDestino = $stockActualDestino;
 
                     $cantidadRestante -= $cantidadADescontar;
                 }
 
                 if ($cantidadRestante > 0) {
-                    throw new Exception('Stock insuficiente para completar el traspaso del artículo: ' . $detalle['idarticulo']);
+                    throw new \Exception(
+                        'Stock insuficiente para completar el traspaso del artículo: '
+                        . $idarticulo
+                    );
                 }
             }
 
-
             DB::commit();
 
-        } catch (Exception $e) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Traspaso registrado correctamente',
+                'idtraspaso' => $traspasos->id
+            ]);
+
+        } catch (\Throwable $e) {
+
             DB::rollBack();
-            Log::error('Error al registrar traspaso', ['exception' => $e->getMessage()]);
-            return response()->json(['error' => $e->getMessage()], 400);
+
+            Log::error('Error al registrar traspaso', [
+                'exception' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 400);
         }
     }
 
@@ -251,33 +439,241 @@ public function index(Request $request)
 
         try {
 
-            $traspaso = Traspaso::findOrFail($id);
+            // Obtener y bloquear el traspaso.
+            $traspaso = Traspaso::where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            // obtener detalles del traspaso
-            $detalles = DetalleTraspaso::where('idtraspaso', $id)->get();
+            // Evitar anulaciones duplicadas.
+            if ((int) $traspaso->estado === 0) {
+                throw new \Exception(
+                    'Este traspaso ya fue anulado anteriormente.'
+                );
+            }
+
+            $idAlmacenOrigen = (int) $traspaso->almacen_origen;
+            $idAlmacenDestino = (int) $traspaso->almacen_destino;
+
+            if ($idAlmacenOrigen === $idAlmacenDestino) {
+                throw new \Exception(
+                    'Los almacenes de origen y destino no pueden ser iguales.'
+                );
+            }
+
+            // Obtener detalles del traspaso.
+            $detalles = DetalleTraspaso::where('idtraspaso', $id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($detalles->isEmpty()) {
+                throw new \Exception(
+                    'El traspaso no contiene detalles.'
+                );
+            }
+
+            // Obtener los artículos involucrados.
+            $idsArticulos = Inventario::whereIn(
+                'id',
+                $detalles->pluck('idinventario')->unique()->values()->all()
+            )
+                ->pluck('idarticulo')
+                ->unique()
+                ->sort()
+                ->values();
+
+            // Bloquear artículos en orden consistente.
+            foreach ($idsArticulos as $idArticulo) {
+
+                DB::table('articulos')
+                    ->where('id', $idArticulo)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
             foreach ($detalles as $detalle) {
 
-                // inventario destino (donde se sumó)
-                $inventarioDestino = Inventario::findOrFail($detalle->idinventario);
+                $cantidad = (int) $detalle->cantidad_traspaso;
 
-                // restar del destino
-                $inventarioDestino->saldo_stock -= $detalle->cantidad_traspaso;
+                if ($cantidad <= 0) {
+                    throw new \Exception(
+                        'Cantidad inválida en el detalle de traspaso.'
+                    );
+                }
+
+                // Identificar el producto desde el inventario destino.
+                $inventarioReferencia = Inventario::findOrFail(
+                    $detalle->idinventario
+                );
+
+                $idarticulo = (int) $inventarioReferencia->idarticulo;
+
+                // Bloquear inventarios de ambos almacenes.
+                $inventariosBloqueados = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->whereIn('idalmacen', [
+                        $idAlmacenOrigen,
+                        $idAlmacenDestino
+                    ])
+                    ->orderBy('idalmacen')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                // Stock total antes de la anulación.
+                $stockAnteriorOrigen = (int) $inventariosBloqueados
+                    ->where('idalmacen', $idAlmacenOrigen)
+                    ->sum('saldo_stock');
+
+                $stockAnteriorDestino = (int) $inventariosBloqueados
+                    ->where('idalmacen', $idAlmacenDestino)
+                    ->sum('saldo_stock');
+
+                // ==========================================
+                // 1. OBTENER INVENTARIO DESTINO
+                // ==========================================
+
+                $inventarioDestino = $inventariosBloqueados
+                    ->firstWhere('id', $detalle->idinventario);
+
+                if (
+                    !$inventarioDestino ||
+                    (int) $inventarioDestino->idalmacen !== $idAlmacenDestino
+                ) {
+                    throw new \Exception(
+                        'No se encontró el inventario destino del artículo: '
+                        . $idarticulo
+                    );
+                }
+
+                // Validar stock disponible para la devolución.
+                if ($inventarioDestino->saldo_stock < $cantidad) {
+                    throw new \Exception(
+                        'No se puede anular el traspaso. '
+                        . 'Stock insuficiente en el almacén destino '
+                        . 'para el artículo ID: ' . $idarticulo
+                        . '. Disponible: ' . $inventarioDestino->saldo_stock
+                        . '. Requerido: ' . $cantidad
+                    );
+                }
+
+                // ==========================================
+                // 2. DESCONTAR STOCK DEL DESTINO
+                // ==========================================
+
+                $inventarioDestino->saldo_stock -= $cantidad;
                 $inventarioDestino->save();
 
-                // buscar inventario del mismo articulo en almacen origen
-                $inventarioOrigen = Inventario::where('idarticulo', $inventarioDestino->idarticulo)
-                    ->where('idalmacen', $traspaso->almacen_origen)
+                // ==========================================
+                // 3. DEVOLVER STOCK AL ORIGEN
+                // ==========================================
+
+                $inventarioOrigen = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenOrigen)
+                    ->where(
+                        'fecha_vencimiento',
+                        $inventarioDestino->fecha_vencimiento
+                    )
+                    ->orderBy('id')
+                    ->lockForUpdate()
                     ->first();
 
                 if ($inventarioOrigen) {
-                    // sumar al origen
-                    $inventarioOrigen->saldo_stock += $detalle->cantidad_traspaso;
-                    $inventarioOrigen->save();
+
+                    $inventarioOrigen->saldo_stock += $cantidad;
+
+                } else {
+
+                    // Si el inventario de origen ya no existe,
+                    // volver a crearlo para devolver el stock.
+                    $inventarioOrigen = new Inventario();
+                    $inventarioOrigen->idarticulo = $idarticulo;
+                    $inventarioOrigen->idalmacen = $idAlmacenOrigen;
+                    $inventarioOrigen->saldo_stock = $cantidad;
+                    $inventarioOrigen->cantidad = $cantidad;
+                    $inventarioOrigen->fecha_vencimiento =
+                        $inventarioDestino->fecha_vencimiento;
                 }
+
+                $inventarioOrigen->save();
+
+                // ==========================================
+                // 4. OBTENER STOCK DESPUÉS DE LA ANULACIÓN
+                // ==========================================
+
+                $stockActualOrigen = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenOrigen)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                $stockActualDestino = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenDestino)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Verificar consistencia de las cantidades.
+                if (
+                    ($stockActualOrigen - $stockAnteriorOrigen) !== $cantidad ||
+                    ($stockAnteriorDestino - $stockActualDestino) !== $cantidad
+                ) {
+                    throw new \Exception(
+                        'Inconsistencia al anular el movimiento del artículo: '
+                        . $idarticulo
+                    );
+                }
+
+                // ==========================================
+                // 5. REGISTRAR SALIDA DEL ALMACÉN DESTINO
+                // ==========================================
+
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idAlmacenDestino,
+                    MovimientoInventario::ANULACION_TRASPASO_ENTRADA,
+                    $stockAnteriorDestino,
+                    $stockActualDestino,
+                    'TRASPASO',
+                    $traspaso->id,
+                    $detalle->id,
+                    'Anulación de traspaso. Devolución hacia almacén ID: '
+                    . $idAlmacenOrigen
+                );
+
+                // ==========================================
+                // 6. REGISTRAR ENTRADA AL ALMACÉN ORIGEN
+                // ==========================================
+
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idAlmacenOrigen,
+                    MovimientoInventario::ANULACION_TRASPASO_SALIDA,
+                    $stockAnteriorOrigen,
+                    $stockActualOrigen,
+                    'TRASPASO',
+                    $traspaso->id,
+                    $detalle->id,
+                    'Anulación de traspaso. Devolución desde almacén ID: '
+                    . $idAlmacenDestino
+                );
             }
 
-            // marcar traspaso como anulado
+            // ==========================================
+            // 7. MARCAR TRASPASO COMO ANULADO
+            // ==========================================
+
             $traspaso->estado = 0;
             $traspaso->save();
 
@@ -287,9 +683,14 @@ public function index(Request $request)
                 'message' => 'Traspaso anulado correctamente'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
 
             DB::rollBack();
+
+            Log::error('Error al anular traspaso', [
+                'idtraspaso' => $id,
+                'exception' => $e->getMessage()
+            ]);
 
             return response()->json([
                 'message' => 'Error al anular el traspaso',
@@ -297,7 +698,7 @@ public function index(Request $request)
             ], 500);
         }
     }
-
+    
     public function exportarPdf($id)
     {
         $traspaso = Traspaso::join('almacens as ao', 'traspasos.almacen_origen', '=', 'ao.id')
@@ -430,7 +831,7 @@ public function index(Request $request)
 
 class PDFConFooter extends FPDF
 {
-        protected $angle = 0;
+    protected $angle = 0;
 
     public function Footer()
     {
