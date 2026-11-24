@@ -16,6 +16,8 @@ use App\User;
 use App\Notifications\NotifyAdmin;
 use Exception;
 use App\Inventario;
+use App\MovimientoInventario;
+use App\Services\MovimientoInventarioService;
 
 class IngresoController extends Controller
 {
@@ -387,82 +389,224 @@ class IngresoController extends Controller
             return redirect("/");
         }
 
+        $request->validate([
+            'idalmacen' => 'required|integer|exists:almacens,id',
+            'data' => 'required|array|min:1',
+            'data.*.idarticulo' => 'required|integer|exists:articulos,id',
+            'data.*.cantidad' => 'required|integer|min:1',
+            'data.*.precio' => 'required|numeric|min:0',
+            'data.*.fecha_vencimiento' => 'required|date',
+            'total' => 'required|numeric|min:0'
+        ]);
+
         try {
+
             DB::beginTransaction();
 
-            // 🔹 Caja (opcional)
-            $ultimaCaja = Caja::latest()->first();
+            $idalmacen = (int) $request->idalmacen;
 
-            // =====================
-            // 1️⃣ REGISTRAR INGRESO
-            // =====================
+            // Fecha efectiva de la operación.
+            $fechaMovimiento = now()->setTimezone("America/La_Paz");
+
+            // ==========================================
+            // 1. OBTENER CAJA
+            // ==========================================
+
+            $ultimaCaja = Caja::latest()
+                ->lockForUpdate()
+                ->first();
+
+            // ==========================================
+            // 2. REGISTRAR INGRESO
+            // ==========================================
+
             $ingreso = new Ingreso();
             $ingreso->idusuario = auth()->id();
             $ingreso->tipo_comprobante = $request->tipo_comprobante;
             $ingreso->serie_comprobante = $request->serie_comprobante;
             $ingreso->num_comprobante = $request->num_comprobante;
-            $ingreso->fecha_hora = now()->setTimezone("America/La_Paz");
+            $ingreso->fecha_hora = $fechaMovimiento;
             $ingreso->impuesto = $request->impuesto;
             $ingreso->total = $request->total;
-            $ingreso->idalmacen = $request->idalmacen;
+            $ingreso->idalmacen = $idalmacen;
             $ingreso->estado = 1;
             $ingreso->idcaja = $ultimaCaja ? $ultimaCaja->id : null;
             $ingreso->descuento_global = 0;
             $ingreso->save();
 
-            // 🔹 Actualizar caja
+            // Actualizar caja.
             if ($ultimaCaja) {
                 $ultimaCaja->comprasContado += $request->total;
                 $ultimaCaja->save();
             }
 
-            // =====================
-            // 2️⃣ DETALLE + INVENTARIO
-            // =====================
+            // ==========================================
+            // 3. BLOQUEAR ARTÍCULOS
+            // ==========================================
+
+            $idsArticulos = collect($request->data)
+                ->pluck('idarticulo')
+                ->map(function ($id) {
+                    return (int) $id;
+                })
+                ->unique()
+                ->sort()
+                ->values();
+
+            foreach ($idsArticulos as $idArticulo) {
+
+                Articulo::where('id', $idArticulo)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            // ==========================================
+            // 4. REGISTRAR DETALLES E INVENTARIO
+            // ==========================================
+
             foreach ($request->data as $det) {
 
-                // 🔹 Determinar tipo de compra (Unidad o Caja)
-                $tipoCompra = isset($det['es_paquete']) && $det['es_paquete'] ? 'Caja' : 'Unidad';
+                $idarticulo = (int) $det['idarticulo'];
+                $cantidad = (int) $det['cantidad'];
 
-                // 🔹 Guardar detalle ingreso
-                DetalleIngreso::create([
+                // Determinar tipo de compra.
+                $tipoCompra = !empty($det['es_paquete'])
+                    ? 'Caja'
+                    : 'Unidad';
+
+                // Obtener artículo.
+                $articulo = Articulo::where('id', $idarticulo)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // Validar unidades por caja.
+                if ($tipoCompra === 'Caja') {
+
+                    $unidadEnvase = (int) $articulo->unidad_envase;
+
+                    if (
+                        $unidadEnvase <= 0 ||
+                        $unidadEnvase != $articulo->unidad_envase
+                    ) {
+                        throw new \Exception(
+                            'El artículo ID: ' . $idarticulo
+                            . ' no tiene una cantidad válida de unidades por caja.'
+                        );
+                    }
+                }
+
+                // Calcular cantidad real en unidades.
+                $cantidadReal = $tipoCompra === 'Caja'
+                    ? $cantidad * $unidadEnvase
+                    : $cantidad;
+
+                // ==========================================
+                // 5. OBTENER STOCK ANTERIOR
+                // ==========================================
+
+                $inventariosBloqueados = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idalmacen)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $stockAnterior = (int) $inventariosBloqueados
+                    ->sum('saldo_stock');
+
+                // ==========================================
+                // 6. REGISTRAR DETALLE DE INGRESO
+                // ==========================================
+
+                $detalleIngreso = DetalleIngreso::create([
                     'idingreso' => $ingreso->id,
-                    'idarticulo' => $det['idarticulo'],
-                    'cantidad' => $det['cantidad'],
+                    'idarticulo' => $idarticulo,
+                    'cantidad' => $cantidad,
                     'precio' => $det['precio'],
                     'descuento' => 0,
                     'tipo_compra' => $tipoCompra
                 ]);
 
-                // 🔹 Artículo
-                $articulo = Articulo::findOrFail($det['idarticulo']);
+                // ==========================================
+                // 7. ACTUALIZAR INVENTARIO
+                // ==========================================
 
-                // 🔹 Cantidad real según tipo de compra
-                // Si es por Caja: cantidad * unidad_envase
-                // Si es por Unidad: cantidad directa
-                $cantidadReal = $tipoCompra === 'Caja'
-                    ? $det['cantidad'] * $articulo->unidad_envase
-                    : $det['cantidad'];
-
-                // 🔹 Buscar inventario existente
-                $inventario = Inventario::where('idarticulo', $det['idarticulo'])
-                    ->where('idalmacen', $request->idalmacen)
-                    ->whereDate('fecha_vencimiento', $det['fecha_vencimiento'])
+                $inventario = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idalmacen)
+                    ->whereDate(
+                        'fecha_vencimiento',
+                        $det['fecha_vencimiento']
+                    )
+                    ->orderBy('id')
+                    ->lockForUpdate()
                     ->first();
 
                 if ($inventario) {
+
                     $inventario->saldo_stock += $cantidadReal;
                     $inventario->cantidad += $cantidadReal;
                     $inventario->save();
+
                 } else {
-                    Inventario::create([
-                        'idalmacen' => $request->idalmacen,
-                        'idarticulo' => $det['idarticulo'],
+
+                    $inventario = Inventario::create([
+                        'idalmacen' => $idalmacen,
+                        'idarticulo' => $idarticulo,
                         'fecha_vencimiento' => $det['fecha_vencimiento'],
                         'saldo_stock' => $cantidadReal,
                         'cantidad' => $cantidadReal
                     ]);
                 }
+
+                // ==========================================
+                // 8. OBTENER STOCK ACTUAL
+                // ==========================================
+
+                $stockActual = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idalmacen)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Validar consistencia del movimiento.
+                if (($stockActual - $stockAnterior) !== $cantidadReal) {
+
+                    throw new \Exception(
+                        'Inconsistencia en el ingreso de inventario '
+                        . 'del artículo ID: ' . $idarticulo
+                    );
+                }
+
+                // ==========================================
+                // 9. REGISTRAR MOVIMIENTO HISTÓRICO
+                // ==========================================
+
+                $observacion = 'Ingreso de productos por compra. '
+                    . 'Tipo: ' . $tipoCompra
+                    . '. Cantidad: ' . $cantidad
+                    . '. Unidades ingresadas: ' . $cantidadReal;
+
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idalmacen,
+                    MovimientoInventario::COMPRA,
+                    $stockAnterior,
+                    $stockActual,
+                    'INGRESO',
+                    $ingreso->id,
+                    $detalleIngreso->id,
+                    $observacion,
+                    $ingreso->idusuario,
+                    $fechaMovimiento
+                );
             }
 
             DB::commit();
@@ -472,9 +616,13 @@ class IngresoController extends Controller
                 'id' => $ingreso->id
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
             DB::rollBack();
-            \Log::error("Error registro ingreso", ['error' => $e->getMessage()]);
+
+            \Log::error("Error registro ingreso", [
+                'error' => $e->getMessage()
+            ]);
 
             return response()->json([
                 'success' => false,
@@ -490,40 +638,231 @@ class IngresoController extends Controller
             return redirect("/");
         }
 
-        DB::beginTransaction();
+        $request->validate([
+            'id' => 'required|integer|exists:ingresos,id'
+        ]);
 
         try {
 
-            // 1️⃣ Obtener ingreso
-            $ingreso = Ingreso::findOrFail($request->id);
+            DB::beginTransaction();
 
-            // ⛔ Evitar doble anulación
-            if ($ingreso->estado == 0) {
+            // ==========================================
+            // 1. OBTENER Y BLOQUEAR INGRESO
+            // ==========================================
+
+            $ingreso = Ingreso::where('id', $request->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Evitar doble anulación.
+            if ((int) $ingreso->estado === 0) {
+
+                DB::rollBack();
+
                 return response()->json([
+                    'success' => false,
                     'error' => 'El ingreso ya se encuentra anulado.'
                 ], 400);
             }
 
-            // 2️⃣ Obtener detalles del ingreso
-            $detalles = DetalleIngreso::where('idingreso', $ingreso->id)->get();
+            if ((int) $ingreso->estado !== 1) {
+                throw new \Exception(
+                    'El ingreso no se encuentra activo.'
+                );
+            }
+
+            $idalmacen = (int) $ingreso->idalmacen;
+
+            // ==========================================
+            // 2. OBTENER DETALLES DEL INGRESO
+            // ==========================================
+
+            $detalles = DetalleIngreso::where(
+                'idingreso',
+                $ingreso->id
+            )
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($detalles->isEmpty()) {
+                throw new \Exception(
+                    'El ingreso no contiene detalles.'
+                );
+            }
+
+            // ==========================================
+            // 3. BLOQUEAR CAJA ORIGINAL
+            // ==========================================
+
+            $caja = null;
+
+            if ($ingreso->idcaja) {
+
+                $caja = Caja::where('id', $ingreso->idcaja)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            // ==========================================
+            // 4. BLOQUEAR ARTÍCULOS
+            // ==========================================
+
+            $idsArticulos = $detalles
+                ->pluck('idarticulo')
+                ->map(function ($idArticulo) {
+                    return (int) $idArticulo;
+                })
+                ->unique()
+                ->sort()
+                ->values();
+
+            foreach ($idsArticulos as $idArticulo) {
+
+                Articulo::where('id', $idArticulo)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            $fechaMovimiento = now()->setTimezone("America/La_Paz");
+
+            // ==========================================
+            // 5. REVERTIR INVENTARIO
+            // ==========================================
 
             foreach ($detalles as $detalle) {
 
-                // 3️⃣ Obtener artículo
-                $articulo = Articulo::find($detalle->idarticulo);
-                if (!$articulo)
-                    continue;
+                $idarticulo = (int) $detalle->idarticulo;
 
-                $cantidadReal = $detalle->cantidad;
+                // Recuperar cantidad real ingresada.
+                // Compatible con compras nuevas, actualizadas
+                // y anteriores a la implementación del historial.
+                $cantidadReal = $this->obtenerCantidadRealIngreso(
+                    $detalle,
+                    $ingreso
+                );
 
-                // 5️⃣ Revertir inventario
-                DB::table('inventarios')
-                    ->where('idalmacen', $ingreso->idalmacen)
-                    ->where('idarticulo', $detalle->idarticulo)
-                    ->decrement('saldo_stock', $cantidadReal);
+                // Obtener inventarios del almacén de la compra.
+                $inventarios = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idalmacen)
+                    ->orderBy('id', 'desc')
+                    ->lockForUpdate()
+                    ->get();
+
+                // Stock total anterior.
+                $stockAnterior = (int) $inventarios
+                    ->sum('saldo_stock');
+
+                // Validar disponibilidad de stock.
+                if ($stockAnterior < $cantidadReal) {
+
+                    throw new \Exception(
+                        'No existe suficiente stock para anular la compra '
+                        . 'del artículo ID: ' . $idarticulo
+                        . '. Disponible: ' . $stockAnterior
+                        . '. Requerido: ' . $cantidadReal
+                    );
+                }
+
+                $cantidadRestante = $cantidadReal;
+
+                // Distribuir el descuento entre los inventarios.
+                foreach ($inventarios as $inventario) {
+
+                    if ($cantidadRestante <= 0) {
+                        break;
+                    }
+
+                    if ($inventario->saldo_stock <= 0) {
+                        continue;
+                    }
+
+                    $cantidadADescontar = min(
+                        $cantidadRestante,
+                        (int) $inventario->saldo_stock
+                    );
+
+                    // Revertir saldo de inventario.
+                    $inventario->saldo_stock -= $cantidadADescontar;
+
+                    $inventario->save();
+
+                    $cantidadRestante -= $cantidadADescontar;
+                }
+
+                // Verificar que se descontó toda la cantidad.
+                if ($cantidadRestante > 0) {
+
+                    throw new \Exception(
+                        'No se pudo revertir completamente el inventario '
+                        . 'del artículo ID: ' . $idarticulo
+                    );
+                }
+
+                // ==========================================
+                // 6. OBTENER STOCK POSTERIOR
+                // ==========================================
+
+                $stockActual = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idalmacen)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Validar consistencia del movimiento.
+                if (($stockAnterior - $stockActual) !== $cantidadReal) {
+
+                    throw new \Exception(
+                        'Inconsistencia al anular el inventario '
+                        . 'del artículo ID: ' . $idarticulo
+                    );
+                }
+
+                // ==========================================
+                // 7. REGISTRAR MOVIMIENTO HISTÓRICO
+                // ==========================================
+
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idalmacen,
+                    MovimientoInventario::ANULACION_COMPRA,
+                    $stockAnterior,
+                    $stockActual,
+                    'INGRESO',
+                    $ingreso->id,
+                    $detalle->id,
+                    'Reversión de inventario por anulación de compra. '
+                    . 'Unidades revertidas: ' . $cantidadReal,
+                    auth()->id(),
+                    $fechaMovimiento
+                );
             }
 
-            // 6️⃣ Marcar ingreso como anulado
+            // ==========================================
+            // 8. REVERTIR MONTO DE COMPRA EN CAJA
+            // ==========================================
+
+            if ($caja) {
+
+                $caja->comprasContado = round(
+                    (float) $caja->comprasContado -
+                    (float) $ingreso->total,
+                    2
+                );
+
+                $caja->save();
+            }
+
+            // ==========================================
+            // 9. MARCAR INGRESO COMO ANULADO
+            // ==========================================
+
             $ingreso->estado = 0;
             $ingreso->save();
 
@@ -534,17 +873,19 @@ class IngresoController extends Controller
                 'message' => 'Ingreso anulado y stock revertido correctamente.'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
 
             DB::rollBack();
 
             \Log::error('Error al anular ingreso', [
+                'idingreso' => $request->id,
                 'error' => $e->getMessage(),
                 'line' => $e->getLine()
             ]);
 
             return response()->json([
-                'error' => 'Error al anular el ingreso.'
+                'success' => false,
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -667,35 +1008,206 @@ class IngresoController extends Controller
             return redirect("/");
         }
 
-        $id = $request->id; // <--- Obtenemos el id del ingreso desde el body
-        if (!$id) {
-            return response()->json(['success' => false, 'message' => 'ID del ingreso no proporcionado'], 400);
-        }
+        $request->validate([
+            'id' => 'required|integer|exists:ingresos,id',
+            'idalmacen' => 'required|integer|exists:almacens,id',
+            'total' => 'required|numeric|min:0',
+            'data' => 'required|array|min:1',
+            'data.*.idarticulo' => 'required|integer|exists:articulos,id',
+            'data.*.cantidad' => 'required|integer|min:1',
+            'data.*.precio' => 'required|numeric|min:0',
+            'data.*.descuento' => 'nullable|numeric|min:0',
+            'data.*.fecha_vencimiento' => 'nullable|date'
+        ]);
 
         try {
+
             DB::beginTransaction();
 
-            $ingreso = Ingreso::findOrFail($id);
+            $id = (int) $request->id;
 
-            // 1️⃣ Revertir inventario actual
-            foreach ($ingreso->detallesIngreso as $detalle) {
-                $articulo = Articulo::find($detalle->idarticulo);
-                if ($articulo) {
-                    $cantidadReal = $detalle->cantidad;
-                    $inventario = Inventario::where('idarticulo', $detalle->idarticulo)
-                        ->orderBy('id', 'desc')
-                        ->first();
+            // ==========================================
+            // 1. OBTENER Y BLOQUEAR INGRESO
+            // ==========================================
 
-                    if ($inventario) {
-                        $inventario->saldo_stock -= $cantidadReal;
-                        $inventario->cantidad -= $cantidadReal;
-                        $inventario->save();
-                    }
-                }
+            $ingreso = Ingreso::where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((int) $ingreso->estado !== 1) {
+                throw new \Exception(
+                    'No se puede actualizar un ingreso que no está activo.'
+                );
             }
 
-            // 2️⃣ Actualizar datos generales
-            $ingreso->idalmacen = $request->idalmacen;
+            // Conservar datos anteriores.
+            $idAlmacenAnterior = (int) $ingreso->idalmacen;
+            $idAlmacenNuevo = (int) $request->idalmacen;
+            $totalAnterior = $ingreso->total;
+
+            // Obtener detalles anteriores.
+            $detallesAnteriores = $ingreso->detallesIngreso()
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            // ==========================================
+            // 2. BLOQUEAR CAJA ORIGINAL
+            // ==========================================
+
+            $caja = null;
+
+            if ($ingreso->idcaja) {
+
+                $caja = Caja::where('id', $ingreso->idcaja)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            // ==========================================
+            // 3. BLOQUEAR ARTÍCULOS INVOLUCRADOS
+            // ==========================================
+
+            $idsArticulos = $detallesAnteriores
+                ->pluck('idarticulo')
+                ->merge(collect($request->data)->pluck('idarticulo'))
+                ->map(function ($idArticulo) {
+                    return (int) $idArticulo;
+                })
+                ->unique()
+                ->sort()
+                ->values();
+
+            foreach ($idsArticulos as $idArticulo) {
+
+                Articulo::where('id', $idArticulo)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            // Bloquear inventarios de ambos almacenes.
+            Inventario::whereIn('idarticulo', $idsArticulos->all())
+                ->whereIn('idalmacen', [
+                    $idAlmacenAnterior,
+                    $idAlmacenNuevo
+                ])
+                ->orderBy('idarticulo')
+                ->orderBy('idalmacen')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            $fechaMovimiento = now()->setTimezone("America/La_Paz");
+
+            // ==========================================
+            // 4. REVERTIR INVENTARIO ANTERIOR
+            // ==========================================
+
+            foreach ($detallesAnteriores as $detalleAnterior) {
+
+                $idarticulo = (int) $detalleAnterior->idarticulo;
+
+                // Recuperar cantidad real ingresada originalmente.
+                $cantidadReal = $this->obtenerCantidadRealIngreso(
+                    $detalleAnterior,
+                    $ingreso
+                );
+
+                // Buscar inventarios del almacén ORIGINAL.
+                $inventarios = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenAnterior)
+                    ->orderBy('id', 'desc')
+                    ->lockForUpdate()
+                    ->get();
+
+                $stockAnterior = (int) $inventarios->sum('saldo_stock');
+
+                if ($stockAnterior < $cantidadReal) {
+
+                    throw new \Exception(
+                        'No existe suficiente stock para revertir la compra '
+                        . 'del artículo ID: ' . $idarticulo
+                        . '. Disponible: ' . $stockAnterior
+                        . '. Requerido: ' . $cantidadReal
+                    );
+                }
+
+                $cantidadRestante = $cantidadReal;
+
+                // Descontar de los inventarios disponibles.
+                foreach ($inventarios as $inventario) {
+
+                    if ($cantidadRestante <= 0) {
+                        break;
+                    }
+
+                    if ($inventario->saldo_stock <= 0) {
+                        continue;
+                    }
+
+                    $cantidadADescontar = min(
+                        $cantidadRestante,
+                        (int) $inventario->saldo_stock
+                    );
+
+                    $inventario->saldo_stock -= $cantidadADescontar;
+                    $inventario->cantidad -= $cantidadADescontar;
+                    $inventario->save();
+
+                    $cantidadRestante -= $cantidadADescontar;
+                }
+
+                if ($cantidadRestante > 0) {
+
+                    throw new \Exception(
+                        'No se pudo revertir completamente el inventario '
+                        . 'del artículo ID: ' . $idarticulo
+                    );
+                }
+
+                // Obtener stock posterior a la reversión.
+                $stockActual = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenAnterior)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Validar consistencia.
+                if (($stockAnterior - $stockActual) !== $cantidadReal) {
+
+                    throw new \Exception(
+                        'Inconsistencia al revertir el inventario '
+                        . 'del artículo ID: ' . $idarticulo
+                    );
+                }
+
+                // Registrar salida por actualización de compra.
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idAlmacenAnterior,
+                    MovimientoInventario::ACTUALIZACION_COMPRA_SALIDA,
+                    $stockAnterior,
+                    $stockActual,
+                    'INGRESO',
+                    $ingreso->id,
+                    $detalleAnterior->id,
+                    'Reversión del detalle anterior por actualización de compra',
+                    auth()->id(),
+                    $fechaMovimiento
+                );
+            }
+
+            // ==========================================
+            // 5. ACTUALIZAR DATOS GENERALES
+            // ==========================================
+
+            $ingreso->idalmacen = $idAlmacenNuevo;
             $ingreso->tipo_comprobante = $request->tipo_comprobante;
             $ingreso->serie_comprobante = $request->serie_comprobante;
             $ingreso->num_comprobante = $request->num_comprobante;
@@ -703,37 +1215,128 @@ class IngresoController extends Controller
             $ingreso->total = $request->total;
             $ingreso->save();
 
-            // 3️⃣ Eliminar detalles anteriores
+            // ==========================================
+            // 6. ACTUALIZAR MONTO DE COMPRAS EN CAJA
+            // ==========================================
+
+            if ($caja) {
+
+                $diferenciaTotal = round(
+                    (float) $request->total - (float) $totalAnterior,
+                    2
+                );
+
+                $caja->comprasContado = round(
+                    (float) $caja->comprasContado + $diferenciaTotal,
+                    2
+                );
+
+                $caja->save();
+            }
+
+            // ==========================================
+            // 7. ELIMINAR DETALLES ANTERIORES
+            // ==========================================
+
             $ingreso->detallesIngreso()->delete();
 
-            // 4️⃣ Crear nuevos detalles y actualizar inventario
+            // ==========================================
+            // 8. REGISTRAR NUEVOS DETALLES
+            // ==========================================
+
             foreach ($request->data as $det) {
+
+                $idarticulo = (int) $det['idarticulo'];
+                $cantidadReal = (int) $det['cantidad'];
+
+                // Conservamos tu actualización por unidad.
+                $tipoCompra = 'Unidad';
+
+                $fechaVencimiento = !empty($det['fecha_vencimiento'])
+                    ? $det['fecha_vencimiento']
+                    : '2099-12-31';
+
+                // Obtener stock anterior del nuevo almacén.
+                $stockAnterior = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenNuevo)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Crear nuevo detalle.
                 $detalle = new DetalleIngreso();
                 $detalle->idingreso = $ingreso->id;
-                $detalle->idarticulo = $det['idarticulo'];
-                $detalle->cantidad = $det['cantidad'];
+                $detalle->idarticulo = $idarticulo;
+                $detalle->cantidad = $cantidadReal;
                 $detalle->precio = $det['precio'];
                 $detalle->descuento = $det['descuento'] ?? 0;
-                $detalle->tipo_compra = 'Unidad';
+                $detalle->tipo_compra = $tipoCompra;
                 $detalle->save();
 
-                $articulo = Articulo::find($det['idarticulo']);
-                if ($articulo) {
-                    $cantidadReal = $det['cantidad'];
+                // Buscar inventario existente.
+                $inventario = Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenNuevo)
+                    ->whereDate('fecha_vencimiento', $fechaVencimiento)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->first();
 
-                    $inventario = Inventario::firstOrCreate(
-                        [
-                            'idarticulo' => $det['idarticulo'],
-                            'idalmacen' => $request->idalmacen,
-                            'fecha_vencimiento' => '2099-12-31' // Fecha por defecto si no se maneja vencimiento,
-                        ],
-                        ['saldo_stock' => 0, 'cantidad' => 0]
-                    );
+                if ($inventario) {
 
                     $inventario->saldo_stock += $cantidadReal;
                     $inventario->cantidad += $cantidadReal;
                     $inventario->save();
+
+                } else {
+
+                    $inventario = Inventario::create([
+                        'idarticulo' => $idarticulo,
+                        'idalmacen' => $idAlmacenNuevo,
+                        'fecha_vencimiento' => $fechaVencimiento,
+                        'saldo_stock' => $cantidadReal,
+                        'cantidad' => $cantidadReal
+                    ]);
                 }
+
+                // Obtener stock posterior.
+                $stockActual = (int) Inventario::where(
+                    'idarticulo',
+                    $idarticulo
+                )
+                    ->where('idalmacen', $idAlmacenNuevo)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sum('saldo_stock');
+
+                // Validar consistencia.
+                if (($stockActual - $stockAnterior) !== $cantidadReal) {
+
+                    throw new \Exception(
+                        'Inconsistencia al actualizar el inventario '
+                        . 'del artículo ID: ' . $idarticulo
+                    );
+                }
+
+                // Registrar entrada por actualización de compra.
+                MovimientoInventarioService::registrar(
+                    $idarticulo,
+                    $idAlmacenNuevo,
+                    MovimientoInventario::ACTUALIZACION_COMPRA_ENTRADA,
+                    $stockAnterior,
+                    $stockActual,
+                    'INGRESO',
+                    $ingreso->id,
+                    $detalle->id,
+                    'Ingreso del nuevo detalle por actualización de compra',
+                    auth()->id(),
+                    $fechaMovimiento
+                );
             }
 
             DB::commit();
@@ -743,11 +1346,91 @@ class IngresoController extends Controller
                 'message' => 'Compra actualizada correctamente'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
             DB::rollBack();
-            \Log::error("Error al actualizar ingreso", ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+
+            \Log::error("Error al actualizar ingreso", [
+                'idingreso' => $request->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
+    }
+
+    private function obtenerCantidadRealIngreso($detalle, $ingreso)
+    {
+        // Buscar la cantidad real registrada en el historial.
+        $movimientos = MovimientoInventario::where(
+            'tipo_referencia',
+            'INGRESO'
+        )
+            ->where('idreferencia', $ingreso->id)
+            ->where('iddetalle_referencia', $detalle->id)
+            ->where('idarticulo', $detalle->idarticulo)
+            ->where('idalmacen', $ingreso->idalmacen)
+            ->whereIn('tipo_movimiento', [
+                MovimientoInventario::COMPRA,
+                MovimientoInventario::ACTUALIZACION_COMPRA_ENTRADA
+            ])
+            ->get();
+
+        if ($movimientos->count() > 1) {
+            throw new \Exception(
+                'Existen movimientos duplicados para el detalle de ingreso ID: '
+                . $detalle->id
+            );
+        }
+
+        if ($movimientos->isNotEmpty()) {
+
+            $cantidad = (int) $movimientos->first()->cantidad;
+
+            if ($cantidad <= 0) {
+                throw new \Exception(
+                    'Cantidad histórica inválida para el detalle ID: '
+                    . $detalle->id
+                );
+            }
+
+            return $cantidad;
+        }
+
+        // Compras anteriores a la implementación del historial.
+        $articulo = Articulo::findOrFail($detalle->idarticulo);
+
+        $cantidad = (int) $detalle->cantidad;
+
+        if ($detalle->tipo_compra === 'Caja') {
+
+            $unidadEnvase = (int) $articulo->unidad_envase;
+
+            if (
+                $unidadEnvase <= 0 ||
+                $unidadEnvase != $articulo->unidad_envase
+            ) {
+
+                throw new \Exception(
+                    'Unidades por caja inválidas para el artículo ID: '
+                    . $articulo->id
+                );
+            }
+
+            $cantidad *= $unidadEnvase;
+        }
+
+        if ($cantidad <= 0) {
+            throw new \Exception(
+                'Cantidad inválida para el detalle de ingreso ID: '
+                . $detalle->id
+            );
+        }
+
+        return $cantidad;
     }
 
     public function comprobantesDim()

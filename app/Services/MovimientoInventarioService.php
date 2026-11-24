@@ -53,21 +53,23 @@ class MovimientoInventarioService
         // Calcular automáticamente la diferencia de stock
         $cantidad = $stockActual - $stockAnterior;
 
-        $tiposEntrada = [
-            MovimientoInventario::COMPRA,
-            MovimientoInventario::ANULACION_VENTA,
-            MovimientoInventario::AJUSTE_ENTRADA,
-            MovimientoInventario::TRASPASO_ENTRADA,
-            MovimientoInventario::ANULACION_TRASPASO_SALIDA
-        ];
+       $tiposEntrada = [
+    MovimientoInventario::COMPRA,
+    MovimientoInventario::ANULACION_VENTA,
+    MovimientoInventario::AJUSTE_ENTRADA,
+    MovimientoInventario::TRASPASO_ENTRADA,
+    MovimientoInventario::ANULACION_TRASPASO_SALIDA,
+    MovimientoInventario::ACTUALIZACION_COMPRA_ENTRADA
+];
 
-        $tiposSalida = [
-            MovimientoInventario::VENTA,
-            MovimientoInventario::ANULACION_COMPRA,
-            MovimientoInventario::AJUSTE_SALIDA,
-            MovimientoInventario::TRASPASO_SALIDA,
-            MovimientoInventario::ANULACION_TRASPASO_ENTRADA
-        ];
+       $tiposSalida = [
+    MovimientoInventario::VENTA,
+    MovimientoInventario::ANULACION_COMPRA,
+    MovimientoInventario::AJUSTE_SALIDA,
+    MovimientoInventario::TRASPASO_SALIDA,
+    MovimientoInventario::ANULACION_TRASPASO_ENTRADA,
+    MovimientoInventario::ACTUALIZACION_COMPRA_SALIDA
+];
 
         $tiposPermitidos = array_merge(
             $tiposEntrada,
