@@ -27,41 +27,59 @@
         </span>
       </div>
 
-      <div class="filters-container">
-        <div class="filter-row">
+<div class="filters-container">
+  <div class="filter-row">
 
-          <!-- Almacén -->
-          <div class="filter-group-almacen">
-            <label class="filter-label">ALMACÉN DE TRABAJO</label>
-            <Dropdown v-model="AlmacenSeleccionado" :options="arrayAlmacenes" optionLabel="nombre_almacen"
-              optionValue="id" placeholder="Seleccione un almacén" @change="getDatosAlmacen" class="dropdown-full" />
-          </div>
+    <!-- Almacén -->
+    <div class="filter-group-almacen">
+      <label class="filter-label">
+        ALMACÉN DE TRABAJO
+      </label>
 
+      <Dropdown
+        v-model="AlmacenSeleccionado"
+        :options="arrayAlmacenes"
+        optionLabel="nombre_almacen"
+        optionValue="id"
+        placeholder="Seleccione un almacén"
+        @change="getDatosAlmacen"
+        class="dropdown-full"
+      />
+    </div>
 
-          <!-- Ordenar inventario -->
-          <div class="filter-group-almacen">
-            <label class="filter-label">ORDENAR PRODUCTOS</label>
+    <!-- Ordenar inventario -->
+    <div class="filter-group-almacen">
+      <label class="filter-label">
+        ORDENAR PRODUCTOS
+      </label>
 
-            <Dropdown v-model="ordenInventario" :options="opcionesOrden" optionLabel="label" optionValue="value"
-              placeholder="Ordenar por" @change="cambiarOrdenInventario" class="dropdown-full" />
-          </div>
+      <Dropdown
+        v-model="ordenInventario"
+        :options="opcionesOrden"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Ordenar por"
+        @change="cambiarOrdenInventario"
+        class="dropdown-full"
+      />
+    </div>
 
+    <!-- Acciones -->
+    <div class="filter-group-actions">
+      <label class="filter-label">ACCIONES</label>
 
-          <!-- Acciones -->
-          <div class="filter-group-actions">
-            <label class="filter-label">ACCIONES</label>
-
-            <div class="panel-actions">
-              <!--<Button :label="mostrarLabel ? 'Importar' : ''" icon="pi pi-upload" @click="abrirModalImportar()"
-                class="p-button-success p-button-sm btn-sm-input" />-->
-
-              <Button :label="mostrarLabel ? 'Exportar' : ''" icon="pi pi-download" @click="exportarInventario"
-                class="p-button-info p-button-sm btn-sm-input" />
-            </div>
-          </div>
-
-        </div>
+      <div class="panel-actions">
+       <Button
+  label="Exportar"
+  icon="pi pi-download"
+  @click="exportarInventario"
+  class="p-button-info p-button-sm btn-sm-input"
+/>
       </div>
+    </div>
+
+  </div>
+</div>
 
       <div class="toolbar-container">
         <div class="search-bar">
@@ -347,48 +365,90 @@ export default {
       }
     },
     async exportarInventario() {
-      if (this.idrol == 2) {
-        this.toastWarning("Esta acción solo está permitida para Administradores.");
-        return;
-      }
-      const result = await Swal.fire({
-        title: 'En qué formato desea exportar',
-        icon: 'question',
-        showCancelButton: true,
-        showDenyButton: true,
-        confirmButtonText: '<i class="pi pi-file-excel"></i> Excel',
-        denyButtonText: '<i class="pi pi-file-pdf"></i> PDF',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-          confirmButton: 'swal2-confirm-excel',
-          denyButton: 'swal2-deny-pdf',
-          cancelButton: 'swal2-cancel-cancelar',
-        },
-      });
-      const modo = this.tipoSeleccionado;
-      const idAlmacen = this.AlmacenSeleccionado;
+  if (this.idrol == 2) {
+    this.toastWarning(
+      "Esta acción solo está permitida para Administradores."
+    );
+    return;
+  }
 
-      // Obtener nombre del almacén seleccionado
-      const almacenSeleccionado = this.arrayAlmacenes.find(a => a.id === idAlmacen);
-      const nombreAlmacen = almacenSeleccionado ? almacenSeleccionado.nombre_almacen : 'Desconocido';
+  if (!this.AlmacenSeleccionado) {
+    this.toastWarning("Debe seleccionar un almacén.");
+    return;
+  }
 
-      // Generar nombre del archivo con la misma lógica del backend
-      const fecha = new Date();
-      const fechaFormato = `${String(fecha.getDate()).padStart(2, '0')}_${String(fecha.getMonth() + 1).padStart(2, '0')}_${fecha.getFullYear()}`;
-      const nombreArchivoLimpio = nombreAlmacen.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
-
-      if (result.isConfirmed) {
-        // Exportar a Excel
-        const url = `/inventario/exportar-excel?modo=${modo}&idAlmacen=${idAlmacen}&buscar=${this.buscar}`;
-        const filename = `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.xlsx`;
-        await this.descargarArchivoReporte(url, filename);
-      } else if (result.isDenied) {
-        // Exportar a PDF
-        const url = `/inventario/exportar-pdf?modo=${modo}&idAlmacen=${idAlmacen}&buscar=${this.buscar}`;
-        const filename = `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.pdf`;
-        await this.descargarArchivoReporte(url, filename);
-      }
+  const result = await Swal.fire({
+    title: 'En qué formato desea exportar',
+    icon: 'question',
+    showCancelButton: true,
+    showDenyButton: true,
+    confirmButtonText: '<i class="pi pi-file-excel"></i> Excel',
+    denyButtonText: '<i class="pi pi-file-pdf"></i> PDF',
+    cancelButtonText: 'Cancelar',
+    customClass: {
+      confirmButton: 'swal2-confirm-excel',
+      denyButton: 'swal2-deny-pdf',
+      cancelButton: 'swal2-cancel-cancelar',
     },
+  });
+
+  if (!result.isConfirmed && !result.isDenied) {
+    return;
+  }
+
+  const modo = this.tipoSeleccionado;
+  const idAlmacen = this.AlmacenSeleccionado;
+
+  // Obtener almacén seleccionado
+  const almacenSeleccionado = this.arrayAlmacenes.find(
+    a => Number(a.id) === Number(idAlmacen)
+  );
+
+  const nombreAlmacen = almacenSeleccionado
+    ? almacenSeleccionado.nombre_almacen
+    : 'Desconocido';
+
+  // Parámetros del reporte
+  const parametros = new URLSearchParams({
+    modo: modo,
+    idAlmacen: idAlmacen,
+    buscar: this.buscar || '',
+    orden: this.ordenSeleccionado || 'stock_asc'
+  });
+
+  // Fecha del archivo
+  const fecha = new Date();
+
+  const fechaFormato =
+    `${String(fecha.getDate()).padStart(2, '0')}_` +
+    `${String(fecha.getMonth() + 1).padStart(2, '0')}_` +
+    `${fecha.getFullYear()}`;
+
+  const nombreArchivoLimpio = nombreAlmacen
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_+/g, '_');
+
+  if (result.isConfirmed) {
+
+    const url =
+      `/inventario/exportar-excel?${parametros.toString()}`;
+
+    const filename =
+      `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.xlsx`;
+
+    await this.descargarArchivoReporte(url, filename);
+
+  } else if (result.isDenied) {
+
+    const url =
+      `/inventario/exportar-pdf?${parametros.toString()}`;
+
+    const filename =
+      `reporteInventario_${nombreArchivoLimpio}_${fechaFormato}.pdf`;
+
+    await this.descargarArchivoReporte(url, filename);
+  }
+},
     handleResize() {
       this.mostrarLabel = window.innerWidth > 768; // cambia según breakpoint deseado
     },
@@ -670,11 +730,14 @@ export default {
   font-size: 0.75rem;
 }
 
-/* Estilo uniforme para Dropdown (igual que InputText) */
+/* =========================================
+   DROPDOWNS
+========================================= */
+
 .dropdown-full {
   width: 100% !important;
-  font-size: 0.8rem;
-  border-radius: 6px;
+  max-width: 100%;
+  min-width: 0 !important;
   box-sizing: border-box;
 }
 
@@ -682,31 +745,37 @@ export default {
 .dropdown-full>>>.p-dropdown-label {
   padding: 6px 8px !important;
   font-size: 0.8rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Flecha del dropdown */
 .dropdown-full>>>.p-dropdown-trigger {
   width: 2rem !important;
+  flex-shrink: 0;
 }
 
-/* Borde al focus */
-.dropdown-full>>>.p-dropdown {
+/* Borde del dropdown */
+.dropdown-full {
   border: 1px solid #ccc;
   transition: border 0.2s;
 }
 
-.dropdown-full>>>.p-dropdown.p-focus {
+/* Borde al focus */
+.dropdown-full.p-focus {
   border-color: #0ea5e9;
   box-shadow: 0 0 0 0.15rem rgba(14, 165, 233, 0.25);
 }
 
-/* 🔹 Opciones del panel (lista desplegable) */
+/* Opciones del panel */
 .dropdown-full>>>.p-dropdown-panel .p-dropdown-item {
   font-size: 0.8rem !important;
   padding: 6px 10px !important;
   min-height: auto !important;
-  /* evita que queden muy grandes */
 }
+
 
 /* 🔹 Input principal (Buscar Producto) */
 .input-full {
@@ -835,38 +904,47 @@ export default {
   align-items: center;
 }
 
-/* Filters Container */
+/* =========================================
+   CONTENEDOR DE FILTROS
+========================================= */
+
 .filters-container {
   margin-bottom: 1rem;
   padding: 1rem;
   background-color: #f8f9fa;
   border-radius: 0.375rem;
   border: 1px solid #dee2e6;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .filter-row {
-  display: flex;
-  flex-wrap: nowrap;
-  /* nunca bajar a otra línea */
-  justify-content: space-between;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
   gap: 1rem;
+  width: 100%;
+  min-width: 0;
 }
 
-.filter-group-almacen {
-  flex: 1;
+.filter-group-almacen,
+.filter-group-modo {
+  width: 100%;
   min-width: 0;
 }
 
 .filter-group-actions {
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  margin-left: auto;
+  min-width: 0;
 }
 
 .panel-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -878,6 +956,7 @@ export default {
   color: #6b7280;
   text-transform: uppercase;
 }
+
 
 .radio-group {
   display: flex;
@@ -924,27 +1003,44 @@ export default {
   margin-right: 1rem;
 }
 
-/* Tablet Styles */
+
+/* =========================================
+   TABLETS
+========================================= */
+
 @media (max-width: 1024px) {
+
   >>>.p-datatable {
     font-size: 0.85rem;
   }
 
   .filter-row {
-    flex-direction: row;
-    gap: 1rem;
-    align-items: flex-end;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
   .filter-group-almacen,
   .filter-group-modo {
-    min-width: auto;
-    flex: 1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filter-group-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .panel-actions {
+    justify-content: flex-end;
   }
 }
 
-/* Mobile Styles */
+/* =========================================
+   CELULARES
+========================================= */
+
 @media (max-width: 768px) {
+
   .toolbar .p-button .p-button-label {
     display: none;
   }
@@ -957,20 +1053,34 @@ export default {
     padding: 0.75rem;
   }
 
+  /* Distribución vertical de los filtros */
   .filter-row {
-    flex-direction: row;
-    gap: 1rem;
-    align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: stretch;
   }
 
-  .filter-group-almacen {
-    flex: 1;
+  .filter-group-almacen,
+  .filter-group-modo,
+  .filter-group-actions {
+    width: 100%;
     min-width: 0;
   }
 
-  .filter-group-modo {
+  .filter-group-actions {
+    grid-column: auto;
+  }
+
+  .panel-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  /* Botón de exportación al ancho completo */
+  .panel-actions>>>.p-button {
     flex: 1;
-    min-width: 0;
+    width: 100%;
+    justify-content: center;
   }
 
   .radio-group {
@@ -1021,9 +1131,12 @@ export default {
     font-size: 0.9rem;
   }
 }
+/* =========================================
+   CELULARES PEQUEÑOS (HASTA 480px)
+========================================= */
 
-/* Extra Small Mobile */
 @media (max-width: 480px) {
+
   .toolbar .p-button .p-button-label {
     display: none;
   }
@@ -1035,7 +1148,7 @@ export default {
 
   .toolbar {
     flex-shrink: 0;
-    min-width: auto;
+    min-width: 0;
   }
 
   .search-bar {
@@ -1043,42 +1156,74 @@ export default {
     min-width: 0;
   }
 
+  /* Contenedor de filtros */
   .filters-container {
-    padding: 0.5rem;
+    padding: 0.65rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
+  /* Distribución vertical */
   .filter-row {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    gap: 0.5rem;
-  }
-
-  .filter-group-almacen {
-    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0.65rem;
+    width: 100%;
     min-width: 0;
   }
 
+  /* Grupos de filtros */
+  .filter-group-almacen,
+  .filter-group-modo,
   .filter-group-actions {
-    flex-shrink: 0;
-    margin-left: auto;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
   }
 
+  .filter-group-actions {
+    grid-column: auto;
+  }
+
+  /* Dropdowns */
+  .dropdown-full {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0 !important;
+  }
+
+  .dropdown-full>>>.p-dropdown-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+  }
+
+  /* Panel de acciones */
   .panel-actions {
     display: flex;
-    gap: 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    width: 100%;
   }
 
-  .filter-group-modo {
-    flex: none;
-    min-width: auto;
+  /* Botones al ancho completo */
+  .panel-actions>>>.p-button {
+    flex: 1;
+    width: 100% !important;
+    justify-content: center;
   }
 
+  /* Etiquetas */
   .filter-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     margin-bottom: 0.25rem;
   }
 
+  /* Radio buttons */
   .radio-group {
     flex-direction: row;
     align-items: center;
@@ -1090,16 +1235,22 @@ export default {
     font-size: 0.75rem;
   }
 
+  /* Toolbar */
   .toolbar>>>.p-button-sm {
     font-size: 0.75rem !important;
     padding: 0.375rem 0.5rem !important;
   }
 
+  /* Buscador */
   .search-bar .p-inputtext-sm {
     padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
     font-size: 0.8rem !important;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
+  /* DataTable */
   >>>.p-datatable {
     font-size: 0.75rem;
   }
@@ -1115,10 +1266,6 @@ export default {
 
   >>>.p-dropdown {
     font-size: 0.85rem;
-  }
-
-  .p-field-radiobutton label {
-    font-size: 0.8rem;
   }
 }
 
