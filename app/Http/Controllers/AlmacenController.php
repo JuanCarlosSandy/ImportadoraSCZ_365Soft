@@ -222,7 +222,7 @@ class AlmacenController extends Controller
         $idrol = $usuario->idrol; // Asegúrate de que el modelo User tenga esta relación o campo
 
         // Si el usuario tiene rol 1 o 2, solo mostrar los almacenes de su sucursal
-        if (in_array($idrol, [1, 2, 3])) {
+        if (in_array($idrol, [1, 2])) {
             $almacenes = Almacen::where('condicion', '=', '1')
                 ->where('sucursal', '=', $idsucursal)
                 ->select('id', 'nombre_almacen', 'sucursal')

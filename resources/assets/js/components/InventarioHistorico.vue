@@ -213,8 +213,8 @@
           :first="(pagination.current_page - 1) * pagination.per_page" @page="onPageChange" />
       </div>
 
-      <Dialog :visible.sync="dialogMovimientos" :modal="true" :closable="true" :dismissableMask="false"
-        :containerStyle="{ width: '95vw', maxWidth: '1400px' }" class="dialog-historial-movimientos"
+      <Dialog :visible.sync="dialogMovimientos" :modal="true" :closable="true"
+        :containerStyle="{ width: '95vw', maxWidth: '1400px' }" class="responsive-dialog"
         @hide="cerrarDetalleMovimientos">
 
         <!-- Encabezado -->
@@ -273,7 +273,7 @@
             <div class="historial-filtro">
               <label>Almacén</label>
 
-              <Dropdown v-model="almacenHistorial" :options="almacenesHistorial" optionLabel="nombre_almacen"
+              <Dropdown v-model="almacenHistorial" :options="almacenesHistorial" optionLabel="nombre_almacen" class="dropdown-full"
                 optionValue="id" placeholder="Seleccione almacén" :disabled="cargandoMovimientos"
                 @change="listarMovimientos(1)" />
             </div>
@@ -282,26 +282,26 @@
               <label>Fecha desde</label>
 
               <input type="date" v-model="fechaDesdeHistorial" :max="fechaHastaHistorial"
-                :disabled="cargandoMovimientos" class="p-inputtext p-component" />
+                :disabled="cargandoMovimientos" class="p-inputtext p-component input-date-full" />
             </div>
 
             <div class="historial-filtro">
               <label>Fecha hasta</label>
 
               <input type="date" v-model="fechaHastaHistorial" :min="fechaDesdeHistorial" :max="fechaLimiteHistorial"
-                :disabled="cargandoMovimientos" class="p-inputtext p-component" />
+                :disabled="cargandoMovimientos" class="p-inputtext p-component input-date-full" />
             </div>
 
             <div class="historial-filtro">
               <label>Tipo de movimiento</label>
 
-              <Dropdown v-model="tipoMovimientoHistorial" :options="tiposMovimientosHistorial" optionLabel="label"
+              <Dropdown v-model="tipoMovimientoHistorial" :options="tiposMovimientosHistorial" optionLabel="label" class="dropdown-full"
                 optionValue="value" :disabled="cargandoMovimientos" />
             </div>
 
             <div class="historial-filtro historial-filtro-boton">
 
-              <Button label="Consultar" icon="pi pi-search" class="p-button-sm" :disabled="cargandoMovimientos"
+              <Button label="Consultar" icon="pi pi-search" class="p-button-sm btn-sm-input" :disabled="cargandoMovimientos"
                 @click="listarMovimientos(1)" />
 
             </div>
@@ -2521,5 +2521,250 @@ export default {
     font-size: 16px;
   }
 
+}
+
+/* Responsive Dialog Styles */
+.responsive-dialog>>>.p-dialog {
+  margin: 0.75rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.responsive-dialog>>>.p-dialog-content {
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+  /* Reducido padding vertical */
+}
+
+.responsive-dialog>>>.p-dialog-header {
+  padding: 0.75rem 1.5rem;
+  /* Reducido padding vertical */
+  font-size: 1.1rem;
+}
+
+.responsive-dialog>>>.p-dialog-footer {
+  padding: 0.5rem 1.5rem;
+  /* Reducido padding vertical */
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Reducir padding del contenedor del diálogo */
+.responsive-dialog>>>.p-dialog-content {
+  padding: 0.75rem 1rem !important;
+  /* Reducido padding vertical */
+}
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  .responsive-dialog>>>.p-dialog {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+
+  >>>.p-datatable {
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .toolbar .p-button .p-button-label {
+    display: none;
+  }
+
+  .responsive-dialog>>>.p-dialog {
+    margin: 0.25rem;
+    max-height: 98vh;
+  }
+
+  .responsive-dialog>>>.p-dialog-content {
+    padding: 0.5rem 0.75rem;
+    /* Más compacto en móviles */
+  }
+
+  .responsive-dialog>>>.p-dialog-header {
+    padding: 0.5rem 1rem;
+    /* Reducido padding vertical */
+    font-size: 1rem;
+  }
+
+  .responsive-dialog>>>.p-dialog-footer {
+    padding: 0.4rem 1rem;
+    /* Reducido padding vertical */
+    justify-content: flex-end;
+  }
+
+  .toolbar-container {
+    gap: 0.5rem;
+  }
+
+  >>>.p-datatable {
+    font-size: 0.8rem;
+  }
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
+    padding: 0.4rem 0.3rem;
+  }
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  /* Ajustar botones en móviles */
+  >>>.p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+    min-width: auto !important;
+  }
+
+  /* Ajustar botón "Nuevo" para que coincida con otros botones */
+  .toolbar>>>.p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  /* Reducir altura del input buscador */
+  .search-bar .p-inputtext-sm {
+    padding: 0.35rem 0.5rem 0.35rem 2.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Ajustar iconos en móviles */
+  .required-icon {
+    font-size: 0.8rem;
+  }
+
+  .optional-icon {
+    font-size: 0.6rem;
+  }
+
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+
+  /* Reducir espacios entre campos en móviles */
+  .input-container {
+    padding-bottom: 20px;
+    /* Aumentado para dar espacio al error en móviles */
+    margin-bottom: 6px;
+  }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 480px) {
+  .toolbar .p-button .p-button-label {
+    display: none;
+  }
+
+  .responsive-dialog>>>.p-dialog {
+    margin: 0.1rem;
+    max-height: 99vh;
+  }
+
+  .responsive-dialog>>>.p-dialog-content {
+    padding: 0.4rem 0.5rem;
+    /* Más compacto en móviles extra pequeños */
+  }
+
+  .responsive-dialog>>>.p-dialog-header {
+    padding: 0.4rem 0.75rem;
+    /* Reducido padding vertical */
+    font-size: 0.95rem;
+  }
+
+  /* Footer mantiene botones alineados a la derecha, no ocupan todo el ancho */
+  .responsive-dialog>>>.p-dialog-footer {
+    padding: 0.3rem 0.75rem;
+    /* Reducido padding vertical */
+    justify-content: flex-end;
+  }
+
+  .responsive-dialog>>>.p-dialog-footer .p-button {
+    width: auto;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Toolbar mantiene elementos en una línea */
+  .toolbar-container {
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+  }
+
+  .toolbar {
+    flex-shrink: 0;
+    min-width: auto;
+  }
+
+  .search-bar {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Ajustar botones para que coincidan */
+  .toolbar>>>.p-button-sm {
+    font-size: 0.75rem !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  /* Reducir más la altura del input buscador en móviles pequeños */
+  .search-bar .p-inputtext-sm {
+    padding: 0.3rem 0.5rem 0.3rem 2.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  >>>.p-datatable {
+    font-size: 0.75rem;
+  }
+
+  >>>.p-datatable .p-datatable-tbody>tr>td {
+    padding: 0.3rem 0.2rem;
+  }
+
+  >>>.p-datatable .p-datatable-thead>tr>th {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  /* Iconos más pequeños en móviles extra pequeños */
+  .required-icon {
+    font-size: 0.7rem;
+  }
+
+  .optional-icon {
+    font-size: 0.55rem;
+  }
+
+  >>>.p-inputtext,
+  >>>.p-dropdown,
+  >>>.p-inputnumber-input {
+    font-size: 0.85rem;
+    padding: 0.4rem;
+  }
+
+  >>>.p-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* Espacios aún más compactos en móviles extra pequeños */
+  .input-container {
+    padding-bottom: 20px;
+    /* Aumentado para dar espacio al error en móviles pequeños */
+    margin-bottom: 4px;
+  }
+}
+
+.p-dialog-mask {
+  z-index: 9990 !important;
+}
+
+.p-dialog {
+  z-index: 9990 !important;
 }
 </style>
