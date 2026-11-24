@@ -7,25 +7,39 @@ use Illuminate\Database\Eloquent\Model;
 class DetalleIngreso extends Model
 {
     protected $table = 'detalle_ingresos';
+
     protected $fillable = [
-        'idingreso', 
+        'idingreso',
         'idarticulo',
         'cantidad',
         'precio',
         'descuento',
         'tipo_compra'
     ];
+
+    protected $casts = [
+        'idingreso' => 'integer',
+        'idarticulo' => 'integer',
+        'cantidad' => 'integer'
+    ];
+
     public $timestamps = false;
 
-    // 🔹 Relación con Ingreso
     public function ingreso()
     {
-        return $this->belongsTo(Ingreso::class, 'idingreso');
+        return $this->belongsTo(
+            Ingreso::class,
+            'idingreso',
+            'id'
+        );
     }
 
-    // 🔹 Relación con Articulo
     public function articulo()
     {
-        return $this->belongsTo(Articulo::class, 'idarticulo');
+        return $this->belongsTo(
+            Articulo::class,
+            'idarticulo',
+            'id'
+        );
     }
 }

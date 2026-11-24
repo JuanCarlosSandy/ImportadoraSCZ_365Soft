@@ -6,71 +6,120 @@ use Illuminate\Database\Eloquent\Model;
 
 class Venta extends Model
 {
+    protected $table = 'ventas';
+
     protected $fillable = [
         'idcliente',
         'idusuario',
+        'idtipo_venta',
+        'idtipo_pago',
+        'idbanco',
+        'monto_qr',
+        'monto_efectivo',
+        'idalmacen',
         'tipo_comprobante',
+        'serie_comprobante',
         'num_comprobante',
         'fecha_hora',
         'impuesto',
         'total',
+        'descuento_total',
         'estado',
         'idcaja',
-        'idtipo_venta',
-        'descuento_total',
-        'idtipo_pago',
-        'idalmacen',
-        'idsucursal',
-        'idbanco',
+        'idsucursal'
     ];
 
-    // ✅ Mutador: Solo permite 1 o 2, si es otro valor o está vacío, asigna 1
+    protected $casts = [
+        'idcliente' => 'integer',
+        'idusuario' => 'integer',
+        'idtipo_venta' => 'integer',
+        'idtipo_pago' => 'integer',
+        'idbanco' => 'integer',
+        'idalmacen' => 'integer',
+        'idcaja' => 'integer',
+        'idsucursal' => 'integer'
+    ];
+
     public function setIdtipoVentaAttribute($value)
     {
-        // Si está vacío o no es 1 ni 2, asignar 1
-        if (empty($value) || ($value !== 1 && $value !== 2)) {
-            $this->attributes['idtipo_venta'] = 1;
-        } else {
-            $this->attributes['idtipo_venta'] = $value;
-        }
+        $value = (int) $value;
+
+        $this->attributes['idtipo_venta'] = in_array(
+            $value,
+            [1, 2],
+            true
+        ) ? $value : 1;
     }
 
     public function caja()
     {
-        return $this->belongsTo('App\Caja', 'id');
+        return $this->belongsTo(
+            'App\Caja',
+            'idcaja',
+            'id'
+        );
     }
 
     public function detalles()
     {
-        return $this->hasMany(DetalleVenta::class, 'idventa');
+        return $this->hasMany(
+            DetalleVenta::class,
+            'idventa',
+            'id'
+        );
     }
 
     public function creditoVenta()
     {
-        return $this->hasOne(CreditoVenta::class, 'idventa');
+        return $this->hasOne(
+            CreditoVenta::class,
+            'idventa',
+            'id'
+        );
     }
 
-    
-    // RELACIONES QUE DEBES AGREGAR:
     public function usuario()
     {
-        return $this->belongsTo('App\User', 'idusuario');
+        return $this->belongsTo(
+            'App\User',
+            'idusuario',
+            'id'
+        );
     }
+
     public function persona()
-{
-    return $this->belongsTo('App\Persona', 'idpersona');
-}
+    {
+        return $this->belongsTo(
+            'App\Persona',
+            'idcliente',
+            'id'
+        );
+    }
 
     public function cliente()
     {
-        return $this->belongsTo('App\Persona', 'idcliente');
+        return $this->belongsTo(
+            'App\Persona',
+            'idcliente',
+            'id'
+        );
     }
 
     public function sucursal()
     {
-        // Si tienes el id de sucursal en el usuario, puedes acceder así:
-        return $this->usuario ? $this->usuario->sucursal() : null;
-        // O si tienes un campo idalmacen que es la sucursal:
-        // return $this->belongsTo('App\Sucursal', 'idalmacen');
+        return $this->belongsTo(
+            'App\Sucursal',
+            'idsucursal',
+            'id'
+        );
+    }
+
+    public function almacen()
+    {
+        return $this->belongsTo(
+            'App\Almacen',
+            'idalmacen',
+            'id'
+        );
     }
 }
