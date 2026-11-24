@@ -1103,9 +1103,9 @@
               <label for="nombre" class="label-input"
                 style="display: flex; justify-content: space-between; align-items: center;">
                 Buscar Producto
-                <span style="font-size: 0.85rem; color: #0d6efd;">
+                <!--<span style="font-size: 0.85rem; color: #0d6efd;">
                   Combos/Ofertas Botón azul
-                </span>
+                </span>-->
               </label>
               <div class="input-con-desplegable">
                 <div class="p-inputgroup">
@@ -1388,7 +1388,7 @@
         </template>
 
         <TabView>
-          <TabPanel header="Combos/Ofertas">
+          <!--<TabPanel header="Combos/Ofertas">
             <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0;">
               <div class="p-inputgroup" style="width: 100%;">
                 <InputText id="buscarA" v-model="buscarA" placeholder="Texto a buscar"
@@ -1418,7 +1418,7 @@
                 </template>
               </Column>
             </DataTable>
-          </TabPanel>
+          </TabPanel>-->
           <TabPanel header="Productos">
             <div class="p-field p-col-12" style="width: 100%; margin: 0; padding: 0; position: relative;">
               <div class="p-inputgroup" style="width: 100%; position: relative;">

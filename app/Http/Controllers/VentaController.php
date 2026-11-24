@@ -50,7 +50,8 @@ use PharData;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ZipArchive;
-
+use App\MovimientoInventario;
+use App\Services\MovimientoInventarioService;
 
 
 use function Ramsey\Uuid\v1;
@@ -908,7 +909,6 @@ class VentaController extends Controller
 
     public function store(Request $request)
     {
-
         if (!$request->ajax()) {
             return redirect('/');
         }
@@ -916,13 +916,23 @@ class VentaController extends Controller
         $idtipoventa = (int) $request->idtipo_venta;
 
         try {
+
             $this->validarClienteActivoParaVenta($request->idcliente);
+
             DB::beginTransaction();
 
+            // Validar caja abierta.
             if (!$this->validarCajaAbierta()) {
-                return ['id' => -1, 'caja_validado' => 'Debe tener una caja abierta'];
+
+                DB::rollBack();
+
+                return [
+                    'id' => -1,
+                    'caja_validado' => 'Debe tener una caja abierta'
+                ];
             }
 
+            // Registrar cabecera de venta.
             if ($request->tipo_comprobante === "RESIVO") {
                 $venta = $this->crearVentaResivo($request);
             } else {
@@ -930,27 +940,110 @@ class VentaController extends Controller
             }
 
             $this->actualizarDescuentoUsuarioLogueado();
+
             //$this->actualizarPrecios($request->data);
+
             $this->actualizarCaja($request);
-            $this->registrarDetallesVenta($venta, $request->data, $request->idAlmacen);
-            $this->notificarAdministradores();
-            // 🔹 SI ES VENTA A CRÉDITO => registrar solo el abono que hizo el cliente
+
+            // Registrar detalles, inventario e historial.
+            $this->registrarDetallesVenta(
+                $venta,
+                $request->data,
+                $request->idAlmacen
+            );
+
+            // Registrar abono inicial si es venta a crédito.
             if ($idtipoventa === 2) {
                 $this->registrarAbonoInicial($venta, $request);
             }
 
             DB::commit();
 
-            return ['id' => $venta->id];
-        } catch (Exception $e) {
-            DB::rollBack();
+        } catch (\Throwable $e) {
+
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            \Log::error('Error al registrar venta', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'id' => 0,
                 'message' => 'Error al registrar venta',
                 'error' => $e->getMessage()
             ], 500);
         }
+
+        // Notificar únicamente después de confirmar la venta.
+        try {
+
+            $this->notificarAdministradores();
+
+        } catch (\Throwable $e) {
+
+            \Log::warning('Error al notificar venta registrada', [
+                'idventa' => $venta->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return [
+            'id' => $venta->id
+        ];
     }
+
+    private function calcularCantidadRealVenta($detalle)
+    {
+        $cantidad = $detalle['cantidad'] ?? 0;
+
+        if (
+            !is_numeric($cantidad) ||
+            $cantidad <= 0 ||
+            (int) $cantidad != $cantidad
+        ) {
+            throw new \Exception(
+                'Cantidad de venta inválida para el artículo ID: '
+                . ($detalle['idarticulo'] ?? '')
+            );
+        }
+
+        $cantidad = (int) $cantidad;
+
+        $modoVenta = strtolower(
+            trim($detalle['modoVenta'] ?? 'unidad')
+        );
+
+        switch ($modoVenta) {
+
+            case 'caja':
+
+                $unidadEnvase = $detalle['unidad_envase'] ?? 1;
+
+                if (
+                    !is_numeric($unidadEnvase) ||
+                    $unidadEnvase <= 0 ||
+                    (int) $unidadEnvase != $unidadEnvase
+                ) {
+                    throw new \Exception(
+                        'Cantidad de unidades por caja inválida.'
+                    );
+                }
+
+                return $cantidad * (int) $unidadEnvase;
+
+            case 'docena':
+
+                return $cantidad * 12;
+
+            default:
+
+                return $cantidad;
+        }
+    }
+
     protected function registrarAbonoInicial($venta, Request $request)
     {
         $cuotas = $request->input('cuotas_credito', []);
@@ -1551,14 +1644,35 @@ class VentaController extends Controller
 
     private function registrarDetallesVenta($venta, $detalles, $idAlmacen)
     {
+        $idAlmacen = (int) $idAlmacen;
+
+        if ($idAlmacen !== (int) $venta->idalmacen) {
+            throw new \Exception(
+                'El almacén de la venta no coincide con el almacén del inventario.'
+            );
+        }
+
+        if (empty($detalles)) {
+            throw new \Exception(
+                'La venta no contiene productos.'
+            );
+        }
+
         $detallesAgrupados = [];
 
+        // ==========================================
+        // 1. AGRUPAR DETALLES PARA LA SESIÓN
+        // ==========================================
+
         foreach ($detalles as $det) {
+
             $id = $det['idarticulo'];
-            $numLote = isset($det['num_lote']) ? $det['num_lote'] : null;
-            $key = $id . '_' . $numLote; // clave compuesta
+            $numLote = $det['num_lote'] ?? null;
+
+            $key = $id . '_' . $numLote;
 
             if (!isset($detallesAgrupados[$key])) {
+
                 $detallesAgrupados[$key] = [
                     'idarticulo' => $id,
                     'cantidad' => $det['cantidad'],
@@ -1568,130 +1682,374 @@ class VentaController extends Controller
                     'modoVenta' => $det['modoVenta'],
                     'unidad_envase' => $det['unidad_envase']
                 ];
+
             } else {
+
                 $detallesAgrupados[$key]['cantidad'] += $det['cantidad'];
+
                 $detallesAgrupados[$key]['descuento'] += $det['descuento'];
             }
         }
 
+        // ==========================================
+        // 2. IDENTIFICAR ARTÍCULOS INVOLUCRADOS
+        // ==========================================
+
+        $idsArticulos = collect($detalles)
+            ->pluck('idarticulo')
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->values();
+
+        $idsComponentes = ItemCompuesto::whereIn(
+            'idarticulo',
+            $idsArticulos->all()
+        )
+            ->pluck('iditem');
+
+        // Incluir productos normales, compuestos y sus hijos.
+        $idsArticulosBloquear = $idsArticulos
+            ->merge($idsComponentes)
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->sort()
+            ->values();
+
+        // Bloquear artículos en orden consistente.
+        foreach ($idsArticulosBloquear as $idArticulo) {
+
+            Articulo::where('id', $idArticulo)
+                ->lockForUpdate()
+                ->firstOrFail();
+        }
+
+        // Fecha efectiva del movimiento.
+        $fechaMovimiento = now()->setTimezone("America/La_Paz");
+
+        // ==========================================
+        // 3. REGISTRAR DETALLES DE VENTA
+        // ==========================================
+
         foreach ($detalles as $det) {
+
+            $idarticulo = (int) $det['idarticulo'];
+
+            $articulo = Articulo::where('id', $idarticulo)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Calcular cantidad real de la venta.
+            $cantidadReal = $this->calcularCantidadRealVenta([
+                'idarticulo' => $idarticulo,
+                'cantidad' => $det['cantidad'],
+                'modoVenta' => $det['modoVenta'],
+                'unidad_envase' => $det['unidad_envase'] ?? 1
+            ]);
+
+            // Registrar detalle comercial.
             $detalleVenta = new DetalleVenta();
             $detalleVenta->idventa = $venta->id;
-            $detalleVenta->idarticulo = $det['idarticulo'];
+            $detalleVenta->idarticulo = $idarticulo;
             $detalleVenta->cantidad = $det['cantidad'];
             $detalleVenta->precio = $det['precioseleccionado'];
             $detalleVenta->descuento = $det['descuento'];
+
             if (isset($det['num_lote'])) {
                 $detalleVenta->num_lote = $det['num_lote'];
             }
+
             $detalleVenta->modo_venta = $det['modoVenta'];
             $detalleVenta->save();
 
-            // Verificar si el artículo es compuesto
-            $articulo = Articulo::find($det['idarticulo']);
-            if ($articulo && $articulo->tipo_producto === 'C') {
-                // Buscar los hijos en ItemCompuesto y su cantidad
-                $itemsHijos = ItemCompuesto::where('idarticulo', $articulo->id)->get();
+            // ==========================================
+            // 4. PRODUCTOS COMPUESTOS
+            // ==========================================
+
+            if ($articulo->tipo_producto === 'C') {
+
+                $itemsHijos = ItemCompuesto::where(
+                    'idarticulo',
+                    $articulo->id
+                )
+                    ->orderBy('iditem')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($itemsHijos->isEmpty()) {
+
+                    throw new \Exception(
+                        'El producto compuesto ID: ' . $articulo->id
+                        . ' no tiene componentes registrados.'
+                    );
+                }
+
                 foreach ($itemsHijos as $itemHijo) {
-                    // Descontar la cantidad correspondiente del hijo (cantidad vendida * cantidad del hijo)
+
+                    $cantidadComponente = $itemHijo->cantidad ?? 1;
+
+                    if (
+                        !is_numeric($cantidadComponente) ||
+                        $cantidadComponente <= 0 ||
+                        (int) $cantidadComponente != $cantidadComponente
+                    ) {
+                        throw new \Exception(
+                            'Cantidad inválida en el componente ID: '
+                            . $itemHijo->iditem
+                        );
+                    }
+
+                    // Cantidad real del componente.
+                    $cantidadRealHijo = $cantidadReal
+                        * (int) $cantidadComponente;
+
                     $this->actualizarInventario($idAlmacen, [
+
                         'idarticulo' => $itemHijo->iditem,
-                        'cantidad' => $det['cantidad'] * ($itemHijo->cantidad ?? 1),
-                        'modoVenta' => $det['modoVenta'],
-                        'tipo' => $det['tipo'],
-                        // Si manejas lotes, puedes agregar lógica para lotes aquí
+
+                        'cantidad' => $cantidadRealHijo,
+
+                        // Ya se realizó la conversión a unidades.
+                        'modoVenta' => 'unidad',
+                        'unidad_envase' => 1,
+
+                        'idventa' => $venta->id,
+                        'iddetalle_venta' => $detalleVenta->id,
+                        'idusuario' => auth()->id(),
+                        'fecha_movimiento' => $fechaMovimiento,
+
+                        'observacion' =>
+                            'Salida por venta de producto compuesto ID: '
+                            . $articulo->id
                     ]);
                 }
-                // NO descontar stock del artículo compuesto
-            } else {
-                // Artículo normal: descontar stock como siempre
-                $this->actualizarInventario($idAlmacen, [
-                    'idarticulo' => $det['idarticulo'],
-                    'cantidad' => $det['cantidad'],
-                    'modoVenta' => $det['modoVenta'],
 
-                    'lote_id' => isset($det['lote_id']) ? $det['lote_id'] : null,
-                    'unidad_envase' => $det['unidad_envase']
+                // No descontar stock del producto compuesto.
+
+            } else {
+
+                // ==========================================
+                // 5. PRODUCTOS NORMALES
+                // ==========================================
+
+                $this->actualizarInventario($idAlmacen, [
+
+                    'idarticulo' => $idarticulo,
+                    'cantidad' => $cantidadReal,
+
+                    // La cantidad ya está expresada en unidades.
+                    'modoVenta' => 'unidad',
+                    'unidad_envase' => 1,
+
+                    'lote_id' => $det['lote_id'] ?? null,
+
+                    'idventa' => $venta->id,
+                    'iddetalle_venta' => $detalleVenta->id,
+                    'idusuario' => auth()->id(),
+                    'fecha_movimiento' => $fechaMovimiento,
+
+                    'observacion' =>
+                        'Salida de inventario por venta. Modo: '
+                        . $det['modoVenta']
                 ]);
             }
         }
+
+        // ==========================================
+        // 6. CONSERVAR DATOS DE SESIÓN
+        // ==========================================
 
         $_SESSION['sidAlmacen'] = $idAlmacen;
         $_SESSION['sdetalle'] = $detallesAgrupados;
     }
 
-
     private function actualizarInventario($idAlmacen, $detalle)
     {
-        /*
-            $detalle debe traer:
-            - idarticulo
-            - cantidad
-            - modoVenta (opcional)
-            - unidad_envase (opcional)
-            - lote_id (opcional)
-        */
+        $idAlmacen = (int) $idAlmacen;
+        $idarticulo = (int) $detalle['idarticulo'];
 
-        // ===============================
-        // 1️⃣ CALCULAR CANTIDAD REAL
-        // ===============================
-        $modoVenta = $detalle['modoVenta'] ?? 'unidad';
-
-        if ($modoVenta === 'caja') {
-            $cantidadReal = $detalle['cantidad'] * ($detalle['unidad_envase'] ?? 1);
-        } elseif ($modoVenta === 'docena') {
-            $cantidadReal = $detalle['cantidad'] * 12;
-        } else {
-            // unidad
-            $cantidadReal = $detalle['cantidad'];
+        // Validar referencias del movimiento.
+        if (
+            empty($detalle['idventa']) ||
+            empty($detalle['iddetalle_venta'])
+        ) {
+            throw new \Exception(
+                'No se proporcionaron las referencias de la venta.'
+            );
         }
+
+        // ==========================================
+        // 1. CALCULAR CANTIDAD REAL
+        // ==========================================
+
+        $cantidadReal = $this->calcularCantidadRealVenta($detalle);
 
         $cantidadRestante = $cantidadReal;
 
-        // ===============================
-        // 2️⃣ DESCONTAR POR LOTE (SI VIENE)
-        // ===============================
-        if (!empty($detalle['lote_id'])) {
+        // ==========================================
+        // 2. BLOQUEAR ARTÍCULO
+        // ==========================================
 
-            $inventario = Inventario::where('id', $detalle['lote_id'])
-                ->where('idalmacen', $idAlmacen)
-                ->where('idarticulo', $detalle['idarticulo'])
-                ->first();
+        Articulo::where('id', $idarticulo)
+            ->lockForUpdate()
+            ->firstOrFail();
 
-            if ($inventario) {
-                $descontar = min($inventario->saldo_stock, $cantidadRestante);
-                $inventario->saldo_stock -= $descontar;
-                $inventario->save();
-            }
+        // ==========================================
+        // 3. BLOQUEAR INVENTARIOS
+        // ==========================================
 
-            return;
-        }
-
-        // ===============================
-        // 3️⃣ FIFO POR FECHA VENCIMIENTO
-        // ===============================
-        $inventarios = Inventario::where('idalmacen', $idAlmacen)
-            ->where('idarticulo', $detalle['idarticulo'])
-            ->orderBy('fecha_vencimiento', 'asc')
+        $inventariosBloqueados = Inventario::where(
+            'idalmacen',
+            $idAlmacen
+        )
+            ->where('idarticulo', $idarticulo)
+            ->orderBy('id')
+            ->lockForUpdate()
             ->get();
 
-        foreach ($inventarios as $inventario) {
+        // Stock total anterior del producto en el almacén.
+        $stockAnterior = (int) $inventariosBloqueados
+            ->sum('saldo_stock');
 
-            if ($cantidadRestante <= 0)
-                break;
+        // Validar stock total disponible.
+        if ($stockAnterior < $cantidadReal) {
 
-            if ($inventario->saldo_stock >= $cantidadRestante) {
-                $inventario->saldo_stock -= $cantidadRestante;
-                $cantidadRestante = 0;
-            } else {
-                $cantidadRestante -= $inventario->saldo_stock;
-                $inventario->saldo_stock = 0;
+            throw new \Exception(
+                'Stock insuficiente para el artículo ID: '
+                . $idarticulo
+                . '. Disponible: ' . $stockAnterior
+                . '. Requerido: ' . $cantidadReal
+            );
+        }
+
+        // ==========================================
+        // 4. DESCONTAR POR LOTE SELECCIONADO
+        // ==========================================
+
+        if (!empty($detalle['lote_id'])) {
+
+            $inventario = $inventariosBloqueados
+                ->firstWhere('id', $detalle['lote_id']);
+
+            if (!$inventario) {
+
+                throw new \Exception(
+                    'No se encontró el lote seleccionado '
+                    . 'para el artículo ID: ' . $idarticulo
+                );
             }
 
-            $inventario->save();
-        }
-    }
+            if ($inventario->saldo_stock < $cantidadReal) {
 
+                throw new \Exception(
+                    'Stock insuficiente en el lote seleccionado '
+                    . 'del artículo ID: ' . $idarticulo
+                    . '. Disponible: ' . $inventario->saldo_stock
+                    . '. Requerido: ' . $cantidadReal
+                );
+            }
+
+            $inventario->saldo_stock -= $cantidadReal;
+            $inventario->save();
+
+            $cantidadRestante = 0;
+
+        } else {
+
+            // ==========================================
+            // 5. DESCONTAR POR FECHA DE VENCIMIENTO
+            // ==========================================
+
+            $inventarios = Inventario::where(
+                'idalmacen',
+                $idAlmacen
+            )
+                ->where('idarticulo', $idarticulo)
+                ->where('saldo_stock', '>', 0)
+                ->orderBy('fecha_vencimiento', 'asc')
+                ->orderBy('id', 'asc')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($inventarios as $inventario) {
+
+                if ($cantidadRestante <= 0) {
+                    break;
+                }
+
+                $cantidadADescontar = min(
+                    $cantidadRestante,
+                    (int) $inventario->saldo_stock
+                );
+
+                $inventario->saldo_stock -= $cantidadADescontar;
+                $inventario->save();
+
+                $cantidadRestante -= $cantidadADescontar;
+            }
+        }
+
+        // Verificar que se descontó toda la cantidad.
+        if ($cantidadRestante > 0) {
+
+            throw new \Exception(
+                'No se pudo descontar completamente el inventario '
+                . 'del artículo ID: ' . $idarticulo
+            );
+        }
+
+        // ==========================================
+        // 6. OBTENER STOCK POSTERIOR
+        // ==========================================
+
+        $stockActual = (int) Inventario::where(
+            'idalmacen',
+            $idAlmacen
+        )
+            ->where('idarticulo', $idarticulo)
+            ->lockForUpdate()
+            ->get()
+            ->sum('saldo_stock');
+
+        // Validar consistencia del movimiento.
+        if (($stockAnterior - $stockActual) !== $cantidadReal) {
+
+            throw new \Exception(
+                'Inconsistencia en la salida de inventario '
+                . 'del artículo ID: ' . $idarticulo
+            );
+        }
+
+        // ==========================================
+        // 7. REGISTRAR MOVIMIENTO HISTÓRICO
+        // ==========================================
+
+        $observacion = $detalle['observacion']
+            ?? 'Salida de inventario por venta';
+
+        if (!empty($detalle['lote_id'])) {
+
+            $observacion .= '. Lote ID: ' . $detalle['lote_id'];
+        }
+
+        MovimientoInventarioService::registrar(
+            $idarticulo,
+            $idAlmacen,
+            MovimientoInventario::VENTA,
+            $stockAnterior,
+            $stockActual,
+            'VENTA',
+            $detalle['idventa'],
+            $detalle['iddetalle_venta'],
+            $observacion,
+            $detalle['idusuario'] ?? auth()->id(),
+            $detalle['fecha_movimiento']
+            ?? now()->setTimezone("America/La_Paz")
+        );
+    }
 
 
     private function revertirInventario()
@@ -1866,30 +2224,73 @@ class VentaController extends Controller
             return redirect('/');
         }
 
-        DB::beginTransaction();
+        $request->validate([
+            'id' => 'required|integer|exists:ventas,id'
+        ]);
 
         try {
 
-            $venta = Venta::findOrFail($request->id);
+            DB::beginTransaction();
 
+            // ==========================================
+            // 1. OBTENER Y BLOQUEAR VENTA
+            // ==========================================
+
+            $venta = Venta::where('id', $request->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Evitar doble anulación.
             if ((string) $venta->estado === '0') {
+
                 DB::rollBack();
+
                 return response()->json([
                     'error' => 'La venta ya fue anulada previamente.'
                 ], 400);
             }
 
-            $tipoReposicion = $request->tipo_reposicion ?? null;
+            $tipoReposicion = $request->filled('tipo_reposicion')
+                ? $request->tipo_reposicion
+                : 'efectivo';
             $usuario = Auth::user();
 
-            $ultimaCaja = Caja::where('id', $venta->idcaja)->first();
+            // ==========================================
+            // 2. OBTENER Y BLOQUEAR CAJA ORIGINAL
+            // ==========================================
+
+            $ultimaCaja = Caja::where('id', $venta->idcaja)
+                ->lockForUpdate()
+                ->first();
 
             if (!$ultimaCaja) {
-                throw new \Exception('No se encontró la caja asociada a la venta.');
+
+                throw new \Exception(
+                    'No se encontró la caja asociada a la venta.'
+                );
             }
 
+            // ==========================================
+            // 3. REPONER INVENTARIO Y REGISTRAR HISTORIAL
+            // ==========================================
+
             $this->reponerInventarioPorAnulacion($venta);
-            $this->revertirCajaPorAnulacion($venta, $ultimaCaja, $usuario, $tipoReposicion, 'recibo');
+
+            // ==========================================
+            // 4. REVERTIR CAJA
+            // ==========================================
+
+            $this->revertirCajaPorAnulacion(
+                $venta,
+                $ultimaCaja,
+                $usuario,
+                $tipoReposicion,
+                'recibo'
+            );
+
+            // ==========================================
+            // 5. MARCAR VENTA COMO ANULADA
+            // ==========================================
 
             $venta->estado = '0';
             $venta->save();
@@ -1902,8 +2303,15 @@ class VentaController extends Controller
                 'mensaje' => 'Venta anulada correctamente.'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
             DB::rollBack();
+
+            \Log::error('Error al anular venta', [
+                'idventa' => $request->id,
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ]);
 
             return response()->json([
                 'error' => $e->getMessage()
@@ -1911,94 +2319,383 @@ class VentaController extends Controller
         }
     }
 
-    private function calcularUnidadesPorModo($cantidad, $modoVenta, $unidadEnvase = 1)
-    {
+    private function calcularUnidadesPorModo(
+        $cantidad,
+        $modoVenta,
+        $unidadEnvase = 1
+    ) {
         $cantidad = (float) $cantidad;
+
         $unidadEnvase = max(1, (int) $unidadEnvase);
+
         $modo = strtolower((string) $modoVenta);
 
         if ($modo === 'caja') {
+
             return (int) round($cantidad * $unidadEnvase);
         }
 
         if ($modo === 'docena') {
+
             return (int) round($cantidad * 12);
         }
 
         return (int) round($cantidad);
     }
 
-    private function sumarStockArticulo($idAlmacen, $idArticulo, $unidades)
-    {
+    private function sumarStockArticulo(
+        $idAlmacen,
+        $idArticulo,
+        $unidades,
+        $idVenta,
+        $idDetalleVenta,
+        $observacion = null,
+        $fechaMovimiento = null
+    ) {
+        $idAlmacen = (int) $idAlmacen;
+        $idArticulo = (int) $idArticulo;
         $unidades = (int) $unidades;
+
         if ($unidades <= 0) {
-            return;
+
+            throw new \Exception(
+                'Cantidad inválida para reponer el artículo ID: '
+                . $idArticulo
+            );
         }
 
-        $inventario = Inventario::where('idarticulo', $idArticulo)
+        // ==========================================
+        // 1. BLOQUEAR ARTÍCULO
+        // ==========================================
+
+        Articulo::where('id', $idArticulo)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        // ==========================================
+        // 2. OBTENER STOCK ANTERIOR
+        // ==========================================
+
+        $inventarios = Inventario::where(
+            'idarticulo',
+            $idArticulo
+        )
+            ->where('idalmacen', $idAlmacen)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $stockAnterior = (int) $inventarios->sum('saldo_stock');
+
+        // ==========================================
+        // 3. OBTENER INVENTARIO PARA REPOSICIÓN
+        // ==========================================
+
+        $inventario = Inventario::where(
+            'idarticulo',
+            $idArticulo
+        )
             ->where('idalmacen', $idAlmacen)
             ->orderBy('fecha_vencimiento', 'asc')
+            ->orderBy('id', 'asc')
+            ->lockForUpdate()
             ->first();
 
         if (!$inventario) {
-            throw new \Exception('Inventario no encontrado para artículo ' . $idArticulo);
+
+            throw new \Exception(
+                'Inventario no encontrado para artículo ID: '
+                . $idArticulo
+            );
         }
+
+        // ==========================================
+        // 4. REPONER STOCK
+        // ==========================================
 
         $inventario->saldo_stock += $unidades;
         $inventario->save();
+
+        // ==========================================
+        // 5. OBTENER STOCK POSTERIOR
+        // ==========================================
+
+        $stockActual = (int) Inventario::where(
+            'idarticulo',
+            $idArticulo
+        )
+            ->where('idalmacen', $idAlmacen)
+            ->lockForUpdate()
+            ->get()
+            ->sum('saldo_stock');
+
+        // Validar consistencia de la reposición.
+        if (($stockActual - $stockAnterior) !== $unidades) {
+
+            throw new \Exception(
+                'Inconsistencia al reponer el inventario '
+                . 'del artículo ID: ' . $idArticulo
+            );
+        }
+
+        // ==========================================
+        // 6. REGISTRAR MOVIMIENTO HISTÓRICO
+        // ==========================================
+
+        MovimientoInventarioService::registrar(
+            $idArticulo,
+            $idAlmacen,
+            MovimientoInventario::ANULACION_VENTA,
+            $stockAnterior,
+            $stockActual,
+            'VENTA',
+            $idVenta,
+            $idDetalleVenta,
+            $observacion ?? 'Reposición por anulación de venta',
+            auth()->id(),
+            $fechaMovimiento
+            ?? now()->setTimezone("America/La_Paz")
+        );
     }
 
     private function reponerInventarioPorAnulacion(Venta $venta)
     {
-        $detalles = DetalleVenta::where('idventa', $venta->id)->get();
+        $idAlmacen = (int) $venta->idalmacen;
 
-        foreach ($detalles as $detalle) {
-            $articulo = Articulo::find($detalle->idarticulo);
-            if (!$articulo) {
-                throw new \Exception('Artículo no encontrado para detalle de venta.');
+        $fechaMovimiento = now()->setTimezone("America/La_Paz");
+
+        // ==========================================
+        // 1. OBTENER DETALLES DE LA VENTA
+        // ==========================================
+
+        $detalles = DetalleVenta::where('idventa', $venta->id)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        if ($detalles->isEmpty()) {
+
+            throw new \Exception(
+                'La venta no contiene detalles registrados.'
+            );
+        }
+
+        // ==========================================
+        // 2. VERIFICAR SI YA EXISTE UNA REPOSICIÓN
+        // ==========================================
+
+        $anulacionExistente = MovimientoInventario::where(
+            'tipo_referencia',
+            'VENTA'
+        )
+            ->where('idreferencia', $venta->id)
+            ->where(
+                'tipo_movimiento',
+                MovimientoInventario::ANULACION_VENTA
+            )
+            ->exists();
+
+        if ($anulacionExistente) {
+
+            throw new \Exception(
+                'La venta ya contiene movimientos de anulación.'
+            );
+        }
+
+        // ==========================================
+        // 3. BUSCAR MOVIMIENTOS ORIGINALES
+        // ==========================================
+
+        $movimientosOriginales = MovimientoInventario::where(
+            'tipo_referencia',
+            'VENTA'
+        )
+            ->where('idreferencia', $venta->id)
+            ->where('tipo_movimiento', MovimientoInventario::VENTA)
+            ->orderBy('id')
+            ->get();
+
+        $reposiciones = [];
+
+        // ==========================================
+        // 4. VENTAS NUEVAS CON HISTORIAL
+        // ==========================================
+
+        if ($movimientosOriginales->isNotEmpty()) {
+
+            $idsDetalles = $detalles->pluck('id')
+                ->map(function ($id) {
+                    return (int) $id;
+                })
+                ->all();
+
+            $idsDetallesConHistorial = [];
+
+            foreach ($movimientosOriginales as $movimiento) {
+
+                if (
+                    (int) $movimiento->cantidad >= 0 ||
+                    (int) $movimiento->idalmacen !== $idAlmacen ||
+                    !in_array(
+                        (int) $movimiento->iddetalle_referencia,
+                        $idsDetalles,
+                        true
+                    )
+                ) {
+
+                    throw new \Exception(
+                        'Movimiento original de venta inconsistente. ID: '
+                        . $movimiento->id
+                    );
+                }
+
+                $idsDetallesConHistorial[] =
+                    (int) $movimiento->iddetalle_referencia;
+
+                $reposiciones[] = [
+                    'idarticulo' => (int) $movimiento->idarticulo,
+                    'idalmacen' => (int) $movimiento->idalmacen,
+
+                    // Convertir la salida negativa en entrada positiva.
+                    'cantidad' => abs((int) $movimiento->cantidad),
+
+                    'iddetalle_venta' =>
+                        $movimiento->iddetalle_referencia,
+
+                    'observacion' =>
+                        'Reposición por anulación de venta. '
+                        . 'Movimiento original ID: '
+                        . $movimiento->id
+                ];
             }
 
-            // Combo / oferta compuesto
-            if ($articulo->tipo_producto === 'C') {
-                $itemsHijos = ItemCompuesto::where('idarticulo', $articulo->id)->get();
+            // Verificar que todos los detalles tengan historial.
+            $detallesSinHistorial = array_diff(
+                $idsDetalles,
+                array_unique($idsDetallesConHistorial)
+            );
 
-                if ($itemsHijos->isEmpty()) {
-                    $unidades = $this->calcularUnidadesPorModo(
-                        $detalle->cantidad,
-                        $detalle->modo_venta,
-                        $articulo->unidad_envase
-                    );
-                    $this->sumarStockArticulo($venta->idalmacen, $detalle->idarticulo, $unidades);
+            if (!empty($detallesSinHistorial)) {
+
+                throw new \Exception(
+                    'La venta contiene un historial de inventario incompleto.'
+                );
+            }
+
+        } else {
+
+            // ==========================================
+            // 5. VENTAS ANTIGUAS SIN HISTORIAL
+            // ==========================================
+
+            foreach ($detalles as $detalle) {
+
+                $articulo = Articulo::findOrFail(
+                    $detalle->idarticulo
+                );
+
+                // Producto compuesto.
+                if ($articulo->tipo_producto === 'C') {
+
+                    $itemsHijos = ItemCompuesto::where(
+                        'idarticulo',
+                        $articulo->id
+                    )->get();
+
+                    if ($itemsHijos->isEmpty()) {
+
+                        throw new \Exception(
+                            'No se puede determinar la composición original '
+                            . 'del artículo ID: ' . $articulo->id
+                        );
+                    }
+
+                    foreach ($itemsHijos as $itemHijo) {
+
+                        $articuloHijo = Articulo::findOrFail(
+                            $itemHijo->iditem
+                        );
+
+                        $cantidadBase = (float) $detalle->cantidad
+                            * (float) ($itemHijo->cantidad ?: 1);
+
+                        $unidadesHijo = $this->calcularUnidadesPorModo(
+                            $cantidadBase,
+                            $detalle->modo_venta,
+                            $articuloHijo->unidad_envase
+                        );
+
+                        $reposiciones[] = [
+                            'idarticulo' => (int) $itemHijo->iditem,
+                            'idalmacen' => $idAlmacen,
+                            'cantidad' => $unidadesHijo,
+                            'iddetalle_venta' => $detalle->id,
+
+                            'observacion' =>
+                                'Reposición estimada por anulación '
+                                . 'de venta antigua de producto compuesto ID: '
+                                . $articulo->id
+                        ];
+                    }
+
                     continue;
                 }
 
-                foreach ($itemsHijos as $itemHijo) {
-                    $articuloHijo = Articulo::find($itemHijo->iditem);
-                    if (!$articuloHijo) {
-                        continue;
-                    }
+                // Producto individual.
+                $unidades = $this->calcularUnidadesPorModo(
+                    $detalle->cantidad,
+                    $detalle->modo_venta,
+                    $articulo->unidad_envase
+                );
 
-                    $cantidadBase = (float) $detalle->cantidad * (float) ($itemHijo->cantidad ?: 1);
-                    $unidadesHijo = $this->calcularUnidadesPorModo(
-                        $cantidadBase,
-                        $detalle->modo_venta,
-                        $articuloHijo->unidad_envase
-                    );
+                $reposiciones[] = [
+                    'idarticulo' => (int) $detalle->idarticulo,
+                    'idalmacen' => $idAlmacen,
+                    'cantidad' => $unidades,
+                    'iddetalle_venta' => $detalle->id,
 
-                    $this->sumarStockArticulo($venta->idalmacen, $itemHijo->iditem, $unidadesHijo);
-                }
-
-                continue;
+                    'observacion' =>
+                        'Reposición por anulación de venta antigua '
+                        . 'sin historial original'
+                ];
             }
+        }
 
-            // Producto individual
-            $unidades = $this->calcularUnidadesPorModo(
-                $detalle->cantidad,
-                $detalle->modo_venta,
-                $articulo->unidad_envase
+        // ==========================================
+        // 6. BLOQUEAR ARTÍCULOS INVOLUCRADOS
+        // ==========================================
+
+        $idsArticulos = collect($reposiciones)
+            ->pluck('idarticulo')
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->sort()
+            ->values();
+
+        foreach ($idsArticulos as $idArticulo) {
+
+            Articulo::where('id', $idArticulo)
+                ->lockForUpdate()
+                ->firstOrFail();
+        }
+
+        // ==========================================
+        // 7. EJECUTAR REPOSICIONES
+        // ==========================================
+
+        foreach ($reposiciones as $reposicion) {
+
+            $this->sumarStockArticulo(
+                $reposicion['idalmacen'],
+                $reposicion['idarticulo'],
+                $reposicion['cantidad'],
+                $venta->id,
+                $reposicion['iddetalle_venta'],
+                $reposicion['observacion'],
+                $fechaMovimiento
             );
-
-            $this->sumarStockArticulo($venta->idalmacen, $detalle->idarticulo, $unidades);
         }
     }
 

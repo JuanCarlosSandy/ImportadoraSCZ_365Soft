@@ -108,17 +108,17 @@
                 </ul>
             </li>
 
-            <li class="nav-item nav-dropdown">
+            <!--<li class="nav-item nav-dropdown">
                 <a class="nav-link nav-dropdown-toggle" href="#"><i class="fa fa-h-square"></i> OFERTAR/COMBOS</a>
                 <ul class="nav-dropdown-items">
                     <li @click="menu=76" class="nav-item">
                         <a class="nav-link" href="#"><i class="icon-list"></i> Mis Ofertas</a>
                     </li>
-                    <!--<li @click="menu=75" class="nav-item">
+                    <li @click="menu=75" class="nav-item">
                         <a class="nav-link" href="#"><i class="icon-list"></i> Categoria Servicios</a>
-                    </li>-->
+                    </li>
                 </ul>
-            </li>
+            </li>-->
 
 
             <li class="nav-item nav-dropdown">
