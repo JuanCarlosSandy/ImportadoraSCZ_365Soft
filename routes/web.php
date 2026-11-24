@@ -61,7 +61,7 @@ Route::group(["middleware" => ["auth"]], function () {
             "articulos_pdf"
         );
         Route::get('/articulos/todos', 'ArticuloController@listarTodos');
-        
+
         Route::get("/ajusteinv", "AjusteInventarioController@index");
         Route::post("/ajuste/registrar", "AjusteInventarioController@store");
 
@@ -781,7 +781,7 @@ Route::group(["middleware" => ["auth"]], function () {
             "/inventarios/listarReporteBajoStockPdf",
             "InventarioController@exportarProductosBajoStockPdf"
         );
-         //listar en traspaso para seleccionar el arTiculo de invenTario
+        //listar en traspaso para seleccionar el arTiculo de invenTario
         Route::get(
             "/inventarios/itemLote/{tipo}",
             "InventarioController@indexItemLote"
@@ -799,9 +799,9 @@ Route::group(["middleware" => ["auth"]], function () {
         //MODULO TRASPASOS
         Route::get("/list/traspasos", "TraspasoController@index");
         Route::post("/traspaso/registrar", "TraspasoController@store");
-        Route::get("/traspaso/obtenerTraspaso","TraspasoController@indexPorID");
+        Route::get("/traspaso/obtenerTraspaso", "TraspasoController@indexPorID");
         Route::get('/traspaso/exportar/{id}', 'TraspasoController@exportarPdf');
-        Route::get("/inventariosTraspaso","InventarioController@indextraspaso");
+        Route::get("/inventariosTraspaso", "InventarioController@indextraspaso");
         Route::delete('/traspaso/anular/{id}', 'TraspasoController@anularTraspaso');
 
         //Eventos Significativos
@@ -1066,18 +1066,18 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::put('/llaves/{id}', 'LlaveAccesoController@update');
         Route::delete('/llaves/{id}', 'LlaveAccesoController@destroy');
         Route::post('/llaves/verificar', 'LlaveAccesoController@verificar');
-        
+
         Route::get('/controlinventario', 'ControlInventarioController@index');
         Route::get('/controlinventario/{id}', 'ControlInventarioController@verDetalle');
         Route::post('/controlinventario', 'ControlInventarioController@store');
         Route::delete('/controlinventario/{id}', 'ControlInventarioController@destroy');
         Route::get('/controlinventario/pdf/{id}', 'ControlInventarioController@generarPdf');
         Route::get('/controlinventario/excel/{id}', 'ControlInventarioController@exportExcel');
-        
+
         Route::put('/detalle-controlinventario/cancelar/{id}', 'ControlInventarioController@cancelarDetalle');
         Route::post('/ajusteinventario/registrar', 'ControlInventarioController@registrarAjuste');
         Route::put('/detalle-controlinventario/pasarEstado/{id}', 'ControlInventarioController@pasarEstado');
-        Route::put('/controlinventario/editarStockFisico/{id}','ControlInventarioController@editarStockFisico');
+        Route::put('/controlinventario/editarStockFisico/{id}', 'ControlInventarioController@editarStockFisico');
 
         Route::get('/ingresos/comprobantes-dim', 'IngresoController@comprobantesDim');
 
@@ -1089,6 +1089,19 @@ Route::group(["middleware" => ["auth"]], function () {
         Route::get('/clave-administrativa', 'ClaveAdministrativaController@index');
         Route::post('/clave-administrativa/guardar', 'ClaveAdministrativaController@store');
         Route::post('/clave-administrativa/validar', 'ClaveAdministrativaController@validar');
+
+        //INVENTARIO HISTORICO
+        Route::get("/inventariohistorico/listar/{tipo}", "InventarioController@indexHistorico");
+        
+        Route::get(
+            '/inventariohistorico/exportar-pdf',
+            'InventarioController@exportarInventarioHistoricoPdf'
+        );
+
+        Route::get(
+            '/inventariohistorico/exportar-excel',
+            'InventarioController@exportarInventarioHistoricoExcel'
+        );
     });
 
     //RUTA PARA RECUPERAR LA SESSION CON EL ID DE LA PERSONA LOGUEADA

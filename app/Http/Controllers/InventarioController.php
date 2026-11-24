@@ -16,6 +16,10 @@ use App\Exports\InventarioExport;
 use Exception;
 use FPDF;
 
+use Carbon\Carbon;
+use App\ConfiguracionHistorialInventario;
+use App\Exports\InventarioHistoricoExport;
+
 class InventarioController extends Controller
 {
 
@@ -904,8 +908,8 @@ class InventarioController extends Controller
     }
 
     private function consultaInventarioItemLote(Request $request, $tipo)
-{
-    $idAlmacen = $request->idAlmacen;
+    {
+        $idAlmacen = $request->idAlmacen;
         $buscar = $request->buscar;
         $orden = $request->get('orden', 'stock_asc');
 
@@ -1161,40 +1165,40 @@ class InventarioController extends Controller
         |--------------------------------------------------------------------------
         */
 
-return [
-    'query' => $inventarios,
-    'almacenes_columnas' => $almacenesColumnas
-];
+        return [
+            'query' => $inventarios,
+            'almacenes_columnas' => $almacenesColumnas
+        ];
     }
 
     public function indexItemLote(Request $request, $tipo)
-{
-    if (!$request->ajax()) {
-        return redirect('/');
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
+        }
+
+        $resultado = $this->consultaInventarioItemLote(
+            $request,
+            $tipo
+        );
+
+        $inventarios = $resultado['query']->paginate(20);
+
+        return [
+            'pagination' => [
+                'total' => $inventarios->total(),
+                'current_page' => $inventarios->currentPage(),
+                'per_page' => $inventarios->perPage(),
+                'last_page' => $inventarios->lastPage(),
+                'from' => $inventarios->firstItem(),
+                'to' => $inventarios->lastItem(),
+            ],
+
+            'inventarios' => $inventarios,
+
+            'almacenes_columnas' => $resultado['almacenes_columnas']
+        ];
     }
-
-    $resultado = $this->consultaInventarioItemLote(
-        $request,
-        $tipo
-    );
-
-    $inventarios = $resultado['query']->paginate(20);
-
-    return [
-        'pagination' => [
-            'total' => $inventarios->total(),
-            'current_page' => $inventarios->currentPage(),
-            'per_page' => $inventarios->perPage(),
-            'last_page' => $inventarios->lastPage(),
-            'from' => $inventarios->firstItem(),
-            'to' => $inventarios->lastItem(),
-        ],
-
-        'inventarios' => $inventarios,
-
-        'almacenes_columnas' => $resultado['almacenes_columnas']
-    ];
-}
 
     //LISTA PARA OBTENER EL SALDO_STOCK POR ITEM POR EL ALMACEN,NOMBRE Y ID DE ARTICULO
     public function indexsaldostock(Request $request)
@@ -1350,683 +1354,697 @@ return [
         return response()->json(['stocks' => $stocks]);
     }
 
-   public function exportarPdf(Request $request)
-{
-    $modo = $request->input('modo', 'item');
-    $idAlmacen = (int) $request->input('idAlmacen');
-    $buscar = $request->input('buscar', '');
-    $orden = $request->input('orden', 'stock_asc');
+    public function exportarPdf(Request $request)
+    {
+        $modo = $request->input('modo', 'item');
+        $idAlmacen = (int) $request->input('idAlmacen');
+        $buscar = $request->input('buscar', '');
+        $orden = $request->input('orden', 'stock_asc');
 
-    if (!in_array($modo, ['item', 'lote'], true)) {
-        abort(422, 'Modo de inventario no válido.');
-    }
-
-    // Restricción de acceso
-    if ((int) auth()->user()->idrol === 2) {
-        abort(403, 'No tiene permisos para exportar.');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | 1. Obtener almacén seleccionado
-    |--------------------------------------------------------------------------
-    */
-
-    $almacen = DB::table('almacens')
-        ->where('id', $idAlmacen)
-        ->first();
-
-    if (!$almacen) {
-        abort(422, 'Debe seleccionar un almacén válido.');
-    }
-
-    $nombreAlmacen = $almacen->nombre_almacen;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 2. Reutilizar la consulta del listado
-    |--------------------------------------------------------------------------
-    */
-
-    $resultado = $this->consultaInventarioItemLote(
-        $request,
-        $modo
-    );
-
-    $inventarios = $resultado['query']->get();
-
-    $almacenesColumnas = $resultado['almacenes_columnas'];
-
-    /*
-    |--------------------------------------------------------------------------
-    | 3. Configuración del PDF
-    |--------------------------------------------------------------------------
-    */
-
-    $pdf = new PDFInventario('L', 'mm', 'A4');
-
-    $pdf->AliasNbPages();
-    $pdf->SetMargins(10, 10, 10);
-    $pdf->SetAutoPageBreak(true, 20);
-    $pdf->AddPage();
-
-    $anchoTotal = 277;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 4. Funciones auxiliares
-    |--------------------------------------------------------------------------
-    */
-
-    // Ajustar texto al ancho disponible de la celda
-    $ajustarTexto = function ($texto, $ancho) use ($pdf) {
-
-        $texto = utf8_decode((string) $texto);
-
-        if ($pdf->GetStringWidth($texto) <= $ancho - 3) {
-            return $texto;
+        if (!in_array($modo, ['item', 'lote'], true)) {
+            abort(422, 'Modo de inventario no válido.');
         }
 
-        while (
-            strlen($texto) > 0 &&
-            $pdf->GetStringWidth($texto . '...') > $ancho - 3
-        ) {
-            $texto = substr($texto, 0, -1);
+        // Restricción de acceso
+        if ((int) auth()->user()->idrol === 2) {
+            abort(403, 'No tiene permisos para exportar.');
         }
-
-        return $texto . '...';
-    };
-
-    // Mostrar stock con su unidad de medida
-    $formatearStock = function ($stock, $unidad = '') {
-
-        $stock = (float) $stock;
-
-        if ($stock == 0) {
-            return 'Sin Stock';
-        }
-
-        $cantidad = rtrim(
-            rtrim(number_format($stock, 4, '.', ''), '0'),
-            '.'
-        );
-
-        return trim($cantidad . ' ' . $unidad);
-    };
-
-    /*
-    |--------------------------------------------------------------------------
-    | 5. Encabezado principal
-    |--------------------------------------------------------------------------
-    */
-
-    $rutaLogo = public_path('img/logoPrincipal.png');
-
-    if (file_exists($rutaLogo)) {
-        $pdf->Image($rutaLogo, 10, 5, 20);
-    }
-
-    $pdf->SetFont('Arial', 'B', 16);
-    $pdf->SetTextColor(44, 62, 80);
-
-    $pdf->Cell(
-        0,
-        10,
-        utf8_decode('REPORTE DE INVENTARIO'),
-        0,
-        1,
-        'C'
-    );
-
-    $pdf->SetFont('Arial', '', 10);
-
-    $pdf->Cell(
-        0,
-        6,
-        utf8_decode(
-            'Fecha de generación: ' . date('d/m/Y H:i:s')
-        ),
-        0,
-        1,
-        'C'
-    );
-
-    $pdf->Ln(5);
-
-    /*
-    |--------------------------------------------------------------------------
-    | 6. Información de filtros
-    |--------------------------------------------------------------------------
-    */
-
-    $ordenes = [
-        'nombre_asc' => 'Nombre de A - Z',
-        'stock_asc' => 'Menor a mayor stock',
-        'stock_desc' => 'Mayor a menor stock'
-    ];
-
-    $nombreOrden = $ordenes[$orden] ?? $ordenes['stock_asc'];
-
-    if ($modo === 'lote') {
-        $nombreOrden = 'Menor a mayor stock';
-    }
-
-    $pdf->SetFillColor(236, 240, 241);
-    $pdf->SetTextColor(0, 0, 0);
-
-    $pdf->Rect(
-        10,
-        $pdf->GetY(),
-        $anchoTotal,
-        24,
-        'F'
-    );
-
-    // Almacén
-    $pdf->SetX(12);
-    $pdf->SetFont('Arial', 'B', 9);
-
-    $pdf->Cell(
-        30, 8,
-        utf8_decode('Almacén:'),
-        0, 0, 'L'
-    );
-
-    $pdf->SetFont('Arial', '', 9);
-
-    $pdf->Cell(
-        230, 8,
-        $ajustarTexto($nombreAlmacen, 230),
-        0, 1, 'L'
-    );
-
-    // Búsqueda
-    $pdf->SetX(12);
-    $pdf->SetFont('Arial', 'B', 9);
-
-    $pdf->Cell(
-        30, 8,
-        utf8_decode('Búsqueda:'),
-        0, 0, 'L'
-    );
-
-    $pdf->SetFont('Arial', '', 9);
-
-    $pdf->Cell(
-        230, 8,
-        $ajustarTexto(
-            !empty($buscar) ? $buscar : 'Ninguna',
-            230
-        ),
-        0, 1, 'L'
-    );
-
-    // Ordenamiento
-    $pdf->SetX(12);
-    $pdf->SetFont('Arial', 'B', 9);
-
-    $pdf->Cell(
-        30, 8,
-        utf8_decode('Orden:'),
-        0, 0, 'L'
-    );
-
-    $pdf->SetFont('Arial', '', 9);
-
-    $pdf->Cell(
-        230, 8,
-        utf8_decode($nombreOrden),
-        0, 1, 'L'
-    );
-
-    $pdf->Ln(5);
-
-    /*
-    |--------------------------------------------------------------------------
-    | 7. Definir columnas del reporte
-    |--------------------------------------------------------------------------
-    */
-
-    $columnas = [];
-
-    if ($modo === 'item') {
-
-        // Cantidad de columnas correspondientes a stock
-        $cantidadColumnasStock = 1;
-
-        // Mostrar depósito si no es el seleccionado
-        if ($idAlmacen !== 2) {
-            $cantidadColumnasStock++;
-        }
-
-        // Almacenes adicionales
-        $cantidadColumnasStock += $almacenesColumnas->count();
-
-        // Ajustar los anchos según la cantidad de almacenes
-        $anchoCodigo = 25;
-        $anchoProducto = 82;
-
-        if ($cantidadColumnasStock >= 6) {
-            $anchoCodigo = 22;
-            $anchoProducto = 65;
-        }
-
-        $anchoStock = (
-            $anchoTotal - $anchoCodigo - $anchoProducto
-        ) / $cantidadColumnasStock;
-
-        // Código
-        $columnas[] = [
-            'campo' => 'codigo',
-            'titulo' => 'Código',
-            'ancho' => $anchoCodigo,
-            'alineacion' => 'L',
-            'tipo' => 'texto'
-        ];
-
-        // Producto
-        $columnas[] = [
-            'campo' => 'nombre_producto',
-            'titulo' => 'Producto',
-            'ancho' => $anchoProducto,
-            'alineacion' => 'L',
-            'tipo' => 'texto'
-        ];
-
-        // Stock actual
-        $columnas[] = [
-            'campo' => 'saldo_stock_total',
-            'titulo' => 'Stock Actual',
-            'ancho' => $anchoStock,
-            'alineacion' => 'C',
-            'tipo' => 'stock'
-        ];
-
-        // Stock del depósito
-        if ($idAlmacen !== 2) {
-
-            $columnas[] = [
-                'campo' => 'stock_deposito',
-                'titulo' => 'Stock Depósito',
-                'ancho' => $anchoStock,
-                'alineacion' => 'C',
-                'tipo' => 'stock'
-            ];
-        }
-
-        // Columnas dinámicas de otros almacenes
-        foreach ($almacenesColumnas as $almacenColumna) {
-
-            $columnas[] = [
-                'campo' => 'stock_almacen_' . $almacenColumna->id,
-                'titulo' => $almacenColumna->nombre_almacen,
-                'ancho' => $anchoStock,
-                'alineacion' => 'C',
-                'tipo' => 'stock'
-            ];
-        }
-
-    } else {
 
         /*
         |--------------------------------------------------------------------------
-        | Columnas para modo lote
+        | 1. Obtener almacén seleccionado
         |--------------------------------------------------------------------------
         */
 
-        $columnas = [
-            [
-                'campo' => 'nombre_producto',
-                'titulo' => 'Producto',
-                'ancho' => 77,
-                'alineacion' => 'L',
-                'tipo' => 'texto'
-            ],
-            [
-                'campo' => 'nombre_proveedor',
-                'titulo' => 'Proveedor',
-                'ancho' => 50,
-                'alineacion' => 'L',
-                'tipo' => 'texto'
-            ],
-            [
-                'campo' => 'unidad_envase',
-                'titulo' => 'Unid/Paq',
-                'ancho' => 20,
-                'alineacion' => 'C',
-                'tipo' => 'texto'
-            ],
-            [
-                'campo' => 'cantidad',
-                'titulo' => 'Cantidad',
-                'ancho' => 25,
-                'alineacion' => 'C',
-                'tipo' => 'texto'
-            ],
-            [
-                'campo' => 'saldo_stock',
-                'titulo' => 'Stock Actual',
-                'ancho' => 35,
-                'alineacion' => 'C',
-                'tipo' => 'stock'
-            ],
-            [
-                'campo' => 'fecha_ingreso',
-                'titulo' => 'F. Ingreso',
-                'ancho' => 35,
-                'alineacion' => 'C',
-                'tipo' => 'fecha'
-            ],
-            [
-                'campo' => 'fecha_vencimiento',
-                'titulo' => 'F. Vencimiento',
-                'ancho' => 35,
-                'alineacion' => 'C',
-                'tipo' => 'fecha'
-            ]
-        ];
-    }
+        $almacen = DB::table('almacens')
+            ->where('id', $idAlmacen)
+            ->first();
 
-    /*
-    |--------------------------------------------------------------------------
-    | 8. Función para imprimir encabezados de tabla
-    |--------------------------------------------------------------------------
-    */
-
-    $imprimirCabecera = function () use (
-        $pdf,
-        $columnas,
-        $ajustarTexto
-    ) {
-
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->SetFillColor(52, 73, 94);
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetDrawColor(200, 205, 210);
-
-        foreach ($columnas as $indice => $columna) {
-
-            $ultima = $indice === count($columnas) - 1;
-
-            $pdf->Cell(
-                $columna['ancho'],
-                9,
-                $ajustarTexto(
-                    $columna['titulo'],
-                    $columna['ancho']
-                ),
-                1,
-                $ultima ? 1 : 0,
-                'C',
-                true
-            );
+        if (!$almacen) {
+            abort(422, 'Debe seleccionar un almacén válido.');
         }
 
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('Arial', '', 8);
-    };
+        $nombreAlmacen = $almacen->nombre_almacen;
 
-    $imprimirCabecera();
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Reutilizar la consulta del listado
+        |--------------------------------------------------------------------------
+        */
 
-    /*
-    |--------------------------------------------------------------------------
-    | 9. Imprimir registros del inventario
-    |--------------------------------------------------------------------------
-    */
+        $resultado = $this->consultaInventarioItemLote(
+            $request,
+            $modo
+        );
 
-    $fill = false;
-    $altoFila = 7;
+        $inventarios = $resultado['query']->get();
 
-    foreach ($inventarios as $inv) {
+        $almacenesColumnas = $resultado['almacenes_columnas'];
 
-        // Controlar salto de página
-        if (
-            $pdf->GetY() + $altoFila >
-            $pdf->GetPageHeight() - 20
-        ) {
-            $pdf->AddPage();
-            $imprimirCabecera();
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Configuración del PDF
+        |--------------------------------------------------------------------------
+        */
 
-        // Alternar color de fondo
-        if ($fill) {
-            $pdf->SetFillColor(245, 247, 249);
-        } else {
-            $pdf->SetFillColor(255, 255, 255);
-        }
+        $pdf = new PDFInventario('L', 'mm', 'A4');
 
-        foreach ($columnas as $indice => $columna) {
+        $pdf->AliasNbPages();
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 20);
+        $pdf->AddPage();
 
-            $campo = $columna['campo'];
-            $valor = $inv->{$campo} ?? null;
+        $anchoTotal = 277;
 
-            $ultima = $indice === count($columnas) - 1;
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Funciones auxiliares
+        |--------------------------------------------------------------------------
+        */
 
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->SetTextColor(0, 0, 0);
+        // Ajustar texto al ancho disponible de la celda
+        $ajustarTexto = function ($texto, $ancho) use ($pdf) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Formato de stock
-            |--------------------------------------------------------------------------
-            */
+            $texto = utf8_decode((string) $texto);
 
-            if ($columna['tipo'] === 'stock') {
-
-                $stock = (float) ($valor ?? 0);
-
-                $unidad = $modo === 'item'
-                    ? ($inv->descripcion_fabrica ?? '')
-                    : '';
-
-                $valor = $formatearStock(
-                    $stock,
-                    $unidad
-                );
-
-                if ($stock == 0) {
-
-                    // Sin Stock en rojo
-                    $pdf->SetTextColor(220, 38, 38);
-                    $pdf->SetFont('Arial', 'B', 8);
-
-                } elseif ($campo === 'saldo_stock_total') {
-
-                    // Resaltar stock del almacén seleccionado
-                    $pdf->SetFont('Arial', 'B', 8);
-                }
-
-            } elseif ($columna['tipo'] === 'fecha') {
-
-                $valor = !empty($valor)
-                    ? date('d/m/Y', strtotime($valor))
-                    : '-';
-
-            } else {
-
-                $valor = ($valor === null || $valor === '')
-                    ? '-'
-                    : $valor;
+            if ($pdf->GetStringWidth($texto) <= $ancho - 3) {
+                return $texto;
             }
 
-            $pdf->Cell(
-                $columna['ancho'],
-                $altoFila,
-                $ajustarTexto(
-                    $valor,
-                    $columna['ancho']
-                ),
-                1,
-                $ultima ? 1 : 0,
-                $columna['alineacion'],
-                true
+            while (
+                strlen($texto) > 0 &&
+                $pdf->GetStringWidth($texto . '...') > $ancho - 3
+            ) {
+                $texto = substr($texto, 0, -1);
+            }
+
+            return $texto . '...';
+        };
+
+        // Mostrar stock con su unidad de medida
+        $formatearStock = function ($stock, $unidad = '') {
+
+            $stock = (float) $stock;
+
+            if ($stock == 0) {
+                return 'Sin Stock';
+            }
+
+            $cantidad = rtrim(
+                rtrim(number_format($stock, 4, '.', ''), '0'),
+                '.'
             );
+
+            return trim($cantidad . ' ' . $unidad);
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Encabezado principal
+        |--------------------------------------------------------------------------
+        */
+
+        $rutaLogo = public_path('img/logoPrincipal.png');
+
+        if (file_exists($rutaLogo)) {
+            $pdf->Image($rutaLogo, 10, 5, 20);
         }
 
-        $fill = !$fill;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | 10. Total de registros
-    |--------------------------------------------------------------------------
-    */
-
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->SetFont('Arial', 'B', 9);
-
-    if ($inventarios->isEmpty()) {
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetTextColor(44, 62, 80);
 
         $pdf->Cell(
-            $anchoTotal,
+            0,
             10,
-            utf8_decode('No se encontraron registros.'),
-            1,
+            utf8_decode('REPORTE DE INVENTARIO'),
+            0,
             1,
             'C'
         );
-    }
 
-    $pdf->Ln(4);
+        $pdf->SetFont('Arial', '', 10);
 
-    $pdf->Cell(
-        0,
-        7,
-        utf8_decode(
-            'Total de registros: ' . $inventarios->count()
-        ),
-        0,
-        1,
-        'L'
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | 11. Generar archivo PDF
-    |--------------------------------------------------------------------------
-    */
-
-    $fecha = date('d_m_Y');
-
-    $nombreArchivoLimpio = preg_replace(
-        '/[^a-zA-Z0-9_-]/',
-        '_',
-        $nombreAlmacen
-    );
-
-    $nombreArchivoLimpio = preg_replace(
-        '/_+/',
-        '_',
-        $nombreArchivoLimpio
-    );
-
-    $filename = 'reporteInventario_'
-        . $nombreArchivoLimpio
-        . '_'
-        . $fecha
-        . '.pdf';
-
-    return response($pdf->Output('S'), 200)
-        ->header('Content-Type', 'application/pdf')
-        ->header(
-            'Content-Disposition',
-            'attachment; filename="' . $filename . '"'
+        $pdf->Cell(
+            0,
+            6,
+            utf8_decode(
+                'Fecha de generación: ' . date('d/m/Y H:i:s')
+            ),
+            0,
+            1,
+            'C'
         );
-}
 
-   public function exportarExcel(Request $request)
-{
-    $modo = $request->input('modo', 'item');
-    $idAlmacen = (int) $request->input('idAlmacen');
-    $buscar = $request->input('buscar', '');
-    $orden = $request->input('orden', 'stock_asc');
+        $pdf->Ln(5);
 
-    // Validar modo
-    if (!in_array($modo, ['item', 'lote'], true)) {
-        abort(422, 'Modo de inventario no válido.');
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Información de filtros
+        |--------------------------------------------------------------------------
+        */
+
+        $ordenes = [
+            'nombre_asc' => 'Nombre de A - Z',
+            'stock_asc' => 'Menor a mayor stock',
+            'stock_desc' => 'Mayor a menor stock'
+        ];
+
+        $nombreOrden = $ordenes[$orden] ?? $ordenes['stock_asc'];
+
+        if ($modo === 'lote') {
+            $nombreOrden = 'Menor a mayor stock';
+        }
+
+        $pdf->SetFillColor(236, 240, 241);
+        $pdf->SetTextColor(0, 0, 0);
+
+        $pdf->Rect(
+            10,
+            $pdf->GetY(),
+            $anchoTotal,
+            24,
+            'F'
+        );
+
+        // Almacén
+        $pdf->SetX(12);
+        $pdf->SetFont('Arial', 'B', 9);
+
+        $pdf->Cell(
+            30,
+            8,
+            utf8_decode('Almacén:'),
+            0,
+            0,
+            'L'
+        );
+
+        $pdf->SetFont('Arial', '', 9);
+
+        $pdf->Cell(
+            230,
+            8,
+            $ajustarTexto($nombreAlmacen, 230),
+            0,
+            1,
+            'L'
+        );
+
+        // Búsqueda
+        $pdf->SetX(12);
+        $pdf->SetFont('Arial', 'B', 9);
+
+        $pdf->Cell(
+            30,
+            8,
+            utf8_decode('Búsqueda:'),
+            0,
+            0,
+            'L'
+        );
+
+        $pdf->SetFont('Arial', '', 9);
+
+        $pdf->Cell(
+            230,
+            8,
+            $ajustarTexto(
+                !empty($buscar) ? $buscar : 'Ninguna',
+                230
+            ),
+            0,
+            1,
+            'L'
+        );
+
+        // Ordenamiento
+        $pdf->SetX(12);
+        $pdf->SetFont('Arial', 'B', 9);
+
+        $pdf->Cell(
+            30,
+            8,
+            utf8_decode('Orden:'),
+            0,
+            0,
+            'L'
+        );
+
+        $pdf->SetFont('Arial', '', 9);
+
+        $pdf->Cell(
+            230,
+            8,
+            utf8_decode($nombreOrden),
+            0,
+            1,
+            'L'
+        );
+
+        $pdf->Ln(5);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Definir columnas del reporte
+        |--------------------------------------------------------------------------
+        */
+
+        $columnas = [];
+
+        if ($modo === 'item') {
+
+            // Cantidad de columnas correspondientes a stock
+            $cantidadColumnasStock = 1;
+
+            // Mostrar depósito si no es el seleccionado
+            if ($idAlmacen !== 2) {
+                $cantidadColumnasStock++;
+            }
+
+            // Almacenes adicionales
+            $cantidadColumnasStock += $almacenesColumnas->count();
+
+            // Ajustar los anchos según la cantidad de almacenes
+            $anchoCodigo = 25;
+            $anchoProducto = 82;
+
+            if ($cantidadColumnasStock >= 6) {
+                $anchoCodigo = 22;
+                $anchoProducto = 65;
+            }
+
+            $anchoStock = (
+                $anchoTotal - $anchoCodigo - $anchoProducto
+            ) / $cantidadColumnasStock;
+
+            // Código
+            $columnas[] = [
+                'campo' => 'codigo',
+                'titulo' => 'Código',
+                'ancho' => $anchoCodigo,
+                'alineacion' => 'L',
+                'tipo' => 'texto'
+            ];
+
+            // Producto
+            $columnas[] = [
+                'campo' => 'nombre_producto',
+                'titulo' => 'Producto',
+                'ancho' => $anchoProducto,
+                'alineacion' => 'L',
+                'tipo' => 'texto'
+            ];
+
+            // Stock actual
+            $columnas[] = [
+                'campo' => 'saldo_stock_total',
+                'titulo' => 'Stock Actual',
+                'ancho' => $anchoStock,
+                'alineacion' => 'C',
+                'tipo' => 'stock'
+            ];
+
+            // Stock del depósito
+            if ($idAlmacen !== 2) {
+
+                $columnas[] = [
+                    'campo' => 'stock_deposito',
+                    'titulo' => 'Stock Depósito',
+                    'ancho' => $anchoStock,
+                    'alineacion' => 'C',
+                    'tipo' => 'stock'
+                ];
+            }
+
+            // Columnas dinámicas de otros almacenes
+            foreach ($almacenesColumnas as $almacenColumna) {
+
+                $columnas[] = [
+                    'campo' => 'stock_almacen_' . $almacenColumna->id,
+                    'titulo' => $almacenColumna->nombre_almacen,
+                    'ancho' => $anchoStock,
+                    'alineacion' => 'C',
+                    'tipo' => 'stock'
+                ];
+            }
+
+        } else {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Columnas para modo lote
+            |--------------------------------------------------------------------------
+            */
+
+            $columnas = [
+                [
+                    'campo' => 'nombre_producto',
+                    'titulo' => 'Producto',
+                    'ancho' => 77,
+                    'alineacion' => 'L',
+                    'tipo' => 'texto'
+                ],
+                [
+                    'campo' => 'nombre_proveedor',
+                    'titulo' => 'Proveedor',
+                    'ancho' => 50,
+                    'alineacion' => 'L',
+                    'tipo' => 'texto'
+                ],
+                [
+                    'campo' => 'unidad_envase',
+                    'titulo' => 'Unid/Paq',
+                    'ancho' => 20,
+                    'alineacion' => 'C',
+                    'tipo' => 'texto'
+                ],
+                [
+                    'campo' => 'cantidad',
+                    'titulo' => 'Cantidad',
+                    'ancho' => 25,
+                    'alineacion' => 'C',
+                    'tipo' => 'texto'
+                ],
+                [
+                    'campo' => 'saldo_stock',
+                    'titulo' => 'Stock Actual',
+                    'ancho' => 35,
+                    'alineacion' => 'C',
+                    'tipo' => 'stock'
+                ],
+                [
+                    'campo' => 'fecha_ingreso',
+                    'titulo' => 'F. Ingreso',
+                    'ancho' => 35,
+                    'alineacion' => 'C',
+                    'tipo' => 'fecha'
+                ],
+                [
+                    'campo' => 'fecha_vencimiento',
+                    'titulo' => 'F. Vencimiento',
+                    'ancho' => 35,
+                    'alineacion' => 'C',
+                    'tipo' => 'fecha'
+                ]
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Función para imprimir encabezados de tabla
+        |--------------------------------------------------------------------------
+        */
+
+        $imprimirCabecera = function () use ($pdf, $columnas, $ajustarTexto) {
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->SetFillColor(52, 73, 94);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetDrawColor(200, 205, 210);
+
+            foreach ($columnas as $indice => $columna) {
+
+                $ultima = $indice === count($columnas) - 1;
+
+                $pdf->Cell(
+                    $columna['ancho'],
+                    9,
+                    $ajustarTexto(
+                        $columna['titulo'],
+                        $columna['ancho']
+                    ),
+                    1,
+                    $ultima ? 1 : 0,
+                    'C',
+                    true
+                );
+            }
+
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', '', 8);
+        };
+
+        $imprimirCabecera();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. Imprimir registros del inventario
+        |--------------------------------------------------------------------------
+        */
+
+        $fill = false;
+        $altoFila = 7;
+
+        foreach ($inventarios as $inv) {
+
+            // Controlar salto de página
+            if (
+                $pdf->GetY() + $altoFila >
+                $pdf->GetPageHeight() - 20
+            ) {
+                $pdf->AddPage();
+                $imprimirCabecera();
+            }
+
+            // Alternar color de fondo
+            if ($fill) {
+                $pdf->SetFillColor(245, 247, 249);
+            } else {
+                $pdf->SetFillColor(255, 255, 255);
+            }
+
+            foreach ($columnas as $indice => $columna) {
+
+                $campo = $columna['campo'];
+                $valor = $inv->{$campo} ?? null;
+
+                $ultima = $indice === count($columnas) - 1;
+
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->SetTextColor(0, 0, 0);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Formato de stock
+                |--------------------------------------------------------------------------
+                */
+
+                if ($columna['tipo'] === 'stock') {
+
+                    $stock = (float) ($valor ?? 0);
+
+                    $unidad = $modo === 'item'
+                        ? ($inv->descripcion_fabrica ?? '')
+                        : '';
+
+                    $valor = $formatearStock(
+                        $stock,
+                        $unidad
+                    );
+
+                    if ($stock == 0) {
+
+                        // Sin Stock en rojo
+                        $pdf->SetTextColor(220, 38, 38);
+                        $pdf->SetFont('Arial', 'B', 8);
+
+                    } elseif ($campo === 'saldo_stock_total') {
+
+                        // Resaltar stock del almacén seleccionado
+                        $pdf->SetFont('Arial', 'B', 8);
+                    }
+
+                } elseif ($columna['tipo'] === 'fecha') {
+
+                    $valor = !empty($valor)
+                        ? date('d/m/Y', strtotime($valor))
+                        : '-';
+
+                } else {
+
+                    $valor = ($valor === null || $valor === '')
+                        ? '-'
+                        : $valor;
+                }
+
+                $pdf->Cell(
+                    $columna['ancho'],
+                    $altoFila,
+                    $ajustarTexto(
+                        $valor,
+                        $columna['ancho']
+                    ),
+                    1,
+                    $ultima ? 1 : 0,
+                    $columna['alineacion'],
+                    true
+                );
+            }
+
+            $fill = !$fill;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. Total de registros
+        |--------------------------------------------------------------------------
+        */
+
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', 'B', 9);
+
+        if ($inventarios->isEmpty()) {
+
+            $pdf->Cell(
+                $anchoTotal,
+                10,
+                utf8_decode('No se encontraron registros.'),
+                1,
+                1,
+                'C'
+            );
+        }
+
+        $pdf->Ln(4);
+
+        $pdf->Cell(
+            0,
+            7,
+            utf8_decode(
+                'Total de registros: ' . $inventarios->count()
+            ),
+            0,
+            1,
+            'L'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. Generar archivo PDF
+        |--------------------------------------------------------------------------
+        */
+
+        $fecha = date('d_m_Y');
+
+        $nombreArchivoLimpio = preg_replace(
+            '/[^a-zA-Z0-9_-]/',
+            '_',
+            $nombreAlmacen
+        );
+
+        $nombreArchivoLimpio = preg_replace(
+            '/_+/',
+            '_',
+            $nombreArchivoLimpio
+        );
+
+        $filename = 'reporteInventario_'
+            . $nombreArchivoLimpio
+            . '_'
+            . $fecha
+            . '.pdf';
+
+        return response($pdf->Output('S'), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header(
+                'Content-Disposition',
+                'attachment; filename="' . $filename . '"'
+            );
     }
 
-    // Restricción de acceso
-    if ((int) auth()->user()->idrol === 2) {
-        abort(403, 'No tiene permisos para exportar.');
+    public function exportarExcel(Request $request)
+    {
+        $modo = $request->input('modo', 'item');
+        $idAlmacen = (int) $request->input('idAlmacen');
+        $buscar = $request->input('buscar', '');
+        $orden = $request->input('orden', 'stock_asc');
+
+        // Validar modo
+        if (!in_array($modo, ['item', 'lote'], true)) {
+            abort(422, 'Modo de inventario no válido.');
+        }
+
+        // Restricción de acceso
+        if ((int) auth()->user()->idrol === 2) {
+            abort(403, 'No tiene permisos para exportar.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Obtener almacén seleccionado
+        |--------------------------------------------------------------------------
+        */
+
+        $almacen = DB::table('almacens')
+            ->where('id', $idAlmacen)
+            ->first();
+
+        if (!$almacen) {
+            abort(422, 'Debe seleccionar un almacén válido.');
+        }
+
+        $nombreAlmacen = $almacen->nombre_almacen;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Reutilizar consulta del inventario
+        |--------------------------------------------------------------------------
+        */
+
+        $resultado = $this->consultaInventarioItemLote(
+            $request,
+            $modo
+        );
+
+        $query = $resultado['query'];
+
+        $almacenesColumnas = $resultado['almacenes_columnas'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Generar nombre del archivo
+        |--------------------------------------------------------------------------
+        */
+
+        $fecha = date('d_m_Y');
+
+        $nombreArchivoLimpio = preg_replace(
+            '/[^a-zA-Z0-9_-]/',
+            '_',
+            $nombreAlmacen
+        );
+
+        $nombreArchivoLimpio = preg_replace(
+            '/_+/',
+            '_',
+            $nombreArchivoLimpio
+        );
+
+        $filename = 'reporteInventario_'
+            . $nombreArchivoLimpio
+            . '_'
+            . $fecha
+            . '.xlsx';
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Exportar Excel
+        |--------------------------------------------------------------------------
+        */
+
+        return Excel::download(
+            new InventarioExport(
+                $query,
+                $modo,
+                $idAlmacen,
+                $nombreAlmacen,
+                $almacenesColumnas,
+                $buscar,
+                $orden
+            ),
+            $filename
+        );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | 1. Obtener almacén seleccionado
-    |--------------------------------------------------------------------------
-    */
-
-    $almacen = DB::table('almacens')
-        ->where('id', $idAlmacen)
-        ->first();
-
-    if (!$almacen) {
-        abort(422, 'Debe seleccionar un almacén válido.');
-    }
-
-    $nombreAlmacen = $almacen->nombre_almacen;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 2. Reutilizar consulta del inventario
-    |--------------------------------------------------------------------------
-    */
-
-    $resultado = $this->consultaInventarioItemLote(
-        $request,
-        $modo
-    );
-
-    $query = $resultado['query'];
-
-    $almacenesColumnas = $resultado['almacenes_columnas'];
-
-    /*
-    |--------------------------------------------------------------------------
-    | 3. Generar nombre del archivo
-    |--------------------------------------------------------------------------
-    */
-
-    $fecha = date('d_m_Y');
-
-    $nombreArchivoLimpio = preg_replace(
-        '/[^a-zA-Z0-9_-]/',
-        '_',
-        $nombreAlmacen
-    );
-
-    $nombreArchivoLimpio = preg_replace(
-        '/_+/',
-        '_',
-        $nombreArchivoLimpio
-    );
-
-    $filename = 'reporteInventario_'
-        . $nombreArchivoLimpio
-        . '_'
-        . $fecha
-        . '.xlsx';
-
-    /*
-    |--------------------------------------------------------------------------
-    | 4. Exportar Excel
-    |--------------------------------------------------------------------------
-    */
-
-    return Excel::download(
-        new InventarioExport(
-            $query,
-            $modo,
-            $idAlmacen,
-            $nombreAlmacen,
-            $almacenesColumnas,
-            $buscar,
-            $orden
-        ),
-        $filename
-    );
-}
     public function exportarBajoStockPDF(Request $request)
     {
         // 1. CAPTURAR FILTROS (Igual que en la vista)
@@ -2444,6 +2462,1864 @@ return [
     private function truncateText($text, $maxLength)
     {
         return strlen($text) > $maxLength ? substr($text, 0, $maxLength - 2) . '..' : $text;
+    }
+
+    public function indexHistorico(Request $request, $tipo)
+    {
+        if (!$request->ajax()) {
+            return redirect('/');
+        }
+
+        if ($tipo !== 'item') {
+            return response()->json([
+                'message' => 'Tipo de consulta no permitido.'
+            ], 422);
+        }
+
+        $request->validate([
+            'idAlmacen' => 'required|integer|exists:almacens,id',
+            'fecha_consulta' => 'required|date_format:Y-m-d',
+            'buscar' => 'nullable|string|max:255',
+            'orden' => 'nullable|in:nombre_asc,stock_asc,stock_desc'
+        ]);
+
+        $hoy = Carbon::now('America/La_Paz')->toDateString();
+
+        if ($request->fecha_consulta > $hoy) {
+            return response()->json([
+                'message' => 'No se permite consultar fechas futuras.'
+            ], 422);
+        }
+
+        try {
+
+            $resultado = $this->consultaInventarioHistorico($request);
+
+            $inventarios = $resultado['query']->paginate(20);
+
+            return [
+                'pagination' => [
+                    'total' => $inventarios->total(),
+                    'current_page' => $inventarios->currentPage(),
+                    'per_page' => $inventarios->perPage(),
+                    'last_page' => $inventarios->lastPage(),
+                    'from' => $inventarios->firstItem(),
+                    'to' => $inventarios->lastItem(),
+                ],
+
+                'inventarios' => $inventarios,
+
+                'almacenes_columnas' =>
+                    $resultado['almacenes_columnas'],
+
+                'tipo_consulta' =>
+                    $resultado['tipo_consulta'],
+
+                'fecha_corte' =>
+                    $resultado['fecha_corte'],
+
+                'fecha_consulta' =>
+                    $resultado['fecha_consulta'],
+
+                'mensaje_historial' =>
+                    $resultado['mensaje_historial']
+            ];
+
+        } catch (\DomainException $e) {
+
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 422);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Error al consultar inventario histórico', [
+                'error' => $e->getMessage(),
+                'idalmacen' => $request->idAlmacen,
+                'fecha_consulta' => $request->fecha_consulta
+            ]);
+
+            return response()->json([
+                'message' => 'No se pudo consultar el inventario histórico.'
+            ], 500);
+        }
+    }
+
+    private function obtenerAlmacenesColumnasHistorico($idAlmacen)
+    {
+        $almacenSeleccionado = DB::table('almacens')
+            ->join(
+                'sucursales',
+                'almacens.sucursal',
+                '=',
+                'sucursales.id'
+            )
+            ->where('almacens.id', $idAlmacen)
+            ->select(
+                'almacens.id',
+                'almacens.nombre_almacen',
+                'sucursales.departamento'
+            )
+            ->first();
+
+        if (!$almacenSeleccionado) {
+            return collect();
+        }
+
+        return DB::table('almacens')
+            ->join(
+                'sucursales',
+                'almacens.sucursal',
+                '=',
+                'sucursales.id'
+            )
+            ->where(
+                'sucursales.departamento',
+                $almacenSeleccionado->departamento
+            )
+            ->where('almacens.id', '<>', (int) $idAlmacen)
+            ->where('almacens.id', '<>', 2)
+            ->select(
+                'almacens.id',
+                'almacens.nombre_almacen'
+            )
+            ->orderBy('almacens.nombre_almacen', 'asc')
+            ->get();
+    }
+
+    private function consultaStockActual(array $idsAlmacenes)
+    {
+        return DB::table('inventarios')
+            ->whereIn('idalmacen', $idsAlmacenes)
+            ->select(
+                'idarticulo',
+                'idalmacen',
+                DB::raw('SUM(saldo_stock) AS stock')
+            )
+            ->groupBy(
+                'idarticulo',
+                'idalmacen'
+            );
+    }
+
+    private function consultaStockHistoricoRegistrado(
+        array $idsAlmacenes,
+        $fechaConsulta,
+        $fechaCorte
+    ) {
+        $fechaLimite = Carbon::parse(
+            $fechaConsulta,
+            'America/La_Paz'
+        )
+            ->addDay()
+            ->startOfDay()
+            ->format('Y-m-d H:i:s');
+
+        return DB::table('movimientos_inventario')
+            ->whereIn('idalmacen', $idsAlmacenes)
+            ->where('fecha_movimiento', '>=', $fechaCorte)
+            ->where('fecha_movimiento', '<', $fechaLimite)
+            ->select(
+                'idarticulo',
+                'idalmacen',
+                DB::raw('SUM(cantidad) AS stock')
+            )
+            ->groupBy(
+                'idarticulo',
+                'idalmacen'
+            );
+    }
+
+    private function consultaInventarioHistorico(Request $request)
+    {
+        $idAlmacen = (int) $request->idAlmacen;
+        $buscar = trim($request->get('buscar', ''));
+        $orden = $request->get('orden', 'stock_asc');
+        $fechaConsulta = $request->fecha_consulta;
+
+        $fechaActual = Carbon::now(
+            'America/La_Paz'
+        )->toDateString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Obtener configuración del historial
+        |--------------------------------------------------------------------------
+        */
+
+        $configuracion = ConfiguracionHistorialInventario::find(1);
+
+        if (
+            !$configuracion ||
+            !$configuracion->inicializado ||
+            !$configuracion->fecha_corte
+        ) {
+            throw new \DomainException(
+                'El historial de inventario todavía no ha sido inicializado.'
+            );
+        }
+
+        $fechaCorte = $configuracion->fecha_corte
+            ->format('Y-m-d H:i:s');
+
+        $diaCorte = $configuracion->fecha_corte
+            ->format('Y-m-d');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Obtener almacenes
+        |--------------------------------------------------------------------------
+        */
+
+        $almacenesColumnas =
+            $this->obtenerAlmacenesColumnasHistorico($idAlmacen);
+
+        $idsAlmacenes = array_values(array_unique(array_merge(
+            [$idAlmacen, 2],
+            $almacenesColumnas->pluck('id')
+                ->map(function ($id) {
+                    return (int) $id;
+                })
+                ->toArray()
+        )));
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Determinar origen del stock
+        |--------------------------------------------------------------------------
+        */
+
+        if ($fechaConsulta === $fechaActual) {
+
+            $consultaStock = $this->consultaStockActual(
+                $idsAlmacenes
+            );
+
+            $tipoConsulta = 'ACTUAL';
+
+            $mensajeHistorial =
+                'Existencias actuales del inventario.';
+
+        } elseif ($fechaConsulta >= $diaCorte) {
+
+            $consultaStock =
+                $this->consultaStockHistoricoRegistrado(
+                    $idsAlmacenes,
+                    $fechaConsulta,
+                    $fechaCorte
+                );
+
+            $tipoConsulta = 'HISTORICO_REGISTRADO';
+
+            $mensajeHistorial =
+                'Existencias obtenidas del historial de movimientos '
+                . 'al cierre de la fecha seleccionada.';
+
+        } else {
+
+            $consultaStock = $this->consultaStockHistoricoEstimado(
+                $idsAlmacenes,
+                $fechaConsulta,
+                $fechaCorte
+            );
+
+            $tipoConsulta = 'HISTORICO_ESTIMADO';
+
+            $mensajeHistorial =
+                'Existencias estimadas mediante la reconstrucción '
+                . 'de compras, ventas, ajustes, traspasos y anulaciones '
+                . 'anteriores al inicio del historial registrado. '
+                . 'Las cantidades pueden presentar diferencias debido '
+                . 'a modificaciones o inconsistencias de registros antiguos.';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Agrupar stock de todos los almacenes
+        |--------------------------------------------------------------------------
+        */
+
+        $stockAgrupado = DB::table(
+            DB::raw('(' . $consultaStock->toSql() . ') AS stock_base')
+        )
+            ->mergeBindings($consultaStock)
+            ->select('stock_base.idarticulo')
+            ->selectRaw(
+                'SUM(CASE WHEN stock_base.idalmacen = ? '
+                . 'THEN stock_base.stock ELSE 0 END) AS saldo_stock_total',
+                [$idAlmacen]
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN stock_base.idalmacen = 2 '
+                . 'THEN stock_base.stock ELSE 0 END) AS stock_deposito'
+            )
+            ->groupBy('stock_base.idarticulo');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Agregar columnas dinámicas
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($almacenesColumnas as $almacenColumna) {
+
+            $idAlmacenColumna = (int) $almacenColumna->id;
+
+            $stockAgrupado->selectRaw(
+                'SUM(CASE WHEN stock_base.idalmacen = ? '
+                . 'THEN stock_base.stock ELSE 0 END) '
+                . 'AS stock_almacen_' . $idAlmacenColumna,
+                [$idAlmacenColumna]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Consulta principal de productos
+        |--------------------------------------------------------------------------
+        */
+
+        $inventarios = Articulo::query()
+            ->leftJoin(
+                DB::raw(
+                    '(' . $stockAgrupado->toSql() . ') AS stocks'
+                ),
+                'articulos.id',
+                '=',
+                'stocks.idarticulo'
+            )
+            ->addBinding(
+                $stockAgrupado->getBindings(),
+                'join'
+            )
+            ->leftJoin(
+                'proveedores',
+                'articulos.idproveedor',
+                '=',
+                'proveedores.id'
+            )
+            ->leftJoin(
+                'categorias',
+                'articulos.idcategoria',
+                '=',
+                'categorias.id'
+            )
+            ->select(
+                'articulos.id',
+                'articulos.codigo',
+                'articulos.nombre AS nombre_producto',
+                'articulos.descripcion_fabrica',
+                'articulos.unidad_envase',
+                'proveedores.contacto AS nombre_proveedor',
+                'categorias.nombre AS nombre_categoria',
+
+                DB::raw(
+                    'COALESCE(stocks.saldo_stock_total, 0) '
+                    . 'AS saldo_stock_total'
+                ),
+
+                DB::raw(
+                    'COALESCE(stocks.stock_deposito, 0) '
+                    . 'AS stock_deposito'
+                )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Columnas dinámicas de stock
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($almacenesColumnas as $almacenColumna) {
+
+            $idAlmacenColumna = (int) $almacenColumna->id;
+
+            $inventarios->addSelect(DB::raw(
+                'COALESCE(stocks.stock_almacen_'
+                . $idAlmacenColumna
+                . ', 0) AS stock_almacen_'
+                . $idAlmacenColumna
+            ));
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Filtrar productos
+        |--------------------------------------------------------------------------
+        */
+
+        if ($tipoConsulta === 'ACTUAL') {
+
+            $inventarios->where('articulos.condicion', 1);
+
+        } else {
+
+            // Incluir productos activos existentes en la fecha
+            // y productos inactivos con registros históricos.
+            $inventarios->where(function ($query) use ($fechaConsulta) {
+
+                $query->whereNotNull('stocks.idarticulo')
+                    ->orWhere(function ($sub) use ($fechaConsulta) {
+
+                        $sub->where('articulos.condicion', 1)
+                            ->whereDate(
+                                'articulos.created_at',
+                                '<=',
+                                $fechaConsulta
+                            );
+                    });
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. Búsqueda general
+        |--------------------------------------------------------------------------
+        */
+
+        if ($buscar !== '') {
+
+            $palabras = preg_split('/\s+/', $buscar);
+
+            foreach ($palabras as $palabra) {
+
+                $inventarios->where(function ($query) use ($palabra) {
+
+                    $query
+                        ->where(
+                            'articulos.nombre',
+                            'like',
+                            '%' . $palabra . '%'
+                        )
+                        ->orWhere(
+                            'articulos.codigo',
+                            'like',
+                            '%' . $palabra . '%'
+                        )
+                        ->orWhere(
+                            'proveedores.contacto',
+                            'like',
+                            '%' . $palabra . '%'
+                        )
+                        ->orWhere(
+                            'categorias.nombre',
+                            'like',
+                            '%' . $palabra . '%'
+                        );
+                });
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. Ordenamiento
+        |--------------------------------------------------------------------------
+        */
+
+        switch ($orden) {
+
+            case 'nombre_asc':
+
+                $inventarios
+                    ->orderBy('articulos.nombre', 'asc')
+                    ->orderBy('categorias.nombre', 'asc');
+
+                break;
+
+            case 'stock_desc':
+
+                $inventarios
+                    ->orderBy('saldo_stock_total', 'desc')
+                    ->orderBy('articulos.nombre', 'asc');
+
+                break;
+
+            case 'stock_asc':
+            default:
+
+                $inventarios
+                    ->orderBy('saldo_stock_total', 'asc')
+                    ->orderBy('articulos.nombre', 'asc');
+
+                break;
+        }
+
+        // Orden estable para la paginación
+        $inventarios->orderBy('articulos.id', 'asc');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. Retornar consulta
+        |--------------------------------------------------------------------------
+        */
+
+        return [
+            'query' => $inventarios,
+
+            'almacenes_columnas' => $almacenesColumnas,
+
+            'tipo_consulta' => $tipoConsulta,
+
+            'fecha_corte' => $fechaCorte,
+
+            'fecha_consulta' => $fechaConsulta,
+
+            'mensaje_historial' => $mensajeHistorial
+        ];
+    }
+
+    private function consultaMovimientosHistoricosCompras(
+        array $idsAlmacenes,
+        $fechaDesde,
+        $fechaCorte
+    ) {
+        // Revertir compras registradas
+        $compras = DB::table('ingresos AS i')
+            ->join(
+                'detalle_ingresos AS di',
+                'di.idingreso',
+                '=',
+                'i.id'
+            )
+            ->whereIn('i.idalmacen', $idsAlmacenes)
+            ->whereIn('i.estado', [0, 1])
+            ->where('i.fecha_hora', '>=', $fechaDesde)
+            ->where('i.fecha_hora', '<', $fechaCorte)
+            ->select(
+                'di.idarticulo',
+                'i.idalmacen',
+                DB::raw('-di.cantidad AS cantidad')
+            );
+
+        // Revertir anulaciones de compras
+        $anulaciones = DB::table('ingresos AS i')
+            ->join(
+                'detalle_ingresos AS di',
+                'di.idingreso',
+                '=',
+                'i.id'
+            )
+            ->whereIn('i.idalmacen', $idsAlmacenes)
+            ->where('i.estado', 0)
+            ->where('i.fecha_hora', '<', $fechaCorte)
+            ->where('i.updated_at', '>=', $fechaDesde)
+            ->where('i.updated_at', '<', $fechaCorte)
+            ->select(
+                'di.idarticulo',
+                'i.idalmacen',
+                DB::raw('di.cantidad AS cantidad')
+            );
+
+        return [
+            $compras,
+            $anulaciones
+        ];
+    }
+
+    private function consultaMovimientosHistoricosVentas(
+        array $idsAlmacenes,
+        $fechaDesde,
+        $fechaCorte
+    ) {
+        // Revertir ventas registradas
+        $ventas = DB::table('ventas AS v')
+            ->join(
+                'detalle_ventas AS dv',
+                'dv.idventa',
+                '=',
+                'v.id'
+            )
+            ->whereIn('v.idalmacen', $idsAlmacenes)
+            ->whereIn('v.estado', ['0', '1', '2'])
+            ->where('v.fecha_hora', '>=', $fechaDesde)
+            ->where('v.fecha_hora', '<', $fechaCorte)
+            ->select(
+                'dv.idarticulo',
+                'v.idalmacen',
+                DB::raw('dv.cantidad AS cantidad')
+            );
+
+        // Revertir anulaciones de ventas
+        $anulaciones = DB::table('ventas AS v')
+            ->join(
+                'detalle_ventas AS dv',
+                'dv.idventa',
+                '=',
+                'v.id'
+            )
+            ->whereIn('v.idalmacen', $idsAlmacenes)
+            ->where('v.estado', '0')
+            ->where('v.fecha_hora', '<', $fechaCorte)
+            ->where('v.updated_at', '>=', $fechaDesde)
+            ->where('v.updated_at', '<', $fechaCorte)
+            ->select(
+                'dv.idarticulo',
+                'v.idalmacen',
+                DB::raw('-dv.cantidad AS cantidad')
+            );
+
+        return [
+            $ventas,
+            $anulaciones
+        ];
+    }
+
+    private function consultaMovimientosHistoricosAjustes(
+        array $idsAlmacenes,
+        $fechaDesde,
+        $fechaCorte
+    ) {
+        $ajustes = DB::table('ajuste_invetarios AS ai')
+            ->whereIn('ai.almacen', $idsAlmacenes)
+            ->where('ai.created_at', '>=', $fechaDesde)
+            ->where('ai.created_at', '<', $fechaCorte)
+            ->whereIn('ai.tipo_movimiento', [
+                'entrada',
+                'salida'
+            ])
+            ->select(
+                'ai.producto AS idarticulo',
+                DB::raw('CAST(ai.almacen AS UNSIGNED) AS idalmacen'),
+                DB::raw("
+                CASE
+                    WHEN ai.tipo_movimiento = 'entrada'
+                        THEN -ai.cantidad
+
+                    WHEN ai.tipo_movimiento = 'salida'
+                        THEN ai.cantidad
+
+                    ELSE 0
+                END AS cantidad
+            ")
+            );
+
+        return [
+            $ajustes
+        ];
+    }
+
+    private function consultaMovimientosHistoricosTraspasos(
+        array $idsAlmacenes,
+        $fechaDesde,
+        $fechaCorte
+    ) {
+        // Estados considerados anulados
+        $estadosAnulados = [0, 9];
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Consulta base
+        |--------------------------------------------------------------------------
+        */
+
+        $base = DB::table('traspasos AS t')
+            ->join(
+                'detalle_traspasos AS dt',
+                'dt.idtraspaso',
+                '=',
+                't.id'
+            )
+            ->join(
+                'inventarios AS inv',
+                'dt.idinventario',
+                '=',
+                'inv.id'
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Revertir salida del almacén origen
+        |--------------------------------------------------------------------------
+        */
+
+        $salidasOrigen = (clone $base)
+            ->whereIn('t.estado', [0, 1, 9])
+            ->whereIn('t.almacen_origen', $idsAlmacenes)
+            ->where('t.fecha_traspaso', '>=', $fechaDesde)
+            ->where('t.fecha_traspaso', '<', $fechaCorte)
+            ->select(
+                'inv.idarticulo',
+                DB::raw(
+                    'CAST(t.almacen_origen AS UNSIGNED) AS idalmacen'
+                ),
+                DB::raw('dt.cantidad_traspaso AS cantidad')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Revertir entrada al almacén destino
+        |--------------------------------------------------------------------------
+        */
+
+        $entradasDestino = (clone $base)
+            ->whereIn('t.estado', [0, 1, 9])
+            ->whereIn('t.almacen_destino', $idsAlmacenes)
+            ->where('t.fecha_traspaso', '>=', $fechaDesde)
+            ->where('t.fecha_traspaso', '<', $fechaCorte)
+            ->select(
+                'inv.idarticulo',
+                DB::raw(
+                    'CAST(t.almacen_destino AS UNSIGNED) AS idalmacen'
+                ),
+                DB::raw('-dt.cantidad_traspaso AS cantidad')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Revertir anulación en almacén origen
+        |--------------------------------------------------------------------------
+        */
+
+        $anulacionesOrigen = (clone $base)
+            ->whereIn('t.estado', $estadosAnulados)
+            ->whereIn('t.almacen_origen', $idsAlmacenes)
+            ->where('t.fecha_traspaso', '<', $fechaCorte)
+            ->where('t.updated_at', '>=', $fechaDesde)
+            ->where('t.updated_at', '<', $fechaCorte)
+            ->select(
+                'inv.idarticulo',
+                DB::raw(
+                    'CAST(t.almacen_origen AS UNSIGNED) AS idalmacen'
+                ),
+                DB::raw('-dt.cantidad_traspaso AS cantidad')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Revertir anulación en almacén destino
+        |--------------------------------------------------------------------------
+        */
+
+        $anulacionesDestino = (clone $base)
+            ->whereIn('t.estado', $estadosAnulados)
+            ->whereIn('t.almacen_destino', $idsAlmacenes)
+            ->where('t.fecha_traspaso', '<', $fechaCorte)
+            ->where('t.updated_at', '>=', $fechaDesde)
+            ->where('t.updated_at', '<', $fechaCorte)
+            ->select(
+                'inv.idarticulo',
+                DB::raw(
+                    'CAST(t.almacen_destino AS UNSIGNED) AS idalmacen'
+                ),
+                DB::raw('dt.cantidad_traspaso AS cantidad')
+            );
+
+        return [
+            $salidasOrigen,
+            $entradasDestino,
+            $anulacionesOrigen,
+            $anulacionesDestino
+        ];
+    }
+
+    private function consultaStockHistoricoEstimado(
+        array $idsAlmacenes,
+        $fechaConsulta,
+        $fechaCorte
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Determinar fecha inicial de reconstrucción
+        |--------------------------------------------------------------------------
+        */
+
+        $fechaDesde = Carbon::parse(
+            $fechaConsulta,
+            'America/La_Paz'
+        )
+            ->addDay()
+            ->startOfDay()
+            ->format('Y-m-d H:i:s');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Obtener stock inicial registrado
+        |--------------------------------------------------------------------------
+        */
+
+        $stockInicial = DB::table('movimientos_inventario AS mi')
+            ->whereIn('mi.idalmacen', $idsAlmacenes)
+            ->where('mi.tipo_movimiento', 'STOCK_INICIAL')
+            ->where('mi.fecha_movimiento', $fechaCorte)
+            ->select(
+                'mi.idarticulo',
+                'mi.idalmacen',
+                'mi.cantidad'
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Obtener movimientos históricos de compras
+        |--------------------------------------------------------------------------
+        */
+
+        $compras = $this->consultaMovimientosHistoricosCompras(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Obtener movimientos históricos de ventas
+        |--------------------------------------------------------------------------
+        */
+
+        $ventas = $this->consultaMovimientosHistoricosVentas(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Obtener ajustes históricos
+        |--------------------------------------------------------------------------
+        */
+
+        $ajustes = $this->consultaMovimientosHistoricosAjustes(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Obtener traspasos históricos
+        |--------------------------------------------------------------------------
+        */
+
+        $traspasos = $this->consultaMovimientosHistoricosTraspasos(
+            $idsAlmacenes,
+            $fechaDesde,
+            $fechaCorte
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. Unificar todas las consultas
+        |--------------------------------------------------------------------------
+        */
+
+        $consultas = array_merge(
+            $compras,
+            $ventas,
+            $ajustes,
+            $traspasos
+        );
+
+        $movimientos = $stockInicial;
+
+        foreach ($consultas as $consulta) {
+            $movimientos->unionAll($consulta);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. Calcular stock histórico por artículo y almacén
+        |--------------------------------------------------------------------------
+        */
+
+        return DB::table(
+            DB::raw(
+                '(' . $movimientos->toSql() . ') AS movimientos_historicos'
+            )
+        )
+            ->mergeBindings($movimientos)
+            ->select(
+                'movimientos_historicos.idarticulo',
+                'movimientos_historicos.idalmacen',
+                DB::raw(
+                    'SUM(movimientos_historicos.cantidad) AS stock'
+                )
+            )
+            ->groupBy(
+                'movimientos_historicos.idarticulo',
+                'movimientos_historicos.idalmacen'
+            );
+    }
+
+    public function exportarInventarioHistoricoPdf(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Validación y permisos
+        |--------------------------------------------------------------------------
+        */
+
+        if (!auth()->check()) {
+            abort(401, 'Usuario no autenticado.');
+        }
+
+        if ((int) auth()->user()->idrol === 2) {
+            abort(403, 'No tiene permisos para exportar.');
+        }
+
+        $request->validate([
+            'modo' => 'nullable|in:item',
+            'idAlmacen' => 'required|integer|exists:almacens,id',
+            'fecha_consulta' => 'required|date_format:Y-m-d',
+            'buscar' => 'nullable|string|max:255',
+            'orden' => 'nullable|in:nombre_asc,stock_asc,stock_desc'
+        ]);
+
+        $idAlmacen = (int) $request->input('idAlmacen');
+        $buscar = $request->input('buscar', '');
+        $orden = $request->input('orden', 'stock_asc');
+        $fechaConsulta = $request->input('fecha_consulta');
+
+        $fechaActual = Carbon::now('America/La_Paz')
+            ->toDateString();
+
+        if ($fechaConsulta > $fechaActual) {
+            abort(422, 'No se permite consultar fechas futuras.');
+        }
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Obtener almacén seleccionado
+            |--------------------------------------------------------------------------
+            */
+
+            $almacen = DB::table('almacens')
+                ->leftJoin(
+                    'sucursales',
+                    'almacens.sucursal',
+                    '=',
+                    'sucursales.id'
+                )
+                ->where('almacens.id', $idAlmacen)
+                ->select(
+                    'almacens.*',
+                    'sucursales.departamento'
+                )
+                ->first();
+
+            if (!$almacen) {
+                throw new \DomainException(
+                    'Debe seleccionar un almacén válido.'
+                );
+            }
+
+            $nombreAlmacen = $almacen->nombre_almacen;
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Reutilizar la consulta histórica del listado
+            |--------------------------------------------------------------------------
+            */
+
+            $resultado = $this->consultaInventarioHistorico(
+                $request
+            );
+
+            $inventarios = $resultado['query']->get();
+
+            $almacenesColumnas =
+                $resultado['almacenes_columnas'];
+
+            $tipoConsulta = $resultado['tipo_consulta'];
+
+            $mensajeHistorial =
+                $resultado['mensaje_historial'];
+
+            $fechaConsultaFormateada = Carbon::parse(
+                $resultado['fecha_consulta'],
+                'America/La_Paz'
+            )->format('d/m/Y');
+
+            $fechaCorteFormateada = Carbon::parse(
+                $resultado['fecha_corte'],
+                'America/La_Paz'
+            )->format('d/m/Y H:i:s');
+
+            $fechaGeneracion = Carbon::now(
+                'America/La_Paz'
+            )->format('d/m/Y H:i:s');
+
+            /*
+            |--------------------------------------------------------------------------
+            | 4. Configuración según tipo de consulta
+            |--------------------------------------------------------------------------
+            */
+
+            $configuraciones = [
+
+                'ACTUAL' => [
+                    'titulo' => 'INVENTARIO ACTUAL',
+                    'titulo_stock' => 'Stock Actual',
+                    'fondo' => [239, 246, 255],
+                    'texto' => [30, 64, 175]
+                ],
+
+                'HISTORICO_REGISTRADO' => [
+                    'titulo' => 'HISTÓRICO REGISTRADO',
+                    'titulo_stock' => 'Stock Histórico',
+                    'fondo' => [236, 253, 245],
+                    'texto' => [22, 101, 52]
+                ],
+
+                'HISTORICO_ESTIMADO' => [
+                    'titulo' => 'HISTÓRICO ESTIMADO',
+                    'titulo_stock' => 'Stock Estimado',
+                    'fondo' => [255, 247, 237],
+                    'texto' => [154, 52, 18]
+                ]
+            ];
+
+            $configConsulta = $configuraciones[$tipoConsulta]
+                ?? $configuraciones['ACTUAL'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | 5. Configuración del PDF
+            |--------------------------------------------------------------------------
+            */
+
+            $pdf = new PDFInventario('L', 'mm', 'A4');
+
+            $pdf->AliasNbPages();
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(true, 20);
+            $pdf->AddPage();
+
+            $anchoTotal = 277;
+
+            /*
+            |--------------------------------------------------------------------------
+            | 6. Funciones auxiliares
+            |--------------------------------------------------------------------------
+            */
+
+            $ajustarTexto = function ($texto, $ancho) use ($pdf) {
+
+                $texto = utf8_decode((string) $texto);
+
+                if (
+                    $pdf->GetStringWidth($texto)
+                    <= $ancho - 3
+                ) {
+                    return $texto;
+                }
+
+                while (
+                    strlen($texto) > 0 &&
+                    $pdf->GetStringWidth($texto . '...')
+                    > $ancho - 3
+                ) {
+                    $texto = substr($texto, 0, -1);
+                }
+
+                return $texto . '...';
+            };
+
+            $formatearStock = function ($stock, $unidad = '') {
+
+                if ($stock === null || !is_numeric($stock)) {
+                    return 'Sin datos';
+                }
+
+                $stock = (float) $stock;
+
+                if ($stock == 0) {
+                    return 'Sin Stock';
+                }
+
+                $cantidad = rtrim(
+                    rtrim(
+                        number_format($stock, 4, '.', ''),
+                        '0'
+                    ),
+                    '.'
+                );
+
+                return trim($cantidad . ' ' . $unidad);
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | 7. Encabezado principal
+            |--------------------------------------------------------------------------
+            */
+
+            $rutaLogo = public_path('img/logoPrincipal.png');
+
+            if (file_exists($rutaLogo)) {
+                $pdf->Image($rutaLogo, 10, 5, 20);
+            }
+
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->SetTextColor(44, 62, 80);
+
+            $pdf->Cell(
+                0,
+                10,
+                utf8_decode('REPORTE DE INVENTARIO HISTÓRICO'),
+                0,
+                1,
+                'C'
+            );
+
+            $pdf->SetFont('Arial', 'B', 11);
+
+            $pdf->Cell(
+                0,
+                7,
+                utf8_decode(
+                    'Inventario al: ' . $fechaConsultaFormateada
+                ),
+                0,
+                1,
+                'C'
+            );
+
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetTextColor(100, 116, 139);
+
+            $pdf->Cell(
+                0,
+                6,
+                utf8_decode(
+                    'Fecha de generación: ' . $fechaGeneracion
+                ),
+                0,
+                1,
+                'C'
+            );
+
+            $pdf->Ln(4);
+
+            /*
+            |--------------------------------------------------------------------------
+            | 8. Información de filtros
+            |--------------------------------------------------------------------------
+            */
+
+            $ordenes = [
+                'nombre_asc' => 'Nombre de A - Z',
+                'stock_asc' => 'Menor a mayor stock',
+                'stock_desc' => 'Mayor a menor stock'
+            ];
+
+            $nombreOrden = $ordenes[$orden]
+                ?? $ordenes['stock_asc'];
+
+            $pdf->SetFillColor(236, 240, 241);
+            $pdf->SetTextColor(0, 0, 0);
+
+            $pdf->Rect(
+                10,
+                $pdf->GetY(),
+                $anchoTotal,
+                30,
+                'F'
+            );
+
+            $informacionFiltros = [
+                'Almacén:' => $nombreAlmacen,
+
+                'Departamento:' =>
+                    $almacen->departamento ?? '-',
+
+                'Fecha consultada:' =>
+                    $fechaConsultaFormateada,
+
+                'Búsqueda:' =>
+                    !empty($buscar) ? $buscar : 'Ninguna',
+
+                'Orden:' => $nombreOrden
+            ];
+
+            foreach ($informacionFiltros as $titulo => $valor) {
+
+                $pdf->SetX(12);
+                $pdf->SetFont('Arial', 'B', 9);
+
+                $pdf->Cell(
+                    38,
+                    6,
+                    utf8_decode($titulo),
+                    0,
+                    0,
+                    'L'
+                );
+
+                $pdf->SetFont('Arial', '', 9);
+
+                $pdf->Cell(
+                    235,
+                    6,
+                    $ajustarTexto($valor, 235),
+                    0,
+                    1,
+                    'L'
+                );
+            }
+
+            $pdf->Ln(4);
+
+            /*
+            |--------------------------------------------------------------------------
+            | 9. Indicador del tipo de consulta histórica
+            |--------------------------------------------------------------------------
+            */
+
+            $pdf->SetFillColor(
+                $configConsulta['fondo'][0],
+                $configConsulta['fondo'][1],
+                $configConsulta['fondo'][2]
+            );
+
+            $pdf->SetTextColor(
+                $configConsulta['texto'][0],
+                $configConsulta['texto'][1],
+                $configConsulta['texto'][2]
+            );
+
+            $pdf->SetFont('Arial', 'B', 10);
+
+            $pdf->Cell(
+                $anchoTotal,
+                8,
+                utf8_decode($configConsulta['titulo']),
+                0,
+                1,
+                'L',
+                true
+            );
+
+            $pdf->SetFont('Arial', '', 9);
+
+            $pdf->MultiCell(
+                $anchoTotal,
+                5,
+                utf8_decode($mensajeHistorial),
+                0,
+                'L',
+                true
+            );
+
+            $pdf->Cell(
+                $anchoTotal,
+                6,
+                utf8_decode(
+                    'Inicio del historial registrado: '
+                    . $fechaCorteFormateada
+                ),
+                0,
+                1,
+                'L',
+                true
+            );
+
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(4);
+
+            /*
+            |--------------------------------------------------------------------------
+            | 10. Definir columnas del reporte
+            |--------------------------------------------------------------------------
+            */
+
+            $columnas = [];
+
+            $cantidadColumnasStock = 1;
+
+            if ($idAlmacen !== 2) {
+                $cantidadColumnasStock++;
+            }
+
+            $cantidadColumnasStock +=
+                $almacenesColumnas->count();
+
+            $anchoCodigo = 25;
+            $anchoProducto = 82;
+
+            if ($cantidadColumnasStock >= 6) {
+                $anchoCodigo = 22;
+                $anchoProducto = 65;
+            }
+
+            $anchoStock = (
+                $anchoTotal
+                - $anchoCodigo
+                - $anchoProducto
+            ) / $cantidadColumnasStock;
+
+            // Código
+            $columnas[] = [
+                'campo' => 'codigo',
+                'titulo' => 'Código',
+                'ancho' => $anchoCodigo,
+                'alineacion' => 'L',
+                'tipo' => 'texto'
+            ];
+
+            // Producto
+            $columnas[] = [
+                'campo' => 'nombre_producto',
+                'titulo' => 'Producto',
+                'ancho' => $anchoProducto,
+                'alineacion' => 'L',
+                'tipo' => 'texto'
+            ];
+
+            // Stock del almacén seleccionado
+            $columnas[] = [
+                'campo' => 'saldo_stock_total',
+                'titulo' => $configConsulta['titulo_stock'],
+                'ancho' => $anchoStock,
+                'alineacion' => 'C',
+                'tipo' => 'stock'
+            ];
+
+            // Stock del depósito
+            if ($idAlmacen !== 2) {
+
+                $columnas[] = [
+                    'campo' => 'stock_deposito',
+                    'titulo' => 'Stock Depósito',
+                    'ancho' => $anchoStock,
+                    'alineacion' => 'C',
+                    'tipo' => 'stock'
+                ];
+            }
+
+            // Columnas dinámicas por departamento
+            foreach ($almacenesColumnas as $almacenColumna) {
+
+                $columnas[] = [
+                    'campo' =>
+                        'stock_almacen_' . $almacenColumna->id,
+
+                    'titulo' =>
+                        $almacenColumna->nombre_almacen,
+
+                    'ancho' => $anchoStock,
+                    'alineacion' => 'C',
+                    'tipo' => 'stock'
+                ];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 11. Encabezados de tabla
+            |--------------------------------------------------------------------------
+            */
+
+            $imprimirCabecera = function () use ($pdf, $columnas, $ajustarTexto) {
+
+                $pdf->SetX(10);
+                $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFillColor(52, 73, 94);
+                $pdf->SetTextColor(255, 255, 255);
+                $pdf->SetDrawColor(200, 205, 210);
+
+                foreach ($columnas as $indice => $columna) {
+
+                    $ultima =
+                        $indice === count($columnas) - 1;
+
+                    $pdf->Cell(
+                        $columna['ancho'],
+                        9,
+                        $ajustarTexto(
+                            $columna['titulo'],
+                            $columna['ancho']
+                        ),
+                        1,
+                        $ultima ? 1 : 0,
+                        'C',
+                        true
+                    );
+                }
+
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetFont('Arial', '', 8);
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | 12. Encabezado para páginas siguientes
+            |--------------------------------------------------------------------------
+            */
+
+            $imprimirEncabezadoContinuacion = function () use ($pdf, $fechaConsultaFormateada, $nombreAlmacen, $configConsulta, $ajustarTexto, $anchoTotal) {
+
+                $pdf->SetFont('Arial', 'B', 11);
+                $pdf->SetTextColor(44, 62, 80);
+
+                $pdf->Cell(
+                    0,
+                    7,
+                    utf8_decode(
+                        'REPORTE DE INVENTARIO HISTÓRICO'
+                    ),
+                    0,
+                    1,
+                    'C'
+                );
+
+                $pdf->SetFont('Arial', '', 9);
+
+                $texto = $nombreAlmacen
+                    . ' | Fecha: '
+                    . $fechaConsultaFormateada
+                    . ' | '
+                    . $configConsulta['titulo'];
+
+                $pdf->Cell(
+                    0,
+                    6,
+                    $ajustarTexto($texto, $anchoTotal),
+                    0,
+                    1,
+                    'C'
+                );
+
+                $pdf->Ln(3);
+            };
+
+            if (
+                $pdf->GetY() + 19 >
+                $pdf->GetPageHeight() - 20
+            ) {
+                $pdf->AddPage();
+                $imprimirEncabezadoContinuacion();
+            }
+
+            $imprimirCabecera();
+
+            /*
+            |--------------------------------------------------------------------------
+            | 13. Imprimir registros
+            |--------------------------------------------------------------------------
+            */
+
+            $fill = false;
+            $altoFila = 7;
+
+            foreach ($inventarios as $inv) {
+
+                // Controlar salto de página
+                if (
+                    $pdf->GetY() + $altoFila >
+                    $pdf->GetPageHeight() - 20
+                ) {
+                    $pdf->AddPage();
+
+                    $imprimirEncabezadoContinuacion();
+
+                    $imprimirCabecera();
+                }
+
+                $pdf->SetX(10);
+
+                // Alternar fondo de filas
+                if ($fill) {
+                    $pdf->SetFillColor(245, 247, 249);
+                } else {
+                    $pdf->SetFillColor(255, 255, 255);
+                }
+
+                foreach ($columnas as $indice => $columna) {
+
+                    $campo = $columna['campo'];
+                    $valor = $inv->{$campo} ?? null;
+
+                    $ultima =
+                        $indice === count($columnas) - 1;
+
+                    $pdf->SetFont('Arial', '', 8);
+                    $pdf->SetTextColor(0, 0, 0);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Formato de stock
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($columna['tipo'] === 'stock') {
+
+                        $stock = is_numeric($valor)
+                            ? (float) $valor
+                            : null;
+
+                        $unidad =
+                            $inv->descripcion_fabrica ?? '';
+
+                        $valor = $formatearStock(
+                            $stock,
+                            $unidad
+                        );
+
+                        if ($stock === null) {
+
+                            // Stock desconocido
+                            $pdf->SetTextColor(120, 113, 108);
+
+                        } elseif ($stock == 0) {
+
+                            // Sin stock
+                            $pdf->SetTextColor(220, 38, 38);
+                            $pdf->SetFont('Arial', 'B', 8);
+
+                        } elseif ($stock < 0) {
+
+                            // Stock negativo
+                            $pdf->SetTextColor(185, 28, 28);
+                            $pdf->SetFont('Arial', 'B', 8);
+
+                        } elseif (
+                            $campo === 'saldo_stock_total'
+                        ) {
+
+                            // Resaltar almacén seleccionado
+                            $pdf->SetFont('Arial', 'B', 8);
+                        }
+
+                    } else {
+
+                        $valor = (
+                            $valor === null ||
+                            $valor === ''
+                        ) ? '-' : $valor;
+                    }
+
+                    $pdf->Cell(
+                        $columna['ancho'],
+                        $altoFila,
+                        $ajustarTexto(
+                            $valor,
+                            $columna['ancho']
+                        ),
+                        1,
+                        $ultima ? 1 : 0,
+                        $columna['alineacion'],
+                        true
+                    );
+                }
+
+                $fill = !$fill;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 14. Total de registros
+            |--------------------------------------------------------------------------
+            */
+
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', 'B', 9);
+
+            if ($inventarios->isEmpty()) {
+
+                $pdf->Cell(
+                    $anchoTotal,
+                    10,
+                    utf8_decode(
+                        'No se encontraron registros.'
+                    ),
+                    1,
+                    1,
+                    'C'
+                );
+            }
+
+            if (
+                $pdf->GetY() + 30 >
+                $pdf->GetPageHeight() - 20
+            ) {
+                $pdf->AddPage();
+                $imprimirEncabezadoContinuacion();
+            }
+
+            $pdf->Ln(4);
+
+            $pdf->Cell(
+                0,
+                7,
+                utf8_decode(
+                    'Total de productos: '
+                    . $inventarios->count()
+                ),
+                0,
+                1,
+                'L'
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | 15. Nota aclaratoria
+            |--------------------------------------------------------------------------
+            */
+
+            if ($tipoConsulta === 'HISTORICO_ESTIMADO') {
+
+                $pdf->Ln(2);
+
+                $pdf->SetFont('Arial', 'I', 8);
+                $pdf->SetTextColor(154, 52, 18);
+
+                $pdf->MultiCell(
+                    $anchoTotal,
+                    5,
+                    utf8_decode(
+                        'Nota: Las existencias anteriores al inicio '
+                        . 'del historial registrado son estimadas. '
+                        . 'Pueden presentar diferencias debido a '
+                        . 'modificaciones, anulaciones o inconsistencias '
+                        . 'en los registros antiguos. Los valores negativos '
+                        . 'deben ser revisados.'
+                    ),
+                    0,
+                    'L'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 16. Generar nombre del archivo
+            |--------------------------------------------------------------------------
+            */
+
+            $fechaArchivo = Carbon::parse(
+                $resultado['fecha_consulta']
+            )->format('d_m_Y');
+
+            $nombreArchivoLimpio = preg_replace(
+                '/[^a-zA-Z0-9_-]/',
+                '_',
+                $nombreAlmacen
+            );
+
+            $nombreArchivoLimpio = preg_replace(
+                '/_+/',
+                '_',
+                $nombreArchivoLimpio
+            );
+
+            $filename = 'InventarioHistorico_'
+                . $nombreArchivoLimpio
+                . '_'
+                . $fechaArchivo
+                . '.pdf';
+
+            /*
+            |--------------------------------------------------------------------------
+            | 17. Retornar archivo PDF
+            |--------------------------------------------------------------------------
+            */
+
+            return response($pdf->Output('S'), 200)
+                ->header(
+                    'Content-Type',
+                    'application/pdf'
+                )
+                ->header(
+                    'Content-Disposition',
+                    'attachment; filename="' . $filename . '"'
+                );
+
+        } catch (\DomainException $e) {
+
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 422);
+
+        } catch (\Throwable $e) {
+
+            \Log::error(
+                'Error al exportar inventario histórico PDF',
+                [
+                    'error' => $e->getMessage(),
+                    'idalmacen' => $idAlmacen,
+                    'fecha_consulta' => $fechaConsulta,
+                    'idusuario' => auth()->id()
+                ]
+            );
+
+            return response()->json([
+                'message' =>
+                    'No se pudo generar el reporte histórico PDF.'
+            ], 500);
+        }
+    }
+
+    public function exportarInventarioHistoricoExcel(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Validación y permisos
+        |--------------------------------------------------------------------------
+        */
+
+        if (!auth()->check()) {
+            abort(401, 'Usuario no autenticado.');
+        }
+
+        if ((int) auth()->user()->idrol === 2) {
+            abort(403, 'No tiene permisos para exportar.');
+        }
+
+        $request->validate([
+            'modo' => 'nullable|in:item',
+            'idAlmacen' => 'required|integer|exists:almacens,id',
+            'fecha_consulta' => 'required|date_format:Y-m-d',
+            'buscar' => 'nullable|string|max:255',
+            'orden' => 'nullable|in:nombre_asc,stock_asc,stock_desc'
+        ]);
+
+        $idAlmacen = (int) $request->input('idAlmacen');
+        $buscar = $request->input('buscar', '');
+        $orden = $request->input('orden', 'stock_asc');
+        $fechaConsulta = $request->input('fecha_consulta');
+
+        $fechaActual = Carbon::now('America/La_Paz')
+            ->toDateString();
+
+        if ($fechaConsulta > $fechaActual) {
+            abort(422, 'No se permite consultar fechas futuras.');
+        }
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Obtener almacén seleccionado
+            |--------------------------------------------------------------------------
+            */
+
+            $almacen = DB::table('almacens')
+                ->leftJoin(
+                    'sucursales',
+                    'almacens.sucursal',
+                    '=',
+                    'sucursales.id'
+                )
+                ->where('almacens.id', $idAlmacen)
+                ->select(
+                    'almacens.*',
+                    'sucursales.departamento'
+                )
+                ->first();
+
+            if (!$almacen) {
+                throw new \DomainException(
+                    'Debe seleccionar un almacén válido.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Reutilizar consulta histórica
+            |--------------------------------------------------------------------------
+            */
+
+            $resultado = $this->consultaInventarioHistorico(
+                $request
+            );
+
+            $query = $resultado['query'];
+
+            $almacenesColumnas =
+                $resultado['almacenes_columnas'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | 4. Información histórica
+            |--------------------------------------------------------------------------
+            */
+
+            $informacionHistorial = [
+                'tipo_consulta' =>
+                    $resultado['tipo_consulta'],
+
+                'fecha_consulta' =>
+                    $resultado['fecha_consulta'],
+
+                'fecha_corte' =>
+                    $resultado['fecha_corte'],
+
+                'mensaje_historial' =>
+                    $resultado['mensaje_historial'],
+
+                'departamento' =>
+                    $almacen->departamento ?? '-'
+            ];
+
+            /*
+            |--------------------------------------------------------------------------
+            | 5. Generar nombre del archivo
+            |--------------------------------------------------------------------------
+            */
+
+            $fechaArchivo = Carbon::parse(
+                $resultado['fecha_consulta']
+            )->format('d_m_Y');
+
+            $nombreArchivoLimpio = preg_replace(
+                '/[^a-zA-Z0-9_-]/',
+                '_',
+                $almacen->nombre_almacen
+            );
+
+            $nombreArchivoLimpio = preg_replace(
+                '/_+/',
+                '_',
+                $nombreArchivoLimpio
+            );
+
+            $filename = 'InventarioHistorico_'
+                . $nombreArchivoLimpio
+                . '_'
+                . $fechaArchivo
+                . '.xlsx';
+
+            /*
+            |--------------------------------------------------------------------------
+            | 6. Exportar Excel
+            |--------------------------------------------------------------------------
+            */
+
+            return Excel::download(
+                new InventarioHistoricoExport(
+                    $query,
+                    $idAlmacen,
+                    $almacen->nombre_almacen,
+                    $almacenesColumnas,
+                    $informacionHistorial,
+                    $buscar,
+                    $orden
+                ),
+                $filename
+            );
+
+        } catch (\DomainException $e) {
+
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 422);
+
+        } catch (\Throwable $e) {
+
+            \Log::error(
+                'Error al exportar inventario histórico Excel',
+                [
+                    'error' => $e->getMessage(),
+                    'idalmacen' => $idAlmacen,
+                    'fecha_consulta' => $fechaConsulta,
+                    'idusuario' => auth()->id()
+                ]
+            );
+
+            return response()->json([
+                'message' =>
+                    'No se pudo generar el Excel del inventario histórico.'
+            ], 500);
+        }
     }
 }
 

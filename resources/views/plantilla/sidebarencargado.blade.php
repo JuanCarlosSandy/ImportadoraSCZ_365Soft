@@ -148,6 +148,9 @@
                     <li @click="menu=64" class="nav-item">
                         <a class="nav-link" href="#"><i class="icon-list"></i> Inventario Fisico</a>
                     </li>
+                    <li @click="menu=103" class="nav-item">
+                        <a class="nav-link" href="#"><i class="icon-list"></i> Inventario Historico</a>
+                    </li>
                 </ul>
             </li>
 

@@ -260,6 +260,9 @@
 <template v-if="menu==92">
     <reportestock></reportestock>
 </template>
+<template v-if="menu==93">
+    <inventariohistorico></inventariohistorico>
+</template>
 @elseif (Auth::user()->idrol == 2)
 <template v-if="menu==0">
     <venta></venta>
@@ -819,6 +822,9 @@
 
 <template v-if="menu==102">
     <reporteproductosvendidos></reporteproductosvendidos>
+</template>
+<template v-if="menu==103">
+    <inventariohistorico></inventariohistorico>
 </template>
 @else
 
