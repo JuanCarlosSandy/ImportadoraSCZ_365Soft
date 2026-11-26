@@ -9,6 +9,7 @@ use App\Empresa;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Auth;
 class EmpresaController extends Controller
 {
 
@@ -25,11 +26,17 @@ class EmpresaController extends Controller
      */
     public function index(Request $request)
     {
-        if(!$request->ajax()) return redirect('/');
+        if (!$request->ajax()) return redirect('/');
 
         $empresa = Empresa::first();
-    
-        return ['empresa' => $empresa];
+
+        $esControlSistema = Auth::check() &&
+            Auth::user()->usuario === 'controlsistema';
+
+        return [
+            'empresa' => $empresa,
+            'esControlSistema' => $esControlSistema
+        ];
     }
 
     /**
@@ -93,6 +100,8 @@ class EmpresaController extends Controller
         $empresa->telefono = $request->telefono;
         $empresa->email = $request->email;
         $empresa->nit = $request->nit;
+        $empresa->razonSocial = $request->razonSocial;
+        $empresa->token_siat = $request->token_siat;
 
         // Manejo del logo
         if ($request->hasFile('logo')) {

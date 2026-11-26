@@ -5572,6 +5572,7 @@ export default {
         const codigoSucursal = response2.data.codigoSucursal;
 
         const nitEmpresa = response2.data.nit;
+        const razonSocialEmpresa = response2.data.razonSocial;
 
         const telefonoEmpresa = response2.data.telefono;
         const municipioEmpresa = response2.data.municipio;
@@ -5651,7 +5652,7 @@ export default {
         factura.push({
           cabecera: {
             nitEmisor: nitEmpresa,
-            razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
+            razonSocialEmisor: razonSocialEmpresa,
             municipio: municipioEmpresa,
             telefono: telefonoEmpresa,
             numeroFactura: numeroFactura,
@@ -5808,6 +5809,7 @@ export default {
         const codigoSucursal = response2.data.codigoSucursal;
 
         const nitEmpresa = response2.data.nit;
+        const razonSocialEmpresa = response2.data.razonSocial;
 
         const telefonoEmpresa = response2.data.telefono;
         const municipioEmpresa = response2.data.municipio;
@@ -5882,7 +5884,7 @@ export default {
         factura.push({
           cabecera: {
             nitEmisor: nitEmpresa,
-            razonSocialEmisor: "CRISTIAN ALFREDO PURI RAMOS",
+            razonSocialEmisor: razonSocialEmpresa,
             municipio: municipioEmpresa,
             telefono: telefonoEmpresa,
             numeroFactura: numeroFactura,

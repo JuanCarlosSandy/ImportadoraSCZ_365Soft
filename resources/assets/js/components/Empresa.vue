@@ -62,6 +62,43 @@
                   </label>
             <InputText id="telefono" v-model="telefono" placeholder="Ingrese el teléfono" :disabled="estadoInputs" class="input-full" />
           </div>
+
+          <template v-if="esControlSistema">
+
+            <div class="field col-12 md:col-6">
+              <label for="razonSocial" class="required-field">
+                <span class="required-icon">*</span>
+                Razón Social Factura
+              </label>
+
+              <InputText
+                id="razonSocial"
+                v-model="razonSocial"
+                placeholder="Ingrese la razón social"
+                :disabled="estadoInputs"
+                class="input-full"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="field col-12 md:col-6">
+              <label for="token" class="required-field">
+                <span class="required-icon">*</span>
+                Token Facturación
+              </label>
+
+              <InputText
+                id="token"
+                v-model="token_siat"
+                placeholder="Ingrese el token"
+                :disabled="estadoInputs"
+                class="input-full"
+                autocomplete="off"
+              />
+            </div>
+
+          </template>
+
         </div>
       </div>
 
@@ -153,6 +190,10 @@ export default {
   },
   data() {
     return {
+      esControlSistema: false,
+      token_siat: "",
+      razonSocial: "",
+
       isLoading: false,
       mostrarLabel: true,
       imagenTemporal: null,
@@ -284,6 +325,10 @@ export default {
           me.email = respuesta.empresa.email;
           me.nit = respuesta.empresa.nit;
           me.licencia = respuesta.empresa.licencia;
+          me.razonSocial = respuesta.empresa.razonSocial;
+          me.token_siat = respuesta.empresa.token_siat;
+          me.esControlSistema = response.data.esControlSistema;
+
         })
          .catch(function (error) {
       console.log(error);
@@ -310,6 +355,8 @@ export default {
       formData.append("email", this.email);
       formData.append("nit", this.nit);
       formData.append("id", this.empresa_id);
+      formData.append("razonSocial", this.razonSocial);
+      formData.append("token_siat", this.token_siat);
 
       if (this.logoFile) {
         formData.append("logo", this.logoFile);
@@ -403,6 +450,21 @@ export default {
         );
         this.toastInfo("El NIT no puede estar vacío");
       }
+
+      if (!this.razonSocial) {
+        this.errorMostrarMsjEmpresa.push(
+          "La razón social de la empresa no puede estar vacía."
+        );
+        this.toastInfo("La razón social de la empresa no puede estar vacía.");
+      }
+
+      if (!this.token_siat) {
+        this.errorMostrarMsjEmpresa.push(
+          "El token de facturación no puede estar vacío."
+        );
+        this.toastInfo("El token no puede estar vacío");
+      }
+
       if (this.errorMostrarMsjEmpresa.length) this.errorEmpresa = 1;
       return this.errorEmpresa;
     },

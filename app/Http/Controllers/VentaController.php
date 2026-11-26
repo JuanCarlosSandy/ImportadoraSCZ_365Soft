@@ -2793,68 +2793,156 @@ class VentaController extends Controller
 
 
 
-    public function verificarComunicacion()
+   public function verificarComunicacion()
     {
         require "SiatController.php";
+
+        // Usuario logueado
+        $usuario = auth()->user();
+
+        // Buscar sucursal
+        $sucursal = Sucursales::find($usuario->idsucursal);
+
+        if (!$sucursal) {
+
+            return response()->json([
+                'message' => 'Sucursal no encontrada'
+            ], 404);
+        }
+
+        // Buscar empresa
+        $empresa = Empresa::find($sucursal->idempresa);
+
+        if (!$empresa) {
+
+            return response()->json([
+                'message' => 'Empresa no encontrada'
+            ], 404);
+        }
+
+        // Token SIAT
+        $token = $empresa->token_siat;
+
+        if (!$token) {
+
+            return response()->json([
+                'message' => 'La empresa no tiene token SIAT configurado'
+            ], 400);
+        }
+
+        // SIAT
         $siat = new SiatController();
-        $res = $siat->verificarComunicacion();
-        if ($res->RespuestaComunicacion->transaccion == true) {
-            echo json_encode($res, JSON_UNESCAPED_UNICODE);
+
+        $res = $siat->verificarComunicacion($token);
+
+        if ($res && $res->RespuestaComunicacion->transaccion == true) {
+
+            return response()->json($res);
+
         } else {
-            $msg = "Falló la comunicación";
-            echo json_encode($msg, JSON_UNESCAPED_UNICODE);
+
+            return response()->json([
+                'message' => 'Falló la comunicación'
+            ], 500);
         }
     }
 
-    public function cuis()
+
+public function cuis()
     {
         $user = Auth::user();
 
         $codigoPuntoVenta = '';
+
         if (!empty($user->idpuntoventa)) {
+
             $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
             if ($puntoVenta) {
                 $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
             }
         }
 
-        $puntoVenta = $codigoPuntoVenta;
+        // Sucursal
         $sucursal = $user->sucursal;
+
+        // Empresa
         $empresa = $sucursal->empresas;
+
+        // Datos empresa
+        $token = $empresa->token_siat;
         $codnit = $empresa->nit;
+
+        // Datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         require 'SiatController.php';
+
         $siat = new SiatController();
-        $res = $siat->cuis($puntoVenta, $codSucursal, $codnit);
-        //dd($res);
-        $res->RespuestaCuis->codigo;
-        $_SESSION['scuis'] = $res->RespuestaCuis->codigo;
+
+        // ahora pasamos token y nit
+        $res = $siat->cuis(
+            $codigoPuntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
+        if (isset($res->RespuestaCuis->codigo)) {
+
+            $_SESSION['scuis'] = $res->RespuestaCuis->codigo;
+        }
+
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
 
-    public function nuevoCufd()
+       public function nuevoCufd()
     {
         $user = Auth::user();
+
         $codigoPuntoVenta = '';
+
         if (!empty($user->idpuntoventa)) {
+
             $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
             if ($puntoVenta) {
                 $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
             }
         }
+
         $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
         $empresa = $sucursal->empresas;
+
+        // datos empresa
         $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         require 'SiatController.php';
-        $siat = new SiatController();
-        $res = $siat->cufd($puntoVenta, $codSucursal, $codnit);
-        // dd($res);
 
-        if ($res->RespuestaCufd->transaccion == true) {
+        $siat = new SiatController();
+
+        // ahora enviamos nit y token
+        $res = $siat->cufd(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
+        if (
+            isset($res->RespuestaCufd->transaccion)
+            && $res->RespuestaCufd->transaccion == true
+        ) {
+
             $cufd = $res->RespuestaCufd->codigo;
             $codigoControl = $res->RespuestaCufd->codigoControl;
             $direccion = $res->RespuestaCufd->direccion;
@@ -2867,70 +2955,118 @@ class VentaController extends Controller
 
             $res = $res->RespuestaCufd;
 
-            /*$res['transaccion'] = $res->RespuestaCufd->transaccion;
-            $res['codigo'] = $_SESSION['scufd'];
-            $res['fechaVigencia'] = $_SESSION['sfechaVigenciaCufd'];
-            $res['direccion'] = $_SESSION['sdireccion'];
-            $res['codigoControl'] = $_SESSION['scodigoControl'];*/
         } else {
+
             $res = false;
         }
 
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
+
     public function cufd()
     {
         $user = Auth::user();
+
         $codigoPuntoVenta = '';
+
         if (!empty($user->idpuntoventa)) {
+
             $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
             if ($puntoVenta) {
                 $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
             }
         }
-        //$puntoVenta = $user->idpuntoventa;
+
         $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
         $empresa = $sucursal->empresas;
+
+        // datos empresa
         $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
+        require "SiatController.php";
+
+        $siat = new SiatController();
+
+        // SI NO EXISTE CUFD
         if (!isset($_SESSION['scufd'])) {
-            require "SiatController.php";
-            $siat = new SiatController();
-            $res = $siat->cufd($puntoVenta, $codSucursal, $codnit);
-            if ($res->RespuestaCufd->transaccion == true) {
+
+            $res = $siat->cufd(
+                $puntoVenta,
+                $codSucursal,
+                $codnit,
+                $token
+            );
+
+            if (
+                isset($res->RespuestaCufd->transaccion)
+                && $res->RespuestaCufd->transaccion == true
+            ) {
+
                 $cufd = $res->RespuestaCufd->codigo;
                 $codigoControl = $res->RespuestaCufd->codigoControl;
                 $direccion = $res->RespuestaCufd->direccion;
                 $fechaVigencia = $res->RespuestaCufd->fechaVigencia;
+
                 $_SESSION['scufd'] = $cufd;
                 $_SESSION['scodigoControl'] = $codigoControl;
                 $_SESSION['sdireccion'] = $direccion;
                 $_SESSION['sfechaVigenciaCufd'] = $fechaVigencia;
+
             } else {
+
                 $res = false;
             }
+
         } else {
+
             $fechaVigencia = substr($_SESSION['sfechaVigenciaCufd'], 0, 16);
+
             $fechaVigencia = str_replace("T", " ", $fechaVigencia);
+
+            // SI EL CUFD YA VENCIÓ
             if ($fechaVigencia < date('Y-m-d H:i')) {
-                require "SiatController.php";
-                $siat = new SiatController();
-                $res = $siat->cufd($puntoVenta, $codSucursal);
-                if ($res->RespuestaCufd->transaccion == true) {
+
+                $res = $siat->cufd(
+                    $puntoVenta,
+                    $codSucursal,
+                    $codnit,
+                    $token
+                );
+
+                if (
+                    isset($res->RespuestaCufd->transaccion)
+                    && $res->RespuestaCufd->transaccion == true
+                ) {
+
                     $cufd = $res->RespuestaCufd->codigo;
                     $codigoControl = $res->RespuestaCufd->codigoControl;
                     $direccion = $res->RespuestaCufd->direccion;
                     $fechaVigencia = $res->RespuestaCufd->fechaVigencia;
+
                     $_SESSION['scufd'] = $cufd;
                     $_SESSION['scodigoControl'] = $codigoControl;
                     $_SESSION['sdireccion'] = $direccion;
                     $_SESSION['sfechaVigenciaCufd'] = $fechaVigencia;
+
                 } else {
+
                     $res = false;
                 }
+
             } else {
+
+                // USAR CUFD ACTUAL
+
                 $res['transaccion'] = true;
                 $res['codigo'] = $_SESSION['scufd'];
                 $res['fechaVigencia'] = $_SESSION['sfechaVigenciaCufd'];
@@ -2938,6 +3074,7 @@ class VentaController extends Controller
                 $res['codigoControl'] = $_SESSION['scodigoControl'];
             }
         }
+
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
 
@@ -2945,21 +3082,44 @@ class VentaController extends Controller
     public function sincronizarActividades()
     {
         $user = Auth::user();
+
         $codigoPuntoVenta = '';
+
         if (!empty($user->idpuntoventa)) {
+
             $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
             if ($puntoVenta) {
                 $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
             }
         }
 
         $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         require 'SiatController.php';
+
         $siat = new SiatController();
-        $res = $siat->sincronizarActividades($puntoVenta, $codSucursal);
+
+        $res = $siat->sincronizarActividades(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
 
@@ -2967,89 +3127,228 @@ class VentaController extends Controller
     public function sincronizarParametricaTiposFactura()
     {
         $user = Auth::user();
-        $codigoPuntoVenta = '';
-        if (!empty($user->idpuntoventa)) {
-            $puntoVenta = PuntoVenta::find($user->idpuntoventa);
-            if ($puntoVenta) {
-                $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
-            }
-        }
-        //$puntoVenta = $user->idpuntoventa;
-        $puntoVenta = $codigoPuntoVenta;
-        $sucursal = $user->sucursal;
-        $codSucursal = $sucursal->codigoSucursal;
-
-        require "SiatController.php";
-        $siat = new SiatController();
-        $res = $siat->sincronizarParametricaTiposFactura($puntoVenta, $codSucursal);
-        echo json_encode($res, JSON_UNESCAPED_UNICODE);
-    }
-
-    public function sincronizarParametricaMotivoAnulacion()
-    {
-        $user = Auth::user();
-        $puntoVenta = $user->idpuntoventa;
-        $sucursal = $user->sucursal;
-        $codSucursal = $sucursal->codigoSucursal;
-
-        require "SiatController.php";
-        $siat = new SiatController();
-        $res = $siat->sincronizarParametricaMotivoAnulacion($puntoVenta, $codSucursal);
-        echo json_encode($res, JSON_UNESCAPED_UNICODE);
-    }
-
-    public function sincronizarParametricaEventosSignificativos()
-    {
-        $user = Auth::user();
-        $puntoVenta = $user->idpuntoventa;
-        $sucursal = $user->sucursal;
-        $codSucursal = $sucursal->codigoSucursal;
-
-        require "SiatController.php";
-        $siat = new SiatController();
-        $res = $siat->sincronizarParametricaEventosSignificativos($puntoVenta, $codSucursal);
-        echo json_encode($res, JSON_UNESCAPED_UNICODE);
-    }
-
-
-
-    public function sincronizarParametricaUnidadMedida()
-    {
-        $user = Auth::user();
 
         $codigoPuntoVenta = '';
+
         if (!empty($user->idpuntoventa)) {
+
             $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
             if ($puntoVenta) {
                 $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
             }
         }
 
         $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
+        $codSucursal = $sucursal->codigoSucursal;
+
+        require "SiatController.php";
+
+        $siat = new SiatController();
+
+        $res = $siat->sincronizarParametricaTiposFactura(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+    }
+
+   public function sincronizarParametricaMotivoAnulacion()
+    {
+        $user = Auth::user();
+
+        $codigoPuntoVenta = '';
+
+        if (!empty($user->idpuntoventa)) {
+
+            $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
+            if ($puntoVenta) {
+                $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
+            }
+        }
+
+        $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
+        $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
+        $codSucursal = $sucursal->codigoSucursal;
+
+        require "SiatController.php";
+
+        $siat = new SiatController();
+
+        $res = $siat->sincronizarParametricaMotivoAnulacion(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+    }
+
+   public function sincronizarParametricaEventosSignificativos()
+    {
+        $user = Auth::user();
+
+        $codigoPuntoVenta = '';
+
+        if (!empty($user->idpuntoventa)) {
+
+            $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
+            if ($puntoVenta) {
+                $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
+            }
+        }
+
+        $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
+        $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
+        $codSucursal = $sucursal->codigoSucursal;
+
+        require "SiatController.php";
+
+        $siat = new SiatController();
+
+        $res = $siat->sincronizarParametricaEventosSignificativos(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+    }
+
+
+
+   public function sincronizarParametricaUnidadMedida()
+    {
+        $user = Auth::user();
+
+        $codigoPuntoVenta = '';
+
+        if (!empty($user->idpuntoventa)) {
+
+            $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
+            if ($puntoVenta) {
+                $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
+            }
+        }
+
+        $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
+        $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         require 'SiatController.php';
+
         $siat = new SiatController();
-        $res = $siat->sincronizarParametricaUnidadMedida($puntoVenta, $codSucursal);
+
+        $res = $siat->sincronizarParametricaUnidadMedida(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
 
     public function verificarNit($numeroDocumento)
     {
         $user = Auth::user();
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
         $empresa = $sucursal->empresas;
+
+        // datos empresa
         $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         require "SiatController.php";
+
         $siat = new SiatController();
-        $res = $siat->verificarNit($codSucursal, $numeroDocumento, $codnit);
-        if ($res->RespuestaVerificarNit->transaccion === true) {
-            $mensaje = $res->RespuestaVerificarNit->mensajesList->descripcion;
-        } else if ($res->RespuestaVerificarNit->transaccion === false) {
+
+        $res = $siat->verificarNit(
+            $codSucursal,
+            $numeroDocumento,
+            $codnit,
+            $token
+        );
+
+        if (
+            isset($res->RespuestaVerificarNit->transaccion)
+            && $res->RespuestaVerificarNit->transaccion === true
+        ) {
+
+            $mensaje = $res->RespuestaVerificarNit
+                ->mensajesList
+                ->descripcion;
+
+        } else if (
+            isset($res->RespuestaVerificarNit->transaccion)
+            && $res->RespuestaVerificarNit->transaccion === false
+        ) {
+
             $mensaje = $res->RespuestaVerificarNit->transaccion;
+
+        } else {
+
+            $mensaje = "Error al verificar NIT";
         }
 
         echo json_encode($mensaje, JSON_UNESCAPED_UNICODE);
@@ -3073,10 +3372,11 @@ class VentaController extends Controller
         $empresa = $sucursal->empresas;
         $codnit = $empresa->nit;
         $codSucursal = $sucursal->codigoSucursal;
+        $token = $empresa->token_siat;
 
         require 'SiatController.php';
         $siat = new SiatController();
-        $res = $siat->anulacionFactura($cuf, $motivoSeleccionado, $puntoVenta, $codSucursal, $codnit);
+        $res = $siat->anulacionFactura($cuf, $motivoSeleccionado, $puntoVenta, $codSucursal, $codnit, $token);
 
         if ($res->RespuestaServicioFacturacion->transaccion === true) {
             $mensaje = $res->RespuestaServicioFacturacion->codigoDescripcion;
@@ -3145,6 +3445,7 @@ class VentaController extends Controller
         $sucursal = $user->sucursal;
         $empresa = $sucursal->empresas;
         $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
         $codSucursal = $sucursal->codigoSucursal;
 
         $datos = $request->input('factura');
@@ -3206,7 +3507,7 @@ class VentaController extends Controller
 
         require "SiatController.php";
         $siat = new SiatController();
-        $resFactura = $siat->recepcionFactura($archivo, $fechaEmision, $hashArchivo, $puntoVenta, $codSucursal, $codnit);
+        $resFactura = $siat->recepcionFactura($archivo, $fechaEmision, $hashArchivo, $puntoVenta, $codSucursal, $codnit, $token);
         //dd($resFactura);
 
         $idFactura = null;
@@ -3289,6 +3590,9 @@ class VentaController extends Controller
         $puntoVenta = $codigoPuntoVenta;
         $sucursal = $user->sucursal;
         $codSucursal = $sucursal->codigoSucursal;
+        $empresa = $sucursal->empresas;
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
         // Ruta al directorio que deseas comprimir en el archivo TAR
         $carpetaFuente = public_path("docs/temporal");
         // Nombre del archivo TAR resultante
@@ -3327,7 +3631,7 @@ class VentaController extends Controller
 
             require "SiatController.php";
             $siat = new SiatController();
-            $res = $siat->recepcionPaqueteFactura($archivo, $request->fechaEmision, $hashArchivo, $numeroFacturas, $puntoVenta, $codSucursal);
+            $res = $siat->recepcionPaqueteFactura($archivo, $request->fechaEmision, $hashArchivo, $numeroFacturas, $puntoVenta, $codSucursal, $token);
             // Verificar el valor de transacción y asignar el mensaje correspondiente
             if ($res->RespuestaServicioFacturacion->codigoDescripcion === "PENDIENTE") {
                 $mensaje = $res->RespuestaServicioFacturacion->codigoDescripcion;
@@ -3420,8 +3724,31 @@ class VentaController extends Controller
     public function registroEventoSignificativo(Request $request)
     {
         $user = Auth::user();
-        $puntoVenta = $user->idpuntoventa;
+
+        $codigoPuntoVenta = '';
+
+        if (!empty($user->idpuntoventa)) {
+
+            $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
+            if ($puntoVenta) {
+                $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
+            }
+        }
+
+        $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         $descripcion = $request->descripcion;
@@ -3431,19 +3758,40 @@ class VentaController extends Controller
         $finEvento = $request->finEvento;
 
         require "SiatController.php";
+
         $siat = new SiatController();
-        $res = $siat->registroEventoSignificativo($descripcion, $cufdEvento, $codigoMotivoEvento, $inicioEvento, $finEvento, $puntoVenta, $codSucursal);
-        // Verificar el valor de transacción y asignar el mensaje correspondiente
+
+        $res = $siat->registroEventoSignificativo(
+            $descripcion,
+            $cufdEvento,
+            $codigoMotivoEvento,
+            $inicioEvento,
+            $finEvento,
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
         if ($res->RespuestaListaEventos->transaccion === true) {
-            $mensaje = $res->RespuestaListaEventos->codigoRecepcionEventoSignificativo;
-            $_SESSION['scodigoevento'] = $res->RespuestaListaEventos->codigoRecepcionEventoSignificativo;
+
+            $mensaje =
+                $res->RespuestaListaEventos
+                    ->codigoRecepcionEventoSignificativo;
+
+            $_SESSION['scodigoevento'] =
+                $res->RespuestaListaEventos
+                    ->codigoRecepcionEventoSignificativo;
+
         } else {
-            $mensaje = $res->RespuestaListaEventos->mensajesList->descripcion;
+
+            $mensaje =
+                $res->RespuestaListaEventos
+                    ->mensajesList
+                    ->descripcion;
         }
 
-        // Imprimir o retornar el mensaje, o realizar otras acciones según tu necesidad
         echo json_encode($mensaje, JSON_UNESCAPED_UNICODE);
-        //var_dump($res);
     }
 
     public function registroPuntoVenta(Request $request)
@@ -3689,11 +4037,15 @@ class VentaController extends Controller
         $facturas = Factura::join('ventas', 'facturas.idventa', '=', 'ventas.id')
             ->join('personas', 'facturas.idcliente', '=', 'personas.id')
             ->join('users', 'ventas.idusuario', '=', 'users.id')
-            ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')->select(
+            ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
+            ->join('empresas', 'sucursales.idempresa', '=', 'empresas.id')
+            ->select(
                 'facturas.*',
                 'personas.nombre as razonSocial',
                 'personas.num_documento as documentoid',
                 'sucursales.nombre as nombreSucursal',
+                'empresas.razonSocial as razonSocialEmpresa',
+                'empresas.nombre as nombreEmpresa',
                 'sucursales.codigoSucursal as codigoSucursal'
 
             )
@@ -3732,7 +4084,8 @@ class VentaController extends Controller
         $totalpagar = str_replace('.', ',', $totalpagar);
         $cifrasEnLetras = new CifrasEnLetrasController();
         $letra = ($cifrasEnLetras->convertirBolivianosEnLetras($totalpagar));
-
+        $razonSocialEmpresa = $facturas[0]->razonSocialEmpresa ?? '';
+        $nombreEmpresa = $facturas[0]->nombreEmpresa ?? '';
 
         $url = 'https://siat.impuestos.gob.bo/consulta/QR?nit=' . $nitEmisor . '&cuf=' . $cuf . '&numero=' . $numeroFactura . '&t=2';
         $options = new QROptions([
@@ -3756,7 +4109,7 @@ class VentaController extends Controller
         $pdf->SetFont('Arial', 'B', 7);
         $pdf->Cell(0, 3.5, utf8_decode('CON DERECHO A CRÉDITO FISCAL'), 0, 1, 'C');
         $pdf->SetFont('Arial', '', 7);
-        $pdf->Cell(0, 3.5, utf8_decode('CRISTIAN ALFREDO PURI RAMOS'), 0, 1, 'C');
+        $pdf->Cell(0, 4, utf8_decode($razonSocialEmpresa), 0, 1, 'C');
         $pdf->Cell(0, 3.5, utf8_decode('Sucursal No. ' . $nombreSucursal), 0, 1, 'C');
         $pdf->Cell(0, 3.5, utf8_decode('No. Punto de Venta ' . $puntoVenta), 0, 1, 'C');
 
@@ -4893,7 +5246,19 @@ class VentaController extends Controller
     }
     public function selectUsuarios()
     {
-        $usuarios = User::select('id', 'usuario')->get();
+        $usuario = \Auth::user();
+
+        $esControlSistema = $usuario &&
+            $usuario->usuario === 'controlsistema';
+
+        $query = User::select('id', 'usuario');
+
+        if (!$esControlSistema) {
+            $query->where('usuario', '!=', 'controlsistema');
+        }
+
+        $usuarios = $query->get();
+
         return response()->json(['usuarios' => $usuarios]);
     }
 
@@ -5355,24 +5720,47 @@ class VentaController extends Controller
         ], 200);
     }
 
-    public function sincronizarListaProductosServicios()
+   public function sincronizarListaProductosServicios()
     {
         $user = Auth::user();
+
         $codigoPuntoVenta = '';
+
         if (!empty($user->idpuntoventa)) {
+
             $puntoVenta = PuntoVenta::find($user->idpuntoventa);
+
             if ($puntoVenta) {
                 $codigoPuntoVenta = $puntoVenta->codigoPuntoVenta;
             }
         }
 
         $puntoVenta = $codigoPuntoVenta;
+
+        // sucursal
         $sucursal = $user->sucursal;
+
+        // empresa
+        $empresa = $sucursal->empresas;
+
+        // datos empresa
+        $codnit = $empresa->nit;
+        $token = $empresa->token_siat;
+
+        // datos sucursal
         $codSucursal = $sucursal->codigoSucursal;
 
         require 'SiatController.php';
+
         $siat = new SiatController();
-        $res = $siat->sincronizarListaProductosServicios($puntoVenta, $codSucursal);
+
+        $res = $siat->sincronizarListaProductosServicios(
+            $puntoVenta,
+            $codSucursal,
+            $codnit,
+            $token
+        );
+
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
     }
 
@@ -5414,6 +5802,7 @@ class VentaController extends Controller
 
                 // Datos empresa
                 'nit' => $empresa ? $empresa->nit : '',
+                'razonSocial' => $empresa ? $empresa->razonSocial : '',
 
                 // Datos sucursal
                 'telefono' => $empresa ? $empresa->telefono : '',

@@ -205,22 +205,12 @@ class SucursalController extends Controller
 
     public function selectSucursal(Request $request)
     {
-        $usuario = \Auth::user();
-        $idrol = $usuario->idrol;
-
-        $query = Sucursales::where('condicion', '=', '1');
-
-        /*if ($idrol == 1) {
-            // Mostrar solo su propia sucursal
-            $query->where('id', $usuario->idsucursal);
-        }*/
-
-        $sucursales = $query->select('id', 'nombre')
-                            ->orderBy('nombre', 'asc')
-                            ->get();
+        $sucursales = Sucursales::where('condicion', '=', '1')
+        ->select('id','nombre')
+        ->orderBy('nombre', 'asc')->get();
 
         return ['sucursales' => $sucursales];
-    }
+    } 
 
 
     public function selectedSucursal(Request $request)

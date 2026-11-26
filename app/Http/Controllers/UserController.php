@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
+   public function index(Request $request)
     {
         if (!$request->ajax())
             return redirect('/');
@@ -28,10 +28,12 @@ class UserController extends Controller
         $idrol = $usuario->idrol;
         $idsucursal = $usuario->idsucursal;
 
+        $esControlSistema = $usuario->usuario === 'controlsistema';
+
         $query = User::join('personas', 'users.id', '=', 'personas.id')
             ->join('roles', 'users.idrol', '=', 'roles.id')
             ->join('sucursales', 'users.idsucursal', '=', 'sucursales.id')
-                        ->join('punto_ventas', 'users.idpuntoventa', '=', 'punto_ventas.id')
+            ->join('punto_ventas', 'users.idpuntoventa', '=', 'punto_ventas.id')
             ->select(
                 'personas.id',
                 'personas.nombre',
@@ -42,17 +44,21 @@ class UserController extends Controller
                 'personas.email',
                 'personas.fotografia',
                 'users.usuario',
-                'users.password',
                 'users.condicion',
                 'users.idrol',
                 'roles.nombre as rol',
                 'users.idsucursal',
                 'users.idpuntoventa',
                 'sucursales.nombre as sucursal',
-                                'punto_ventas.nombre as puntoventa'
+                'punto_ventas.nombre as puntoventa'
             );
 
-        // Si el usuario es rol 1 (administrador de sucursal), filtra por sucursal y excluye rol 4
+        // Ocultar Control Sistemas para los demás usuarios
+        if (!$esControlSistema) {
+            $query->where('users.usuario', '!=', 'controlsistema');
+        }
+
+        // Si el usuario es rol 1, filtra por sucursal y excluye rol 4
         /*if ($idrol == 1) {
             $query->where('users.idsucursal', $idsucursal)
                 ->where('users.idrol', '<>', 4);
@@ -60,17 +66,16 @@ class UserController extends Controller
 
         // Búsqueda global en varias columnas
         if (!empty($buscar)) {
-            $query->where(function($q) use ($buscar) {
+            $query->where(function ($q) use ($buscar) {
                 $q->where('personas.nombre', 'like', "%$buscar%")
-                  ->orWhere('personas.tipo_documento', 'like', "%$buscar%")
-                  ->orWhere('personas.num_documento', 'like', "%$buscar%")
-                  ->orWhere('personas.direccion', 'like', "%$buscar%")
-                  ->orWhere('personas.telefono', 'like', "%$buscar%")
-                  ->orWhere('personas.email', 'like', "%$buscar%")
-                  ->orWhere('users.usuario', 'like', "%$buscar%")
-                  ->orWhere('roles.nombre', 'like', "%$buscar%")
-                  ->orWhere('sucursales.nombre', 'like', "%$buscar%")
-                ;
+                    ->orWhere('personas.tipo_documento', 'like', "%$buscar%")
+                    ->orWhere('personas.num_documento', 'like', "%$buscar%")
+                    ->orWhere('personas.direccion', 'like', "%$buscar%")
+                    ->orWhere('personas.telefono', 'like', "%$buscar%")
+                    ->orWhere('personas.email', 'like', "%$buscar%")
+                    ->orWhere('users.usuario', 'like', "%$buscar%")
+                    ->orWhere('roles.nombre', 'like', "%$buscar%")
+                    ->orWhere('sucursales.nombre', 'like', "%$buscar%");
             });
         }
 
@@ -78,7 +83,7 @@ class UserController extends Controller
 
         return [
             'personas' => $personas,
-            'idrol' => \Auth::user()->idrol
+            'idrol' => $idrol
         ];
     }
 
@@ -264,11 +269,21 @@ class UserController extends Controller
 
         $filtro = $request->filtro;
 
-        $usuarios = User::join('personas', 'users.id', '=', 'personas.id')
+        $usuario = \Auth::user();
+
+        $esControlSistema = $usuario &&
+            $usuario->usuario === 'controlsistema';
+
+        $query = User::join('personas', 'users.id', '=', 'personas.id')
             ->where('personas.nombre', 'like', '%' . $filtro . '%')
-            ->select('users.id', 'personas.nombre as nombre')
-            ->orderBy('personas.nombre', 'asc')
-            ->get();
+            ->select('users.id', 'personas.nombre as nombre');
+
+        // Excluir Control Sistemas para los demás usuarios
+        if (!$esControlSistema) {
+            $query->where('users.usuario', '!=', 'controlsistema');
+        }
+
+        $usuarios = $query->orderBy('personas.nombre', 'asc')->get();
 
         return ['usuarios' => $usuarios];
     }
