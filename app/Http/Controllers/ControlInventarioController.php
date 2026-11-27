@@ -473,26 +473,35 @@ class ControlInventarioController extends Controller
             'detalles.articulo'
         )->findOrFail($id);
 
-        // 🔥 ROL USUARIO LOGUEADO
+        // ROL USUARIO LOGUEADO
         $rolUsuario = Auth::user()->idrol;
 
-        // 🔥 agregar stock actual
+        // AGREGAR STOCK ACTUAL
         foreach ($control->detalles as $detalle) {
 
-            $inventario = Inventario::where('idalmacen', $control->idalmacen)
+            $inventario = Inventario::where(
+                'idalmacen',
+                $control->idalmacen
+            )
                 ->where('idarticulo', $detalle->idarticulo)
                 ->first();
 
-            $detalle->stock_actual = $inventario ? $inventario->saldo_stock : 0;
+            $detalle->stock_actual = $inventario
+                ? $inventario->saldo_stock
+                : 0;
         }
 
         $total = $control->detalles->count();
 
         $verificados = $control->detalles->where('estado', 2)->count();
+
         $pendientes = $control->detalles->where('estado', 1)->count();
+
         $anulados = $control->detalles->where('estado', 0)->count();
 
-        $estadoGeneral = ($pendientes == 0) ? 'AJUSTADO' : 'PENDIENTE';
+        $estadoGeneral = ($pendientes == 0)
+            ? 'AJUSTADO'
+            : 'PENDIENTE';
 
         $pdf = PDF::loadView('pdf.control_inventario', compact(
             'control',
@@ -504,7 +513,11 @@ class ControlInventarioController extends Controller
             'rolUsuario'
         ));
 
-        return $pdf->download('control_inventario_' . $control->id . '.pdf');
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download(
+            'control_inventario_' . $control->id . '.pdf'
+        );
     }
 
     public function exportExcel($id)

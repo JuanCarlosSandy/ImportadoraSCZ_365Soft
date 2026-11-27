@@ -2434,14 +2434,11 @@ export default {
 
     seleccionarProducto(producto) {
 
-      this.buscarA = '';
-      this.filtrarProductos();
-
-      const productoExistente = this.productosSeleccionados.find(
+    const productoExistente = this.productosSeleccionados.find(
         p => p.id === producto.id
-      );
+    );
 
-      if (!productoExistente) {
+    if (!productoExistente) {
 
         let stockTotal = parseFloat(producto.stock_total_unidades) || 0;
         let stockCajas = parseFloat(producto.stock_total_cajas) || 0;
@@ -2450,43 +2447,42 @@ export default {
         let stockRealIngresado = parseFloat(producto.stock_ingresado) || 0;
 
         this.productosSeleccionados.push({
-          ...producto,
+            ...producto,
 
-          cantidad_ajuste: 0,
+            cantidad_ajuste: 0,
 
-          stock_actual_unidades: stockTotal,
-          stock_actual_cajas: stockCajas,
-          stock_actual_unidades_sueltas: stockSueltas,
+            stock_actual_unidades: stockTotal,
+            stock_actual_cajas: stockCajas,
+            stock_actual_unidades_sueltas: stockSueltas,
 
-          modo_ajuste: 'unidad',
-          es_paquete: false,
-          es_aumento: true,
+            modo_ajuste: 'unidad',
+            es_paquete: false,
+            es_aumento: true,
 
-          stock_real: stockRealIngresado,
+            stock_real: stockRealIngresado,
 
-          stock_restante: stockTotal
+            stock_restante: stockTotal
         });
 
         this.$toast.add({
-          severity: 'success',
-          summary: 'Agregado',
-          detail: 'Producto listo para ajustar',
-          life: 1000
+            severity: 'success',
+            summary: 'Agregado',
+            detail: 'Producto listo para ajustar',
+            life: 1000
         });
 
-      } else {
+    } else {
 
         this.$toast.add({
-          severity: 'warn',
-          summary: 'Atención',
-          detail: 'El producto ya está en la lista'
+            severity: 'warn',
+            summary: 'Atención',
+            detail: 'El producto ya está en la lista'
         });
 
-      }
+    }
 
-      this.enfocarInputBusqueda();
-
-    },
+    this.enfocarInputBusqueda();
+},
 
     cambiarPagina(page) {
       let me = this;
